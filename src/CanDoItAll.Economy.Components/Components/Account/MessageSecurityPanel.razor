@@ -1,0 +1,260 @@
+@namespace CanDoItAll.Economy.Components
+@inject NotificationService Notifications
+
+<SectionCard Title="Message Security" Description="Sign, verify, encrypt, and decrypt messages with the active account keys.">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Large" Class="cda-vef-security-grid">
+        <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
+            <FormField Text="Message to sign">
+                <TextArea Value="@signMessage"
+                          ValueChanged="@((string value) => signMessage = value)"
+                          Rows="5"
+                          data-testid="message-security-sign-message" />
+            </FormField>
+            <Cluster Gap="LayoutGap.Small">
+                <Button Text="Sign Message"
+                        Icon="draw"
+                        ButtonStyle="ButtonStyle.Secondary"
+                        Disabled="@(!CanUseSecurity)"
+                        IsBusy="@signing"
+                        Click="SignAsync"
+                        data-testid="message-security-sign-button" />
+                <Button Text="Verify Signature"
+                        Icon="verified"
+                        Variant="Variant.Outlined"
+                        Disabled="@(!CanUseSecurity)"
+                        IsBusy="@verifying"
+                        Click="VerifyAsync"
+                        data-testid="message-security-verify-button" />
+            </Cluster>
+            <FormField Text="Signature JSON">
+                <TextArea Value="@signatureJson"
+                          ValueChanged="@((string value) => signatureJson = value)"
+                          Rows="8"
+                          data-testid="message-security-signature-json" />
+            </FormField>
+            <FormField Text="Verification message">
+                <TextArea Value="@verifyMessage"
+                          ValueChanged="@((string value) => verifyMessage = value)"
+                          Rows="4"
+                          data-testid="message-security-verify-message" />
+            </FormField>
+            @if (!string.IsNullOrWhiteSpace(verifyStatus))
+            {
+                <Alert AlertStyle="@verifyAlertStyle" data-testid="message-security-verify-status">
+                    @verifyStatus
+                </Alert>
+            }
+        </Stack>
+
+        <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
+            <FormField Text="Receiver account">
+                <TextBox Value="@receiverAccount"
+                         ValueChanged="@((string value) => receiverAccount = value)"
+                         data-testid="message-security-receiver" />
+            </FormField>
+            <FormField Text="Message to encrypt">
+                <TextArea Value="@encryptMessage"
+                          ValueChanged="@((string value) => encryptMessage = value)"
+                          Rows="5"
+                          data-testid="message-security-encrypt-message" />
+            </FormField>
+            <Cluster Gap="LayoutGap.Small">
+                <Button Text="Encrypt For Receiver"
+                        Icon="lock"
+                        ButtonStyle="ButtonStyle.Secondary"
+                        Disabled="@(!CanUseSecurity)"
+                        IsBusy="@encrypting"
+                        Click="EncryptAsync"
+                        data-testid="message-security-encrypt-button" />
+                <Button Text="Decrypt Here"
+                        Icon="lock_open"
+                        Variant="Variant.Outlined"
+                        Disabled="@(!CanUseSecurity)"
+                        IsBusy="@decrypting"
+                        Click="DecryptAsync"
+                        data-testid="message-security-decrypt-button" />
+            </Cluster>
+            <FormField Text="Encrypted message JSON">
+                <TextArea Value="@encryptedJson"
+                          ValueChanged="@((string value) => encryptedJson = value)"
+                          Rows="8"
+                          data-testid="message-security-encrypted-json" />
+            </FormField>
+            <FormField Text="Decrypted plaintext">
+                <TextArea Value="@decryptedPlainText"
+                          ReadOnly="true"
+                          Rows="4"
+                          data-testid="message-security-decrypted-plain" />
+            </FormField>
+            @if (!string.IsNullOrWhiteSpace(encryptionStatus))
+            {
+                <Alert AlertStyle="@encryptionAlertStyle" data-testid="message-security-encryption-status">
+                    @encryptionStatus
+                </Alert>
+            }
+        </Stack>
+    </Grid>
+</SectionCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    [Parameter]
+    public Func<MessageSecuritySignRequest, Task<MessageSecurityActionResult>>? SignRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityVerifyRequest, Task<MessageSecurityActionResult>>? VerifyRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityEncryptRequest, Task<MessageSecurityActionResult>>? EncryptRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityDecryptRequest, Task<MessageSecurityActionResult>>? DecryptRequested { get; set; }
+
+    private string signMessage = "Hello Bob, this is Alice signing a ledger-side message.";
+    private string verifyMessage = "Hello Bob, this is Alice signing a ledger-side message.";
+    private string signatureJson = string.Empty;
+    private string receiverAccount = "bob";
+    private string encryptMessage = "Encrypted hello from Alice to Bob.";
+    private string encryptedJson = string.Empty;
+    private string decryptedPlainText = string.Empty;
+    private string? verifyStatus;
+    private string? encryptionStatus;
+    private AlertStyle verifyAlertStyle = AlertStyle.Info;
+    private AlertStyle encryptionAlertStyle = AlertStyle.Info;
+    private bool signing;
+    private bool verifying;
+    private bool encrypting;
+    private bool decrypting;
+    private string? lastWorkspaceAlias;
+
+    private bool CanUseSecurity
+        => SignRequested is not null
+            && VerifyRequested is not null
+            && EncryptRequested is not null
+            && DecryptRequested is not null;
+
+    protected override void OnParametersSet()
+    {
+        string alias = Workspace.AccountAlias ?? Workspace.AccountName;
+        if (string.Equals(lastWorkspaceAlias, alias, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        lastWorkspaceAlias = alias;
+        receiverAccount = string.Equals(alias, "alice", StringComparison.OrdinalIgnoreCase)
+            ? "bob"
+            : "alice";
+    }
+
+    private async Task SignAsync()
+    {
+        if (SignRequested is null)
+        {
+            return;
+        }
+
+        signing = true;
+        try
+        {
+            MessageSecurityActionResult result = await SignRequested(new MessageSecuritySignRequest(CurrentAccountAlias, signMessage));
+            signatureJson = result.PayloadJson ?? signatureJson;
+            verifyMessage = signMessage;
+            verifyStatus = result.Summary;
+            verifyAlertStyle = result.Success ? AlertStyle.Success : AlertStyle.Danger;
+            Notify(result, "Message signed");
+        }
+        finally
+        {
+            signing = false;
+        }
+    }
+
+    private async Task VerifyAsync()
+    {
+        if (VerifyRequested is null)
+        {
+            return;
+        }
+
+        verifying = true;
+        try
+        {
+            MessageSecurityActionResult result = await VerifyRequested(
+                new MessageSecurityVerifyRequest(CurrentAccountAlias, verifyMessage, signatureJson));
+            verifyStatus = result.Summary;
+            verifyAlertStyle = result.Success ? AlertStyle.Success : AlertStyle.Danger;
+            Notify(result, result.Success ? "Signature valid" : "Signature invalid");
+        }
+        finally
+        {
+            verifying = false;
+        }
+    }
+
+    private async Task EncryptAsync()
+    {
+        if (EncryptRequested is null)
+        {
+            return;
+        }
+
+        encrypting = true;
+        try
+        {
+            MessageSecurityActionResult result = await EncryptRequested(
+                new MessageSecurityEncryptRequest(CurrentAccountAlias, receiverAccount, encryptMessage));
+            encryptedJson = result.PayloadJson ?? encryptedJson;
+            decryptedPlainText = string.Empty;
+            encryptionStatus = result.Summary;
+            encryptionAlertStyle = result.Success ? AlertStyle.Success : AlertStyle.Danger;
+            Notify(result, "Message encrypted");
+        }
+        finally
+        {
+            encrypting = false;
+        }
+    }
+
+    private async Task DecryptAsync()
+    {
+        if (DecryptRequested is null)
+        {
+            return;
+        }
+
+        decrypting = true;
+        try
+        {
+            MessageSecurityActionResult result = await DecryptRequested(
+                new MessageSecurityDecryptRequest(CurrentAccountAlias, encryptedJson));
+            decryptedPlainText = result.PlainText ?? decryptedPlainText;
+            encryptionStatus = result.Summary;
+            encryptionAlertStyle = result.Success ? AlertStyle.Success : AlertStyle.Danger;
+            Notify(result, result.Success ? "Message decrypted" : "Decrypt failed");
+        }
+        finally
+        {
+            decrypting = false;
+        }
+    }
+
+    private string CurrentAccountAlias
+        => string.IsNullOrWhiteSpace(Workspace.AccountAlias)
+            ? Workspace.AccountName
+            : Workspace.AccountAlias;
+
+    private void Notify(MessageSecurityActionResult result, string title)
+    {
+        if (result.Success)
+        {
+            Notifications.Success(title, result.Summary, position: NotificationPosition.BottomCenter);
+        }
+        else
+        {
+            Notifications.Error(title, result.Summary, position: NotificationPosition.BottomCenter);
+        }
+    }
+}

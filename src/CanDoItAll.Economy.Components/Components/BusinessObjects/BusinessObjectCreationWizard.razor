@@ -1,0 +1,473 @@
+@namespace CanDoItAll.Economy.Components
+@using Microsoft.Extensions.DependencyInjection
+@inject DialogService DialogService
+@inject NotificationService Notifications
+@inject IServiceProvider Services
+
+<Stack Section="true" GapScale="LayoutGap.Small" Class="cda-venft-wizard cda-venft-wizard--compact" data-testid="bo-create-wizard">
+    <section class="cda-venft-wizard-command">
+        <Steps Value="@(currentStep - 1)"
+               ValueChanged="SetStepIndex"
+               CanSelect="true"
+               Class="cda-venft-compact-steps"
+               aria-label="Create BusinessObject steps">
+            <StepsItem Text="Upload" Icon="upload_file" />
+            <StepsItem Text="Data Info" Icon="edit_note" />
+            <StepsItem Text="Finish" Icon="flag" />
+        </Steps>
+
+        <Cluster Gap="LayoutGap.Small" Class="cda-venft-wizard-actions cda-venft-wizard-actions--compact">
+            <Button Text="Load Template" Icon="folder_open" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" />
+            <Button Text="Back" Icon="arrow_back" Size="ButtonSize.Small" Variant="Variant.Outlined" Disabled="@(currentStep == 1)" Click="@PreviousStep" />
+            <Button Text="@NextButtonText" Icon="@NextButtonIcon" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@NextStepAsync" />
+        </Cluster>
+    </section>
+
+    @if (currentStep == 1)
+    {
+        <section class="cda-vef-panel cda-venft-wizard-panel cda-venft-upload-panel">
+            <div class="cda-vef-panel-header">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <span>Upload Data Items</span>
+                    <small>Images, media, PDF, JSON, HTML, and Mermaid files can become BO payload data.</small>
+                </Stack>
+                <span class="cda-vef-source-pill cda-vef-source-pill--source">@DisplayDataItems.Count item(s)</span>
+            </div>
+            <div class="cda-vef-panel-body">
+                <Grid ColumnsLg="2"
+                      ColumnTemplateLg="minmax(18rem, 0.8fr) minmax(0, 1.2fr)"
+                      Gap="LayoutGap.Medium"
+                      Class="cda-venft-upload-layout">
+                    <Stack GapScale="LayoutGap.Small" Class="min-w-0">
+                        <div class="cda-venft-info-alert cda-venft-info-alert--compact">Files are uploaded to IPFS immediately. The BO transaction stores only CIDs and metadata.</div>
+                        <FileUpload PrimaryText="Drop or choose files"
+                                    SecondaryText="PNG, JPEG, MP3, MP4, JSON, PDF, HTML, or MMD."
+                                    ButtonText="Choose files"
+                                    Compact="true"
+                                    Disabled="@uploadInProgress"
+                                    Multiple="true"
+                                    Change="HandleUploadChangeAsync"
+                                    Accept="image/*,.pdf,.json,.html,.mmd,.mp3,.mp4"
+                                    InputTestHookId="bo-upload-input"
+                                    RootTestHookId="bo-upload"
+                                    DropZoneTestHookId="bo-upload-zone" />
+                        <Grid ColumnsMd="3" Gap="LayoutGap.Small" Class="cda-venft-upload-facts">
+                            <div class="cda-economy-fact"><span>Type</span><strong>@Model.ObjectType</strong></div>
+                            <div class="cda-economy-fact"><span>Main</span><strong>@(MainDataItem?.Name ?? "none")</strong></div>
+                            <div class="cda-economy-fact"><span>Loaded</span><strong>@DisplayDataItems.Count</strong></div>
+                            <div class="cda-economy-fact"><span>Storage</span><strong>@UploadStorageLabel</strong></div>
+                        </Grid>
+                    </Stack>
+
+                    <Stack GapScale="LayoutGap.Small" Class="min-w-0">
+                        <Grid ColumnsLg="2" ColumnTemplateLg="minmax(0, 0.9fr) minmax(0, 1.1fr)" Gap="LayoutGap.Small" Class="cda-venft-upload-preview-grid">
+                            <section class="cda-venft-preview-tile">
+                                <div class="cda-venft-preview-tile__header">
+                                    <span>Selected Preview</span>
+                                    <strong>@(LastUploadedItem?.Name ?? "No file")</strong>
+                                </div>
+                                @if (LastUploadedItem is not null)
+                                {
+                                    <BusinessObjectDataItemPreview Item="LastUploadedItem" Large="true" />
+                                }
+                                else
+                                {
+                                    <div class="cda-venft-empty-preview">
+                                        <span class="material-icons" aria-hidden="true">upload_file</span>
+                                        <strong>No preview yet</strong>
+                                    </div>
+                                }
+                            </section>
+
+                            <section class="cda-venft-loaded-panel">
+                                <div class="cda-venft-preview-tile__header">
+                                    <span>Loaded DataItems</span>
+                                    <strong>@DisplayDataItems.Count total</strong>
+                                </div>
+                                @if (DisplayDataItems.Count == 0)
+                                {
+                                    <p class="cda-vef-empty-line">Choose files to prepare BO data items.</p>
+                                }
+                                else
+                                {
+                                    <div class="cda-venft-dataitem-strip cda-venft-dataitem-strip--compact">
+                                        @foreach (BusinessObjectDataItem item in DisplayDataItems)
+                                        {
+                                            <article class="cda-venft-dataitem-card cda-venft-dataitem-card--compact">
+                                                <BusinessObjectDataItemPreview Item="item" />
+                                                <div>
+                                                    <strong><HashDisplay Value="@item.Hash" /></strong>
+                                                    <Stack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" GapScale="LayoutGap.XSmall" Class="cda-economy-check-row">
+                                                        <CheckBox TValue="bool" Value="@item.IsMain" Disabled="true" />
+                                                        <span>Main</span>
+                                                    </Stack>
+                                                </div>
+                                            </article>
+                                        }
+                                    </div>
+                                }
+                            </section>
+                        </Grid>
+                    </Stack>
+                </Grid>
+            </div>
+        </section>
+    }
+    else if (currentStep == 2)
+    {
+        <section class="cda-vef-panel cda-venft-wizard-panel">
+            <div class="cda-vef-panel-header">Information about the data</div>
+            <div class="cda-vef-panel-body">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-venft-data-info-layout">
+                    <Stack GapScale="LayoutGap.Small" Class="min-w-0">
+                        <FormField Text="Name">
+                            <TextBox Value="@Model.Name" aria-label="BusinessObject name" />
+                        </FormField>
+                        <FormField Text="Tags">
+                            <TextBox Value="@Model.Tags" aria-label="BusinessObject tags" />
+                        </FormField>
+                        <div class="cda-venft-tag-row">
+                            @foreach (string tag in Tags)
+                            {
+                                <span>#@tag</span>
+                            }
+                        </div>
+                        <FormField Text="Short description">
+                            <TextBox Value="@Model.Description" aria-label="BusinessObject description" />
+                        </FormField>
+                    </Stack>
+                    <FormField Text="Long description" ContainerClass="cda-economy-field cda-economy-field--wide">
+                        <TextArea Value="@Model.Text" Rows="10" aria-label="BusinessObject text" />
+                    </FormField>
+                </Grid>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="cda-vef-panel cda-venft-wizard-panel">
+            <div class="cda-vef-panel-header">Finish</div>
+            <div class="cda-vef-panel-body">
+                <Grid ColumnsLg="2" ColumnTemplateLg="minmax(0, 1.4fr) minmax(320px, 0.8fr)" Gap="LayoutGap.Large" Class="cda-venft-finish-layout">
+                    <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
+                        <button type="button" class="cda-vef-gallery-preview cda-venft-finish-preview-card" @onclick="OpenFinishDetailsAsync">
+                            @if (LastUploadedItem is not null)
+                            {
+                                <BusinessObjectDataItemPreview Item="LastUploadedItem" Large="true" />
+                            }
+                            else
+                            {
+                                <span class="material-icons" aria-hidden="true">@FinishIcon</span>
+                                <strong>@ShortType(Model.ObjectType)</strong>
+                            }
+                        </button>
+                        <Stack GapScale="LayoutGap.Small" Class="cda-venft-finish-copy">
+                            <h3>@Model.Name</h3>
+                            <p>@Model.Description</p>
+                            <div class="cda-vef-badges">
+                                <span>VENFT</span>
+                                <span>BO</span>
+                                <span>@Model.ObjectType</span>
+                            </div>
+                            <div class="cda-vef-tags">
+                                @foreach (string tag in Tags)
+                                {
+                                    <span>#@tag</span>
+                                }
+                            </div>
+                        </Stack>
+                    </Stack>
+
+                    <Stack GapScale="LayoutGap.Medium" Class="cda-venft-finish-inspector min-w-0">
+                        <Grid ColumnsMd="2" Gap="LayoutGap.Small">
+                            <div class="cda-economy-fact"><span>Type</span><strong>@Model.ObjectType</strong></div>
+                            <div class="cda-economy-fact"><span>DataItems</span><strong>@DisplayDataItems.Count</strong></div>
+                            <div class="cda-economy-fact cda-economy-fact--wide"><span>Name</span><strong>@Model.Name</strong></div>
+                        </Grid>
+                        @if (Workspace is not null)
+                        {
+                            <AvailableTokenSelector Options="Workspace.TokenOptions"
+                                                    SelectedKey="@selectedTokenKey"
+                                                    SelectedKeyChanged="@(key => selectedTokenKey = key)"
+                                                    Label="Creation asset"
+                                                    DataTestId="bo-create-token-selector" />
+                            <div class="cda-economy-fact">
+                                <span>Source status</span>
+                                <strong>@CreationAssetHint</strong>
+                            </div>
+                        }
+                        <Cluster Gap="LayoutGap.Small">
+                            <Button Text="Stage BO Transaction" Icon="receipt_long" ButtonStyle="ButtonStyle.Secondary" Disabled="@(!CanStageSelectedAsset)" Click="StageBusinessObjectAsync" />
+                            <Button Text="Preview Details" Icon="info" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="OpenFinishDetailsAsync" />
+                        </Cluster>
+                    </Stack>
+                </Grid>
+            </div>
+        </section>
+    }
+</Stack>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectCreationWizardModel Model { get; set; } = default!;
+
+    [Parameter]
+    public BusinessObjectWorkspaceModel? Workspace { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> StageBusinessObjectRequested { get; set; }
+
+    private int currentStep = 1;
+    private string? currentModelKey;
+    private string? selectedTokenKey = EconomyTokenOption.MainKey;
+    private IReadOnlyList<BusinessObjectDataItem> uploadedItems = [];
+    private bool uploadInProgress;
+
+    protected override void OnParametersSet()
+    {
+        string modelKey = $"{Model.ObjectType}:{Model.Name}";
+        if (currentModelKey == modelKey)
+        {
+            return;
+        }
+
+        currentModelKey = modelKey;
+        currentStep = Math.Clamp(Model.Step, 1, 3);
+        selectedTokenKey ??= Workspace?.TokenOptions.FirstOrDefault()?.Key ?? EconomyTokenOption.MainKey;
+    }
+
+    private IReadOnlyList<BusinessObjectDataItem> DisplayDataItems
+        => uploadedItems.Count == 0 ? Model.DataItems : uploadedItems.Concat(Model.DataItems).ToArray();
+
+    private BusinessObjectDataItem? LastUploadedItem
+        => uploadedItems.FirstOrDefault() ?? Model.LastUploadedItem;
+
+    private BusinessObjectDataItem? MainDataItem
+        => DisplayDataItems.FirstOrDefault(item => item.IsMain) ?? DisplayDataItems.FirstOrDefault();
+
+    private EconomyTokenOption? SelectedToken
+        => Workspace?.TokenOptions.FirstOrDefault(option => option.Key == selectedTokenKey);
+
+    private bool CanStageSelectedAsset
+        => SelectedToken is null || SelectedToken.IsMain || SelectedToken.HasReusableSource;
+
+    private string CreationAssetHint
+        => SelectedToken is null || SelectedToken.IsMain
+            ? "Main amount only"
+            : SelectedToken.HasReusableSource
+                ? $"Uses reusable source UTXO automatically ({SelectedToken.SourceAmount} across {SelectedToken.SourceUtxoCount} source UTXO(s))."
+                : $"No reusable source UTXO for {SelectedToken.AssetLabel}; unique token cards cannot be reused as sources.";
+
+    private string UploadStorageLabel
+        => uploadInProgress
+            ? "IPFS uploading"
+            : DisplayDataItems.Count == 0
+                ? "IPFS required"
+                : "IPFS CID";
+
+    private IReadOnlyList<string> Tags
+        => Model.Tags.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(tag => tag.TrimStart('#'))
+            .ToArray();
+
+    private string NextButtonText
+        => currentStep == 3 ? "Stage BO" : "Next";
+
+    private string NextButtonIcon
+        => currentStep == 3 ? "receipt_long" : "arrow_forward";
+
+    private void SetStepIndex(int stepIndex)
+    {
+        currentStep = Math.Clamp(stepIndex + 1, 1, 3);
+    }
+
+    private void PreviousStep()
+    {
+        currentStep = Math.Max(1, currentStep - 1);
+    }
+
+    private async Task NextStepAsync()
+    {
+        if (currentStep == 3)
+        {
+            await StageBusinessObjectAsync();
+            return;
+        }
+
+        currentStep = Math.Min(3, currentStep + 1);
+    }
+
+    private async Task HandleUploadChangeAsync(InputFileChangeEventArgs args)
+    {
+        IBusinessObjectDataItemUploadService? uploadService = Services.GetService<IBusinessObjectDataItemUploadService>();
+        if (uploadService is null)
+        {
+            Notifications.Error("IPFS storage missing", "Configure BusinessObjects:IpfsApiUrl and BusinessObjects:IpfsGatewayUrl before uploading BO files.", position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        var items = new List<BusinessObjectDataItem>();
+        uploadInProgress = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            foreach (IBrowserFile file in args.GetMultipleFiles(8))
+            {
+                try
+                {
+                    items.Add(await CreateIpfsDataItemAsync(uploadService, file, items.Count == 0));
+                }
+                catch (Exception exception)
+                {
+                    Notifications.Error("IPFS upload failed", $"{file.Name}: {exception.Message}", position: NotificationPosition.BottomCenter);
+                }
+            }
+
+            uploadedItems = items;
+            if (items.Count > 0)
+            {
+                Notifications.Success("Uploaded to IPFS", $"{items.Count} file(s) stored as CID-backed DataItems.", position: NotificationPosition.BottomCenter);
+            }
+        }
+        finally
+        {
+            uploadInProgress = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static async Task<BusinessObjectDataItem> CreateIpfsDataItemAsync(
+        IBusinessObjectDataItemUploadService uploadService,
+        IBrowserFile file,
+        bool isMain)
+    {
+        const long maxUploadBytes = 128 * 1024 * 1024;
+        string contentType = string.IsNullOrWhiteSpace(file.ContentType)
+            ? "application/octet-stream"
+            : file.ContentType;
+        await using Stream stream = file.OpenReadStream(maxUploadBytes);
+        return await uploadService.SaveToIpfsAsync(
+            new BusinessObjectDataItemUploadRequest(
+                stream,
+                file.Name,
+                contentType,
+                file.Size,
+                isMain,
+                "Uploaded through BO wizard"),
+            CancellationToken.None);
+    }
+
+    private Task OpenFinishDetailsAsync()
+    {
+        if (Workspace is null)
+        {
+            Notifications.Warning("Preview unavailable", "The workspace context is not loaded yet.", position: NotificationPosition.BottomCenter);
+            return Task.CompletedTask;
+        }
+
+        IBusinessObjectView preview = CreatePreviewBusinessObject();
+        return DialogService.OpenAsync<BusinessObjectLedgerDetailsDialogContent>(
+            $"{Model.Name} - Preview Details",
+            new Dictionary<string, object?>
+            {
+                [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = preview,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc
+            },
+            new DialogOptions
+            {
+                Subtitle = "Gallery preview before staging",
+                Size = ModalSize.Wide,
+                Class = "cda-vef-dialog cda-vef-dialog--details",
+                TestId = "cda-bo-finish-preview-details-dialog"
+            });
+    }
+
+    private async Task StageBusinessObjectAsync()
+    {
+        if (Workspace is null)
+        {
+            Notifications.Warning("Workspace unavailable", "Cannot stage a BO transaction before the workspace loads.", position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        EconomyTokenOption? selectedToken = SelectedToken;
+        if (selectedToken is not null && !selectedToken.IsMain && !selectedToken.HasReusableSource)
+        {
+            Notifications.Warning("Reusable source required", CreationAssetHint, position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        string stateJson = System.Text.Json.JsonSerializer.Serialize(new BusinessObjectMediaPayload(
+            Model.Name,
+            Model.Description,
+            Model.Text,
+            Model.Tags,
+            DataItems: DisplayDataItems));
+        Amount mainAmount = selectedToken?.IsMain == false ? Amount.Zero : Amount.FromInt64(1);
+        var draft = new BusinessObjectTransactionDraft(
+            new BusinessObjectId($"bo:{Model.ObjectType}:{NormalizeName(Model.Name)}"),
+            Model.ObjectType,
+            "1.0",
+            Workspace.Address,
+            Workspace.AddressBookmarks.FirstOrDefault()?.Address ?? Workspace.Address,
+            Workspace.AddressBookmarks.LastOrDefault()?.Address ?? Workspace.Address,
+            mainAmount,
+            Amount.Zero,
+            stateJson,
+            $"preview://{Model.ObjectType}/{NormalizeName(Model.Name)}",
+            BusinessObjectTransactionMode.Create,
+            TokenId: selectedToken?.IsMain == true ? null : selectedToken?.TokenId,
+            TokenAmount: selectedToken?.IsMain == true || selectedToken?.TokenId is null ? null : Amount.FromInt64(1));
+
+        await StageBusinessObjectRequested.InvokeAsync(draft);
+    }
+
+    private IBusinessObjectView CreatePreviewBusinessObject()
+    {
+        DateTimeOffset viewedAt = Workspace?.ViewedAtUtc ?? DateTimeOffset.UtcNow;
+        Address owner = Workspace?.Address ?? new Address("preview");
+        string stateJson = System.Text.Json.JsonSerializer.Serialize(new BusinessObjectMediaPayload(
+            Model.Name,
+            Model.Description,
+            Model.Text,
+            Model.Tags,
+            DataItems: DisplayDataItems));
+
+        return new GenericBusinessObjectView(
+            Workspace?.Context ?? new LedgerAccountContext(new LedgerId("preview"), null),
+            new BusinessObjectId($"bo:preview:{Model.ObjectType}:{NormalizeName(Model.Name)}"),
+            Model.ObjectType,
+            "1.0",
+            1,
+            owner,
+            BusinessObjectOperation.Create,
+            new HashHex(new string('0', 64)),
+            new OutPoint(new TxId("preview"), 0),
+            stateJson,
+            "preview://business-object",
+            TransactionDataItemType.BusinessObject,
+            viewedAt,
+            viewedAt);
+    }
+
+    private string FinishIcon
+        => Model.ObjectType switch
+        {
+            "image" => "image",
+            "music" => "music_note",
+            "event" => "event",
+            "ticket" => "confirmation_number",
+            _ => "article"
+        };
+
+    private static string ShortHash(string hash)
+        => hash.Length > 18 ? $"{hash[..18]}..." : hash;
+
+    private static string ShortType(string value)
+        => value.Length > 18 ? $"{value[..18]}..." : value;
+
+    private static string NormalizeName(string value)
+        => string.Join('-', value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .ToLowerInvariant();
+}

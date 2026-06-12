@@ -1,0 +1,102 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-shell" data-testid="@TestId">
+    <aside class="cda-sdk-shell__nav" aria-label="@NavigationLabel">
+        <div class="cda-sdk-shell__brand">
+            <span>@BrandMark</span>
+            <strong>@Title</strong>
+            <small>@Subtitle</small>
+        </div>
+
+        @if (Navigation is not null)
+        {
+            @Navigation
+        }
+        else
+        {
+            <nav>
+                @foreach (var item in DefaultNav)
+                {
+                    <a href="@BuildNavHref(item.Key)">@item.Label</a>
+                }
+            </nav>
+        }
+    </aside>
+
+    <main class="cda-sdk-shell__main">
+        <header class="cda-sdk-shell__header">
+            <div>
+                <span>@Eyebrow</span>
+                <h1>@Heading</h1>
+                @if (!string.IsNullOrWhiteSpace(Description))
+                {
+                    <p>@Description</p>
+                }
+            </div>
+            @if (HeaderActions is not null)
+            {
+                <div class="cda-sdk-shell__actions">@HeaderActions</div>
+            }
+        </header>
+
+        @ChildContent
+    </main>
+</section>
+
+@code {
+    private static readonly IReadOnlyList<(string Key, string Label)> DefaultNav =
+    [
+        ("account", "Account"),
+        ("transactions", "Transactions"),
+        ("objects", "Business objects"),
+        ("analytics", "Analytics"),
+        ("admin", "Node admin")
+    ];
+
+    [Parameter]
+    public string Title { get; set; } = "Economy SDK";
+
+    [Parameter]
+    public string Subtitle { get; set; } = "Generic ledger components";
+
+    [Parameter]
+    public string BrandMark { get; set; } = "EC";
+
+    [Parameter]
+    public string Eyebrow { get; set; } = "Workspace";
+
+    [Parameter]
+    public string Heading { get; set; } = "Ledger application shell";
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public string NavigationLabel { get; set; } = "Economy SDK navigation";
+
+    [Parameter]
+    public string? NavigationHrefPrefix { get; set; }
+
+    [Parameter]
+    public string? TestId { get; set; } = "cda-sdk-shell";
+
+    [Parameter]
+    public RenderFragment? Navigation { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderActions { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private string BuildNavHref(string key)
+    {
+        if (string.IsNullOrWhiteSpace(NavigationHrefPrefix))
+        {
+            return $"#{key}";
+        }
+
+        var prefix = NavigationHrefPrefix.TrimEnd('/');
+        return $"{prefix}#{key}";
+    }
+}

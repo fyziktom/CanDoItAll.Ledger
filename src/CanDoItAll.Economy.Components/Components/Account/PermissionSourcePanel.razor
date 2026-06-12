@@ -1,0 +1,38 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel" data-testid="cda-permission-source-panel">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Permissions</span>
+            <h2>Permission source panel</h2>
+        </div>
+        <StatusBadge Text="@($"{Sources.Count} grants")" Tone="warning" />
+    </header>
+
+    @if (Sources.Count == 0)
+    {
+        <EmptyState Eyebrow="Permissions" Title="No permission sources" Description="Minting and guarded actions will stay disabled until permission outputs are available." />
+    }
+    else
+    {
+        <div class="cda-sdk-list">
+            @foreach (LedgerPermissionSource source in Sources)
+            {
+                <article class="cda-sdk-list__row">
+                    <span class="material-icons" aria-hidden="true">verified_user</span>
+                    <div>
+                        <strong>@source.Grant.Action</strong>
+                        <span>@source.Grant.Namespace</span>
+                        <small>@source.OutPoint - @source.Amount permission token(s)</small>
+                    </div>
+                    <StatusBadge Text="available" Tone="success" />
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerPermissionSource> Sources { get; set; } = [];
+}

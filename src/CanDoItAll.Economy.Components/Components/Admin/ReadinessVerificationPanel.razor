@@ -1,0 +1,16 @@
+@namespace CanDoItAll.Economy.Components
+
+<StatusCheckList Title="Readiness"
+                 Description="Read-only startup and dependency checks."
+                 Items="Items"
+                 data-testid="cda-readiness-verification-panel" />
+
+@code {
+    private static readonly IReadOnlyList<StatusCheckItem> Items =
+    [
+        new() { Label = "Storage connection", Status = "Ready", Tone = "success", Complete = true },
+        new() { Label = "Ledger projection", Status = "Ready", Tone = "success", Complete = true },
+        new() { Label = "Admin auth", Status = "Guarded", Tone = "warning" },
+        new() { Label = "SDK api/v1 route", Status = "Ready", Tone = "success", Complete = true }
+    ];
+}

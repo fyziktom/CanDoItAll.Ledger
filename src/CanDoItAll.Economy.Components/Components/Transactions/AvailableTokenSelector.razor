@@ -1,0 +1,92 @@
+@namespace CanDoItAll.Economy.Components
+
+<div class="cda-economy-token-selector" data-testid="@DataTestId">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <div class="cda-economy-token-selector__label">@Label</div>
+    }
+
+    <div class="cda-economy-token-selector__cards" role="radiogroup" aria-label="@AriaLabel">
+        @foreach (EconomyTokenOption option in OrderedOptions)
+        {
+            <button type="button"
+                    class="@CardClass(option)"
+                    role="radio"
+                    aria-checked="@(option.Key == SelectedKey)"
+                    @onclick="@(() => SelectAsync(option.Key))">
+                <span>@option.AssetLabel</span>
+                <strong>@option.AvailableAmount</strong>
+                @if (!option.IsMain)
+                {
+                    <small>@TokenShape(option)</small>
+                }
+                @if (option.CanCreateMore)
+                {
+                    <small>permission namespace</small>
+                }
+            </button>
+        }
+    </div>
+
+    <div class="cda-economy-token-selector__dropdown">
+        <DropDown TValue="string"
+                  Data="DropdownOptions"
+                  TextProperty="Text"
+                  ValueProperty="Key"
+                  Value="@SelectedKey"
+                  ValueChanged="SelectAsync"
+                  Placeholder="Select asset"
+                  aria-label="@AriaLabel" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<EconomyTokenOption> Options { get; set; } = [];
+
+    [Parameter]
+    public string? SelectedKey { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> SelectedKeyChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = "Available tokens";
+
+    [Parameter]
+    public string AriaLabel { get; set; } = "Available tokens";
+
+    [Parameter]
+    public string? DataTestId { get; set; }
+
+    private IReadOnlyList<EconomyTokenOption> OrderedOptions
+        => Options
+            .OrderByDescending(option => option.IsMain)
+            .ThenBy(option => option.AssetLabel, StringComparer.Ordinal)
+            .ToArray();
+
+    private IReadOnlyList<TokenDropDownOption> DropdownOptions
+        => OrderedOptions
+            .Select(option => new TokenDropDownOption(option.Key, $"{option.AssetLabel} - {option.AvailableAmount} {TokenShape(option)}"))
+            .ToArray();
+
+    private Task SelectAsync(string? key)
+        => SelectedKeyChanged.InvokeAsync(key);
+
+    private string CardClass(EconomyTokenOption option)
+        => option.Key == SelectedKey
+            ? "cda-economy-token-option is-selected"
+            : "cda-economy-token-option";
+
+    private static string TokenShape(EconomyTokenOption option)
+    {
+        if (option.IsMain)
+        {
+            return string.Empty;
+        }
+
+        return $"source {option.SourceAmount} / unique {option.UniqueAmount}";
+    }
+
+    private sealed record TokenDropDownOption(string Key, string Text);
+}

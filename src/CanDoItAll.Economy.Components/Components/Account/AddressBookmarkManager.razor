@@ -1,0 +1,29 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel" data-testid="cda-address-bookmark-manager">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Address book</span>
+            <h2>Bookmarks</h2>
+        </div>
+        <Button Text="Add bookmark" Icon="bookmark_add" Variant="Variant.Outlined" />
+    </header>
+
+    <div class="cda-sdk-list">
+        @foreach (EconomyAddressBookmark bookmark in Bookmarks)
+        {
+            <article class="cda-sdk-list__row">
+                <span class="material-icons" aria-hidden="true">bookmark</span>
+                <div>
+                    <strong>@bookmark.Name</strong>
+                    <CopyableMonoValue Value="@bookmark.Address.Value" />
+                </div>
+            </article>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+}

@@ -1,0 +1,134 @@
+@namespace CanDoItAll.Economy.Components
+
+@if (Media is null)
+{
+    <GenericBusinessObjectRenderer Object="Object"
+                                   Mode="Mode"
+                                   ViewedAtUtc="ViewedAtUtc"
+                                   Descriptor="Descriptor" />
+}
+else if (Mode == BusinessObjectRenderMode.Summary)
+{
+    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Media.Name" />
+        <TextBlock TextStyle="TextStyle.Caption" Value="@DataItemCountLabel" />
+        <Cluster Gap="LayoutGap.Small">
+            <StatusBadge Tone="info" Text="@Media.ObjectType" />
+            <StatusBadge Tone="neutral" Text="@Descriptor.Key" />
+        </Cluster>
+    </Stack>
+}
+else
+{
+    <Stack GapScale="LayoutGap.Medium" Class="cda-economy-media-renderer">
+        @if (MainDataItem is not null)
+        {
+            <BusinessObjectDataItemPreview Item="MainDataItem" Large="true" />
+        }
+
+        <Grid ColumnsMd="2" Gap="LayoutGap.Small">
+            <SummaryTile Label="Renderer" Value="@Descriptor.DisplayName" />
+            <SummaryTile Label="DataItems" Value="@Media.DataItems.Count.ToString()" Tone="info" />
+            <SummaryTile Label="Object type" Value="@Media.ObjectType" />
+            <SummaryTile Label="Operation" Value="@Media.Operation.ToString()" />
+            <SummaryTile Label="Name" Value="@Media.Name" />
+            @if (!string.IsNullOrWhiteSpace(Media.Description))
+            {
+                <SummaryTile Label="Description" Value="@Media.Description" />
+            }
+        </Grid>
+
+        @if (Media.Tags.Count > 0)
+        {
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
+                @foreach (string tag in Media.Tags)
+                {
+                    <StatusBadge Tone="neutral" Text="@($"#{tag}")" />
+                }
+            </Cluster>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Media.Text))
+        {
+            <SummaryTile Label="Text" Value="@Media.Text" />
+        }
+
+        @if (Media.DataItems.Count == 0)
+        {
+            <TextBlock TextStyle="TextStyle.Body2"
+                       Class="cda-economy-empty"
+                       Value="No DataItems are attached to this BusinessObject." />
+        }
+        else
+        {
+            <Grid ColumnsMd="2" ColumnsXl="3" Gap="LayoutGap.Small" Class="cda-economy-media-items">
+                @foreach (BusinessObjectDataItem item in Media.DataItems)
+                {
+                    string? itemUri = item.Uri?.ToString();
+                    <Stack GapScale="LayoutGap.Small" Class="cda-venft-dataitem-card">
+                        <BusinessObjectDataItemPreview Item="item" />
+                        <Grid ColumnsMd="2" Gap="LayoutGap.Small">
+                            <SummaryTile Label="Type" Value="@ItemTypeLabel(item)" Compact="true" />
+                            <SummaryTile Label="Storage" Value="@item.Storage.ToString()" Compact="true" Tone="success" />
+                            <SummaryTile Label="CID" Value="@ShortHash(item.Hash)" Compact="true" />
+                            <SummaryTile Label="File" Value="@(item.FileName ?? item.Name)" Compact="true" />
+                        </Grid>
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                            <CopyButton Text="Copy CID"
+                                        Value="@item.Hash"
+                                        Size="CopyButtonSize.Small"
+                                        ButtonStyle="ButtonStyle.Secondary" />
+                            <CopyButton Text="Copy Link"
+                                        Value="@itemUri"
+                                        Size="CopyButtonSize.Small"
+                                        ButtonStyle="ButtonStyle.Secondary"
+                                        Disabled="@(itemUri is null)" />
+                            <Button Text="Open"
+                                    Icon="open_in_new"
+                                    Size="ButtonSize.Small"
+                                    Variant="Variant.Outlined"
+                                    Href="@itemUri"
+                                    Target="_blank"
+                                    Rel="noopener noreferrer"
+                                    Disabled="@(itemUri is null)" />
+                        </Cluster>
+                    </Stack>
+                }
+            </Grid>
+        }
+    </Stack>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IBusinessObjectView Object { get; set; } = default!;
+
+    [Parameter]
+    public BusinessObjectRenderMode Mode { get; set; } = BusinessObjectRenderMode.Detail;
+
+    [Parameter]
+    public DateTimeOffset? ViewedAtUtc { get; set; }
+
+    [Parameter, EditorRequired]
+    public BusinessObjectRendererDescriptor Descriptor { get; set; } = default!;
+
+    private IMediaBusinessObjectView? Media
+        => Object as IMediaBusinessObjectView;
+
+    private string DataItemCountLabel
+        => Media is null
+            ? "0 DataItem(s)"
+            : $"{Media.DataItems.Count} DataItem(s)";
+
+    private BusinessObjectDataItem? MainDataItem
+        => Media?.DataItems.FirstOrDefault(item => item.IsMain)
+            ?? Media?.DataItems.FirstOrDefault();
+
+    private static string ItemTypeLabel(BusinessObjectDataItem item)
+        => item.Type == BusinessObjectDataItemType.AVMedia
+            ? item.ContentType?.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) == true ? "Audio" : "Video/Audio"
+            : item.Type.ToString();
+
+    private static string ShortHash(string hash)
+        => hash.Length > 18 ? $"{hash[..18]}..." : hash;
+}

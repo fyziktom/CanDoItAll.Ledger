@@ -1,0 +1,36 @@
+@namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
+
+<TransactionComposerShell Draft="Draft"
+                          TokenOptions="TokenOptions"
+                          DraftChanged="DraftChanged"
+                          SubmitRequested="SubmitAsync"
+                          AssembleRequested="AssembleRequested"
+                          BroadcastRequested="BroadcastRequested"
+                          Dense="true" />
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<EconomyTokenOption> TokenOptions { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> DraftChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> SubmitRequested { get; set; }
+
+    [Parameter]
+    public EventCallback AssembleRequested { get; set; }
+
+    [Parameter]
+    public EventCallback BroadcastRequested { get; set; }
+
+    private async Task SubmitAsync(BusinessObjectTransactionDraft draft)
+    {
+        await SubmitRequested.InvokeAsync(draft);
+        await DialogService.CloseAsync();
+    }
+}

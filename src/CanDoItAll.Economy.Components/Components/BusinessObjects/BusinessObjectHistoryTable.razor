@@ -1,0 +1,53 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-bo-history-table">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>History</span>
+            <h2>Object transaction history</h2>
+        </div>
+        <StatusBadge Text="@($"{Rows.Count} rows")" Tone="info" />
+    </header>
+
+    @if (Rows.Count == 0)
+    {
+        <p class="cda-sdk-muted">No related history rows are available.</p>
+    }
+    else
+    {
+        <div class="cda-sdk-table">
+            <div class="cda-sdk-table__head">
+                <span>Tx</span>
+                <span>Kind</span>
+                <span>Status</span>
+                <span>Time</span>
+            </div>
+            @foreach (LedgerTransactionSummary row in Rows)
+            {
+                <div class="cda-sdk-table__row">
+                    <strong><CopyableMonoValue Value="@row.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" /></strong>
+                    <span>@row.Kind</span>
+                    <span>@row.Status</span>
+                    <span>@row.Timestamp.ToString("MM.dd HH:mm")</span>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public IBusinessObjectView? Object { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<LedgerTransactionSummary> Transactions { get; set; } = [];
+
+    private IReadOnlyList<LedgerTransactionSummary> Rows
+        => Object is null
+            ? []
+            : Transactions
+                .Where(item => item.Outputs.Any(output => output.BusinessObject?.ObjectId == Object.ObjectId)
+                    || item.TxId.Equals(Object.CurrentOutPoint.TxId))
+                .OrderByDescending(item => item.Timestamp)
+                .ToArray();
+}

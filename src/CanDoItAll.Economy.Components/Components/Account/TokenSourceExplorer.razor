@@ -1,0 +1,40 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel" data-testid="cda-token-source-explorer">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Token sources</span>
+            <h2>Token type explorer</h2>
+        </div>
+        <StatusBadge Text="@($"{TokenTypes.Count} types")" Tone="info" />
+    </header>
+
+    @if (TokenTypes.Count == 0)
+    {
+        <EmptyState Eyebrow="Tokens" Title="No token types" Description="Token type projections are not available for this account context." />
+    }
+    else
+    {
+        <div class="cda-sdk-card-grid">
+            @foreach (LedgerTokenType token in TokenTypes)
+            {
+                <article class="cda-sdk-mini-card">
+                    <div class="cda-sdk-mini-card__top">
+                        <strong>@token.TokenId.Value</strong>
+                        <StatusBadge Text="@($"{token.TotalUtxoCount} UTXO")" Tone="neutral" />
+                    </div>
+                    <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight">
+                        <div><span>Total</span><strong>@token.TotalAmount</strong></div>
+                        <div><span>Source</span><strong>@token.SourceAmount</strong></div>
+                        <div><span>Unique</span><strong>@token.UniqueAmount</strong></div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerTokenType> TokenTypes { get; set; } = [];
+}

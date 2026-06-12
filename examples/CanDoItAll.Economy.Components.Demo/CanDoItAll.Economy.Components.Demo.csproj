@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Economy.Components.Demo</AssemblyName>
+    <RootNamespace>CanDoItAll.Economy.Components.Demo</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CanDoItAll.Components.BaseLib" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Include="CanDoItAll.Components.Charts" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Include="CanDoItAll.Components.Mermaid" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Components\CanDoItAll.Economy.Components.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,344 @@
+@namespace CanDoItAll.Economy.Components
+
+@if (Details is null)
+{
+    <EmptyState Eyebrow="Transaction" Title="Details are unavailable" Description="The transaction could not be loaded from the current ledger session." />
+}
+else
+{
+    <Stack GapScale="LayoutGap.Medium" Class="cda-vef-transaction-details cda-vef-tx-detail-shell cda-vef-tx-detail-shell--max" data-testid="tx-details-layout">
+        <section class="cda-vef-tx-hero cda-vef-tx-hero--max cda-vef-tx-hero--compact">
+            <div class="cda-vef-tx-hero-icon">
+                <span class="material-icons" aria-hidden="true">@StatusIcon</span>
+            </div>
+            <Stack GapScale="LayoutGap.Tiny" Class="cda-vef-tx-hero-copy">
+                <span class="cda-economy-eyebrow">@Details.Status transaction</span>
+                <h3>@Details.Kind</h3>
+                <div class="cda-vef-tx-hash-row" aria-label="Transaction identifiers">
+                    <span>
+                        <small>Tx</small>
+                        <CopyableMonoValue Value="@Details.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" />
+                    </span>
+                @if (Details.TxHash is not null)
+                {
+                        <span>
+                            <small>Hash</small>
+                            <HashDisplay Value="@Details.TxHash.Value.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction hash" />
+                        </span>
+                }
+                </div>
+            </Stack>
+            <div class="cda-vef-tx-badge-row" aria-label="Transaction status metadata">
+                <StatusBadge Text="@Details.Kind.ToString()" Tone="@KindTone" />
+                <StatusBadge Text="@Details.SigningMode.ToString()" Tone="neutral" />
+                <StatusBadge Text="@Details.Status.ToString()" Tone="@StatusTone" />
+                <StatusBadge Text="@($"In {Details.Inputs.Count}")" Tone="info" />
+                <StatusBadge Text="@($"Out {Details.Outputs.Count}")" Tone="success" />
+                <StatusBadge Text="@($"{Details.Timestamp:MM.dd HH:mm}")" Tone="neutral" />
+            </div>
+        </section>
+
+        <Tabs Variant="TabsVariant.ModalCompact"
+              BorderMode="TabsBorderMode.Soft"
+              OverflowMode="TabsOverflowMode.Scroll"
+              PanelOverflowMode="TabsPanelOverflowMode.Visible"
+              Class="cda-vef-dialog-tabs cda-vef-tx-detail-tabs"
+              AriaLabel="Transaction detail sections">
+            <TabsItem Text="Overview" Icon="hub">
+                <Grid Gap="LayoutGap.Medium"
+                      ColumnTemplateLg="@OverviewColumnTemplate"
+                      Class="@OverviewGridClass">
+                    <TxFlowGraph Inputs="Details.Inputs" Outputs="Details.Outputs" />
+                    @if (IsMintTransaction)
+                    {
+                        <section class="cda-vef-panel cda-vef-mint-structure" data-testid="cda-mint-structure-overview">
+                            <div class="cda-vef-panel-header">
+                                <span>Mint structure</span>
+                                <StatusBadge Text="permission-backed" Tone="info" />
+                            </div>
+                            <div class="cda-vef-panel-body cda-vef-mint-structure-body">
+                                @if (MintPermissionInput is not null)
+                                {
+                                    <article class="cda-vef-mint-row">
+                                        <span class="material-icons" aria-hidden="true">vpn_key</span>
+                                        <div>
+                                            <strong>Permission BO input</strong>
+                                            <span>@PermissionObjectSummary(MintPermissionInput.BusinessObject)</span>
+                                            <small>Spent from <CopyableMonoValue Value="@MintPermissionInput.PreviousOutPoint.ToString()" StartChars="10" EndChars="6" AriaLabel="Copy permission outpoint" /></small>
+                                        </div>
+                                    </article>
+                                }
+                                @if (MintedTokenOutput is not null)
+                                {
+                                    <article class="cda-vef-mint-row">
+                                        <span class="material-icons" aria-hidden="true">add_circle</span>
+                                        <div>
+                                            <strong>Minted token output</strong>
+                                            <span>@FormatToken(MintedTokenOutput.Token)</span>
+                                            <small>Sent to <CopyableMonoValue Value="@MintedTokenOutput.Address.Value" StartChars="10" EndChars="6" AriaLabel="Copy minted token receiver" /></small>
+                                        </div>
+                                    </article>
+                                }
+                                @if (MintPermissionReturnOutput is not null)
+                                {
+                                    <article class="cda-vef-mint-row">
+                                        <span class="material-icons" aria-hidden="true">replay</span>
+                                        <div>
+                                            <strong>Permission returned</strong>
+                                            <span>@PermissionObjectSummary(MintPermissionReturnOutput.BusinessObject)</span>
+                                            <small>Returned to <CopyableMonoValue Value="@MintPermissionReturnOutput.Address.Value" StartChars="10" EndChars="6" AriaLabel="Copy returned permission address" /> for future minting</small>
+                                        </div>
+                                    </article>
+                                }
+                            </div>
+                        </section>
+                    }
+                    <TransactionTimeline Details="Details" />
+                </Grid>
+            </TabsItem>
+
+            <TabsItem Text="Inputs & outputs" Icon="account_tree" BadgeText="@($"{Details.Inputs.Count}/{Details.Outputs.Count}")">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-tx-io-grid">
+                    <section class="cda-vef-panel">
+                        <div class="cda-vef-panel-header">
+                            <span>Inputs</span>
+                            <StatusBadge Text="@($"{Details.Inputs.Count} row(s)")" Tone="info" />
+                        </div>
+                        <div class="cda-vef-panel-body cda-vef-tx-scroll-list">
+                            @if (Details.Inputs.Count == 0)
+                            {
+                                <p class="cda-vef-empty-line">Only genesis-style mint transactions should have no inputs.</p>
+                            }
+                            else
+                            {
+                                @foreach (EconomyTransactionInputDetails input in Details.Inputs)
+                                {
+                                    <TxInputCard Input="input"
+                                                 RoleLabel="@InputRoleLabel(input)"
+                                                 RoleTone="@InputRoleTone(input)"
+                                                 SupportingText="@InputSupportingText(input)" />
+                                }
+                            }
+                        </div>
+                    </section>
+
+                    <section class="cda-vef-panel">
+                        <div class="cda-vef-panel-header">
+                            <span>Outputs</span>
+                            <StatusBadge Text="@($"{Details.Outputs.Count} row(s)")" Tone="success" />
+                        </div>
+                        <div class="cda-vef-panel-body cda-vef-tx-scroll-list">
+                            @if (Details.Outputs.Count == 0)
+                            {
+                                <p class="cda-vef-empty-line">No outputs are attached to this transaction.</p>
+                            }
+                            else
+                            {
+                                @foreach (EconomyTransactionOutputDetails output in Details.Outputs)
+                                {
+                                    <TxOutputCard Output="output"
+                                                  RoleLabel="@OutputRoleLabel(output)"
+                                                  RoleTone="@OutputRoleTone(output)"
+                                                  SupportingText="@OutputSupportingText(output)" />
+                                }
+                            }
+                        </div>
+                    </section>
+                </Grid>
+            </TabsItem>
+
+            <TabsItem Text="Payload" Icon="data_object">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-tx-payload-grid">
+                    <TxDataPayloadViewer Data="Details.Data" />
+                    <section class="cda-vef-panel">
+                        <div class="cda-vef-panel-header">Business object outputs</div>
+                        <div class="cda-vef-panel-body cda-vef-tx-scroll-list cda-vef-tx-scroll-list--compact">
+                            @if (BusinessObjectOutputs.Count == 0)
+                            {
+                                <p class="cda-vef-empty-line">No BO output references are attached.</p>
+                            }
+                            else
+                            {
+                                @foreach (EconomyTransactionOutputDetails output in BusinessObjectOutputs)
+                                {
+                                    <article class="cda-vef-io-card">
+                                        <strong>Output #@output.OutputIndex</strong>
+                                        <CopyableMonoValue Value="@output.BusinessObject!.ObjectId.Value" Truncate="false" AriaLabel="Copy business object id" />
+                                        <small>@output.BusinessObject.Operation v@output.BusinessObject.Version</small>
+                                        <HashDisplay Value="@output.BusinessObject.DataHash.Value" />
+                                    </article>
+                                }
+                            }
+                        </div>
+                    </section>
+                </Grid>
+            </TabsItem>
+
+            <TabsItem Text="Signatures" Icon="key" BadgeText="@TotalSignatures.ToString()">
+                <div class="cda-vef-tx-signature-grid">
+                    @if (Details.Inputs.Count == 0)
+                    {
+                        <EmptyState Eyebrow="Signatures" Title="No input signatures" Description="This transaction has no spend inputs to sign." />
+                    }
+                    else
+                    {
+                        @foreach (EconomyTransactionInputDetails input in Details.Inputs)
+                        {
+                            <TxSignatureCard Input="input" />
+                        }
+                    }
+                </div>
+            </TabsItem>
+        </Tabs>
+    </Stack>
+}
+
+@code {
+    [Parameter]
+    public EconomyTransactionDetailsModel? Details { get; set; }
+
+    private string StatusIcon
+        => Details?.Status == TransactionStatus.Confirmed ? "verified" : "pending";
+
+    private string StatusTone
+        => Details?.Status == TransactionStatus.Confirmed ? "success" : "warning";
+
+    private string KindTone
+        => Details?.Kind == TransactionKind.Mint ? "info" : "neutral";
+
+    private string OverviewGridClass
+        => IsMintTransaction
+            ? "cda-vef-tx-overview-grid cda-vef-tx-overview-grid--mint"
+            : "cda-vef-tx-overview-grid";
+
+    private string OverviewColumnTemplate
+        => IsMintTransaction
+            ? "minmax(0,0.95fr) minmax(0,0.68fr) minmax(0,0.72fr)"
+            : "minmax(0,1.05fr) minmax(0,0.72fr)";
+
+    private bool IsMintTransaction
+        => Details?.Kind == TransactionKind.Mint;
+
+    private EconomyTransactionInputDetails? MintPermissionInput
+        => IsMintTransaction
+            ? Details?.Inputs.FirstOrDefault(IsPermissionInput)
+            : null;
+
+    private EconomyTransactionOutputDetails? MintedTokenOutput
+        => IsMintTransaction
+            ? Details?.Outputs.FirstOrDefault(IsMintedTokenOutput)
+            : null;
+
+    private EconomyTransactionOutputDetails? MintPermissionReturnOutput
+        => IsMintTransaction
+            ? Details?.Outputs.FirstOrDefault(IsPermissionReturnOutput)
+            : null;
+
+    private IReadOnlyList<EconomyTransactionOutputDetails> BusinessObjectOutputs
+        => Details?.Outputs.Where(output => output.BusinessObject is not null).ToArray() ?? [];
+
+    private int TotalSignatures
+        => Details?.Inputs.Sum(input => input.SignatureCount) ?? 0;
+
+    private bool IsPermissionInput(EconomyTransactionInputDetails input)
+        => IsMintTransaction
+            && PermissionTokenAuthority.IsPermissionToken(input.Token)
+            && IsPermissionBusinessObject(input.BusinessObject);
+
+    private bool IsMintedTokenOutput(EconomyTransactionOutputDetails output)
+        => IsMintTransaction
+            && output.Token is not null
+            && !PermissionTokenAuthority.IsPermissionToken(output.Token);
+
+    private bool IsPermissionReturnOutput(EconomyTransactionOutputDetails output)
+        => IsMintTransaction
+            && PermissionTokenAuthority.IsPermissionToken(output.Token)
+            && IsPermissionBusinessObject(output.BusinessObject);
+
+    private string? InputRoleLabel(EconomyTransactionInputDetails input)
+        => IsPermissionInput(input) ? "Permission BO" : null;
+
+    private string InputRoleTone(EconomyTransactionInputDetails input)
+        => IsPermissionInput(input) ? "warning" : "info";
+
+    private string? InputSupportingText(EconomyTransactionInputDetails input)
+        => IsPermissionInput(input)
+            ? $"Mint authority input: {PermissionObjectSummary(input.BusinessObject)}."
+            : null;
+
+    private string? OutputRoleLabel(EconomyTransactionOutputDetails output)
+    {
+        if (IsMintedTokenOutput(output))
+        {
+            return "Minted token";
+        }
+
+        if (IsPermissionReturnOutput(output))
+        {
+            return "Permission returned";
+        }
+
+        return null;
+    }
+
+    private string OutputRoleTone(EconomyTransactionOutputDetails output)
+        => IsMintedTokenOutput(output)
+            ? "success"
+            : IsPermissionReturnOutput(output)
+                ? "warning"
+                : "neutral";
+
+    private string? OutputSupportingText(EconomyTransactionOutputDetails output)
+    {
+        if (IsMintedTokenOutput(output))
+        {
+            return $"Minted {FormatToken(output.Token)} to the output address.";
+        }
+
+        if (IsPermissionReturnOutput(output))
+        {
+            return $"Repeatable permission BO returned for future minting: {PermissionObjectSummary(output.BusinessObject)}.";
+        }
+
+        return null;
+    }
+
+    private static bool IsPermissionBusinessObject(BusinessObjectRef? businessObject)
+        => businessObject?.ObjectId.Value.StartsWith("permission:", StringComparison.Ordinal) == true;
+
+    private static string FormatToken(TokenTransfer? token)
+        => token is null ? "none" : $"{token.Amount} {token.TokenId.Value}";
+
+    private static string PermissionObjectSummary(BusinessObjectRef? businessObject)
+    {
+        if (businessObject is null)
+        {
+            return "Permission BO not attached";
+        }
+
+        if (TryReadPermissionObject(businessObject, out string action, out string tokenNamespace))
+        {
+            return $"{action} / {tokenNamespace} / v{businessObject.Version}";
+        }
+
+        return $"{businessObject.ObjectId.Value} / v{businessObject.Version}";
+    }
+
+    private static bool TryReadPermissionObject(
+        BusinessObjectRef businessObject,
+        out string action,
+        out string tokenNamespace)
+    {
+        action = string.Empty;
+        tokenNamespace = string.Empty;
+        string[] parts = businessObject.ObjectId.Value.Split(':', 4, StringSplitOptions.TrimEntries);
+        if (parts.Length < 3 || !string.Equals(parts[0], "permission", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        action = parts[1];
+        tokenNamespace = parts[2];
+        return true;
+    }
+}

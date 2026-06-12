@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Economy.Simulation.Ledger</AssemblyName>
+    <RootNamespace>CanDoItAll.Economy.Simulation.Ledger</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Economy.Simulation.Abstractions\CanDoItAll.Economy.Simulation.Abstractions.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Ledger\CanDoItAll.Economy.Ledger.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" />
+  </ItemGroup>
+</Project>

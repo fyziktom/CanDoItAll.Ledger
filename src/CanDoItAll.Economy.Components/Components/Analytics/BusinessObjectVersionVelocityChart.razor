@@ -1,0 +1,35 @@
+@namespace CanDoItAll.Economy.Components
+
+<CdaChart Title="Version velocity"
+          Description="Current versions by object type."
+          Series="Series"
+          Options="Options"
+          Class="cda-sdk-chart"
+          data-testid="cda-bo-version-velocity-chart" />
+
+@code {
+    [Parameter]
+    public IReadOnlyList<IBusinessObjectView> Objects { get; set; } = [];
+
+    private IReadOnlyList<CdaChartSeries> Series
+        =>
+        [
+            new CdaChartSeries
+            {
+                Name = "Versions",
+                Type = CdaChartType.Bar,
+                Points = Objects
+                    .GroupBy(item => item.ObjectType)
+                    .Select(group => new CdaChartPoint(group.Key, group.Sum(item => item.Version)))
+                    .ToArray()
+            }
+        ];
+
+    private static readonly CdaChartOptions Options = new()
+    {
+        Type = CdaChartType.Bar,
+        XAxisType = CdaChartAxisType.Category,
+        Unit = "versions",
+        ShowToolbar = false
+    };
+}

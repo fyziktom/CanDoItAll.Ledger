@@ -1,0 +1,111 @@
+@page "/sdk-components"
+
+<PageTitle>Economy SDK Components</PageTitle>
+
+<LedgerSdkShell Title="Economy SDK"
+                Subtitle="Generic component library"
+                Heading="Ledger SDK component workbench"
+                Description="Reusable account, transaction, business-object, analytics, and node-operator components rendered from in-memory sample data."
+                NavigationHrefPrefix="/sdk-components"
+                HeaderActions="@RenderHeaderActions">
+    <section id="account" class="cda-sdk-section" data-testid="sdk-section-account">
+        <AccountStateSummary Workspace="workspace" />
+
+        <div class="cda-sdk-demo-grid cda-sdk-demo-grid--two">
+            <SubAccountDirectory Workspace="workspace" />
+            <AddressBookmarkManager Bookmarks="workspace.AddressBookmarks" />
+            <AssetBalanceStrip TokenOptions="workspace.TokenOptions" />
+            <AddressBookPicker Bookmarks="workspace.AddressBookmarks" SelectedAddress="workspace.AddressBookmarks.First().Address.Value" />
+        </div>
+
+        <div class="cda-sdk-demo-grid cda-sdk-demo-grid--two">
+            <AssetSourceSelector TokenOptions="workspace.TokenOptions" SelectedTokenKey="EconomyTokenOption.MainKey" />
+            <TokenSourceExplorer TokenTypes="workspace.TokenTypesOrEmpty" />
+            <UtxoExplorer Outputs="workspace.SpendableOutputsOrEmpty" />
+            <PermissionSourcePanel Sources="workspace.PermissionSourcesOrEmpty" />
+        </div>
+
+        <div class="cda-sdk-demo-dialog-stack">
+            <MessageSecurityWorkbench Workspace="workspace" Result="securityResult" />
+            <AccountSettingsDialog Workspace="workspace" />
+            <AccountBackupWizard Model="backup" />
+            <SubAccountCreateDialog ParentAddress="workspace.Address" />
+        </div>
+    </section>
+
+    <section id="transactions" class="cda-sdk-section" data-testid="sdk-section-transactions">
+        <div class="cda-sdk-section__heading">
+            <span>Transactions</span>
+            <h2>Workbench, history, detail, and review</h2>
+        </div>
+        <TransactionWorkbenchDialog Draft="workspace.TransactionDraft"
+                                    TokenOptions="workspace.TokenOptions"
+                                    Bookmarks="workspace.AddressBookmarks" />
+
+        <div class="cda-sdk-demo-dialog-stack">
+            <SendTransactionConfirmationDialog Draft="workspace.TransactionDraft" />
+            <TokenMintDialog Authorities="workspace.TokenCreationAuthorities" />
+            <TransactionInspectorDialog Details="transactionDetails" />
+        </div>
+
+        <div class="cda-sdk-demo-grid cda-sdk-demo-grid--two">
+            <TransactionReceipt Result="receipt" />
+            <TransactionHistoryBrowser Transactions="workspace.Transactions" />
+        </div>
+    </section>
+
+    <section id="objects" class="cda-sdk-section" data-testid="sdk-section-objects">
+        <div class="cda-sdk-section__heading">
+            <span>Business objects</span>
+            <h2>State, renderer, history, diff, and actions</h2>
+        </div>
+        <BusinessObjectExplorer Objects="workspace.BusinessObjects" SelectedObjectId="selectedObject.ObjectId" />
+
+        <div class="cda-sdk-demo-dialog-stack">
+            <BusinessObjectInspectorDialog Object="selectedObject"
+                                           Transactions="workspace.Transactions"
+                                           Draft="workspace.TransactionDraft"
+                                           PreviousStateJson="previousObjectState" />
+            <BusinessObjectStateEditor ObjectType="selectedObject.ObjectType"
+                                       SchemaVersion="selectedObject.SchemaVersion"
+                                       StateJson="selectedObjectState" />
+            <CloneMergeSplitAssistant Object="selectedObject" />
+        </div>
+    </section>
+
+    <section id="analytics" class="cda-sdk-section" data-testid="sdk-section-analytics">
+        <LedgerAnalyticsDashboard Workspace="workspace" />
+    </section>
+
+    <section id="admin" class="cda-sdk-section" data-testid="sdk-section-admin">
+        <NodeAdminDashboard Workspace="workspace" />
+    </section>
+</LedgerSdkShell>
+
+@code {
+    private readonly BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+    private readonly AccountBackupWorkflowModel backup = EconomyComponentSampleData.CreateAccountBackup();
+    private readonly EconomyTransactionDetailsModel transactionDetails = EconomyComponentSampleData.CreateTransactionDetails();
+    private readonly EconomyTransactionExecutionResult receipt = new(
+        BusinessObjectTransactionMode.UpdateObject,
+        Accepted: true,
+        TxId: new TxId("tx-po-1042-v3"),
+        LedgerSequence: 42,
+        "Transaction accepted by the sample ledger.");
+    private readonly MessageSecurityActionResult securityResult = MessageSecurityActionResult.Ok(
+        "Sample signature verified.",
+        "{\"alg\":\"EcdsaP256Sha256\",\"kid\":\"operations-primary\"}");
+
+    private IBusinessObjectView selectedObject => workspace.BusinessObjects.First(item => item.ObjectId.Value == "bo:purchase-order:1042");
+    private string selectedObjectState => selectedObject.StateJson ?? "{}";
+    private const string previousObjectState = "{\"supplier\":\"Acme Metals\",\"amount\":42000,\"status\":\"draft\"}";
+
+    private RenderFragment RenderHeaderActions => builder =>
+    {
+        builder.OpenComponent<Button>(0);
+        builder.AddAttribute(1, nameof(Button.Text), "Refresh samples");
+        builder.AddAttribute(2, nameof(Button.Icon), "refresh");
+        builder.AddAttribute(3, nameof(Button.Variant), Variant.Outlined);
+        builder.CloseComponent();
+    };
+}

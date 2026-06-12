@@ -1,0 +1,319 @@
+@namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
+
+<section class="cda-vef-home cda-vef-account-overview" data-testid="ssr-vef-home">
+    <section class="cda-vef-panel cda-vef-account-command">
+        <div class="cda-vef-account-identity">
+            <div class="cda-vef-profile-avatar">BO</div>
+            <div>
+                <span class="cda-vef-account-state">@(Workspace.Context.ScenarioId?.Value ?? "live")</span>
+                <h2>@Workspace.AccountName</h2>
+                <p><CopyableMonoValue Value="@Workspace.Address.Value" StartChars="10" EndChars="5" AriaLabel="Copy account address" /></p>
+            </div>
+        </div>
+
+        <div class="cda-vef-account-metrics">
+            <div class="cda-economy-fact"><span>Main</span><strong>@FormatAmount(Workspace.Balance.MainBalance)</strong></div>
+            <div class="cda-economy-fact"><span>Token types</span><strong>@Workspace.TokenTypesOrEmpty.Count</strong></div>
+            <div class="cda-economy-fact"><span>BOs</span><strong>@Workspace.BusinessObjects.Count</strong></div>
+            <div class="cda-economy-fact"><span>UTXOs</span><strong>@Workspace.Balance.UtxoCount</strong></div>
+            <div class="cda-economy-fact"><span>Txs</span><strong>@Workspace.Transactions.Count</strong></div>
+            <div class="cda-economy-fact"><span>Node</span><strong>@(Workspace.NodeBaseUri?.ToString() ?? "local")</strong></div>
+        </div>
+
+        <div class="cda-vef-account-actions">
+            <Button Text="Send" Icon="send" Size="ButtonSize.Small" Click="AddTransactionRequested" />
+            <Button Text="Token" Icon="add_circle" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="CreateTokenRequested" />
+            <Button Text="Security" Icon="security" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenMessageSecurityDialogAsync" />
+            <Button Text="Settings" Icon="tune" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenSettingsDialogAsync" />
+            <Button Text="Refresh" Icon="refresh" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="RefreshRequested" />
+            <Button Text="Subaccount" Icon="add" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="CreateSubAccountRequested" />
+        </div>
+    </section>
+
+    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-vef-account-work-grid">
+        <section class="cda-vef-panel cda-vef-account-panel--dense">
+            <div class="cda-vef-panel-header">
+                <span>Balances</span>
+                <Button Icon="qr_code" Size="ButtonSize.Small" Variant="Variant.Outlined" aria-label="Show QR Code" />
+            </div>
+            <div class="cda-vef-panel-body">
+                <div class="cda-economy-ledger-table-wrap cda-vef-compact-table-wrap">
+                    <table class="cda-economy-ledger-table cda-vef-compact-table">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Amount</th>
+                                <th>Shape</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Main</td>
+                                <td>@FormatAmount(Workspace.Balance.MainBalance)</td>
+                                <td>native</td>
+                            </tr>
+                            @foreach (LedgerTokenType tokenType in DisplayTokenTypes)
+                            {
+                                <tr>
+                                    <td>@tokenType.TokenId.Value</td>
+                                    <td>@tokenType.TotalAmount</td>
+                                    <td>@tokenType.SourceAmount source / @tokenType.UniqueAmount unique</td>
+                                </tr>
+                            }
+                            @foreach (KeyValuePair<TokenId, Amount> token in BalanceOnlyTokens)
+                            {
+                                <tr>
+                                    <td>@token.Key.Value</td>
+                                    <td>@FormatAmount(token.Value)</td>
+                                    <td>balance</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="cda-vef-panel cda-vef-account-panel--dense">
+            <div class="cda-vef-panel-header">Token Sources</div>
+            <div class="cda-vef-panel-body cda-vef-source-list">
+                @if (TokenSourceOutputs.Count == 0)
+                {
+                    <p class="cda-vef-empty-line">No token UTXOs are currently spendable.</p>
+                }
+                else
+                {
+                    @foreach (LedgerSpendableOutput output in TokenSourceOutputs)
+                    {
+                        <article class="cda-vef-source-item">
+                            <div>
+                                <strong>@output.Token!.TokenId.Value</strong>
+                                <CopyableMonoValue Value="@output.OutPoint.ToString()" StartChars="8" EndChars="6" AriaLabel="Copy token source outpoint" />
+                            </div>
+                            <span class="@TokenShapeClass(output)">@TokenShape(output)</span>
+                            <strong>@output.Token.Amount</strong>
+                        </article>
+                    }
+                }
+
+                @if (Workspace.PermissionSourcesOrEmpty.Count > 0)
+                {
+                    <div class="cda-vef-source-divider">Permission grants</div>
+                    @foreach (LedgerPermissionSource permission in Workspace.PermissionSourcesOrEmpty.Take(3))
+                    {
+                        <article class="cda-vef-source-item">
+                            <div>
+                                <strong>@permission.Grant.Action</strong>
+                                <span>@permission.Grant.Namespace</span>
+                            </div>
+                            <span class="cda-vef-source-pill cda-vef-source-pill--permission">permission</span>
+                            <strong>@permission.Amount</strong>
+                        </article>
+                    }
+                }
+            </div>
+        </section>
+
+        <section class="cda-vef-panel cda-vef-account-panel--dense cda-vef-recent-transactions" data-testid="cda-recent-transactions">
+            <div class="cda-vef-panel-header">
+                <span>Recent Transactions</span>
+                <Button Text="Show All Transactions" Icon="open_in_full" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenAllTransactionsAsync" />
+            </div>
+            <div class="cda-vef-panel-body cda-vef-transaction-rail">
+                @if (Workspace.Transactions.Count == 0)
+                {
+                    <p class="cda-vef-empty-line">No account-visible transactions loaded yet.</p>
+                }
+                else
+                {
+                    @foreach (LedgerTransactionSummary transaction in RecentTransactions)
+                    {
+                        <article class="cda-vef-transaction-item">
+                            <span class="material-icons" aria-hidden="true">@HistoryIcon(transaction)</span>
+                            <div>
+                                <strong><CopyableMonoValue Value="@transaction.TxId.Value" StartChars="8" EndChars="6" AriaLabel="Copy transaction id" /></strong>
+                                <CopyableMonoValue Value="@FormatRoute(transaction)" StartChars="18" EndChars="10" AriaLabel="Copy transaction route" />
+                                <small>@transaction.Kind / @transaction.Status / @transaction.Timestamp.ToString("HH:mm")</small>
+                            </div>
+                            <Button Icon="info" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="@(() => TransactionDetailsRequested.InvokeAsync(transaction))" aria-label="Open transaction details" />
+                        </article>
+                    }
+                }
+            </div>
+        </section>
+    </Grid>
+
+    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-vef-account-analytics-grid" data-testid="cda-vef-account-analytics">
+        <AccountBalanceTrendChart Workspace="Workspace" />
+        <TokenAllocationDonut TokenOptions="Workspace.TokenOptions" />
+        <TransactionKindStackedChart Transactions="Workspace.Transactions" />
+    </Grid>
+
+    <section class="cda-vef-account-bottom-strip">
+        <div class="cda-vef-address-block">
+            <span>Address</span>
+            <strong><CopyableMonoValue Value="@Workspace.Address.Value" StartChars="12" EndChars="8" AriaLabel="Copy account address" /></strong>
+        </div>
+        <div class="cda-vef-address-block">
+            <span>Ledger</span>
+            <strong><CopyableMonoValue Value="@Workspace.Context.LedgerId.Value" Truncate="false" AriaLabel="Copy ledger id" /></strong>
+        </div>
+        <div class="cda-vef-address-block">
+            <span>Scenario</span>
+            <strong><CopyableMonoValue Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" Truncate="false" AriaLabel="Copy scenario id" /></strong>
+        </div>
+        <div class="cda-vef-bottom-actions">
+            <Button Text="Backup" Icon="download" Size="ButtonSize.Small" Variant="Variant.Outlined" />
+            <Button Text="Edit" Icon="edit" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="ValidateRequested" />
+        </div>
+    </section>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback RefreshRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CreateSubAccountRequested { get; set; }
+
+    [Parameter]
+    public EventCallback ValidateRequested { get; set; }
+
+    [Parameter]
+    public EventCallback AddTransactionRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CreateTokenRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<LedgerTransactionSummary> TransactionDetailsRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> TransactionSubmitRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecuritySignRequest, Task<MessageSecurityActionResult>>? MessageSignRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityVerifyRequest, Task<MessageSecurityActionResult>>? MessageVerifyRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityEncryptRequest, Task<MessageSecurityActionResult>>? MessageEncryptRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityDecryptRequest, Task<MessageSecurityActionResult>>? MessageDecryptRequested { get; set; }
+
+    private IEnumerable<KeyValuePair<TokenId, Amount>> OrderedTokenBalances
+        => Workspace.Balance.TokenBalances.OrderBy(token => token.Key.Value, StringComparer.Ordinal);
+
+    private IReadOnlyList<LedgerTokenType> DisplayTokenTypes
+        => Workspace.TokenTypesOrEmpty
+            .OrderBy(token => token.TokenId.Value, StringComparer.Ordinal)
+            .Take(6)
+            .ToArray();
+
+    private IReadOnlyList<KeyValuePair<TokenId, Amount>> BalanceOnlyTokens
+        => OrderedTokenBalances
+            .Where(token => Workspace.TokenTypesOrEmpty.All(type => type.TokenId != token.Key))
+            .Take(4)
+            .ToArray();
+
+    private IReadOnlyList<LedgerSpendableOutput> TokenSourceOutputs
+        => Workspace.SpendableOutputsOrEmpty
+            .Where(output => output.Token is not null)
+            .OrderBy(output => output.Token!.TokenId.Value, StringComparer.Ordinal)
+            .ThenByDescending(output => output.Token!.Amount.Value)
+            .Take(5)
+            .ToArray();
+
+    private IReadOnlyList<LedgerTransactionSummary> RecentTransactions
+        => Workspace.Transactions
+            .OrderByDescending(transaction => transaction.Timestamp)
+            .Take(5)
+            .ToArray();
+
+    private Task OpenSettingsDialogAsync()
+        => DialogService.OpenAsync<AccountSettingsDialogContent>(
+            "Account Settings",
+            new Dictionary<string, object?>
+            {
+                [nameof(AccountSettingsDialogContent.Workspace)] = Workspace
+            },
+            new DialogOptions
+            {
+                Subtitle = Workspace.Address.Value,
+                Size = ModalSize.Medium,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--form cda-vef-dialog--settings",
+                TestId = "cda-account-settings-dialog"
+            });
+
+    private Task OpenMessageSecurityDialogAsync()
+        => DialogService.OpenAsync<MessageSecurityPanel>(
+            "Message Security",
+            new Dictionary<string, object?>
+            {
+                [nameof(MessageSecurityPanel.Workspace)] = Workspace,
+                [nameof(MessageSecurityPanel.SignRequested)] = MessageSignRequested,
+                [nameof(MessageSecurityPanel.VerifyRequested)] = MessageVerifyRequested,
+                [nameof(MessageSecurityPanel.EncryptRequested)] = MessageEncryptRequested,
+                [nameof(MessageSecurityPanel.DecryptRequested)] = MessageDecryptRequested
+            },
+            new DialogOptions
+            {
+                Subtitle = $"Signing and encryption tools for {Workspace.AccountName}",
+                Size = ModalSize.Wide,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--security",
+                TestId = "cda-message-security-dialog"
+            });
+
+    private Task OpenAllTransactionsAsync()
+        => DialogService.OpenAsync<TransactionHistoryDialogContent>(
+            "All Transactions",
+            new Dictionary<string, object?>
+            {
+                [nameof(TransactionHistoryDialogContent.Transactions)] = Workspace.Transactions,
+                [nameof(TransactionHistoryDialogContent.AccountAddress)] = Workspace.Address,
+                [nameof(TransactionHistoryDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested
+            },
+            new DialogOptions
+            {
+                Subtitle = $"{Workspace.AccountName} - {Workspace.Transactions.Count} account-visible transactions",
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-vef-dialog--transactions",
+                TestId = "cda-transaction-history-dialog"
+            });
+
+    private static string FormatAmount(Amount amount) => amount.ToString();
+
+    private static string FormatRoute(LedgerTransactionSummary transaction)
+    {
+        string inputs = transaction.InputAddresses.Count == 0
+            ? "mint"
+            : string.Join(", ", transaction.InputAddresses.Select(address => address.Value));
+        string outputs = transaction.OutputAddresses.Count == 0
+            ? "none"
+            : string.Join(", ", transaction.OutputAddresses.Select(address => address.Value));
+
+        return $"{inputs} \u2192 {outputs}";
+    }
+
+    private static string HistoryIcon(LedgerTransactionSummary transaction)
+        => transaction.Kind == TransactionKind.Mint ? "south" : "north";
+
+    private static string TokenShape(LedgerSpendableOutput output)
+        => output.Token?.Amount.Value > 1m ? "Source" : "Unique";
+
+    private static string TokenShapeClass(LedgerSpendableOutput output)
+        => output.Token?.Amount.Value > 1m
+            ? "cda-vef-source-pill cda-vef-source-pill--source"
+            : "cda-vef-source-pill cda-vef-source-pill--unique";
+
+}

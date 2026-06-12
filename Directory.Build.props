@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <Deterministic>true</Deterministic>
+    <CanDoItAllComponentsPackageVersion>0.1.0</CanDoItAllComponentsPackageVersion>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,41 @@
+{
+  "schema": "cdia.economy.golden-vectors.transaction-hashes.v1",
+  "canonicalizer": "CanDoItAll.Economy.Cryptography.DefaultTransactionCanonicalizer",
+  "hashAlgorithm": "SHA-256",
+  "ledgerId": "default",
+  "scenarioId": null,
+  "actors": {
+    "alice": {
+      "publicKeyUtf8": "alice-public",
+      "address": "cdia1NRTGdKVupoaKcALYmVk1Ai9zKbKKQE11fP",
+      "publicKeyHash": "3cc41521950d347465c08e0d6c7e5ecfb974892d3c6a284a40621844588d8414"
+    },
+    "bob": {
+      "publicKeyUtf8": "bob-public",
+      "address": "cdia1NQCZjraeGVLxjC6JXMUGATtKGqkhBm7bot",
+      "publicKeyHash": "c169293490ea82e225bb6f053d6b88652f6bcae842f42491f0a3ea3e2b3b6a0e"
+    }
+  },
+  "genesis": {
+    "timestamp": "2026-01-01T00:00:00Z",
+    "confirmedAt": "2026-01-01T00:00:05Z",
+    "dataHash": "0ca0e90d1ab96276eacef4070ca73a00557ebb2848e5004b0c92694997fc2ec3",
+    "txId": "ebc047afd584c63a7a7365e1a258edd9fcc0706de6cd655efe331762467bc8ed",
+    "txHash": "b22bc1a15f0a11df9f5b3c1df2b4d7b43bb92848e2e440b052f0b8c9a8a7dee6",
+    "outPointKey0": "1811b8fa66a656281046b84847ef7ef6b655c9037cb3ce686ae6e19484dc514f",
+    "previousLedgerHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "ledgerSequence": 1,
+    "ledgerEntryHash": "17e13d2e48cf781e7f850ba835dd85eb8dea8fe12164afbc30880f1445a52e7c"
+  },
+  "transfer": {
+    "timestamp": "2026-01-01T00:01:00Z",
+    "confirmedAt": "2026-01-01T00:01:05Z",
+    "txId": "b05838e167f54995fac4f1972e072f5c513c87f54a8c3db365e21ddd166341eb",
+    "independentInputPayloadHash0": "eebe1fd266e709153f0b1e7bc0043a6cb48317e4c98d9b5c5f8ea44e0ed8aaf4",
+    "txHash": "336cf5b7f8377603ca2a1ad85cc0800e37e792a7d00dc7f35b401e5c6666c1fe",
+    "outPointKey0": "0f431345718f7af21db44d4a15c3baccf1b5a2bc0736ca0bf0a298fe49304153",
+    "previousLedgerHash": "17e13d2e48cf781e7f850ba835dd85eb8dea8fe12164afbc30880f1445a52e7c",
+    "ledgerSequence": 2,
+    "ledgerEntryHash": "a187f2f4313e6af65d4cbdd6cbe4a120fa40db42e7b479e2f0a7e42cd5359978"
+  }
+}

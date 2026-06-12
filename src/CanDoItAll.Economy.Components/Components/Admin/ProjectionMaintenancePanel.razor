@@ -1,0 +1,22 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-projection-maintenance-panel">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Maintenance</span>
+            <h2>Projection maintenance</h2>
+        </div>
+        <StatusBadge Text="Manual" Tone="warning" />
+    </header>
+    <StatusCheckList Items="Items" />
+    <Button Text="Review projection rebuild" Icon="replay" ButtonStyle="ButtonStyle.Secondary" />
+</section>
+
+@code {
+    private static readonly IReadOnlyList<StatusCheckItem> Items =
+    [
+        new() { Label = "Balance projection", Status = "Current", Tone = "success", Complete = true },
+        new() { Label = "Object projection", Status = "Current", Tone = "success", Complete = true },
+        new() { Label = "Maintenance window", Status = "Required", Tone = "warning" }
+    ];
+}

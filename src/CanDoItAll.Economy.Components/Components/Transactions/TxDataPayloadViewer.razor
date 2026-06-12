@@ -1,0 +1,32 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-tx-data-payload-viewer">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Payload</span>
+            <h2>@(Data?.ItemType.ToString() ?? "No data item")</h2>
+        </div>
+        <StatusBadge Text="@(Data?.ContentType ?? "none")" Tone="neutral" />
+    </header>
+
+    @if (Data is null)
+    {
+        <p class="cda-sdk-muted">No transaction payload is attached.</p>
+    }
+    else
+    {
+        <div class="cda-sdk-fact-grid">
+            <div><span>External ref</span><strong><CopyableMonoValue Value="@Data.ExternalRef" EmptyText="none" StartChars="18" EndChars="10" AriaLabel="Copy external reference" /></strong></div>
+            <div><span>Hash</span><strong><HashDisplay Value="@(Data.DataHash?.Value)" EmptyText="none" /></strong></div>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Data.InlineJson))
+        {
+            <pre class="cda-sdk-code">@Data.InlineJson</pre>
+        }
+    }
+</section>
+
+@code {
+    [Parameter]
+    public TransactionData? Data { get; set; }
+}

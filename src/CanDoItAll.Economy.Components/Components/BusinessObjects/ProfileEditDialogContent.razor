@@ -1,0 +1,78 @@
+@namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
+@inject NotificationService Notifications
+
+<SectionCard Title="Edit Profile" Description="@ProfileObject?.ObjectId.Value">
+    <Stack GapScale="LayoutGap.Medium">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <FormField Text="Display name" ContainerClass="cda-economy-field cda-economy-field--wide">
+                <TextBox Value="@displayName" ValueChanged="@(value => displayName = value ?? string.Empty)" Immediate="true" aria-label="Profile display name" />
+            </FormField>
+            <FormField Text="Currency" ContainerClass="cda-economy-field">
+                <TextBox Value="@currency" ValueChanged="@(value => currency = value ?? string.Empty)" Immediate="true" aria-label="Profile currency" />
+            </FormField>
+            <FormField Text="Approval mode" ContainerClass="cda-economy-field">
+                <TextBox Value="@approvalMode" ValueChanged="@(value => approvalMode = value ?? string.Empty)" Immediate="true" aria-label="Profile approval mode" />
+            </FormField>
+            <FormField Text="Simulation clock" ContainerClass="cda-economy-field">
+                <TextBox Value="@simulationClock" ValueChanged="@(value => simulationClock = value ?? string.Empty)" Immediate="true" aria-label="Profile simulation clock" />
+            </FormField>
+        </Grid>
+
+        <Cluster Gap="LayoutGap.Small">
+            <Button Text="Save Profile" Icon="save" Click="SubmitAsync" />
+            <Button Text="Cancel" Icon="close" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="CancelAsync" />
+        </Cluster>
+    </Stack>
+</SectionCard>
+
+@code {
+    private string displayName = "Operations account";
+    private string currency = "USD";
+    private string approvalMode = "two-step";
+    private string simulationClock = "manual";
+
+    [Parameter]
+    public IBusinessObjectView? ProfileObject { get; set; }
+
+    [Parameter]
+    public string AccountName { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<ProfileEditRequest> SubmitRequested { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        displayName = string.IsNullOrWhiteSpace(displayName) ? AccountName : displayName;
+
+        if (ProfileObject is AccountSettingsBusinessObjectView settings)
+        {
+            displayName = settings.Settings.TryGetValue("displayName", out string? name) ? name : AccountName;
+            currency = settings.Settings.TryGetValue("currency", out string? value) ? value : currency;
+            approvalMode = settings.Settings.TryGetValue("approvalMode", out value) ? value : approvalMode;
+            simulationClock = settings.Settings.TryGetValue("simulationClock", out value) ? value : simulationClock;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (ProfileObject is null)
+        {
+            Notifications.Error("Cannot edit profile", "No profile BusinessObject was found.", position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        var request = new ProfileEditRequest(
+            ProfileObject.ObjectId,
+            currency,
+            approvalMode,
+            displayName,
+            simulationClock,
+            ProfileObject.StateJson ?? "{}");
+
+        await SubmitRequested.InvokeAsync(request);
+        await DialogService.CloseAsync(request);
+    }
+
+    private Task CancelAsync() => DialogService.CloseAsync();
+}

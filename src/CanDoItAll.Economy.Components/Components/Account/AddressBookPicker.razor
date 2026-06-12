@@ -1,0 +1,32 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel" data-testid="cda-address-book-picker">
+    <EntityPicker Title="Address book"
+                  Description="Reusable receiver/source picker for account and transaction flows."
+                  Items="PickerItems"
+                  SelectedId="@SelectedAddress"
+                  SelectedIdChanged="SelectedAddressChanged"
+                  EmptyText="No saved address bookmarks." />
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string? SelectedAddress { get; set; }
+
+    [Parameter]
+    public EventCallback<string> SelectedAddressChanged { get; set; }
+
+    private IReadOnlyList<EntityPickerItem> PickerItems
+        => Bookmarks
+            .Select(item => new EntityPickerItem
+            {
+                Id = item.Address.Value,
+                Label = item.Name,
+                Description = item.Address.Value,
+                Icon = "account_balance_wallet"
+            })
+            .ToArray();
+}

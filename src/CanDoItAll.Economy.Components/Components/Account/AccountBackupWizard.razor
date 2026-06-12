@@ -1,0 +1,18 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel" data-testid="cda-account-backup-wizard">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Account safety</span>
+            <h2>Backup wizard</h2>
+        </div>
+        <StatusBadge Text="Required" Tone="warning" />
+    </header>
+
+    <AccountBackupPanel Model="Model" />
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public AccountBackupWorkflowModel Model { get; set; } = default!;
+}

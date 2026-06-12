@@ -1,0 +1,36 @@
+@namespace CanDoItAll.Economy.Components
+
+<CdaChart Title="Transaction volume"
+          Description="Submitted transaction count by day."
+          Series="Series"
+          Options="Options"
+          Class="cda-sdk-chart"
+          data-testid="cda-transaction-volume-bar-chart" />
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerTransactionSummary> Transactions { get; set; } = [];
+
+    private IReadOnlyList<CdaChartSeries> Series
+        =>
+        [
+            new CdaChartSeries
+            {
+                Name = "Transactions",
+                Type = CdaChartType.Bar,
+                Points = Transactions
+                    .GroupBy(item => item.Timestamp.Date)
+                    .OrderBy(group => group.Key)
+                    .Select(group => new CdaChartPoint(group.Key.ToString("MM.dd"), group.Count()))
+                    .ToArray()
+            }
+        ];
+
+    private static readonly CdaChartOptions Options = new()
+    {
+        Type = CdaChartType.Bar,
+        XAxisType = CdaChartAxisType.Category,
+        Unit = "tx",
+        ShowToolbar = false
+    };
+}

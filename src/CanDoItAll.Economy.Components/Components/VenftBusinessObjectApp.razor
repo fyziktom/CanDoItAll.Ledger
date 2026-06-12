@@ -1,0 +1,130 @@
+@namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
+
+<div class="cda-venft-shell">
+    <aside class="cda-venft-sidebar">
+        <div class="cda-venft-brand">
+            <span class="cda-venft-brand-mark">BO</span>
+            <strong>VENFT BO</strong>
+            <span class="material-icons">menu</span>
+        </div>
+
+        <nav class="cda-venft-nav" aria-label="Business object demo">
+            <button type="button" class="@NavClass("home")" @onclick="@(() => SelectView("home"))">
+                <span class="material-icons">home</span>
+                Home
+            </button>
+            <button type="button" class="@NavClass("gallery")" @onclick="@(() => SelectView("gallery"))">
+                <span class="material-icons">photo_library</span>
+                Gallery
+            </button>
+            <button type="button" class="@NavClass("post")" @onclick="@(() => SelectView("post"))">
+                <span class="material-icons">add</span>
+                New Post
+            </button>
+            <button type="button" class="@NavClass("image")" @onclick="@(() => SelectView("image"))">
+                <span class="material-icons">add_photo_alternate</span>
+                New Image
+            </button>
+            <button type="button" class="@NavClass("account")" @onclick="@(() => SelectView("account"))">
+                <span class="material-icons">account_circle</span>
+                Account
+            </button>
+        </nav>
+
+        <div class="cda-venft-sidebar-footer">
+            <span class="material-icons">lock</span>
+            <span>Backup ready</span>
+        </div>
+    </aside>
+
+    <main class="cda-venft-main">
+        <header class="cda-venft-topbar">
+            <div>
+                <h1>@PageTitle</h1>
+                <p>@PageSubtitle</p>
+            </div>
+            <div class="cda-venft-breadcrumb">
+                <span class="material-icons">home</span>
+                <span>VENFT BO</span>
+                <span>/</span>
+                <strong>@PageTitle</strong>
+            </div>
+        </header>
+
+        @if (selectedView == "account" || selectedView == "home")
+        {
+            <AccountBackupPanel Model="AccountBackup" CreateSubAccountRequested="OpenSubAccountDialogAsync" />
+        }
+
+        @if (selectedView == "gallery" || selectedView == "home")
+        {
+            <BusinessObjectGallery Items="GalleryItems" />
+        }
+
+        @if (selectedView == "post" || selectedView == "image")
+        {
+            <BusinessObjectCreationWizard Model="WizardForSelectedView" />
+        }
+    </main>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public AccountBackupWorkflowModel AccountBackup { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public BusinessObjectCreationWizardModel PostWizard { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public BusinessObjectCreationWizardModel ImageWizard { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<BusinessObjectGalleryItem> GalleryItems { get; set; } = default!;
+
+    private string selectedView = "gallery";
+
+    private BusinessObjectCreationWizardModel WizardForSelectedView
+        => selectedView == "image" ? ImageWizard : PostWizard;
+
+    private string PageTitle
+        => selectedView switch
+        {
+            "account" => "Account",
+            "post" => "Add New Post",
+            "image" => "Add New Image",
+            "home" => "Home",
+            _ => "Gallery"
+        };
+
+    private string PageSubtitle
+        => selectedView switch
+        {
+            "post" or "image" => "Upload data, add information, and stage a BO transaction.",
+            "account" => "Create, import, backup, and manage subaccounts.",
+            "home" => "Account controls and latest BusinessObjects.",
+            _ => "Browse Image and Post BusinessObjects by address and tags."
+        };
+
+    private string NavClass(string view)
+        => selectedView == view ? "cda-venft-nav-item cda-venft-nav-item--active" : "cda-venft-nav-item";
+
+    private void SelectView(string view)
+    {
+        selectedView = view;
+    }
+
+    private Task OpenSubAccountDialogAsync()
+        => DialogService.OpenAsync<SubAccountCreateDialogContent>(
+            "Add New SubAccount",
+            new Dictionary<string, object?>
+            {
+                [nameof(SubAccountCreateDialogContent.ParentAddress)] = AccountBackup.Address.Value
+            },
+            new DialogOptions
+            {
+                Subtitle = "Create a child account under the current session.",
+                Size = ModalSize.Medium,
+                TestId = "cda-subaccount-dialog"
+            });
+}

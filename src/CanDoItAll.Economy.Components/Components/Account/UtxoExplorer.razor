@@ -1,0 +1,48 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel" data-testid="cda-utxo-explorer">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Spendable outputs</span>
+            <h2>UTXO explorer</h2>
+        </div>
+        <StatusBadge Text="@($"{Outputs.Count} outputs")" Tone="info" />
+    </header>
+
+    @if (Outputs.Count == 0)
+    {
+        <EmptyState Eyebrow="UTXO" Title="No spendable outputs" Description="This account has no source outputs in the current projection." />
+    }
+    else
+    {
+        <div class="cda-sdk-list">
+            @foreach (LedgerSpendableOutput output in Outputs)
+            {
+                <article class="cda-sdk-list__row">
+                    <span class="material-icons" aria-hidden="true">receipt_long</span>
+                    <div>
+                        <strong>@output.OutPoint</strong>
+                        <span>@Short(output.Address.Value)</span>
+                        <small>@output.MainAmount main @FormatToken(output.Token)</small>
+                        @if (output.BusinessObject is not null)
+                        {
+                            <small>BO @output.BusinessObject.ObjectId.Value v@output.BusinessObject.Version</small>
+                        }
+                    </div>
+                    <CopyableMonoValue Value="@output.OutPointKey.Value.Value" />
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> Outputs { get; set; } = [];
+
+    private static string FormatToken(TokenTransfer? token)
+        => token is null ? string.Empty : $"{token.Amount} {token.TokenId.Value}";
+
+    private static string Short(string value)
+        => value.Length > 18 ? $"{value[..10]}...{value[^6..]}" : value;
+}

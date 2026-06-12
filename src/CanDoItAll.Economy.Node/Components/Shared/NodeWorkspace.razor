@@ -1,0 +1,987 @@
+@namespace CanDoItAll.Economy.Node.Components.Shared
+@inject EconomyNodeUiService NodeUi
+@inject DialogService DialogService
+@inject NavigationManager Navigation
+@inject EconomyNodeHostOptions HostOptions
+
+<PageTitle>@PageTitle</PageTitle>
+
+<NodeShell Title="Economy Node"
+           Subtitle="Blazor SSR"
+           Eyebrow="@Eyebrow"
+           Heading="@Heading"
+           Description="@ShellDescription"
+           StatusText="@snapshot?.Health.Status"
+           StatusTone="@HealthTone"
+           StatusDescription="@StatusDescription"
+           HeaderActions="@HeaderActions"
+           MenuFooter="@MenuFooter">
+    @if (snapshot is null)
+    {
+        <section class="cda-sdk-panel cda-sdk-panel--compact">
+            <EmptyState Eyebrow="Node" Title="Loading ledger workspace" Description="The in-process node services are preparing the routed Blazor workspace." />
+        </section>
+    }
+    else
+    {
+        @switch (View)
+        {
+            case NodeWorkspaceView.Accounts:
+                @RenderAccounts()
+                break;
+            case NodeWorkspaceView.Transactions:
+                @RenderTransactions()
+                break;
+            case NodeWorkspaceView.BusinessObjects:
+                @RenderBusinessObjects()
+                break;
+            case NodeWorkspaceView.Analytics:
+                @RenderAnalytics()
+                break;
+            case NodeWorkspaceView.Admin:
+                @RenderAdmin()
+                break;
+        }
+    }
+</NodeShell>
+
+@code {
+    private EconomyNodeUiSnapshot? snapshot;
+    private EconomyNodeUiAccount operationsAccount = default!;
+    private OperationsAccountForm operationsForm = new();
+    private GrantPermissionForm grantForm = new();
+    private TimeAdvanceForm timeForm = new();
+    private MintForm mintForm = new();
+    private TransferForm transferForm = new();
+    private string addressSearch = string.Empty;
+    private string addressPageSize = "10";
+    private int addressPageIndex;
+    private string? selectedAddress;
+    private string? statusMessage;
+    private bool isBusy;
+    private const string FieldInputClass = "w-full min-w-0 rounded-md border border-slate-300 px-3 py-2";
+    private static readonly IReadOnlyList<SelectOption> AddressPageSizeOptions =
+    [
+        new("10", "10"),
+        new("25", "25"),
+        new("50", "50"),
+        new("100", "100")
+    ];
+
+    private static readonly IReadOnlyList<SelectOption> PermissionActionOptions =
+    [
+        new(PermissionTokenAuthority.MintNewTokenTypeAction, "Mint new token type")
+    ];
+
+    [Parameter]
+    public NodeWorkspaceView View { get; set; } = NodeWorkspaceView.Accounts;
+
+    private string PageTitle => View switch
+    {
+        NodeWorkspaceView.Accounts => "Accounts - CanDoItAll Economy Node",
+        NodeWorkspaceView.Transactions => "Transactions - CanDoItAll Economy Node",
+        NodeWorkspaceView.BusinessObjects => "Business objects - CanDoItAll Economy Node",
+        NodeWorkspaceView.Analytics => "Analytics - CanDoItAll Economy Node",
+        NodeWorkspaceView.Admin => "Admin - CanDoItAll Economy Node",
+        _ => "CanDoItAll Economy Node"
+    };
+
+    private string Eyebrow => View switch
+    {
+        NodeWorkspaceView.Accounts => "Accounts",
+        NodeWorkspaceView.Transactions => "Transactions",
+        NodeWorkspaceView.BusinessObjects => "Business objects",
+        NodeWorkspaceView.Analytics => "Analytics",
+        NodeWorkspaceView.Admin => "Node administration",
+        _ => "Workspace"
+    };
+
+    private string Heading => View switch
+    {
+        NodeWorkspaceView.Accounts => "Ledger accounts",
+        NodeWorkspaceView.Transactions => "Commands and transaction history",
+        NodeWorkspaceView.BusinessObjects => "Ledger object holdings",
+        NodeWorkspaceView.Analytics => "Ledger analytics",
+        NodeWorkspaceView.Admin => "Node administration",
+        _ => "Node workspace"
+    };
+
+    private string ShellDescription => statusMessage ?? View switch
+    {
+        NodeWorkspaceView.Accounts => "Review account state, derived operator addresses, balances, sources, UTXOs, and permissions.",
+        NodeWorkspaceView.Transactions => "Mint, transfer, grant authority, advance time, and inspect transaction detail using C# handlers.",
+        NodeWorkspaceView.BusinessObjects => "Browse business object holdings for the selected ledger account.",
+        NodeWorkspaceView.Analytics => "Inspect prepared analytics for the current ledger workspace.",
+        NodeWorkspaceView.Admin => "Review health, accounts, transactions, and operational checks for the node.",
+        _ => "In-process C# workspace for the Economy node."
+    };
+
+    private string? StatusDescription => snapshot is null
+        ? null
+        : $"Ledger {snapshot.Health.LedgerId}, sequence {snapshot.Health.LatestLedgerSequence}.";
+
+    private string HealthTone => snapshot?.Health.Status.Equals("ok", StringComparison.OrdinalIgnoreCase) == true ? "success" : "warning";
+
+    private IReadOnlyList<(string Label, string Value)> AnalyticsInsights => snapshot?.Workspace is { } workspace
+        ?
+        [
+            ("Account", workspace.AccountName),
+            ("Ledger", workspace.Context.LedgerId.Value),
+            ("Scenario", workspace.Context.ScenarioId?.Value ?? "live"),
+            ("Transactions", workspace.Transactions.Count.ToString(CultureInfo.InvariantCulture)),
+            ("Objects", workspace.BusinessObjects.Count.ToString(CultureInfo.InvariantCulture)),
+            ("UTXOs", workspace.Balance.UtxoCount.ToString(CultureInfo.InvariantCulture))
+        ]
+        : [];
+
+    private IReadOnlyList<AccountSummary> FilteredAccountAddresses
+        => snapshot?.Accounts is not { Count: > 0 } accounts
+            ? []
+            : string.IsNullOrWhiteSpace(addressSearch)
+                ? accounts
+                : accounts
+                    .Where(account => AccountSearchProbe(account).Contains(addressSearch, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+
+    private IReadOnlyList<AccountSummary> PagedAccountAddresses
+        => FilteredAccountAddresses
+            .Skip(CurrentAddressPageIndex * AddressPageSize)
+            .Take(AddressPageSize)
+            .ToArray();
+
+    private int AddressPageSize
+        => int.TryParse(addressPageSize, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed) && parsed > 0
+            ? parsed
+            : 10;
+
+    private int AddressPageCount
+        => Math.Max(1, (int)Math.Ceiling(FilteredAccountAddresses.Count / (double)AddressPageSize));
+
+    private int CurrentAddressPageIndex
+        => Math.Min(Math.Max(addressPageIndex, 0), AddressPageCount - 1);
+
+    private int AddressFirstRow
+        => FilteredAccountAddresses.Count == 0 ? 0 : CurrentAddressPageIndex * AddressPageSize + 1;
+
+    private int AddressLastRow
+        => Math.Min(FilteredAccountAddresses.Count, (CurrentAddressPageIndex + 1) * AddressPageSize);
+
+    private int NodeAccountColumns => snapshot?.Workspace is null ? 1 : 3;
+
+    private string? NodeAccountTemplate => snapshot?.Workspace is null
+        ? null
+        : "minmax(15rem, 0.72fr) minmax(15rem, 0.72fr) minmax(0, 1.56fr)";
+
+    private RenderFragment HeaderActions => @<Cluster Gap="LayoutGap.Small">
+        <Button Text="Refresh" Icon="refresh" Variant="Variant.Outlined" IsBusy="isBusy" Click="@RefreshAsync" />
+        <Button Text="Run demo" Icon="play_arrow" ButtonStyle="ButtonStyle.Info" IsBusy="isBusy" Click="@RunDemoAsync" />
+        <Button Text="Reset ledger" Icon="restart_alt" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Outlined" IsBusy="isBusy" Click="@ResetLedgerAsync" />
+        @if (HostOptions.UsesCookieUiAuth)
+        {
+            <Button Text="Account" Icon="manage_accounts" Href="/Account/Manage" Variant="Variant.Outlined" />
+        }
+    </Cluster>;
+
+    private RenderFragment? MenuFooter => HostOptions.UsesCookieUiAuth
+        ? @<form action="/Account/Logout" method="post" data-testid="node-menu-logout-form">
+            <AntiforgeryToken />
+            <input type="hidden" name="returnUrl" value="" />
+            <Button Text="Sign out" Icon="logout" Type="submit" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
+        </form>
+        : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        operationsAccount = NodeUi.DefaultOperationsAccount;
+        operationsForm = new OperationsAccountForm
+        {
+            KeyId = operationsAccount.KeyId,
+            PublicKeyMaterial = operationsAccount.PublicKeyMaterial
+        };
+        await RefreshAsync().ConfigureAwait(false);
+    }
+
+    private RenderFragment RenderAccounts() => @<Tabs Variant="TabsVariant.WorkspaceSecondary"
+                                                      BorderMode="TabsBorderMode.Soft"
+                                                      OverflowMode="TabsOverflowMode.Scroll"
+                                                      PanelOverflowMode="TabsPanelOverflowMode.Visible"
+                                                      AriaLabel="Account workspace categories">
+        <TabsItem Text="Overview" Icon="dashboard">
+            <Grid ColumnsLg="@NodeAccountColumns"
+                  ColumnTemplateLg="@NodeAccountTemplate"
+                  Gap="LayoutGap.Small"
+                  Class="cda-node-account-overview min-w-0">
+                @RenderNodeStatusPanel()
+                @RenderBootstrapPanel()
+
+                @if (snapshot!.Workspace is not null)
+                {
+                    <AccountStateSummary Workspace="snapshot.Workspace" />
+                }
+                else
+                {
+                    @RenderUnavailable("Account summary", "No account selected", "Select an address from the Addresses tab before reviewing account state.")
+                }
+            </Grid>
+        </TabsItem>
+
+        <TabsItem Text="Addresses" Icon="table_rows" BadgeText="@(snapshot?.Accounts.Count.ToString(CultureInfo.InvariantCulture))">
+            @RenderAddressGrid()
+        </TabsItem>
+
+        <TabsItem Text="Assets" Icon="account_balance_wallet" BadgeText="@(snapshot?.Workspace?.TokenOptions.Count.ToString(CultureInfo.InvariantCulture))">
+            @if (snapshot!.Workspace is null)
+            {
+                @RenderUnavailable("Assets", "No account selected", "Select an account before reviewing balances and spendable outputs.")
+            }
+            else
+            {
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="min-w-0">
+                    <AssetBalanceStrip TokenOptions="snapshot.Workspace.TokenOptions" />
+                    <UtxoExplorer Outputs="snapshot.Workspace.SpendableOutputsOrEmpty" />
+                    <TokenSourceExplorer TokenTypes="snapshot.Workspace.TokenTypesOrEmpty" />
+                </Grid>
+            }
+        </TabsItem>
+
+        <TabsItem Text="Relationships" Icon="account_tree" BadgeText="@(snapshot?.Workspace?.SubAccounts.Count.ToString(CultureInfo.InvariantCulture))">
+            @if (snapshot!.Workspace is null)
+            {
+                @RenderUnavailable("Relationships", "No account selected", "Select an account before reviewing linked accounts and bookmarks.")
+            }
+            else
+            {
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="min-w-0">
+                    <SubAccountDirectory Workspace="snapshot.Workspace" />
+                    <AddressBookmarkManager Bookmarks="snapshot.Workspace.AddressBookmarks" />
+                </Grid>
+            }
+        </TabsItem>
+
+        <TabsItem Text="Authority" Icon="key">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="min-w-0">
+                @RenderOperationsAccount()
+                @if (snapshot!.Workspace is null)
+                {
+                    @RenderUnavailable("Permissions", "No account selected", "Select an account before reviewing permission sources.")
+                }
+                else
+                {
+                    <PermissionSourcePanel Sources="snapshot.Workspace.PermissionSourcesOrEmpty" />
+                }
+            </Grid>
+        </TabsItem>
+    </Tabs>;
+
+    private RenderFragment RenderTransactions() => @<Tabs Variant="TabsVariant.WorkspaceSecondary"
+                                                          BorderMode="TabsBorderMode.Soft"
+                                                          OverflowMode="TabsOverflowMode.Scroll"
+                                                          PanelOverflowMode="TabsPanelOverflowMode.Visible"
+                                                          AriaLabel="Transaction workspace categories">
+        <TabsItem Text="Submit" Icon="bolt">
+            <Grid ColumnsLg="4" Gap="LayoutGap.Small" Class="cda-node-submit-grid min-w-0">
+                @RenderGrantForm()
+                @RenderMintForm()
+                @RenderTransferForm()
+                @RenderTimeForm()
+            </Grid>
+        </TabsItem>
+
+        <TabsItem Text="History" Icon="receipt_long" BadgeText="@(snapshot?.Workspace?.Transactions.Count.ToString(CultureInfo.InvariantCulture))">
+            @RenderTransactionHistoryWorkbench()
+        </TabsItem>
+
+        <TabsItem Text="Simulation" Icon="schedule">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="min-w-0">
+                @RenderTimeForm()
+                @RenderScenarioActionsPanel()
+            </Grid>
+        </TabsItem>
+    </Tabs>;
+
+    private RenderFragment RenderBusinessObjects() => @<Tabs Variant="TabsVariant.WorkspaceSecondary"
+                                                             BorderMode="TabsBorderMode.Soft"
+                                                             OverflowMode="TabsOverflowMode.Scroll"
+                                                             PanelOverflowMode="TabsPanelOverflowMode.Visible"
+                                                             AriaLabel="Business object workspace categories">
+        <TabsItem Text="Explorer" Icon="inventory_2" BadgeText="@(snapshot?.Workspace?.BusinessObjects.Count.ToString(CultureInfo.InvariantCulture))">
+            @if (snapshot!.Workspace is null)
+            {
+                @RenderUnavailable("Business objects", "No workspace selected", "Select an account workspace before inspecting object holdings.")
+            }
+            else
+            {
+                <BusinessObjectExplorer Objects="snapshot.Workspace.BusinessObjects"
+                                        SelectedObjectId="snapshot.Workspace.BusinessObjects.FirstOrDefault()?.ObjectId" />
+            }
+        </TabsItem>
+        <TabsItem Text="Account context" Icon="account_balance_wallet">
+            @if (snapshot!.Workspace is null)
+            {
+                @RenderUnavailable("Account context", "No workspace selected", "Select an account workspace before reviewing object ownership context.")
+            }
+            else
+            {
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="min-w-0">
+                    <AccountStateSummary Workspace="snapshot.Workspace" />
+                    <SubAccountDirectory Workspace="snapshot.Workspace" />
+                </Grid>
+            }
+        </TabsItem>
+        <TabsItem Text="Activity" Icon="receipt_long" BadgeText="@(snapshot?.Workspace?.Transactions.Count.ToString(CultureInfo.InvariantCulture))">
+            @RenderTransactionHistoryWorkbench()
+        </TabsItem>
+    </Tabs>;
+
+    private RenderFragment RenderAnalytics() => @<Tabs Variant="TabsVariant.WorkspaceSecondary"
+                                                       BorderMode="TabsBorderMode.Soft"
+                                                       OverflowMode="TabsOverflowMode.Scroll"
+                                                       PanelOverflowMode="TabsPanelOverflowMode.Visible"
+                                                       AriaLabel="Ledger analytics categories">
+        @if (snapshot!.Workspace is null)
+        {
+            <TabsItem Text="Analytics" Icon="query_stats">
+                @RenderUnavailable("Analytics", "No workspace selected", "Select an account workspace before reviewing analytics.")
+            </TabsItem>
+        }
+        else
+        {
+            <TabsItem Text="Balances" Icon="account_balance_wallet">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="min-w-0">
+                    <AccountStateSummary Workspace="snapshot.Workspace" />
+                    <AccountBalanceTrendChart Workspace="snapshot.Workspace" />
+                    <TokenAllocationDonut TokenOptions="snapshot.Workspace.TokenOptions" />
+                    <ScenarioComparisonChart CurrentScenario="@(snapshot.Workspace.Context.ScenarioId?.Value ?? "live")" CurrentValue="snapshot.Workspace.Balance.MainBalance.Value" />
+                </Grid>
+            </TabsItem>
+            <TabsItem Text="Activity" Icon="receipt_long" BadgeText="@snapshot.Workspace.Transactions.Count.ToString(CultureInfo.InvariantCulture)">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="min-w-0">
+                    <TransactionVolumeBarChart Transactions="snapshot.Workspace.Transactions" />
+                    <TransactionKindStackedChart Transactions="snapshot.Workspace.Transactions" />
+                    <UtxoAgeDistributionChart Outputs="snapshot.Workspace.SpendableOutputsOrEmpty" ViewedAtUtc="snapshot.Workspace.ViewedAtUtc" />
+                </Grid>
+            </TabsItem>
+            <TabsItem Text="Objects & authority" Icon="verified_user" BadgeText="@snapshot.Workspace.BusinessObjects.Count.ToString(CultureInfo.InvariantCulture)">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="min-w-0">
+                    <PermissionUseChart Sources="snapshot.Workspace.PermissionSourcesOrEmpty" />
+                    <BusinessObjectLifecycleChart Objects="snapshot.Workspace.BusinessObjects" />
+                    <BusinessObjectVersionVelocityChart Objects="snapshot.Workspace.BusinessObjects" />
+                    <ChartInsightSummary Title="Ledger facts" Insights="AnalyticsInsights" />
+                </Grid>
+            </TabsItem>
+        }
+    </Tabs>;
+
+    private RenderFragment RenderAdmin() => @<NodeAdminDashboard Addresses="snapshot!.AdminAddresses"
+                                                                  Transactions="snapshot.AdminTransactions"
+                                                                  HealthStatusLabel="@snapshot.Health.Status"
+                                                                  HealthTone="@HealthTone"
+                                                                  ReadinessLabel="@snapshot.Health.ProjectionVerificationStatus"
+                                                                  TransactionDetailsProvider="LoadAdminTransactionDetailsAsync" />;
+
+    private RenderFragment RenderNodeStatusPanel() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-status-panel">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Node status</span>
+                <h2>@snapshot!.Health.Status</h2>
+            </div>
+            <StatusBadge Text="@snapshot.Health.VerificationStatus" Tone="@HealthTone" />
+        </header>
+        <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight">
+            <div><span>Ledger</span><strong>@snapshot.Health.LedgerId</strong></div>
+            <div><span>Sequence</span><strong>@snapshot.Health.LatestLedgerSequence</strong></div>
+            <div><span>Projection</span><strong>@snapshot.Health.ProjectionVerificationStatus</strong></div>
+            <div><span>UTC</span><strong>@snapshot.Health.UtcNow.ToString("u")</strong></div>
+        </div>
+    </section>;
+
+    private RenderFragment RenderBootstrapPanel() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-bootstrap-panel">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Bootstrap</span>
+                <h2>@(snapshot!.Bootstrap.GenesisCreated ? "Genesis ready" : "Genesis missing")</h2>
+            </div>
+            <StatusBadge Text="@snapshot.Bootstrap.SecurityProfile" Tone="info" />
+        </header>
+        <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight">
+            <div><span>Admin</span><CopyableMonoValue Value="@snapshot.Bootstrap.AdminAddress" StartChars="10" EndChars="6" /></div>
+            <div><span>Reset</span><strong>@(snapshot.Bootstrap.LedgerResetEnabled ? "enabled" : "disabled")</strong></div>
+            <div><span>UI auth</span><strong>@snapshot.Bootstrap.UiAuthorizationMode</strong></div>
+            <div><span>API</span><strong>@snapshot.Bootstrap.ApiBasePath</strong></div>
+        </div>
+    </section>;
+
+    private RenderFragment RenderAddressGrid() => @<section class="cda-sdk-panel cda-sdk-panel--compact cda-node-address-data-grid" data-testid="node-account-address-grid">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Accounts</span>
+                <h2>Address directory</h2>
+            </div>
+            <StatusBadge Text="@($"{FilteredAccountAddresses.Count} match(es)")" Tone="info" />
+        </header>
+        <div class="cda-node-address-data-grid__toolbar">
+            <FormField Text="Search addresses" ContainerClass="cda-economy-field">
+                <TextBox Value="@addressSearch"
+                         ValueChanged="HandleAddressSearchChanged"
+                         Immediate="true"
+                         Placeholder="Address, balance, token..."
+                         aria-label="Search account addresses" />
+            </FormField>
+            <FormField Text="Rows per page" ContainerClass="cda-economy-field">
+                <DropDown TValue="string"
+                          Data="@AddressPageSizeOptions"
+                          TextProperty="@nameof(SelectOption.Text)"
+                          ValueProperty="@nameof(SelectOption.Value)"
+                          Value="@addressPageSize"
+                          ValueChanged="HandleAddressPageSizeChanged"
+                          Placeholder="Rows"
+                          aria-label="Address rows per page" />
+            </FormField>
+            <div class="cda-node-address-data-grid__summary" data-testid="node-address-page-summary">
+                <span>Showing</span>
+                <strong>@AddressFirstRow-@AddressLastRow of @FilteredAccountAddresses.Count</strong>
+            </div>
+        </div>
+
+        @if (FilteredAccountAddresses.Count == 0)
+        {
+            <EmptyState Eyebrow="Addresses" Title="No addresses match" Description="Adjust the search query to review ledger accounts." />
+        }
+        else
+        {
+            <div class="cda-node-address-table-wrap">
+                <table class="cda-node-address-table" aria-label="Paged node addresses">
+                    <thead>
+                        <tr>
+                            <th>Address</th>
+                            <th>Role</th>
+                            <th>Main</th>
+                            <th>Tokens</th>
+                            <th>UTXOs</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (AccountSummary account in PagedAccountAddresses)
+                        {
+                            <tr class="@AddressRowClass(account)" data-testid="node-address-row">
+                                <td>
+                                    <strong>@ShortIdentifier(account.Address)</strong>
+                                    <small>@account.Address</small>
+                                </td>
+                                <td><span class="cda-node-address-role">@AccountRole(account)</span></td>
+                                <td>@account.MainBalanceText</td>
+                                <td>@account.TokenBalances.Count.ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@account.UtxoCount.ToString(CultureInfo.InvariantCulture)</td>
+                                <td>
+                                    <Button Text="Select"
+                                            Icon="check_circle"
+                                            Size="ButtonSize.Small"
+                                            Variant="@(account.Address == snapshot!.SelectedAddress ? Variant.Filled : Variant.Outlined)"
+                                            ButtonStyle="@(account.Address == snapshot.SelectedAddress ? ButtonStyle.Info : ButtonStyle.Secondary)"
+                                            Click="@(() => SelectAddressAsync(account.Address))" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <div class="cda-node-address-pager" data-testid="node-address-pager">
+            <Button Text="Previous"
+                    Icon="chevron_left"
+                    Size="ButtonSize.Small"
+                    Variant="Variant.Outlined"
+                    Disabled="@(CurrentAddressPageIndex == 0)"
+                    Click="@PreviousAddressPage" />
+            <span>Page @(CurrentAddressPageIndex + 1) of @AddressPageCount</span>
+            <Button Text="Next"
+                    Icon="chevron_right"
+                    Size="ButtonSize.Small"
+                    Variant="Variant.Outlined"
+                    Disabled="@(CurrentAddressPageIndex >= AddressPageCount - 1)"
+                    Click="@NextAddressPage" />
+        </div>
+    </section>;
+
+    private RenderFragment RenderOperationsAccount() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-operations-account">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Operations account</span>
+                <h2>Derived address</h2>
+            </div>
+            <StatusBadge Text="C# derived" Tone="success" />
+        </header>
+        <EditForm Model="operationsForm" OnValidSubmit="DeriveOperationsAccountAsync">
+            <DataAnnotationsValidator />
+            <Stack GapScale="LayoutGap.Small">
+                <FormField Text="Key id"><InputText class="@FieldInputClass" @bind-Value="operationsForm.KeyId" /></FormField>
+                <FormField Text="Public key material"><InputText class="@FieldInputClass" @bind-Value="operationsForm.PublicKeyMaterial" /></FormField>
+                <FormField Text="Address"><input class="@FieldInputClass" value="@operationsAccount.Address" readonly /></FormField>
+                <Button Text="Derive" Icon="vpn_key" Type="submit" Variant="Variant.Outlined" />
+            </Stack>
+        </EditForm>
+    </section>;
+
+    private RenderFragment RenderGrantForm() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-grant-form">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Permission</span>
+                <h2>Grant token authority</h2>
+            </div>
+        </header>
+        <EditForm Model="grantForm" OnValidSubmit="GrantPermissionAsync">
+            <DataAnnotationsValidator />
+            <Stack GapScale="LayoutGap.Small">
+                <FormField Text="Namespace"><InputText class="@FieldInputClass" @bind-Value="grantForm.TokenNamespace" /></FormField>
+                <FormField Text="Action">
+                    <DropDown TValue="string"
+                              Data="@PermissionActionOptions"
+                              TextProperty="@nameof(SelectOption.Text)"
+                              ValueProperty="@nameof(SelectOption.Value)"
+                              Value="@grantForm.Action"
+                              ValueChanged="HandlePermissionActionChanged"
+                              Placeholder="Select action"
+                              aria-label="Permission token action" />
+                </FormField>
+                <FormField Text="Amount"><InputText class="@FieldInputClass" @bind-Value="grantForm.Amount" /></FormField>
+                <FormField Text="Receiver"><InputText class="@FieldInputClass" @bind-Value="grantForm.Address" /></FormField>
+                <Button Text="Grant permission" Icon="key" Type="submit" />
+            </Stack>
+        </EditForm>
+    </section>;
+
+    private RenderFragment RenderTimeForm() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-time-form">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Simulation</span>
+                <h2>Advance time</h2>
+            </div>
+        </header>
+        <EditForm Model="timeForm" OnValidSubmit="AdvanceTimeAsync">
+            <Stack GapScale="LayoutGap.Small">
+                <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="min-w-0">
+                    <FormField Text="Days"><InputText class="@FieldInputClass" @bind-Value="timeForm.Days" /></FormField>
+                    <FormField Text="Hours"><InputText class="@FieldInputClass" @bind-Value="timeForm.Hours" /></FormField>
+                </Grid>
+                <Button Text="Advance" Icon="schedule" Type="submit" Variant="Variant.Outlined" />
+            </Stack>
+        </EditForm>
+    </section>;
+
+    private RenderFragment RenderMintForm() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-mint-form">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Treasury</span>
+                <h2>Mint</h2>
+            </div>
+        </header>
+        <EditForm Model="mintForm" OnValidSubmit="MintAsync">
+            <Stack GapScale="LayoutGap.Small">
+                <FormField Text="Address"><InputText class="@FieldInputClass" @bind-Value="mintForm.Address" /></FormField>
+                <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="min-w-0">
+                    <FormField Text="Main amount"><InputText class="@FieldInputClass" @bind-Value="mintForm.MainAmount" /></FormField>
+                    <FormField Text="Token id"><InputText class="@FieldInputClass" @bind-Value="mintForm.TokenId" /></FormField>
+                    <FormField Text="Token amount"><InputText class="@FieldInputClass" @bind-Value="mintForm.TokenAmount" /></FormField>
+                    <FormField Text="Business object id"><InputText class="@FieldInputClass" @bind-Value="mintForm.BusinessObjectId" /></FormField>
+                </Grid>
+                <Button Text="Submit mint" Icon="add_circle" Type="submit" />
+            </Stack>
+        </EditForm>
+    </section>;
+
+    private RenderFragment RenderTransferForm() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-transfer-form">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Ledger movement</span>
+                <h2>Transfer</h2>
+            </div>
+        </header>
+        <EditForm Model="transferForm" OnValidSubmit="TransferAsync">
+            <Stack GapScale="LayoutGap.Small">
+                <FormField Text="From"><InputText class="@FieldInputClass" @bind-Value="transferForm.FromAddress" /></FormField>
+                <FormField Text="To"><InputText class="@FieldInputClass" @bind-Value="transferForm.ToAddress" /></FormField>
+                <FormField Text="Main amount"><InputText class="@FieldInputClass" @bind-Value="transferForm.MainAmount" /></FormField>
+                <Button Text="Submit transfer" Icon="swap_horiz" Type="submit" />
+            </Stack>
+        </EditForm>
+    </section>;
+
+    private RenderFragment RenderTransactionHistoryWorkbench() => @<Stack GapScale="LayoutGap.Medium" Class="min-w-0">
+        @if (snapshot!.Workspace is null)
+        {
+            @RenderUnavailable("Transactions", "No account selected", "Select an account before reviewing ledger activity.")
+        }
+        else
+        {
+            <Grid ColumnsLg="2"
+                  ColumnTemplateLg="minmax(0, 1.35fr) minmax(18rem, 0.65fr)"
+                  Gap="LayoutGap.Medium"
+                  Class="min-w-0">
+                <TransactionHistoryBrowser Transactions="snapshot.Workspace.Transactions" />
+                @RenderTransactionDetailLauncher()
+            </Grid>
+        }
+    </Stack>;
+
+    private RenderFragment RenderTransactionDetailLauncher() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-transaction-actions">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Transaction detail</span>
+                <h2>Prepared inspector</h2>
+            </div>
+            <StatusBadge Text="@($"{snapshot!.Workspace?.Transactions.Count ?? 0} rows")" Tone="info" />
+        </header>
+        <Stack GapScale="LayoutGap.XSmall">
+            @foreach (LedgerTransactionSummary tx in snapshot!.Workspace?.Transactions.Take(5) ?? [])
+            {
+                <Button Text="@TransactionButtonText(tx)"
+                        title="@tx.TxId.Value"
+                        Icon="open_in_full"
+                        Variant="Variant.Outlined"
+                        Click="@(() => OpenTransactionDetailsAsync(tx.TxId.Value))" />
+            }
+        </Stack>
+    </section>;
+
+    private RenderFragment RenderScenarioActionsPanel() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-scenario-actions">
+        <header class="cda-sdk-panel__header">
+            <div>
+                <span>Scenario actions</span>
+                <h2>Demo and reset</h2>
+            </div>
+            <StatusBadge Text="C# actions" Tone="info" />
+        </header>
+        <Cluster Gap="LayoutGap.Small">
+            <Button Text="Run demo" Icon="play_arrow" ButtonStyle="ButtonStyle.Info" IsBusy="isBusy" Click="@RunDemoAsync" />
+            <Button Text="Reset ledger" Icon="restart_alt" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Outlined" IsBusy="isBusy" Click="@ResetLedgerAsync" />
+        </Cluster>
+    </section>;
+
+    private RenderFragment RenderUnavailable(string eyebrow, string title, string description) => @<section class="cda-sdk-panel cda-sdk-panel--compact">
+        <EmptyState Eyebrow="@eyebrow" Title="@title" Description="@description" />
+    </section>;
+
+    private async Task RefreshAsync()
+    {
+        await RunUiActionAsync("Node workspace refreshed.", async () =>
+        {
+            snapshot = await NodeUi.GetSnapshotAsync(selectedAddress, CancellationToken.None).ConfigureAwait(false);
+            selectedAddress = snapshot.SelectedAddress;
+            ApplyDefaultAddresses();
+        }).ConfigureAwait(false);
+    }
+
+    private async Task SelectAddressAsync(string address)
+    {
+        selectedAddress = address;
+        await RefreshAsync().ConfigureAwait(false);
+    }
+
+    private Task HandleAddressSearchChanged(string? value)
+    {
+        addressSearch = value ?? string.Empty;
+        addressPageIndex = 0;
+        return Task.CompletedTask;
+    }
+
+    private Task HandleAddressPageSizeChanged(string? value)
+    {
+        addressPageSize = string.IsNullOrWhiteSpace(value) ? "10" : value;
+        addressPageIndex = 0;
+        return Task.CompletedTask;
+    }
+
+    private Task HandlePermissionActionChanged(string? value)
+    {
+        grantForm.Action = string.IsNullOrWhiteSpace(value)
+            ? PermissionTokenAuthority.MintNewTokenTypeAction
+            : value;
+        return Task.CompletedTask;
+    }
+
+    private Task PreviousAddressPage()
+    {
+        addressPageIndex = Math.Max(0, CurrentAddressPageIndex - 1);
+        return Task.CompletedTask;
+    }
+
+    private Task NextAddressPage()
+    {
+        addressPageIndex = Math.Min(AddressPageCount - 1, CurrentAddressPageIndex + 1);
+        return Task.CompletedTask;
+    }
+
+    private Task DeriveOperationsAccountAsync()
+    {
+        operationsAccount = NodeUi.DeriveAccount(operationsForm.KeyId, operationsForm.PublicKeyMaterial);
+        ApplyDefaultAddresses(overwriteDerived: true);
+        statusMessage = "Operations address derived in C#.";
+        return Task.CompletedTask;
+    }
+
+    private async Task GrantPermissionAsync()
+    {
+        await RunUiActionAsync("Permission grant accepted.", async () =>
+        {
+            PermissionGrantReceipt receipt = await NodeUi.GrantPermissionAsync(
+                new PermissionGrantRequest(
+                    grantForm.TokenNamespace,
+                    grantForm.Address,
+                    ParseDecimal(grantForm.Amount, 1m),
+                    Repeatable: true,
+                    grantForm.Action,
+                    ScenarioId: null),
+                CancellationToken.None).ConfigureAwait(false);
+            selectedAddress = receipt.Address;
+            statusMessage = $"Permission grant accepted: {receipt.TxId}.";
+            snapshot = await NodeUi.GetSnapshotAsync(selectedAddress, CancellationToken.None).ConfigureAwait(false);
+            ApplyDefaultAddresses();
+        }).ConfigureAwait(false);
+    }
+
+    private async Task AdvanceTimeAsync()
+    {
+        await RunUiActionAsync("Simulation time advanced.", async () =>
+        {
+            NodeUi.AdvanceTime(ParseDouble(timeForm.Days), ParseDouble(timeForm.Hours));
+            snapshot = await NodeUi.GetSnapshotAsync(selectedAddress, CancellationToken.None).ConfigureAwait(false);
+            ApplyDefaultAddresses();
+        }).ConfigureAwait(false);
+    }
+
+    private async Task MintAsync()
+    {
+        await RunUiActionAsync("Mint transaction accepted.", async () =>
+        {
+            CanDoItAll.Economy.Sdk.TransactionReceipt receipt = await NodeUi.MintAsync(
+                new MintTransactionRequest(
+                    mintForm.Address,
+                    ParseDecimal(mintForm.MainAmount, 0m),
+                    EmptyToNull(mintForm.TokenId),
+                    ParseNullableDecimal(mintForm.TokenAmount),
+                    TransactionDataItemType.TokenMetadata.ToString(),
+                    "{\"source\":\"node-console\",\"action\":\"mint\"}",
+                    null,
+                    EmptyToNull(mintForm.BusinessObjectId),
+                    null),
+                CancellationToken.None).ConfigureAwait(false);
+            statusMessage = $"Mint accepted: {receipt.TxId}.";
+            snapshot = await NodeUi.GetSnapshotAsync(selectedAddress, CancellationToken.None).ConfigureAwait(false);
+            ApplyDefaultAddresses();
+            await OpenTransactionDetailsAsync(receipt.TxId).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+    }
+
+    private async Task TransferAsync()
+    {
+        await RunUiActionAsync("Transfer transaction accepted.", async () =>
+        {
+            CanDoItAll.Economy.Sdk.TransactionReceipt receipt = await NodeUi.TransferAsync(
+                new TransferTransactionRequest(
+                    transferForm.FromAddress,
+                    transferForm.ToAddress,
+                    ParseDecimal(transferForm.MainAmount, 0m),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null),
+                CancellationToken.None).ConfigureAwait(false);
+            selectedAddress = transferForm.ToAddress;
+            statusMessage = $"Transfer accepted: {receipt.TxId}.";
+            snapshot = await NodeUi.GetSnapshotAsync(selectedAddress, CancellationToken.None).ConfigureAwait(false);
+            ApplyDefaultAddresses();
+            await OpenTransactionDetailsAsync(receipt.TxId).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+    }
+
+    private async Task RunDemoAsync()
+    {
+        await RunUiActionAsync("Demo flow accepted.", async () =>
+        {
+            statusMessage = await NodeUi.RunDemoFlowAsync(operationsForm.PublicKeyMaterial, CancellationToken.None).ConfigureAwait(false);
+            selectedAddress = operationsAccount.Address;
+            snapshot = await NodeUi.GetSnapshotAsync(selectedAddress, CancellationToken.None).ConfigureAwait(false);
+            ApplyDefaultAddresses();
+        }).ConfigureAwait(false);
+    }
+
+    private async Task ResetLedgerAsync()
+    {
+        await RunUiActionAsync("Ledger reset completed.", async () =>
+        {
+            await NodeUi.ResetLedgerAsync(CancellationToken.None).ConfigureAwait(false);
+            selectedAddress = null;
+            snapshot = await NodeUi.GetSnapshotAsync(selectedAddress, CancellationToken.None).ConfigureAwait(false);
+            ApplyDefaultAddresses();
+        }).ConfigureAwait(false);
+    }
+
+    private async Task OpenTransactionDetailsAsync(string txId)
+    {
+        EconomyTransactionDetailsModel? details = await NodeUi.GetTransactionDetailsAsync(txId, CancellationToken.None).ConfigureAwait(false);
+        await DialogService.OpenAsync<TransactionDetailsDialogContent>(
+            "Transaction detail",
+            new Dictionary<string, object?>
+            {
+                [nameof(TransactionDetailsDialogContent.Details)] = details
+            },
+            new DialogOptions
+            {
+                Subtitle = txId,
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--tx-detail",
+                TestId = "cda-node-transaction-details-dialog"
+            }).ConfigureAwait(false);
+    }
+
+    private async Task<EconomyTransactionDetailsModel?> LoadAdminTransactionDetailsAsync(NodeAdminTransactionSummary transaction)
+        => await NodeUi.GetTransactionDetailsAsync(transaction.TxId, CancellationToken.None).ConfigureAwait(false);
+
+    private async Task RunUiActionAsync(string successMessage, Func<Task> action)
+    {
+        if (isBusy)
+        {
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            await action().ConfigureAwait(false);
+            statusMessage ??= successMessage;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or FormatException or ArgumentException)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void ApplyDefaultAddresses(bool overwriteDerived = false)
+    {
+        if (snapshot is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(grantForm.Address) || overwriteDerived)
+        {
+            grantForm.Address = operationsAccount.Address;
+        }
+
+        if (string.IsNullOrWhiteSpace(mintForm.Address) || overwriteDerived)
+        {
+            mintForm.Address = operationsAccount.Address;
+        }
+
+        if (string.IsNullOrWhiteSpace(transferForm.FromAddress))
+        {
+            transferForm.FromAddress = snapshot.Bootstrap.AdminAddress;
+        }
+
+        if (string.IsNullOrWhiteSpace(transferForm.ToAddress) || overwriteDerived)
+        {
+            transferForm.ToAddress = operationsAccount.Address;
+        }
+    }
+
+    private static string AccountButtonText(AccountSummary account)
+    {
+        string balance = account.MainBalance == decimal.MaxValue || account.MainBalanceText.Length > 12
+            ? "Max main"
+            : $"{account.MainBalance:0.##} main";
+        return $"{balance} - {ShortIdentifier(account.Address)}";
+    }
+
+    private static string AccountButtonTitle(AccountSummary account)
+        => $"{account.MainBalanceText} main - {account.Address}";
+
+    private string AccountRole(AccountSummary account)
+        => snapshot is not null && account.Address.Equals(snapshot.Bootstrap.AdminAddress, StringComparison.OrdinalIgnoreCase)
+            ? "Treasury admin"
+            : "Ledger account";
+
+    private string AddressRowClass(AccountSummary account)
+        => account.Address.Equals(snapshot?.SelectedAddress, StringComparison.OrdinalIgnoreCase)
+            ? "is-selected"
+            : string.Empty;
+
+    private static string AccountSearchProbe(AccountSummary account)
+        => string.Join(' ', account.Address, account.MainBalanceText, account.UtxoCount, string.Join(' ', account.TokenBalances.Keys));
+
+    private static string TransactionButtonText(LedgerTransactionSummary transaction)
+        => $"{transaction.Kind} - {ShortIdentifier(transaction.TxId.Value)}";
+
+    private static string ShortIdentifier(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length <= 18)
+        {
+            return value;
+        }
+
+        return $"{value[..8]}...{value[^6..]}";
+    }
+
+    private static decimal ParseDecimal(string? value, decimal fallback)
+        => decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed) ? parsed : fallback;
+
+    private static decimal? ParseNullableDecimal(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : ParseDecimal(value, 0m);
+
+    private static double ParseDouble(string? value)
+        => double.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out double parsed) ? parsed : 0d;
+
+    private static string? EmptyToNull(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private sealed class OperationsAccountForm
+    {
+        [Required]
+        public string KeyId { get; set; } = string.Empty;
+
+        [Required]
+        public string PublicKeyMaterial { get; set; } = string.Empty;
+    }
+
+    private sealed class GrantPermissionForm
+    {
+        public string TokenNamespace { get; set; } = "messages";
+        public string Action { get; set; } = PermissionTokenAuthority.MintNewTokenTypeAction;
+        public string Amount { get; set; } = "1";
+        public string Address { get; set; } = string.Empty;
+    }
+
+    private sealed class TimeAdvanceForm
+    {
+        public string Days { get; set; } = "7";
+        public string Hours { get; set; } = "0";
+    }
+
+    private sealed class MintForm
+    {
+        public string Address { get; set; } = string.Empty;
+        public string MainAmount { get; set; } = "0";
+        public string TokenId { get; set; } = "messages.demo";
+        public string TokenAmount { get; set; } = "25";
+        public string BusinessObjectId { get; set; } = string.Empty;
+    }
+
+    private sealed class TransferForm
+    {
+        public string FromAddress { get; set; } = string.Empty;
+        public string ToAddress { get; set; } = string.Empty;
+        public string MainAmount { get; set; } = "100";
+    }
+
+    private sealed record SelectOption(string Value, string Text);
+}

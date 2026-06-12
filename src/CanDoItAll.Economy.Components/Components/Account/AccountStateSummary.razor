@@ -1,0 +1,42 @@
+@namespace CanDoItAll.Economy.Components
+@using System.Globalization
+
+<section class="cda-sdk-panel" data-testid="cda-account-state-summary">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Account state</span>
+            <h2>@Workspace.AccountName</h2>
+        </div>
+        <StatusBadge Text="@(Workspace.ConnectionLabel ?? "in-memory")" Tone="info" />
+    </header>
+
+    <SummaryTiles>
+        <SummaryTile Label="Main" Value="@FormatTileAmount(Workspace.Balance.MainBalance.Value)" HelperText="Spendable native balance." Tone="success" Compact="true" />
+        <SummaryTile Label="Tokens" Value="@Workspace.TokenOptions.Count(option => !option.IsMain).ToString(CultureInfo.InvariantCulture)" HelperText="Tracked token balances and sources." Tone="info" Compact="true" />
+        <SummaryTile Label="UTXOs" Value="@Workspace.Balance.UtxoCount.ToString(CultureInfo.InvariantCulture)" HelperText="Spendable output count." Tone="warning" Compact="true" />
+        <SummaryTile Label="Objects" Value="@Workspace.BusinessObjects.Count.ToString(CultureInfo.InvariantCulture)" HelperText="Current business object holdings." Compact="true" />
+    </SummaryTiles>
+
+    <div class="cda-sdk-fact-grid">
+        <div><span>Address</span><CopyableMonoValue Value="@Workspace.Address.Value" /></div>
+        <div><span>Ledger</span><strong>@Workspace.Context.LedgerId.Value</strong></div>
+        <div><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
+        <div><span>Viewed</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    private static string FormatTileAmount(decimal amount)
+    {
+        decimal absolute = Math.Abs(amount);
+        if (absolute < 1_000_000_000_000m)
+        {
+            return amount.ToString("0.####", CultureInfo.InvariantCulture);
+        }
+
+        return amount.ToString("0.####E+0", CultureInfo.InvariantCulture);
+    }
+}

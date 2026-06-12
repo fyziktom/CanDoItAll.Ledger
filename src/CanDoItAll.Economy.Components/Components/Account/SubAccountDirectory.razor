@@ -1,0 +1,41 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel" data-testid="cda-subaccount-directory">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Subaccounts</span>
+            <h2>Account directory</h2>
+        </div>
+        <StatusBadge Text="@($"{Workspace.SubAccounts.Count} linked")" Tone="info" />
+    </header>
+
+    @if (Workspace.SubAccounts.Count == 0)
+    {
+        <EmptyState Eyebrow="Subaccounts" Title="No linked accounts" Description="Create a child account or connect an account alias to populate this directory." />
+    }
+    else
+    {
+        <div class="cda-sdk-card-grid cda-sdk-card-grid--compact">
+            @foreach (BusinessObjectSubAccountSummary item in Workspace.SubAccounts)
+            {
+                <article class="cda-sdk-mini-card">
+                    <div class="cda-sdk-mini-card__top">
+                        <strong>@item.Name</strong>
+                        <StatusBadge Text="@($"{item.UtxoCount} UTXO")" Tone="neutral" />
+                    </div>
+                    <CopyableMonoValue Value="@item.Address.Value" />
+                    <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight">
+                        <div><span>Main</span><strong>@item.MainBalance</strong></div>
+                        <div><span>Objects</span><strong>@item.BusinessObjectCount</strong></div>
+                        <div><span>Activity</span><strong>@item.LastActivityUtc.ToString("MM.dd HH:mm")</strong></div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+}

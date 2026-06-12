@@ -1,0 +1,10 @@
+@page "/Account/AccessDenied"
+@attribute [AllowAnonymous]
+
+<PageTitle>Access denied</PageTitle>
+
+<NodeAuthShell Heading="Access denied" Description="Your account is not authorized to manage this Economy node.">
+    <section class="cda-sdk-panel">
+        <EmptyState Eyebrow="Authorization" Title="Access denied" Description="Your account is not authorized to manage this Economy node." />
+    </section>
+</NodeAuthShell>

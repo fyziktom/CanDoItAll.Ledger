@@ -1,0 +1,80 @@
+@namespace CanDoItAll.Economy.Components
+
+<DialogScaffold Eyebrow="Business object actions"
+                Title="Clone, merge, or split"
+                Description="Advanced actions stay review-first and expose lineage before submission."
+                ContextRail="@RenderContext"
+                ReviewPanel="@RenderReview"
+                ValidationContent="@RenderValidation"
+                Footer="@RenderFooter"
+                data-testid="cda-clone-merge-split-assistant">
+    <div class="cda-sdk-form-grid">
+        <FormField Text="Action">
+            <DropDown TItem="string" Value="@mode" ValueChanged="@((string value) => mode = value)" Items="Modes" />
+        </FormField>
+        <FormField Text="Target object">
+            <TextBox @bind-Value="targetObjectId" />
+        </FormField>
+        <FormField Text="Payment amount">
+            <TextBox @bind-Value="amount" />
+        </FormField>
+        <FormField Text="Notes" ContainerClass="cda-sdk-span-all">
+            <TextArea @bind-Value="notes" Rows="4" />
+        </FormField>
+    </div>
+</DialogScaffold>
+
+@code {
+    private string mode = "Clone";
+    private string targetObjectId = "bo:purchase-order:1042-copy";
+    private string amount = "1000";
+    private string notes = "Create a reviewable branch before merging or splitting payment outputs.";
+    private static readonly IReadOnlyList<string> Modes = ["Clone", "Merge", "Split payment"];
+
+    [Parameter]
+    public IBusinessObjectView? Object { get; set; }
+
+    private RenderFragment RenderContext => builder =>
+    {
+        builder.OpenComponent<BusinessObjectStateViewer>(0);
+        builder.AddAttribute(1, nameof(BusinessObjectStateViewer.Object), Object);
+        builder.CloseComponent();
+    };
+
+    private RenderFragment RenderReview => builder =>
+    {
+        builder.OpenComponent<ActionReviewPanel>(0);
+        builder.AddAttribute(1, nameof(ActionReviewPanel.Title), "Lineage impact");
+        builder.AddAttribute(2, nameof(ActionReviewPanel.Items), new[]
+        {
+            new ActionReviewFact("Action", mode),
+            new ActionReviewFact("Source", Object?.ObjectId.Value ?? "none"),
+            new ActionReviewFact("Target", targetObjectId),
+            new ActionReviewFact("Amount", amount)
+        });
+        builder.CloseComponent();
+    };
+
+    private RenderFragment RenderValidation => builder =>
+    {
+        builder.OpenComponent<Alert>(0);
+        builder.AddAttribute(1, nameof(Alert.AlertStyle), AlertStyle.Info);
+        builder.AddAttribute(2, nameof(Alert.ChildContent), (RenderFragment)(content =>
+        {
+            content.AddContent(0, "Host applications decide which advanced action modes are supported by the active SDK/node.");
+        }));
+        builder.CloseComponent();
+    };
+
+    private RenderFragment RenderFooter => builder =>
+    {
+        builder.OpenComponent<Button>(0);
+        builder.AddAttribute(1, nameof(Button.Text), "Save draft");
+        builder.AddAttribute(2, nameof(Button.Variant), Variant.Outlined);
+        builder.CloseComponent();
+        builder.OpenComponent<Button>(3);
+        builder.AddAttribute(4, nameof(Button.Text), "Review action");
+        builder.AddAttribute(5, nameof(Button.Icon), "fact_check");
+        builder.CloseComponent();
+    };
+}

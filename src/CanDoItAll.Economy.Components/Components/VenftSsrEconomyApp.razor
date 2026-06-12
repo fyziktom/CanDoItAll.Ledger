@@ -1,0 +1,226 @@
+@namespace CanDoItAll.Economy.Components
+
+<div class="cda-vef-app">
+    <aside class="cda-vef-sidebar">
+        <div class="cda-vef-brand">
+            <span class="cda-vef-brand-mark">VE</span>
+            <strong>VENFT</strong>
+            <span class="material-icons" aria-hidden="true">menu</span>
+        </div>
+
+        <nav class="cda-vef-nav" aria-label="VENFT economy app">
+            @foreach (VenftNavItem item in NavItems)
+            {
+                <button type="button"
+                        class="@NavClass(item.Key)"
+                        @onclick="@(() => SelectView(item.Key))">
+                    <span class="material-icons" aria-hidden="true">@item.Icon</span>
+                    <span>@item.Label</span>
+                </button>
+            }
+        </nav>
+
+        <button type="button" class="cda-vef-account-switch" @onclick="SelectHome">
+            <span class="material-icons" aria-hidden="true">account_balance_wallet</span>
+            <span>Account</span>
+            <span class="material-icons" aria-hidden="true">expand_more</span>
+        </button>
+    </aside>
+
+    <main class="cda-vef-main">
+        <header class="cda-vef-page-header">
+            <div>
+                <h1>@PageTitle</h1>
+                <p class="cda-vef-page-subtitle">@Workspace.ConnectionLabel</p>
+            </div>
+            <div class="cda-vef-breadcrumb" aria-label="Breadcrumb">
+                <span class="material-icons" aria-hidden="true">home</span>
+                <span>VENFT</span>
+                <span>/</span>
+                <strong>@(Workspace.AccountAlias ?? PageTitle)</strong>
+            </div>
+        </header>
+
+        @if (LastResult is not null)
+        {
+            <Alert AlertStyle="@(LastResult.Accepted ? AlertStyle.Success : AlertStyle.Danger)" Class="cda-vef-alert">
+                <strong>@LastResult.Mode</strong>
+                <span>@LastResult.Message</span>
+            </Alert>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(RefreshNotification))
+        {
+            <div data-testid="venft-refresh-alert">
+                <Alert AlertStyle="AlertStyle.Info" Class="cda-vef-alert">
+                    <strong>Auto refresh</strong>
+                    <span>@RefreshNotification</span>
+                </Alert>
+            </div>
+        }
+
+        @switch (selectedView)
+        {
+            case "gallery":
+                <BusinessObjectLedgerGallery Workspace="Workspace"
+                                             SendRequested="BusinessObjectSendRequested"
+                                             SetPriceRequested="BusinessObjectSetPriceRequested"
+                                             TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested" />
+                break;
+            case "ticket":
+            case "event":
+            case "post":
+            case "music":
+            case "image":
+                <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
+                                              Workspace="Workspace"
+                                              StageBusinessObjectRequested="TransactionSubmitRequested" />
+                break;
+            case "rule":
+                <AccountRuleDesigner Workspace="Workspace"
+                                     SubmitRequested="RuleTokenCreateRequested" />
+                break;
+            case "intro":
+                <SectionCard Title="Introduction" Description="VENFT-style SSR surface backed by the real in-memory economy session.">
+                    <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+                        <div class="cda-economy-fact"><span>Ledger</span><strong>@Workspace.Context.LedgerId</strong></div>
+                        <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
+                        <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
+                    </Grid>
+                </SectionCard>
+                break;
+            default:
+                <EconomyAccountWorkspace Workspace="Workspace"
+                                         RefreshRequested="RefreshRequested"
+                                         CreateSubAccountRequested="CreateSubAccountRequested"
+                                         ValidateRequested="ValidateRequested"
+                                         CreateTokenRequested="CreateTokenRequested"
+                                         AddTransactionRequested="OpenSendTransactionRequested"
+                                         TransactionDetailsRequested="TransactionDetailsRequested"
+                                         TransactionSubmitRequested="TransactionSubmitRequested"
+                                         MessageSignRequested="MessageSignRequested"
+                                         MessageVerifyRequested="MessageVerifyRequested"
+                                         MessageEncryptRequested="MessageEncryptRequested"
+                                         MessageDecryptRequested="MessageDecryptRequested" />
+                break;
+        }
+    </main>
+</div>
+
+@code {
+    private static readonly IReadOnlyList<VenftNavItem> NavItems =
+    [
+        new("home", "Home", "home"),
+        new("gallery", "Gallery", "photo_library"),
+        new("ticket", "New Ticket", "add"),
+        new("event", "New Event", "add"),
+        new("post", "New Post", "add"),
+        new("music", "New Music", "add"),
+        new("image", "New Image", "add"),
+        new("rule", "New Rule", "account_tree"),
+        new("intro", "Introduction", "help")
+    ];
+
+    private string selectedView = "home";
+
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    [Parameter]
+    public EconomyTransactionExecutionResult? LastResult { get; set; }
+
+    [Parameter]
+    public string? RefreshNotification { get; set; }
+
+    [Parameter]
+    public EventCallback RefreshRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CreateSubAccountRequested { get; set; }
+
+    [Parameter]
+    public EventCallback ValidateRequested { get; set; }
+
+    [Parameter]
+    public EventCallback OpenSendTransactionRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> TransactionSubmitRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<EconomyRuleTokenCreationRequest> RuleTokenCreateRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<LedgerTransactionSummary> TransactionDetailsRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<TxId> BusinessObjectTransactionDetailsRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CreateTokenRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<IBusinessObjectView> BusinessObjectSendRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<IBusinessObjectView> BusinessObjectSetPriceRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecuritySignRequest, Task<MessageSecurityActionResult>>? MessageSignRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityVerifyRequest, Task<MessageSecurityActionResult>>? MessageVerifyRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityEncryptRequest, Task<MessageSecurityActionResult>>? MessageEncryptRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityDecryptRequest, Task<MessageSecurityActionResult>>? MessageDecryptRequested { get; set; }
+
+    private string PageTitle
+        => selectedView switch
+        {
+            "gallery" => "Gallery",
+            "ticket" => "Add New Ticket",
+            "event" => "Add New Event",
+            "post" => "Add New Post",
+            "music" => "Add New Music",
+            "image" => "Add New Image",
+            "rule" => "Add New Rule",
+            "intro" => "Introduction",
+            _ => "VENFT"
+        };
+
+    private BusinessObjectCreationWizardModel CreationWizardForSelectedView
+        => new(
+            selectedView,
+            Step: selectedView is "ticket" or "event" ? 3 : 1,
+            selectedView switch
+            {
+                "ticket" => "Operations approval ticket",
+                "event" => "Warehouse receiving event",
+                "music" => "Audio proof package",
+                "image" => "Ledger state image",
+                _ => "Purchase order post"
+            },
+            "#VEFramework #Neblio #NET #Blazor #OpenSource",
+            "BusinessObject data item prepared from the SSR ledger session.",
+            Workspace.TransactionDraft.StateJson,
+            [],
+            null);
+
+    private string NavClass(string view)
+        => selectedView == view ? "cda-vef-nav-item is-active" : "cda-vef-nav-item";
+
+    private void SelectView(string view)
+    {
+        selectedView = view;
+    }
+
+    private void SelectHome()
+    {
+        selectedView = "home";
+    }
+
+    private sealed record VenftNavItem(string Key, string Label, string Icon);
+}

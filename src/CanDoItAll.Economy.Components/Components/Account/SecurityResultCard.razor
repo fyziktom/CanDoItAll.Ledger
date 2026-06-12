@@ -1,0 +1,29 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-security-result-card">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Security result</span>
+            <h2>@(Result?.Summary ?? "No operation yet")</h2>
+        </div>
+        <StatusBadge Text="@(Result?.Success == true ? "Success" : "Pending")" Tone="@(Result?.Success == true ? "success" : "neutral")" />
+    </header>
+
+    @if (Result?.PayloadJson is not null)
+    {
+        <pre class="cda-sdk-code">@Result.PayloadJson</pre>
+    }
+    else if (Result?.PlainText is not null)
+    {
+        <pre class="cda-sdk-code">@Result.PlainText</pre>
+    }
+    else
+    {
+        <p class="cda-sdk-muted">Signed, verified, encrypted, and decrypted payloads are shown after the operation returns.</p>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public MessageSecurityActionResult? Result { get; set; }
+}

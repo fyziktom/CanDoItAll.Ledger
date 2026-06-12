@@ -1,0 +1,17 @@
+@namespace CanDoItAll.Economy.Components
+
+<Toolbar Class="cda-sdk-toolbar" data-testid="cda-chart-filter-toolbar">
+    <ToolbarFields>
+        <TextBox @bind-Value="scope" Placeholder="Account, ledger, or scenario" aria-label="Chart scope" />
+        <DropDown TItem="string" Value="@range" ValueChanged="@((string value) => range = value)" Items="Ranges" aria-label="Chart range" />
+    </ToolbarFields>
+    <ToolbarActions>
+        <Button Text="Refresh" Icon="refresh" Variant="Variant.Outlined" />
+    </ToolbarActions>
+</Toolbar>
+
+@code {
+    private string scope = "Current account";
+    private string range = "Last 30 days";
+    private static readonly IReadOnlyList<string> Ranges = ["Last 24 hours", "Last 7 days", "Last 30 days", "Scenario window"];
+}

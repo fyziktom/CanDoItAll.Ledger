@@ -1,0 +1,47 @@
+@namespace CanDoItAll.Economy.Components
+
+@if (Mode == BusinessObjectRenderMode.Summary)
+{
+    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
+        <strong>@(rule?.RuleId ?? Object.ObjectId.Value)</strong>
+        <span>@(rule?.RuleNamespace ?? "rule")</span>
+        <Cluster Gap="LayoutGap.Small">
+            <span class="cda-economy-pill">rule</span>
+            <span class="cda-economy-pill">@(rule?.Trigger?.Kind.ToString() ?? "unknown")</span>
+        </Cluster>
+    </Stack>
+}
+else if (rule is null)
+{
+    <Alert AlertStyle="AlertStyle.Warning">
+        <strong>Rule payload unavailable</strong>
+        <span>The BusinessObject looks like a rule but its payload could not be validated against the BO hash.</span>
+    </Alert>
+}
+else
+{
+    <AccountRuleLogicPreview Rule="rule" />
+}
+
+@code {
+    private AccountRuleDefinition? rule;
+
+    [Parameter, EditorRequired]
+    public IBusinessObjectView Object { get; set; } = default!;
+
+    [Parameter]
+    public BusinessObjectRenderMode Mode { get; set; } = BusinessObjectRenderMode.Detail;
+
+    [Parameter]
+    public DateTimeOffset? ViewedAtUtc { get; set; }
+
+    [Parameter, EditorRequired]
+    public BusinessObjectRendererDescriptor Descriptor { get; set; } = default!;
+
+    protected override void OnParametersSet()
+    {
+        rule = RuleBusinessObjectDisplay.TryReadRule(Object, out AccountRuleDefinition parsed)
+            ? parsed
+            : null;
+    }
+}

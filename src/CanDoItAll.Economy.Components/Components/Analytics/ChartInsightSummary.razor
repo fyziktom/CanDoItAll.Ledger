@@ -1,0 +1,24 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-chart-insight-summary">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Insights</span>
+            <h2>@Title</h2>
+        </div>
+    </header>
+    <div class="cda-sdk-fact-grid">
+        @foreach ((string Label, string Value) insight in Insights)
+        {
+            <div><span>@insight.Label</span><strong>@insight.Value</strong></div>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Chart summary";
+
+    [Parameter]
+    public IReadOnlyList<(string Label, string Value)> Insights { get; set; } = [];
+}

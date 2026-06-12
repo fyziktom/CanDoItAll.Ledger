@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>CanDoItAll.Economy.Node</AssemblyName>
+    <RootNamespace>CanDoItAll.Economy.Node</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Components\CanDoItAll.Economy.Components.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Core\CanDoItAll.Economy.Core.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Ledger\CanDoItAll.Economy.Ledger.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Persistence.EFCore\CanDoItAll.Economy.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Persistence.PostgreSql\CanDoItAll.Economy.Persistence.PostgreSql.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CanDoItAll.Components.BaseLib" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Include="CanDoItAll.Components.Charts" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Include="CanDoItAll.Components.Mermaid" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.4" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.8.0" />
+  </ItemGroup>
+</Project>

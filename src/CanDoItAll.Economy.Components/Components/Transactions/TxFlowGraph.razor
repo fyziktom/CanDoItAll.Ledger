@@ -1,0 +1,61 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel" data-testid="cda-tx-flow-graph">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Flow</span>
+            <h2>Inputs to outputs</h2>
+        </div>
+        <StatusBadge Text="@($"{Inputs.Count} \u2192 {Outputs.Count}")" Tone="info" />
+    </header>
+
+    <div class="cda-sdk-flow">
+        <div>
+            @foreach (EconomyTransactionInputDetails input in Inputs)
+            {
+                <div class="cda-sdk-flow__node">
+                    <strong>Input #@input.InputIndex</strong>
+                    <div class="cda-sdk-flow__amounts">
+                        <span>Main <strong>@FormatMain(input.MainAmount)</strong></span>
+                        @if (input.Token is not null)
+                        {
+                            <span>Token <strong>@FormatToken(input.Token)</strong></span>
+                        }
+                    </div>
+                    <CopyableMonoValue Value="@input.Address.Value" StartChars="8" EndChars="5" AriaLabel="Copy input address" />
+                </div>
+            }
+        </div>
+        <span class="material-icons cda-sdk-flow__arrow" aria-hidden="true">east</span>
+        <div>
+            @foreach (EconomyTransactionOutputDetails output in Outputs)
+            {
+                <div class="cda-sdk-flow__node cda-sdk-flow__node--output">
+                    <strong>Output #@output.OutputIndex</strong>
+                    <div class="cda-sdk-flow__amounts">
+                        <span>Main <strong>@output.MainAmount</strong></span>
+                        @if (output.Token is not null)
+                        {
+                            <span>Token <strong>@FormatToken(output.Token)</strong></span>
+                        }
+                    </div>
+                    <CopyableMonoValue Value="@output.Address.Value" StartChars="8" EndChars="5" AriaLabel="Copy output address" />
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<EconomyTransactionInputDetails> Inputs { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<EconomyTransactionOutputDetails> Outputs { get; set; } = [];
+
+    private static string FormatMain(Amount? amount)
+        => amount?.ToString() ?? "unknown";
+
+    private static string FormatToken(TokenTransfer token)
+        => $"{token.Amount} {token.TokenId.Value}";
+}

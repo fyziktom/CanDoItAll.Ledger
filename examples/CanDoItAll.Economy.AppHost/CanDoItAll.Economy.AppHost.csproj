@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.2.4" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Economy.AppHost</AssemblyName>
+    <RootNamespace>CanDoItAll.Economy.AppHost</RootNamespace>
+    <IsAspireHost>true</IsAspireHost>
+    <UserSecretsId>candoitall-economy-apphost-20260506</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.2.4" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.2.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Economy.AppHost.DcpProxy\CanDoItAll.Economy.AppHost.DcpProxy.csproj"
+                      IsAspireProjectResource="false"
+                      ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Node\CanDoItAll.Economy.Node.csproj"
+                      IsAspireProjectResource="true"
+                      AspireProjectMetadataTypeName="CanDoItAll_Economy_Node" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Components.Demo\CanDoItAll.Economy.Components.Demo.csproj"
+                      IsAspireProjectResource="true"
+                      AspireProjectMetadataTypeName="CanDoItAll_Economy_Components_Demo" />
+    <ProjectReference Include="..\..\..\CanDoItAll.IPFS\src\CanDoItAll.IPFS.Engine\CanDoItAll.IPFS.Engine.csproj"
+                      IsAspireProjectResource="true"
+                      AspireProjectMetadataTypeName="CanDoItAll_IPFS_Engine" />
+    <ProjectReference Include="..\..\..\CanDoItAll.IPFS\src\CanDoItAll.IPFS.NodeControl\CanDoItAll.IPFS.NodeControl.csproj"
+                      IsAspireProjectResource="true"
+                      AspireProjectMetadataTypeName="CanDoItAll_IPFS_NodeControl" />
+  </ItemGroup>
+
+  <Target Name="CopyDcpProxyToOutput" AfterTargets="Build">
+    <ItemGroup>
+      <DcpProxyFiles Include="..\CanDoItAll.Economy.AppHost.DcpProxy\bin\$(Configuration)\net10.0\**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(DcpProxyFiles)"
+          DestinationFiles="@(DcpProxyFiles->'$(OutDir)dcp-proxy\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

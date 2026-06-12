@@ -1,0 +1,29 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-security-profile-panel">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Security</span>
+            <h2>@ProfileName</h2>
+        </div>
+        <StatusBadge Text="@(ProductionMode ? "Production-like" : "Development")" Tone="@(ProductionMode ? "warning" : "info")" />
+    </header>
+    <StatusCheckList Items="Items" />
+</section>
+
+@code {
+    [Parameter]
+    public string ProfileName { get; set; } = "Local operator";
+
+    [Parameter]
+    public bool ProductionMode { get; set; }
+
+    private IReadOnlyList<StatusCheckItem> Items
+        =>
+        [
+            new() { Label = "API key header", Status = "Configured", Tone = "success", Complete = true },
+            new() { Label = "Bearer token", Status = ProductionMode ? "Required" : "Optional", Tone = ProductionMode ? "warning" : "neutral" },
+            new() { Label = "Danger actions", Status = ProductionMode ? "Disabled" : "Confirmation required", Tone = "warning" },
+            new() { Label = "Secrets in UI", Status = "Never displayed", Tone = "success", Complete = true }
+        ];
+}

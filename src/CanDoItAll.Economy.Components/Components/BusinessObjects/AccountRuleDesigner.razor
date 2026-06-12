@@ -1,0 +1,427 @@
+@namespace CanDoItAll.Economy.Components
+@using System.Globalization
+
+<SectionCard Title="Account Rule Designer" Description="Create a BO-backed rule token from a rule-creation permission.">
+    <Stack GapScale="LayoutGap.Medium">
+        @if (RulePermissionSources.Count == 0)
+        {
+            <Alert AlertStyle="AlertStyle.Warning">
+                <strong>No rule creation permission</strong>
+                <span>This account needs a permission token with action @RuleTokenAuthority.CreateRuleTokenAction for the selected namespace.</span>
+            </Alert>
+        }
+
+        <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+            <FormField Text="Template" ContainerClass="cda-economy-field">
+                <DropDown TValue="string"
+                          Data="TemplateOptions"
+                          TextProperty="Text"
+                          ValueProperty="Value"
+                          Value="@selectedTemplate"
+                          ValueChanged="@(value => SetTemplate(value))"
+                          aria-label="Rule template" />
+            </FormField>
+            <FormField Text="Rule id" ContainerClass="cda-economy-field">
+                <TextBox Value="@ruleId" ValueChanged="@(value => ruleId = value ?? string.Empty)" Immediate="true" Placeholder="cashpool-sweep" aria-label="Rule id" />
+            </FormField>
+            <FormField Text="Namespace" ContainerClass="cda-economy-field">
+                <TextBox Value="@ruleNamespace" ValueChanged="@(value => SetNamespace(value))" Immediate="true" Placeholder="rules.company" aria-label="Rule namespace" />
+            </FormField>
+            <FormField Text="Permission source" ContainerClass="cda-economy-field">
+                <DropDown TValue="string"
+                          Data="PermissionOptions"
+                          TextProperty="Text"
+                          ValueProperty="Value"
+                          Value="@selectedPermissionKey"
+                          ValueChanged="@(value => selectedPermissionKey = value)"
+                          Placeholder="Auto select"
+                          aria-label="Rule permission source" />
+            </FormField>
+            <FormField Text="Trigger" ContainerClass="cda-economy-field">
+                <DropDown TValue="string"
+                          Data="TriggerOptions"
+                          TextProperty="Text"
+                          ValueProperty="Value"
+                          Value="@selectedTriggerKind"
+                          ValueChanged="@(value => selectedTriggerKind = value ?? nameof(AccountRuleTriggerKind.BusinessObject))"
+                          aria-label="Rule trigger kind" />
+            </FormField>
+            <FormField Text="Trigger object type" ContainerClass="cda-economy-field">
+                <TextBox Value="@triggerObjectType" ValueChanged="@(value => triggerObjectType = value ?? string.Empty)" Immediate="true" Placeholder="purchase-request" aria-label="Trigger object type" />
+            </FormField>
+            <FormField Text="Action" ContainerClass="cda-economy-field">
+                <DropDown TValue="string"
+                          Data="ActionOptions"
+                          TextProperty="Text"
+                          ValueProperty="Value"
+                          Value="@selectedActionKind"
+                          ValueChanged="@(value => selectedActionKind = value ?? nameof(AccountRuleActionKind.Payment))"
+                          aria-label="Rule action kind" />
+            </FormField>
+            <FormField Text="Receiver address" ContainerClass="cda-economy-field">
+                <TextBox Value="@receiverAddress" ValueChanged="@(value => receiverAddress = value ?? string.Empty)" Immediate="true" Placeholder="cdia..." aria-label="Rule receiver address" />
+            </FormField>
+            <FormField Text="Amount expression" ContainerClass="cda-economy-field">
+                <TextBox Value="@amountExpression" ValueChanged="@(value => amountExpression = value ?? string.Empty)" Immediate="true" Placeholder="account_main - limit" aria-label="Rule amount expression" />
+            </FormField>
+            <FormField Text="Token id" ContainerClass="cda-economy-field">
+                <TextBox Value="@tokenId" ValueChanged="@(value => tokenId = value ?? string.Empty)" Immediate="true" Placeholder="USD-CREDIT" aria-label="Rule token id" />
+            </FormField>
+            <FormField Text="Processed property" ContainerClass="cda-economy-field">
+                <TextBox Value="@processedProperty" ValueChanged="@(value => processedProperty = value ?? string.Empty)" Immediate="true" Placeholder="processed" aria-label="Rule processed property" />
+            </FormField>
+            <FormField Text="Max actions" ContainerClass="cda-economy-field">
+                <TextBox Value="@maxActionsText" ValueChanged="@(value => maxActionsText = value ?? string.Empty)" Immediate="true" Placeholder="5" aria-label="Rule max actions" />
+            </FormField>
+        </Grid>
+
+        <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+            <FormField Text="Variables" ContainerClass="cda-economy-field">
+                <TextArea Value="@variablesText" ValueChanged="@(value => variablesText = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Rule variables" />
+            </FormField>
+            <FormField Text="Conditions" ContainerClass="cda-economy-field">
+                <TextArea Value="@conditionsText" ValueChanged="@(value => conditionsText = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Rule conditions" />
+            </FormField>
+            <FormField Text="Action state JSON" ContainerClass="cda-economy-field">
+                <TextArea Value="@stateJson" ValueChanged="@(value => stateJson = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Rule action state JSON" />
+            </FormField>
+        </Grid>
+
+        <Cluster Gap="LayoutGap.Medium">
+            <Stack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" GapScale="LayoutGap.XSmall" Class="cda-economy-check-row">
+                <CheckBox TValue="bool" Value="@enabled" ValueChanged="@(value => enabled = value)" />
+                <span>Enabled</span>
+            </Stack>
+            <Stack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" GapScale="LayoutGap.XSmall" Class="cda-economy-check-row">
+                <CheckBox TValue="bool" Value="@markTriggerProcessed" ValueChanged="@(value => markTriggerProcessed = value)" />
+                <span>Mark trigger processed</span>
+            </Stack>
+            <Stack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" GapScale="LayoutGap.XSmall" Class="cda-economy-check-row">
+                <CheckBox TValue="bool" Value="@keepProcessedBusinessObject" ValueChanged="@(value => keepProcessedBusinessObject = value)" />
+                <span>Keep processed BO</span>
+            </Stack>
+        </Cluster>
+
+        <AccountRuleLogicPreview Rule="PreviewRule" ValidationErrors="ValidationErrors" Compact="true" />
+
+        <Cluster Gap="LayoutGap.Small">
+            <Button Text="Create Rule BO"
+                    Icon="account_tree"
+                    Disabled="@(!CanSubmit)"
+                    Click="SubmitAsync" />
+            <Button Text="Reset Template"
+                    Icon="restart_alt"
+                    Variant="Variant.Outlined"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Click="@(() => ApplyTemplate(selectedTemplate))" />
+        </Cluster>
+    </Stack>
+</SectionCard>
+
+@code {
+    private const string CashpoolTemplate = "cashpool";
+    private const string PurchaseTemplate = "purchase";
+    private const string TokenGuardTemplate = "token-guard";
+
+    private string selectedTemplate = CashpoolTemplate;
+    private string ruleId = "cashpool-sweep";
+    private string ruleNamespace = "rules.company";
+    private bool enabled = true;
+    private string selectedTriggerKind = nameof(AccountRuleTriggerKind.AccountSnapshot);
+    private string triggerObjectType = string.Empty;
+    private string variablesText = "limit=1000";
+    private string conditionsText = "account_main > limit";
+    private string selectedActionKind = nameof(AccountRuleActionKind.Payment);
+    private string receiverAddress = string.Empty;
+    private string amountExpression = "account_main - limit";
+    private string tokenId = string.Empty;
+    private string stateJson = "{\"status\":\"approved\"}";
+    private string processedProperty = "processed";
+    private string maxActionsText = "5";
+    private bool markTriggerProcessed = true;
+    private bool keepProcessedBusinessObject = true;
+    private string? selectedPermissionKey;
+    private string? workspaceKey;
+
+    [Parameter]
+    public BusinessObjectWorkspaceModel? Workspace { get; set; }
+
+    [Parameter]
+    public EventCallback<EconomyRuleTokenCreationRequest> SubmitRequested { get; set; }
+
+    private IReadOnlyList<SelectOption> TemplateOptions { get; } =
+    [
+        new(CashpoolTemplate, "Cashpool sweep"),
+        new(PurchaseTemplate, "Purchase approval"),
+        new(TokenGuardTemplate, "Token balance guard")
+    ];
+
+    private IReadOnlyList<SelectOption> TriggerOptions { get; } =
+    [
+        new(nameof(AccountRuleTriggerKind.AccountSnapshot), "Account snapshot"),
+        new(nameof(AccountRuleTriggerKind.BusinessObject), "BusinessObject trigger")
+    ];
+
+    private IReadOnlyList<SelectOption> ActionOptions { get; } =
+    [
+        new(nameof(AccountRuleActionKind.Payment), "Payment"),
+        new(nameof(AccountRuleActionKind.TokenTransfer), "Token transfer"),
+        new(nameof(AccountRuleActionKind.TransferBusinessObject), "Transfer BO"),
+        new(nameof(AccountRuleActionKind.UpdateBusinessObject), "Update BO"),
+        new(nameof(AccountRuleActionKind.MarkProcessed), "Mark processed")
+    ];
+
+    protected override void OnParametersSet()
+    {
+        string nextWorkspaceKey = Workspace is null
+            ? "none"
+            : $"{Workspace.Context.LedgerId.Value}:{Workspace.Context.ScenarioId?.Value}:{Workspace.Address.Value}";
+        if (workspaceKey == nextWorkspaceKey)
+        {
+            return;
+        }
+
+        workspaceKey = nextWorkspaceKey;
+        if (string.IsNullOrWhiteSpace(receiverAddress))
+        {
+            receiverAddress = DefaultReceiverAddress;
+        }
+
+        selectedPermissionKey ??= RulePermissionSources.FirstOrDefault()?.OutPoint.ToString();
+    }
+
+    private IReadOnlyList<LedgerPermissionSource> RulePermissionSources
+        => Workspace?.PermissionSourcesOrEmpty
+            .Where(source => string.Equals(source.Grant.Action, RuleTokenAuthority.CreateRuleTokenAction, StringComparison.Ordinal))
+            .OrderBy(source => source.Grant.Namespace, StringComparer.Ordinal)
+            .ThenBy(source => source.OutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenBy(source => source.OutPoint.OutputIndex)
+            .ToArray()
+            ?? [];
+
+    private IReadOnlyList<SelectOption> PermissionOptions
+        => RulePermissionSources
+            .Select(source => new SelectOption(source.OutPoint.ToString(), $"{source.Grant.Namespace} / {source.Amount}"))
+            .ToArray();
+
+    private LedgerPermissionSource? SelectedPermissionSource
+        => RulePermissionSources.FirstOrDefault(source => source.OutPoint.ToString() == selectedPermissionKey)
+            ?? RulePermissionSources.FirstOrDefault();
+
+    private string DefaultReceiverAddress
+        => Workspace?.AddressBookmarks.FirstOrDefault()?.Address.Value
+            ?? Workspace?.Address.Value
+            ?? string.Empty;
+
+    private AccountRuleDefinition? PreviewRule
+        => TryBuildRule(out AccountRuleDefinition rule, out _) ? rule : null;
+
+    private IReadOnlyList<string> ValidationErrors
+    {
+        get
+        {
+            TryBuildRule(out _, out IReadOnlyList<string> errors);
+            return errors;
+        }
+    }
+
+    private bool CanSubmit
+        => SelectedPermissionSource?.AllowsRuleCreation(ruleNamespace) == true && ValidationErrors.Count == 0;
+
+    private void SetTemplate(string? value)
+    {
+        selectedTemplate = string.IsNullOrWhiteSpace(value) ? CashpoolTemplate : value;
+        ApplyTemplate(selectedTemplate);
+    }
+
+    private void SetNamespace(string? value)
+    {
+        ruleNamespace = value ?? string.Empty;
+        selectedPermissionKey = RulePermissionSources.FirstOrDefault(source => source.AllowsRuleCreation(ruleNamespace))?.OutPoint.ToString()
+            ?? RulePermissionSources.FirstOrDefault()?.OutPoint.ToString();
+    }
+
+    private void ApplyTemplate(string template)
+    {
+        string receiver = DefaultReceiverAddress;
+        switch (template)
+        {
+            case PurchaseTemplate:
+                ruleId = "purchase-approval";
+                ruleNamespace = "rules.company";
+                selectedTriggerKind = nameof(AccountRuleTriggerKind.BusinessObject);
+                triggerObjectType = "purchase-request";
+                variablesText = "allowance=5000";
+                conditionsText = "bo_amount <= allowance\naccount_main >= bo_amount";
+                selectedActionKind = nameof(AccountRuleActionKind.TransferBusinessObject);
+                receiverAddress = receiver;
+                amountExpression = "bo_amount";
+                tokenId = string.Empty;
+                stateJson = "{\"status\":\"approved-by-rule\"}";
+                markTriggerProcessed = true;
+                keepProcessedBusinessObject = true;
+                maxActionsText = "5";
+                break;
+            case TokenGuardTemplate:
+                ruleId = "token-balance-guard";
+                ruleNamespace = "rules.company";
+                selectedTriggerKind = nameof(AccountRuleTriggerKind.AccountSnapshot);
+                triggerObjectType = string.Empty;
+                variablesText = "minimum=100\nbatch=25";
+                conditionsText = "token_USD_CREDIT < minimum";
+                selectedActionKind = nameof(AccountRuleActionKind.TokenTransfer);
+                receiverAddress = receiver;
+                amountExpression = "batch";
+                tokenId = "USD-CREDIT";
+                stateJson = "{}";
+                markTriggerProcessed = false;
+                keepProcessedBusinessObject = true;
+                maxActionsText = "3";
+                break;
+            default:
+                selectedTemplate = CashpoolTemplate;
+                ruleId = "cashpool-sweep";
+                ruleNamespace = "rules.company";
+                selectedTriggerKind = nameof(AccountRuleTriggerKind.AccountSnapshot);
+                triggerObjectType = string.Empty;
+                variablesText = "limit=1000";
+                conditionsText = "account_main > limit";
+                selectedActionKind = nameof(AccountRuleActionKind.Payment);
+                receiverAddress = receiver;
+                amountExpression = "account_main - limit";
+                tokenId = string.Empty;
+                stateJson = "{}";
+                markTriggerProcessed = false;
+                keepProcessedBusinessObject = true;
+                maxActionsText = "5";
+                break;
+        }
+
+        selectedPermissionKey = RulePermissionSources.FirstOrDefault(source => source.AllowsRuleCreation(ruleNamespace))?.OutPoint.ToString()
+            ?? RulePermissionSources.FirstOrDefault()?.OutPoint.ToString();
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (!TryBuildRule(out AccountRuleDefinition rule, out _))
+        {
+            return;
+        }
+
+        await SubmitRequested.InvokeAsync(new EconomyRuleTokenCreationRequest(rule, SelectedPermissionSource?.OutPoint));
+    }
+
+    private bool TryBuildRule(out AccountRuleDefinition rule, out IReadOnlyList<string> errors)
+    {
+        var result = new List<string>();
+        rule = AccountRuleDefinition.Empty;
+
+        IReadOnlyDictionary<string, string> variables = ParseVariables(result);
+        IReadOnlyList<string> conditions = ParseLines(conditionsText);
+        if (conditions.Count == 0)
+        {
+            result.Add("Add at least one condition.");
+        }
+
+        if (!Enum.TryParse(selectedTriggerKind, out AccountRuleTriggerKind triggerKind))
+        {
+            result.Add("Select a valid trigger.");
+            triggerKind = AccountRuleTriggerKind.BusinessObject;
+        }
+
+        if (!Enum.TryParse(selectedActionKind, out AccountRuleActionKind actionKind))
+        {
+            result.Add("Select a valid action.");
+            actionKind = AccountRuleActionKind.Payment;
+        }
+
+        if (!int.TryParse(maxActionsText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int maxActions) || maxActions <= 0)
+        {
+            result.Add("Max actions must be a positive whole number.");
+            maxActions = 1;
+        }
+
+        AccountRuleAction action = BuildAction(actionKind);
+        rule = new AccountRuleDefinition(
+            ruleId,
+            ruleNamespace,
+            enabled,
+            new AccountRuleTrigger(
+                triggerKind,
+                triggerKind == AccountRuleTriggerKind.BusinessObject ? NullIfBlank(triggerObjectType) : null,
+                NullIfBlank(processedProperty) ?? "processed"),
+            variables,
+            conditions,
+            [action],
+            new AccountRuleProcessingOptions(
+                markTriggerProcessed,
+                NullIfBlank(processedProperty) ?? "processed",
+                keepProcessedBusinessObject,
+                maxActions));
+
+        if (!RuleTokenAuthority.TryValidate(rule, out IReadOnlyList<string> validationErrors))
+        {
+            result.AddRange(validationErrors);
+        }
+
+        errors = result;
+        if (result.Count > 0)
+        {
+            return false;
+        }
+
+        rule = RuleTokenAuthority.Normalize(rule);
+        return true;
+    }
+
+    private AccountRuleAction BuildAction(AccountRuleActionKind actionKind)
+        => actionKind switch
+        {
+            AccountRuleActionKind.Payment => new(
+                actionKind,
+                ReceiverAddress: NullIfBlank(receiverAddress),
+                AmountExpression: NullIfBlank(amountExpression)),
+            AccountRuleActionKind.TokenTransfer => new(
+                actionKind,
+                ReceiverAddress: NullIfBlank(receiverAddress),
+                AmountExpression: NullIfBlank(amountExpression),
+                TokenId: NullIfBlank(tokenId)),
+            AccountRuleActionKind.TransferBusinessObject => new(
+                actionKind,
+                ReceiverAddress: NullIfBlank(receiverAddress),
+                StateJson: NullIfBlank(stateJson)),
+            AccountRuleActionKind.UpdateBusinessObject => new(
+                actionKind,
+                StateJson: NullIfBlank(stateJson)),
+            AccountRuleActionKind.MarkProcessed => new(actionKind),
+            _ => new(AccountRuleActionKind.MarkProcessed)
+        };
+
+    private IReadOnlyDictionary<string, string> ParseVariables(List<string> errors)
+    {
+        var variables = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (string line in ParseLines(variablesText))
+        {
+            string[] parts = line.Split('=', 2, StringSplitOptions.TrimEntries);
+            if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]))
+            {
+                errors.Add($"Variable '{line}' must be written as name=value.");
+                continue;
+            }
+
+            variables[parts[0]] = parts[1];
+        }
+
+        return variables;
+    }
+
+    private static IReadOnlyList<string> ParseLines(string value)
+        => value.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(line => !line.StartsWith('#'))
+            .ToArray();
+
+    private static string? NullIfBlank(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private sealed record SelectOption(string Value, string Text);
+}

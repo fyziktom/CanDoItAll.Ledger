@@ -1,0 +1,22 @@
+@namespace CanDoItAll.Economy.Components
+
+<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-transaction-receipt">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Receipt</span>
+            <h2>@(Result.Accepted ? "Accepted" : "Rejected")</h2>
+        </div>
+        <StatusBadge Text="@Result.Mode.ToString()" Tone="@(Result.Accepted ? "success" : "danger")" />
+    </header>
+
+    <div class="cda-sdk-fact-grid">
+        <div><span>Tx id</span><strong><CopyableMonoValue Value="@(Result.TxId?.Value)" EmptyText="none" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" /></strong></div>
+        <div><span>Ledger sequence</span><strong>@(Result.LedgerSequence?.ToString() ?? "pending")</strong></div>
+        <div><span>Message</span><strong>@Result.Message</strong></div>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public EconomyTransactionExecutionResult Result { get; set; } = default!;
+}

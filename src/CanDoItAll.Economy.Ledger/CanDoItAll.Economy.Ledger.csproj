@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Economy.Ledger</AssemblyName>
+    <RootNamespace>CanDoItAll.Economy.Ledger</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Economy.Core\CanDoItAll.Economy.Core.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
+  </ItemGroup>
+</Project>

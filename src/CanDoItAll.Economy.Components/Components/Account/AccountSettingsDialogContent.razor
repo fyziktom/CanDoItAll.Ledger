@@ -1,0 +1,18 @@
+@namespace CanDoItAll.Economy.Components
+
+<SectionCard Title="Account Settings" Description="Current ledger session and UI account context.">
+    <Grid ColumnsMd="2" Gap="LayoutGap.Medium">
+        <div class="cda-economy-fact cda-economy-fact--wide"><span>Address</span><strong>@Workspace.Address.Value</strong></div>
+        <div class="cda-economy-fact"><span>Account</span><strong>@Workspace.AccountName</strong></div>
+        <div class="cda-economy-fact"><span>Alias</span><strong>@(Workspace.AccountAlias ?? "none")</strong></div>
+        <div class="cda-economy-fact"><span>Ledger</span><strong>@Workspace.Context.LedgerId.Value</strong></div>
+        <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
+        <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
+        <div class="cda-economy-fact cda-economy-fact--wide"><span>Connection</span><strong>@Workspace.ConnectionLabel</strong></div>
+    </Grid>
+</SectionCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+}
