@@ -1,6 +1,8 @@
 # CanDoItAll Economy AppHost
 
-The AppHost runs the BO demo, IPFS node, and economy ledger node together.
+The AppHost runs the Ledger demo, IPFS node, and ledger node together.
+
+This project is Ledger-owned despite the compatibility name. It must not host the separated Economy simulator lane.
 
 By default the ledger node uses EF Core InMemory storage:
 
