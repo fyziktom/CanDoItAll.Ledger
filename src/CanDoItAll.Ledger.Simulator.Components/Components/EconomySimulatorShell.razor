@@ -1,0 +1,389 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+
+<PageScaffold Mode="PageScaffoldMode.FocusWorkbench" FillHeight="true" MaxWidthClass="max-w-none">
+    <Header>
+        <Split Breakpoint="LayoutBreakpoint.Md"
+               AlignItems="AlignItems.Start"
+               JustifyContent="JustifyContent.SpaceBetween"
+               Gap="LayoutGap.Large"
+               Wrap="FlexWrap.Wrap">
+            <Stack GapScale="LayoutGap.Tiny">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Economy Simulator" />
+                <TextBlock TextStyle="TextStyle.H2" Value="Simulation project management" />
+                <SmallText Text="Create, edit, validate, import, export, and prepare BO-backed simulation projects." />
+            </Stack>
+            <Cluster Gap="LayoutGap.Small">
+                <Button Text="Create project" Icon="add_circle" ButtonStyle="ButtonStyle.Secondary" />
+                <Button Text="Import" Icon="upload_file" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" />
+                <Button Text="Run selected" Icon="play_arrow" Click="@OpenRunDialog" IsBusy="@IsLaunchOverlayVisible" data-testid="simulation-run-selected" />
+            </Cluster>
+        </Split>
+    </Header>
+
+    <ChildContent>
+        <div class="cda-sim-management-grid" data-testid="simulation-project-workbench">
+            <WorkspacePanel Class="min-h-0 overflow-hidden">
+                <Stack FillHeight="true" GapScale="LayoutGap.Medium">
+                    <Split Breakpoint="LayoutBreakpoint.None"
+                           AlignItems="AlignItems.Center"
+                           JustifyContent="JustifyContent.SpaceBetween"
+                           Gap="LayoutGap.Small">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Projects" />
+                            <TextBlock TextStyle="TextStyle.H4" Value="@FilteredProjects.Count.ToString(CultureInfo.InvariantCulture)" />
+                        </Stack>
+                        <StatusBadge Text="@SelectedProject.Summary.StorageMode.ToString()" Tone="info" />
+                    </Split>
+
+                    <FormField Text="Search projects">
+                        <TextBox Value="@projectSearch"
+                                 ValueChanged="@(value => projectSearch = value ?? string.Empty)"
+                                 Immediate="true"
+                                 Placeholder="Search name, id, currency..." />
+                    </FormField>
+
+                    <div class="min-h-0 flex-1 overflow-auto space-y-2" data-testid="simulation-project-rail">
+                        @foreach (SimulationProjectSummary project in FilteredProjects)
+                        {
+                            bool selected = string.Equals(project.ProjectId, selectedProjectId, StringComparison.Ordinal);
+                            <button type="button"
+                                    class="@ResolveProjectButtonClass(selected)"
+                                    data-testid="@($"simulation-project-row-{project.ProjectId}")"
+                                    @onclick="@(() => SelectProject(project.ProjectId))">
+                                <span class="flex min-w-0 flex-col items-start gap-1 text-left">
+                                    <span class="max-w-full truncate text-sm font-semibold text-slate-950">@project.DisplayName</span>
+                                    <span class="max-w-full truncate text-xs text-slate-500">@project.ProjectId</span>
+                                    <span class="text-xs text-slate-500">@FormatDate(project.PlanningStartDate) - @FormatDate(project.PlanningEndDate)</span>
+                                </span>
+                                <span class="flex flex-col items-end gap-1 text-xs">
+                                    <StatusBadge Text="@project.Status.ToString()" Tone="@StatusTone(project.Status)" />
+                                    <span>@project.IssueCount issue(s)</span>
+                                    <span>@(project.LastRunAtUtc is null ? "No run" : $"Run {project.LastRunAtUtc.Value:yyyy-MM-dd}")</span>
+                                </span>
+                            </button>
+                        }
+                    </div>
+                </Stack>
+            </WorkspacePanel>
+
+            <WorkspacePanel Class="min-h-0 overflow-hidden">
+                <Stack FillHeight="true" GapScale="LayoutGap.Large">
+                    <Split Breakpoint="LayoutBreakpoint.Lg"
+                           AlignItems="AlignItems.Start"
+                           JustifyContent="JustifyContent.SpaceBetween"
+                           Gap="LayoutGap.Large"
+                           Wrap="FlexWrap.Wrap">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <Cluster Gap="LayoutGap.Small">
+                                <TextBlock TextStyle="TextStyle.Eyebrow" Value="@SelectedProject.Summary.ProjectId" />
+                                <StatusBadge Text="@SelectedProject.Summary.Status.ToString()" Tone="@StatusTone(SelectedProject.Summary.Status)" />
+                            </Cluster>
+                            <TextBlock TextStyle="TextStyle.H2" Value="@SelectedProject.Summary.DisplayName" />
+                            <SmallText Text="@($"{SelectedProject.Summary.BaseCurrencyCode} | {FormatDate(SelectedProject.Summary.PlanningStartDate)} - {FormatDate(SelectedProject.Summary.PlanningEndDate)} | Updated {SelectedProject.Summary.UpdatedAtUtc:yyyy-MM-dd HH:mm} UTC")" />
+                        </Stack>
+                        <Cluster Gap="LayoutGap.Small">
+                            <StatusBadge Text="@($"{SelectedProject.ValidationMessages.Count} validation note(s)")" Tone="@ValidationTone" />
+                            <Button Text="Validate" Icon="rule" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" />
+                            <Button Text="Export" Icon="download" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" />
+                            <Button Text="Run" Icon="play_arrow" Click="@OpenRunDialog" IsBusy="@IsLaunchOverlayVisible" data-testid="simulation-project-run" />
+                        </Cluster>
+                    </Split>
+
+                    @if (LaunchMessages.Count > 0)
+                    {
+                        <ValidationList Messages="LaunchMessages" />
+                    }
+
+                    <Tabs AriaLabel="Selected simulation project workspace"
+                          RenderMode="TabRenderMode.Client"
+                          OverflowMode="TabsOverflowMode.Wrap"
+                          PanelOverflowMode="TabsPanelOverflowMode.Auto"
+                          FillHeight="true"
+                          data-testid="simulation-project-tabs">
+                        <TabsItem Text="Basic info" Icon="info">
+                            <SimulationProjectBasicInfoPanel Project="SelectedProject" />
+                        </TabsItem>
+                        <TabsItem Text="BUs and accounts" Icon="account_tree">
+                            <BusinessUnitTree Project="SelectedProject" />
+                        </TabsItem>
+                        <TabsItem Text="BOs and rules" Icon="rule_folder">
+                            <SimulationBoRuleDesigner Project="SelectedProject" />
+                        </TabsItem>
+                        <TabsItem Text="Financial inputs" Icon="payments">
+                            <SimulationFinancialInputsPanel Project="SelectedProject" />
+                        </TabsItem>
+                        <TabsItem Text="Planned expenses" Icon="event_note" data-testid="simulation-planned-financial-schedules-tab-button">
+                            <PlannedFinancialSchedulePanel Project="SelectedProject" />
+                        </TabsItem>
+                        <TabsItem Text="Simulation setup" Icon="tune">
+                            <SimulationSetupPanel Project="SelectedProject"
+                                                  RunRequested="RunRequested" />
+                        </TabsItem>
+                        <TabsItem Text="Export/import" Icon="sync_alt">
+                            <SimulationProjectImportExportPanel Project="SelectedProject"
+                                                                Manifest="Model.ExportManifest"
+                                                                ImportPreview="Model.ImportPreview" />
+                        </TabsItem>
+                    </Tabs>
+                </Stack>
+            </WorkspacePanel>
+        </div>
+    </ChildContent>
+</PageScaffold>
+
+<Dialog IsOpen="@isRunDialogOpen"
+        Title="Start simulation"
+        Eyebrow="Run mode"
+        Subtitle="Choose whether this run should materialize the full horizon now or wait for manual timeline steps."
+        Size="ModalSize.Compact"
+        TestId="simulation-start-mode-dialog"
+        OnClose="@CloseRunDialog">
+    <ChildContent>
+        <Stack GapScale="LayoutGap.Medium">
+            <div class="cda-sim-run-mode-grid">
+                <button type="button"
+                        class="@ResolveRunModeButtonClass(SimulationRunMode.Automatic)"
+                        aria-pressed="@(pendingRunMode == SimulationRunMode.Automatic)"
+                        data-testid="simulation-start-automatic"
+                        @onclick="@(() => pendingRunMode = SimulationRunMode.Automatic)">
+                    <span class="material-icons" aria-hidden="true">play_circle</span>
+                    <span>
+                        <strong>Automatic</strong>
+                        <small>Run all configured steps to the preset horizon.</small>
+                    </span>
+                </button>
+                <button type="button"
+                        class="@ResolveRunModeButtonClass(SimulationRunMode.Manual)"
+                        aria-pressed="@(pendingRunMode == SimulationRunMode.Manual)"
+                        data-testid="simulation-start-manual"
+                        @onclick="@(() => pendingRunMode = SimulationRunMode.Manual)">
+                    <span class="material-icons" aria-hidden="true">touch_app</span>
+                    <span>
+                        <strong>Manual stepping</strong>
+                        <small>Open the run page at step 1 and wait for next-step input.</small>
+                    </span>
+                </button>
+            </div>
+
+            <TimelineStepper CurrentStep="1"
+                             TotalSteps="@PendingSetupStepCount"
+                             AvailableStep="1"
+                             Mode="@PendingTimelineMode"
+                             ShowModeToggle="false"
+                             StepLabel="@PendingSetupPeriodLabel"
+                             CurrentLabel="@PendingSetupStartLabel"
+                             StatusText="@PendingModeStatusText"
+                             StatusTone="info"
+                             CanStepBack="false"
+                             CanStepForward="false"
+                             ShowPlayPause="false"
+                             Ticks="@PendingSetupTicks" />
+        </Stack>
+    </ChildContent>
+    <Footer>
+        <Cluster JustifyContent="JustifyContent.End" Gap="LayoutGap.Small">
+            <Button Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@CloseRunDialog" />
+            <Button Text="Start run" Icon="play_arrow" Click="@RunSelectedProjectAsync" IsBusy="@IsLaunchOverlayVisible" data-testid="simulation-start-confirm" />
+        </Cluster>
+    </Footer>
+</Dialog>
+
+@if (IsLaunchOverlayVisible)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm" data-testid="simulation-run-launch-overlay">
+        <div class="flex min-w-72 flex-col items-center gap-3 rounded-lg border border-slate-200 bg-white px-6 py-5 shadow-xl">
+            <span class="cda-button__spinner" aria-hidden="true"></span>
+            <TextBlock TextStyle="TextStyle.H4" Value="Starting simulation run" />
+            <SmallText Text="Preparing live run data..." />
+        </div>
+    </div>
+}
+
+@code {
+    private string selectedProjectId = string.Empty;
+    private string projectSearch = string.Empty;
+    private bool isRunDialogOpen;
+    private bool isSubmittingRun;
+    private SimulationRunMode pendingRunMode = SimulationRunMode.Manual;
+
+    [Parameter]
+    public SimulationProjectManagementViewModel? ViewModel { get; set; }
+
+    [Parameter]
+    public EventCallback<SimulationProjectRunRequest> RunRequested { get; set; }
+
+    [Parameter]
+    public bool IsRunLaunching { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<SimulationProjectValidationMessage> LaunchMessages { get; set; } = [];
+
+    private SimulationProjectManagementViewModel Model => ViewModel ?? EconomySimulatorSampleData.CreateProjectManagement();
+
+    private SimulationProjectState SelectedProject
+    {
+        get
+        {
+            SimulationProjectSummary summary = Model.Projects.FirstOrDefault(project => string.Equals(project.ProjectId, selectedProjectId, StringComparison.Ordinal))
+                ?? Model.SelectedProject.Summary;
+            return string.Equals(summary.ProjectId, Model.SelectedProject.Summary.ProjectId, StringComparison.Ordinal)
+                ? Model.SelectedProject
+                : Model.SelectedProject with { Summary = summary };
+        }
+    }
+
+    private IReadOnlyList<SimulationProjectSummary> FilteredProjects
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(projectSearch))
+            {
+                return Model.Projects;
+            }
+
+            return Model.Projects
+                .Where(project => project.DisplayName.Contains(projectSearch, StringComparison.OrdinalIgnoreCase)
+                    || project.ProjectId.Contains(projectSearch, StringComparison.OrdinalIgnoreCase)
+                    || project.BaseCurrencyCode.Contains(projectSearch, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+        }
+    }
+
+    private string ValidationTone => SelectedProject.ValidationMessages.Any(x => x.Severity == SimulationValidationSeverity.Error)
+        ? "danger"
+        : SelectedProject.ValidationMessages.Any(x => x.Severity == SimulationValidationSeverity.Warning)
+            ? "warning"
+            : "success";
+
+    private bool IsLaunchOverlayVisible => IsRunLaunching || isSubmittingRun;
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(selectedProjectId))
+        {
+            selectedProjectId = Model.SelectedProject.Summary.ProjectId;
+        }
+    }
+
+    private void SelectProject(string projectId)
+    {
+        selectedProjectId = projectId;
+    }
+
+    private void OpenRunDialog()
+    {
+        pendingRunMode = SimulationRunMode.Manual;
+        isRunDialogOpen = true;
+    }
+
+    private Task CloseRunDialog()
+    {
+        isRunDialogOpen = false;
+        return Task.CompletedTask;
+    }
+
+    private async Task RunSelectedProjectAsync()
+    {
+        if (isSubmittingRun)
+        {
+            return;
+        }
+
+        string? setupId = SelectedProject.RunSetups.FirstOrDefault()?.SetupId;
+        isRunDialogOpen = false;
+        isSubmittingRun = true;
+        try
+        {
+            await RunRequested.InvokeAsync(new SimulationProjectRunRequest(SelectedProject, setupId, pendingRunMode));
+        }
+        finally
+        {
+            isSubmittingRun = false;
+        }
+    }
+
+    private SimulationRunSetupState? PendingSetup => SelectedProject.RunSetups.FirstOrDefault();
+
+    private int PendingSetupStepCount => Math.Max(1, PendingSetup?.StepCount ?? 1);
+
+    private string PendingSetupPeriodLabel => PendingSetup is null
+        ? "Run setup"
+        : $"{PendingSetup.StepPeriod} stepping";
+
+    private string PendingSetupStartLabel => PendingSetup is null
+        ? FormatDate(SelectedProject.Summary.PlanningStartDate)
+        : FormatDate(PendingSetup.HorizonStartDate);
+
+    private string PendingModeStatusText => pendingRunMode == SimulationRunMode.Automatic
+        ? "Will materialize all steps"
+        : "Will wait at first step";
+
+    private TimelineStepperMode PendingTimelineMode => pendingRunMode == SimulationRunMode.Automatic
+        ? TimelineStepperMode.Automatic
+        : TimelineStepperMode.Manual;
+
+    private IReadOnlyList<TimelineStepperTick> PendingSetupTicks => BuildTimelineTicks(PendingSetup, PendingSetupStepCount, 1);
+
+    private static string ResolveProjectButtonClass(bool selected)
+        => string.Join(' ', [
+            "flex w-full min-w-0 items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition",
+            selected ? "border-sky-300 bg-sky-50" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+        ]);
+
+    private static string StatusTone(SimulationProjectStatus status)
+        => status switch
+        {
+            SimulationProjectStatus.Active => "success",
+            SimulationProjectStatus.Running => "info",
+            SimulationProjectStatus.NeedsAttention => "warning",
+            SimulationProjectStatus.Archived => "muted",
+            _ => "secondary"
+        };
+
+    private static string FormatDate(DateOnly date)
+        => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static IReadOnlyList<TimelineStepperTick> BuildTimelineTicks(SimulationRunSetupState? setup, int totalSteps, int availableStep)
+    {
+        if (setup is null)
+        {
+            return [new TimelineStepperTick { Step = 1, Label = "1", Major = true }];
+        }
+
+        int safeTotal = Math.Max(1, totalSteps);
+        int[] candidates = [1, Math.Max(1, safeTotal / 4), Math.Max(1, safeTotal / 2), Math.Max(1, safeTotal * 3 / 4), safeTotal];
+        return candidates
+            .Distinct()
+            .Order()
+            .Select(step => new TimelineStepperTick
+            {
+                Step = step,
+                Label = step == 1
+                    ? "Start"
+                    : step == safeTotal
+                        ? "End"
+                        : step.ToString(CultureInfo.InvariantCulture),
+                Description = DateAtStep(setup, step).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Major = step == 1 || step == safeTotal,
+                Disabled = step > availableStep
+            })
+            .ToArray();
+    }
+
+    private static DateOnly DateAtStep(SimulationRunSetupState setup, int step)
+        => setup.StepPeriod switch
+        {
+            SimulationRunStepPeriod.Day => setup.HorizonStartDate.AddDays(step - 1),
+            SimulationRunStepPeriod.Week => setup.HorizonStartDate.AddDays((step - 1) * 7),
+            SimulationRunStepPeriod.Quarter => setup.HorizonStartDate.AddMonths((step - 1) * 3),
+            SimulationRunStepPeriod.HalfYear => setup.HorizonStartDate.AddMonths((step - 1) * 6),
+            SimulationRunStepPeriod.Year => setup.HorizonStartDate.AddYears(step - 1),
+            _ => setup.HorizonStartDate.AddMonths(step - 1)
+        };
+
+    private string ResolveRunModeButtonClass(SimulationRunMode mode)
+        => pendingRunMode == mode
+            ? "cda-sim-run-mode-button cda-sim-run-mode-button--active"
+            : "cda-sim-run-mode-button";
+}

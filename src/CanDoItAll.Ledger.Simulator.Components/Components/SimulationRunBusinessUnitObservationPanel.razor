@@ -1,0 +1,278 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+
+<div class="cda-sim-split-grid" data-testid="simulation-run-bu-tab">
+    <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
+        <Stack FillHeight="true" GapScale="LayoutGap.Medium">
+            <Split Breakpoint="LayoutBreakpoint.None"
+                   AlignItems="AlignItems.Center"
+                   JustifyContent="JustifyContent.SpaceBetween"
+                   Gap="LayoutGap.Small">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="BU/account state" />
+                    <TextBlock TextStyle="TextStyle.H4" Value="@Observation.AccountSnapshots.Count.ToString(CultureInfo.InvariantCulture)" />
+                </Stack>
+                <StatusBadge Text="@Observation.Summary.Status" Tone="@StatusTone(Observation.Summary.Status)" />
+            </Split>
+
+            <TreeView Items="BusinessUnitNodes"
+                      Style="TreeViewStyle.Workbench"
+                      AriaLabel="Run observation business unit and account tree"
+                      OnSelect="SelectNode"
+                      OnToggle="ToggleNode" />
+        </Stack>
+    </WorkspacePanel>
+
+    <WorkspacePanel Class="min-h-0 overflow-auto">
+        @if (SelectedSnapshot is not null)
+        {
+            <Stack GapScale="LayoutGap.Large" data-testid="simulation-run-selected-account-detail">
+                <Split Breakpoint="LayoutBreakpoint.Lg"
+                       AlignItems="AlignItems.Start"
+                       JustifyContent="JustifyContent.SpaceBetween"
+                       Gap="LayoutGap.Medium"
+                       Wrap="FlexWrap.Wrap">
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Account snapshot" />
+                        <TextBlock TextStyle="TextStyle.H3" Value="@SelectedSnapshot.BusinessUnitName" />
+                        <SmallText Text="@SelectedSnapshot.AccountAddress.Value" />
+                    </Stack>
+                    <Cluster Gap="LayoutGap.Small">
+                        <StatusBadge Text="@SelectedSnapshot.AccountRole.ToString()" Tone="info" />
+                        <StatusBadge Text="@SelectedSnapshot.BindingStatus.ToString()" Tone="@StatusTone(SelectedSnapshot.BindingStatus)" />
+                    </Cluster>
+                </Split>
+
+                <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
+                    <SectionCard Title="Balance" Description="Observed account balance.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@Money(SelectedSnapshot.Balance)" />
+                    </SectionCard>
+                    <SectionCard Title="Current BOs" Description="Linked current business objects.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSnapshot.CurrentBusinessObjectIds.Count.ToString(CultureInfo.InvariantCulture)" />
+                    </SectionCard>
+                    <SectionCard Title="Processed" Description="Executed rule triggers.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSnapshot.ProcessedTriggerCount.ToString(CultureInfo.InvariantCulture)" />
+                    </SectionCard>
+                    <SectionCard Title="Failed/skipped" Description="Rule action outcomes.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@($"{SelectedSnapshot.FailedActionCount}/{SelectedSnapshot.SkippedActionCount}")" />
+                    </SectionCard>
+                </Grid>
+
+                <FormSection Title="Account identity" Description="Run observation joins the account snapshot back to the project BU and address binding.">
+                    <FormRow Split="true">
+                        <FormField Text="Snapshot id">
+                            <TextBox Value="@SelectedSnapshot.SnapshotId" ReadOnly="true" />
+                        </FormField>
+                        <FormField Text="Business unit">
+                            <TextBox Value="@SelectedSnapshot.BusinessUnitId.Value" ReadOnly="true" />
+                        </FormField>
+                        <FormField Text="Role">
+                            <TextBox Value="@SelectedSnapshot.AccountRole.ToString()" ReadOnly="true" />
+                        </FormField>
+                        <FormField Text="Rule token">
+                            <TextBox Value="@(SelectedSnapshot.HasRuleToken ? "present" : "not present")" ReadOnly="true" />
+                        </FormField>
+                    </FormRow>
+                </FormSection>
+
+                <div class="cda-sim-equal-grid">
+                    <SectionCard Title="Current business objects" Description="BO ids related to this account at the observation point.">
+                        <Stack GapScale="LayoutGap.Small">
+                            @foreach (string objectId in SelectedSnapshot.CurrentBusinessObjectIds.DefaultIfEmpty("none"))
+                            {
+                                <MonoText Text="@objectId" />
+                            }
+                        </Stack>
+                    </SectionCard>
+
+                    <FormSection Title="Related issues" Description="Issues tied to this account snapshot.">
+                        <DataGrid TItem="SimulationIssue" Data="SelectedSnapshotIssues">
+                            <DataGridColumn TItem="SimulationIssue" Property="Code" Title="Code" />
+                            <DataGridColumn TItem="SimulationIssue" Title="Severity">
+                                <Template Context="issue">
+                                    <StatusBadge Text="@issue.Severity" Tone="@StatusTone(issue.Severity)" />
+                                </Template>
+                            </DataGridColumn>
+                            <DataGridColumn TItem="SimulationIssue" Property="Message" Title="Message" />
+                        </DataGrid>
+                    </FormSection>
+                </div>
+            </Stack>
+        }
+        else if (SelectedBusinessUnit is not null)
+        {
+            <Stack GapScale="LayoutGap.Large" data-testid="simulation-run-selected-bu-detail">
+                <Split Breakpoint="LayoutBreakpoint.Md"
+                       AlignItems="AlignItems.Start"
+                       JustifyContent="JustifyContent.SpaceBetween"
+                       Gap="LayoutGap.Medium"
+                       Wrap="FlexWrap.Wrap">
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Observed BU" />
+                        <TextBlock TextStyle="TextStyle.H3" Value="@SelectedBusinessUnit.DisplayName" />
+                        <SmallText Text="@SelectedBusinessUnit.Path" />
+                    </Stack>
+                    <StatusBadge Text="@SelectedBusinessUnit.Kind.ToString()" Tone="info" />
+                </Split>
+
+                <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
+                    <SectionCard Title="Accounts" Description="Observed snapshots.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBusinessUnitSnapshots.Count.ToString(CultureInfo.InvariantCulture)" />
+                    </SectionCard>
+                    <SectionCard Title="Total balance" Description="Sum of observed accounts.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@Money(Amount.FromDecimal(SelectedBusinessUnitSnapshots.Sum(x => x.Balance.Value)))" />
+                    </SectionCard>
+                    <SectionCard Title="Issues" Description="BU-related issues.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBusinessUnitIssues.Count.ToString(CultureInfo.InvariantCulture)" />
+                    </SectionCard>
+                    <SectionCard Title="Status" Description="Project BU status.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBusinessUnit.Status.ToString()" />
+                    </SectionCard>
+                </Grid>
+
+                <FormSection Title="Account snapshots" Description="Actual account states, balances, rule-token coverage, and issue links for this BU.">
+                    <DataGrid TItem="SimulationBusinessUnitAccountSnapshot" Data="SelectedBusinessUnitSnapshots">
+                        <DataGridColumn TItem="SimulationBusinessUnitAccountSnapshot" Title="Role">
+                            <Template Context="snapshot">
+                                <StatusBadge Text="@snapshot.AccountRole.ToString()" Tone="info" />
+                            </Template>
+                        </DataGridColumn>
+                        <DataGridColumn TItem="SimulationBusinessUnitAccountSnapshot" Title="Address">
+                            <Template Context="snapshot">
+                                <MonoText Text="@Short(snapshot.AccountAddress.Value)" />
+                            </Template>
+                        </DataGridColumn>
+                        <DataGridColumn TItem="SimulationBusinessUnitAccountSnapshot" Title="Balance">
+                            <Template Context="snapshot">
+                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Money(snapshot.Balance)" />
+                            </Template>
+                        </DataGridColumn>
+                        <DataGridColumn TItem="SimulationBusinessUnitAccountSnapshot" Title="Rules">
+                            <Template Context="snapshot">
+                                <SmallText Text="@($"{snapshot.ProcessedTriggerCount} processed, {snapshot.FailedActionCount} failed, {snapshot.SkippedActionCount} skipped")" />
+                            </Template>
+                        </DataGridColumn>
+                    </DataGrid>
+                </FormSection>
+            </Stack>
+        }
+    </WorkspacePanel>
+</div>
+
+@code {
+    private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);
+    private string? selectedNodeId;
+
+    [Parameter, EditorRequired]
+    public SimulationProjectState Project { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SimulationRunObservationState Observation { get; set; } = default!;
+
+    private string SelectedId => selectedNodeId
+        ?? Observation.AccountSnapshots.FirstOrDefault()?.SnapshotId
+        ?? Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value
+        ?? string.Empty;
+
+    private SimulationBusinessUnitAccountSnapshot? SelectedSnapshot => Observation.AccountSnapshots.FirstOrDefault(snapshot => SnapshotNodeId(snapshot) == SelectedId || snapshot.SnapshotId == SelectedId);
+
+    private BusinessUnitState? SelectedBusinessUnit => Project.BusinessUnits.FirstOrDefault(x => x.BusinessUnitId.Value == SelectedId);
+
+    private IReadOnlyList<SimulationBusinessUnitAccountSnapshot> SelectedBusinessUnitSnapshots => SelectedBusinessUnit is null
+        ? []
+        : Observation.AccountSnapshots.Where(snapshot => snapshot.BusinessUnitId == SelectedBusinessUnit.BusinessUnitId).ToArray();
+
+    private IReadOnlyList<SimulationIssue> SelectedBusinessUnitIssues => SelectedBusinessUnit is null
+        ? []
+        : Observation.Issues.Where(issue => issue.BusinessUnitId == SelectedBusinessUnit.BusinessUnitId).ToArray();
+
+    private IReadOnlyList<SimulationIssue> SelectedSnapshotIssues => SelectedSnapshot is null
+        ? []
+        : Observation.Issues.Where(issue => SelectedSnapshot.RelatedIssueIds.Contains(issue.IssueId, StringComparer.Ordinal)).ToArray();
+
+    private IReadOnlyList<TreeViewNode> BusinessUnitNodes
+        => BuildBusinessUnitNodes(Project.BusinessUnits.Where(x => x.ParentBusinessUnitId is null).OrderBy(x => x.Path, StringComparer.Ordinal));
+
+    protected override void OnParametersSet()
+    {
+        foreach (BusinessUnitState root in Project.BusinessUnits)
+        {
+            expandedNodeIds.Add(root.BusinessUnitId.Value);
+        }
+
+        selectedNodeId ??= Observation.AccountSnapshots.FirstOrDefault()?.SnapshotId ?? Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value;
+    }
+
+    private IReadOnlyList<TreeViewNode> BuildBusinessUnitNodes(IEnumerable<BusinessUnitState> businessUnits)
+        => businessUnits
+            .Select(businessUnit =>
+            {
+                IReadOnlyList<TreeViewNode> children = Project.BusinessUnits
+                    .Where(x => x.ParentBusinessUnitId == businessUnit.BusinessUnitId)
+                    .OrderBy(x => x.Path, StringComparer.Ordinal)
+                    .SelectMany(child => BuildBusinessUnitNodes([child]))
+                    .Concat(Observation.AccountSnapshots
+                        .Where(snapshot => snapshot.BusinessUnitId == businessUnit.BusinessUnitId)
+                        .OrderBy(snapshot => snapshot.AccountRole)
+                        .Select(snapshot => new TreeViewNode
+                        {
+                            Id = SnapshotNodeId(snapshot),
+                            Text = snapshot.AccountRole.ToString(),
+                            Icon = "account_balance_wallet",
+                            BadgeText = Money(snapshot.Balance),
+                            IsSelected = SnapshotNodeId(snapshot) == SelectedId || snapshot.SnapshotId == SelectedId,
+                            DataTestId = $"simulation-run-account-node-{snapshot.AccountRole}"
+                        }))
+                    .ToArray();
+
+                return new TreeViewNode
+                {
+                    Id = businessUnit.BusinessUnitId.Value,
+                    Text = businessUnit.DisplayName,
+                    Icon = businessUnit.Kind == BusinessUnitKind.RevenueCenter ? "trending_up" : businessUnit.Kind == BusinessUnitKind.CostCenter ? "payments" : "business",
+                    BadgeText = businessUnit.Kind.ToString(),
+                    Children = children,
+                    IsExpanded = expandedNodeIds.Contains(businessUnit.BusinessUnitId.Value),
+                    IsSelected = businessUnit.BusinessUnitId.Value == SelectedId,
+                    DataTestId = $"simulation-run-bu-node-{businessUnit.Path}"
+                };
+            })
+            .ToArray();
+
+    private Task SelectNode(string nodeId)
+    {
+        selectedNodeId = nodeId;
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleNode(string nodeId)
+    {
+        if (!expandedNodeIds.Add(nodeId))
+        {
+            expandedNodeIds.Remove(nodeId);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static string SnapshotNodeId(SimulationBusinessUnitAccountSnapshot snapshot)
+        => $"snapshot:{snapshot.SnapshotId}";
+
+    private static string Money(Amount amount)
+        => amount.Value.ToString("USD #,0;USD (#,0)", CultureInfo.InvariantCulture);
+
+    private static string Short(string value)
+        => value.Length <= 28 ? value : $"{value[..12]}...{value[^10..]}";
+
+    private static string StatusTone(BusinessUnitAddressBindingStatus status)
+        => status == BusinessUnitAddressBindingStatus.Active ? "success" : "warning";
+
+    private static string StatusTone(string status)
+        => status.Equals("Completed", StringComparison.OrdinalIgnoreCase) || status.Equals("Executed", StringComparison.OrdinalIgnoreCase)
+            ? "success"
+            : status.Equals("Warning", StringComparison.OrdinalIgnoreCase) || status.Equals("Skipped", StringComparison.OrdinalIgnoreCase)
+                ? "warning"
+                : status.Equals("Failed", StringComparison.OrdinalIgnoreCase) || status.Equals("Error", StringComparison.OrdinalIgnoreCase)
+                    ? "danger"
+                    : "info";
+}

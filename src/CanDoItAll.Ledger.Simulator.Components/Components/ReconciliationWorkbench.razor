@@ -1,0 +1,23 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Reconciliation" Description="Link actual events to planned, committed or simulated events.">
+    <DataGrid TItem="ReconciliationItem" Data="Items">
+        <DataGridColumn TItem="ReconciliationItem" Property="MatchId" Title="Match" />
+        <DataGridColumn TItem="ReconciliationItem" Property="ActualEvent" Title="Actual" />
+        <DataGridColumn TItem="ReconciliationItem" Property="PlannedEvent" Title="Planned" />
+        <DataGridColumn TItem="ReconciliationItem" Property="Variance" Title="Variance" />
+        <DataGridColumn TItem="ReconciliationItem" Title="Status">
+            <Template Context="item">
+                <StatusBadge Text="@item.Status" Tone="@StatusTone(item.Status)" />
+            </Template>
+        </DataGridColumn>
+    </DataGrid>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<ReconciliationItem> Items { get; set; } = Array.Empty<ReconciliationItem>();
+
+    private static string StatusTone(string status)
+        => status.Equals("Matched", StringComparison.OrdinalIgnoreCase) ? "success" : "warning";
+}

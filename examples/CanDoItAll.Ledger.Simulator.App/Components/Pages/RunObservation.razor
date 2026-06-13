@@ -1,0 +1,158 @@
+@page "/run-observation"
+@page "/runs"
+@page "/runs/{RunId}"
+@inject IConfiguration Configuration
+@inject ISimulationRunLifecycleService RunLifecycle
+@inject ISimulationProjectWorkspaceService Workspace
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Simulation Runs</PageTitle>
+
+<EconomySimulatorAppShell ActivePage="runs">
+    <SimulationRunObservationPage ConsoleViewModel="ViewModel"
+                                  RunSelected="SelectRunAsync"
+                                  CommandRequested="ApplyCommandAsync"
+                                  StepRequested="ApplyStepAsync"
+                                  InterventionRequested="ApplyInterventionAsync" />
+</EconomySimulatorAppShell>
+
+@code {
+    [Parameter]
+    public string? RunId { get; set; }
+
+    private IReadOnlyList<SimulationProjectValidationMessage> commandMessages = [];
+    private CancellationTokenSource? refreshLoopCancellation;
+
+    private SimulationRunConsoleViewModel ViewModel
+    {
+        get
+        {
+            string storageMode = Configuration["EconomySimulator:StorageMode"] ?? "InMemory";
+            string? requestedRunId = string.IsNullOrWhiteSpace(RunId) ? null : Uri.UnescapeDataString(RunId);
+            SimulationRunConsoleState? requestedRun = requestedRunId is null ? null : RunLifecycle.GetRun(requestedRunId);
+            IReadOnlyList<SimulationProjectState> projects = LoadWorkspaceProjects(storageMode, requestedRun?.Project).ToArray();
+            foreach (SimulationProjectState project in projects)
+            {
+                RunLifecycle.EnsureProjectRuns(project);
+            }
+
+            IReadOnlyList<SimulationRunConsoleState> runs = RunLifecycle.ListRuns()
+                .Select(record => RunLifecycle.GetRun(record.RunId))
+                .Where(run => run is not null)
+                .Cast<SimulationRunConsoleState>()
+                .OrderByDescending(run => run.Run.StartedAtUtc)
+                .ToArray();
+
+            if (requestedRun is not null && runs.All(run => !string.Equals(run.Run.RunId, requestedRun.Run.RunId, StringComparison.Ordinal)))
+            {
+                runs = [requestedRun, .. runs];
+            }
+
+            if (runs.Count == 0)
+            {
+                SimulationRunConsoleViewModel sample = EconomySimulatorSampleData.CreateRunConsole();
+                return sample with { CommandMessages = commandMessages };
+            }
+
+            SimulationRunConsoleState selected = requestedRunId is null
+                ? runs[0]
+                : requestedRun ?? runs.FirstOrDefault(run => string.Equals(run.Run.RunId, requestedRunId, StringComparison.Ordinal)) ?? runs[0];
+
+            return new SimulationRunConsoleViewModel(projects.Select(project => project.Summary).ToArray(), runs, selected, commandMessages);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        refreshLoopCancellation = new CancellationTokenSource();
+        _ = RefreshLiveRunsAsync(refreshLoopCancellation.Token);
+    }
+
+    private Task SelectRunAsync(string runId)
+    {
+        Navigation.NavigateTo($"/runs/{Uri.EscapeDataString(runId)}");
+        return Task.CompletedTask;
+    }
+
+    private Task ApplyCommandAsync(SimulationRunCommandKind command)
+    {
+        SimulationRunCommandResult result = RunLifecycle.ApplyCommand(ViewModel.SelectedRun.Run.RunId, command);
+        commandMessages = result.Messages;
+        if (result.Succeeded && !string.IsNullOrWhiteSpace(result.RunId))
+        {
+            Navigation.NavigateTo($"/runs/{Uri.EscapeDataString(result.RunId)}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task ApplyStepAsync(SimulationRunStepRequest request)
+    {
+        SimulationRunCommandResult result = RunLifecycle.StepRun(ViewModel.SelectedRun.Run.RunId, request.Step, request.TargetStep);
+        commandMessages = result.Messages;
+        if (result.Succeeded && !string.IsNullOrWhiteSpace(result.RunId))
+        {
+            Navigation.NavigateTo($"/runs/{Uri.EscapeDataString(result.RunId)}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task ApplyInterventionAsync(SimulationRunInterventionRequest request)
+    {
+        SimulationRunInterventionCommandResult result = RunLifecycle.ApplyIntervention(ViewModel.SelectedRun.Run.RunId, request);
+        commandMessages = result.Command.Messages;
+        if (result.Command.Succeeded && !string.IsNullOrWhiteSpace(result.Command.RunId))
+        {
+            Navigation.NavigateTo($"/runs/{Uri.EscapeDataString(result.Command.RunId)}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private IEnumerable<SimulationProjectState> LoadWorkspaceProjects(string storageMode, SimulationProjectState? requestedProject)
+    {
+        var projects = Workspace.ListProjects()
+            .Select(project => Workspace.GetProject(project.ProjectId))
+            .Where(project => project is not null)
+            .Cast<SimulationProjectState>()
+            .ToList();
+
+        if (requestedProject is not null && projects.All(project => !string.Equals(project.Summary.ProjectId, requestedProject.Summary.ProjectId, StringComparison.Ordinal)))
+        {
+            projects.Insert(0, requestedProject);
+        }
+
+        if (projects.Count == 0)
+        {
+            projects.Add(EconomySimulatorSampleData.CreateProjectManagement(storageMode).SelectedProject);
+        }
+
+        return projects;
+    }
+
+    private async Task RefreshLiveRunsAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                if (ViewModel.Runs.Any(run => run.Run.Status is SimulationRunLifecycleStatus.Queued or SimulationRunLifecycleStatus.Running or SimulationRunLifecycleStatus.Paused))
+                {
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        refreshLoopCancellation?.Cancel();
+        refreshLoopCancellation?.Dispose();
+    }
+}

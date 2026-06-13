@@ -1,0 +1,123 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+
+<Stack GapScale="LayoutGap.Large" data-testid="simulation-import-export-tab">
+    <Split Breakpoint="LayoutBreakpoint.Lg"
+           AlignItems="AlignItems.Start"
+           JustifyContent="JustifyContent.SpaceBetween"
+           Gap="LayoutGap.Large"
+           Wrap="FlexWrap.Wrap">
+        <Stack GapScale="LayoutGap.Tiny">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Export and import project" />
+            <TextBlock TextStyle="TextStyle.H3" Value="@Project.Summary.DisplayName" />
+            <SmallText Text="Project manifests include model state, BUs/accounts, folders, BO/rules, financial inputs, setup, and content hashes." />
+        </Stack>
+        <Cluster Gap="LayoutGap.Small">
+            <StatusBadge Text="@Manifest.SchemaVersion" Tone="info" />
+            <Button Text="Download manifest" Icon="download" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
+            <Button Text="Validate import" Icon="rule" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
+            <Button Text="Accept import" Icon="check_circle" Size="ButtonSize.Small" />
+        </Cluster>
+    </Split>
+
+    <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
+        <SectionCard Title="Manifest project" Description="Exported project id.">
+            <TextBlock TextStyle="TextStyle.H4" Value="@Manifest.ProjectId" />
+        </SectionCard>
+        <SectionCard Title="Exported" Description="UTC timestamp.">
+            <TextBlock TextStyle="TextStyle.H4" Value="@Manifest.ExportedAtUtc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)" />
+        </SectionCard>
+        <SectionCard Title="Content hashes" Description="Deterministic sections.">
+            <TextBlock TextStyle="TextStyle.H4" Value="@Manifest.ContentHashes.Count.ToString(CultureInfo.InvariantCulture)" />
+        </SectionCard>
+        <SectionCard Title="Import preview" Description="Validation result.">
+            <TextBlock TextStyle="TextStyle.H4" Value="@(ImportPreview.CanImport ? "Ready" : "Blocked")" />
+        </SectionCard>
+    </Grid>
+
+    <div class="cda-sim-equal-grid">
+        <Stack GapScale="LayoutGap.Large">
+            <FormSection Title="Export manifest" Description="Read-only deterministic JSON generated from the selected project state.">
+                <TextArea Value="@ManifestJson" ReadOnly="true" Rows="14" />
+            </FormSection>
+
+            <FormSection Title="Content hashes" Description="Each section hash is calculated from canonical sorted content.">
+                <DataGrid TItem="KeyValuePair<string, string>" Data="HashRows">
+                    <DataGridColumn TItem="KeyValuePair<string, string>" Property="Key" Title="Section" />
+                    <DataGridColumn TItem="KeyValuePair<string, string>" Title="Hash">
+                        <Template Context="hash">
+                            <MonoText Text="@Short(hash.Value)" />
+                        </Template>
+                    </DataGridColumn>
+                </DataGrid>
+            </FormSection>
+        </Stack>
+
+        <Stack GapScale="LayoutGap.Large">
+            <FormSection Title="Import preview" Description="The preview validates a manifest before the current project state is mutated.">
+                <Alert AlertStyle="@ImportAlertStyle">
+                    <strong>@(ImportPreview.CanImport ? "Import can be applied" : "Import requires attention")</strong>
+                    <span>@ImportSummary</span>
+                </Alert>
+            </FormSection>
+
+            <FormSection Title="Previewed manifest" Description="Paste/upload support is represented by the validated manifest payload preview.">
+                <FormRow Split="true">
+                    <FormField Text="Incoming project">
+                        <TextBox Value="@(ImportPreview.Manifest?.ProjectId ?? "none")" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="Warnings">
+                        <TextBox Value="@ImportPreview.Warnings.Count.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="Validation messages">
+                        <TextBox Value="@ImportPreview.Validation.Messages.Count.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
+                    </FormField>
+                </FormRow>
+            </FormSection>
+
+            @if (ImportPreview.Warnings.Count > 0)
+            {
+                <SectionCard Title="Import warnings" Description="Warnings do not always block import.">
+                    <Stack GapScale="LayoutGap.Small">
+                        @foreach (string warning in ImportPreview.Warnings)
+                        {
+                            <SmallText Text="@warning" />
+                        }
+                    </Stack>
+                </SectionCard>
+            }
+
+            <ValidationList Messages="ImportPreview.Validation.Messages" />
+        </Stack>
+    </div>
+</Stack>
+
+@code {
+    private readonly ISimulationProjectImportExportService importExport = new SimulationProjectImportExportService(new EconomySimulatorJsonSerializer(), new SimulationProjectValidationService());
+
+    [Parameter, EditorRequired]
+    public SimulationProjectState Project { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SimulationProjectExportManifest Manifest { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SimulationProjectImportPreview ImportPreview { get; set; } = default!;
+
+    private string ManifestJson => importExport.SerializeManifest(Manifest);
+
+    private IReadOnlyList<KeyValuePair<string, string>> HashRows => Manifest.ContentHashes
+        .OrderBy(x => x.Key, StringComparer.Ordinal)
+        .ToArray();
+
+    private AlertStyle ImportAlertStyle => ImportPreview.CanImport
+        ? AlertStyle.Success
+        : AlertStyle.Warning;
+
+    private string ImportSummary => ImportPreview.Validation.Messages.Count == 0
+        ? "No validation messages were reported for this manifest."
+        : $"{ImportPreview.Validation.Messages.Count} validation message(s) were reported for this manifest.";
+
+    private static string Short(string value)
+        => value.Length <= 30 ? value : $"{value[..14]}...{value[^12..]}";
+}

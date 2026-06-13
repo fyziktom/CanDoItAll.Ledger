@@ -1,0 +1,19 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Actual Entry" Description="Real operational tracking uses ScenarioId = null and the same event schemas.">
+    <FormRow Split="true">
+        <FormField Text="Source">
+            <TextBox Value="bank import" />
+        </FormField>
+        <FormField Text="Actual date">
+            <TextBox Value="2026-06-16" />
+        </FormField>
+        <FormField Text="Amount">
+            <TextBox Value="$40,100" />
+        </FormField>
+        <FormField Text="Scenario">
+            <TextBox Value="null" ReadOnly="true" />
+        </FormField>
+    </FormRow>
+    <Button Text="Validate entry" Icon="fact_check" ButtonStyle="ButtonStyle.Secondary" />
+</SectionCard>

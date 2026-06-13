@@ -1,0 +1,65 @@
+@page "/"
+@inject IConfiguration Configuration
+@inject ISimulationRunLifecycleService RunLifecycle
+@inject ISimulationProjectWorkspaceService Workspace
+@inject ISimulationProjectImportExportService ImportExport
+@inject NavigationManager Navigation
+
+<PageTitle>Economy Simulator</PageTitle>
+
+<EconomySimulatorAppShell ActivePage="projects">
+    <EconomySimulatorShell ViewModel="ViewModel"
+                           RunRequested="StartRunAsync"
+                           LaunchMessages="launchMessages"
+                           IsRunLaunching="isStartingRun" />
+</EconomySimulatorAppShell>
+
+@code {
+    private IReadOnlyList<SimulationProjectValidationMessage> launchMessages = [];
+    private bool isStartingRun;
+
+    private SimulationProjectManagementViewModel ViewModel
+    {
+        get
+        {
+            string storageMode = Configuration["EconomySimulator:StorageMode"] ?? "InMemory";
+            IReadOnlyList<SimulationProjectSummary> projects = Workspace.ListProjects();
+            SimulationProjectState? selectedProject = Workspace.GetProject("vef-financial-plan")
+                ?? projects.Select(project => Workspace.GetProject(project.ProjectId)).FirstOrDefault(project => project is not null)
+                ?? EconomySimulatorSampleData.CreateProjectState(storageMode);
+            SimulationProjectExportManifest manifest = ImportExport.CreateManifest(selectedProject, DateTimeOffset.Parse("2026-05-15T12:00:00Z"));
+            SimulationProjectImportPreview importPreview = ImportExport.PreviewImport(ImportExport.SerializeManifest(manifest));
+
+            return new SimulationProjectManagementViewModel(
+                projects.Count == 0 ? [selectedProject.Summary] : projects,
+                selectedProject,
+                manifest,
+                importPreview);
+        }
+    }
+
+    private async Task StartRunAsync(SimulationProjectRunRequest request)
+    {
+        if (isStartingRun)
+        {
+            return;
+        }
+
+        isStartingRun = true;
+        launchMessages = [];
+        try
+        {
+            await Task.Yield();
+            SimulationRunCommandResult result = await RunLifecycle.StartRunAsync(request.Project, request.SetupId, mode: request.Mode);
+            launchMessages = result.Messages;
+            if (result.Succeeded && !string.IsNullOrWhiteSpace(result.RunId))
+            {
+                Navigation.NavigateTo($"/runs/{Uri.EscapeDataString(result.RunId)}");
+            }
+        }
+        finally
+        {
+            isStartingRun = false;
+        }
+    }
+}

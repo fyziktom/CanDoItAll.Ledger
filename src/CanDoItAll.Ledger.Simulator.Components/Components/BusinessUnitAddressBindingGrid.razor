@@ -1,0 +1,31 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Address Bindings" Description="Key-derived addresses, roles, lifecycle and validity windows.">
+    <DataGrid TItem="AddressBindingItem" Data="Items">
+        <DataGridColumn TItem="AddressBindingItem" Property="BusinessUnit" Title="BU" />
+        <DataGridColumn TItem="AddressBindingItem" Title="Role">
+            <Template Context="item">
+                <StatusBadge Text="@item.Role" Tone="info" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="AddressBindingItem" Title="Address">
+            <Template Context="item">
+                <MonoText Text="@item.Address" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="AddressBindingItem" Title="Status">
+            <Template Context="item">
+                <StatusBadge Text="@item.Status" Tone="@StatusTone(item.Status)" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="AddressBindingItem" Property="Validity" Title="Validity" />
+    </DataGrid>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<AddressBindingItem> Items { get; set; } = Array.Empty<AddressBindingItem>();
+
+    private static string StatusTone(string status)
+        => status.Equals("Active", StringComparison.OrdinalIgnoreCase) ? "success" : "warning";
+}

@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "CanDoItAll.Economy.Simulator.App": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:51138;http://localhost:51139"
+    }
+  }
+}

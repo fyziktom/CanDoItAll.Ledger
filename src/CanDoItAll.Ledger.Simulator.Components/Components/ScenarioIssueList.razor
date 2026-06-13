@@ -1,0 +1,28 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Scenario Issues" Description="Deficits, rule gaps, inactive bindings and posting failures.">
+    <DataGrid TItem="ScenarioIssueItem" Data="Items">
+        <DataGridColumn TItem="ScenarioIssueItem" Title="Severity">
+            <Template Context="item">
+                <StatusBadge Text="@item.Severity" Tone="@SeverityTone(item.Severity)" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="ScenarioIssueItem" Property="Code" Title="Code" />
+        <DataGridColumn TItem="ScenarioIssueItem" Property="Date" Title="Date" />
+        <DataGridColumn TItem="ScenarioIssueItem" Property="BusinessUnit" Title="BU" />
+        <DataGridColumn TItem="ScenarioIssueItem" Property="Message" Title="Message" />
+    </DataGrid>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<ScenarioIssueItem> Items { get; set; } = Array.Empty<ScenarioIssueItem>();
+
+    private static string SeverityTone(string severity)
+        => severity.ToLowerInvariant() switch
+        {
+            "error" => "danger",
+            "warning" => "warning",
+            _ => "info"
+        };
+}

@@ -1,0 +1,31 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<StatsGrid>
+    @foreach (EconomyKpiItem item in Items)
+    {
+        <StatBox Simple="true">
+            <Stack GapScale="LayoutGap.Tiny">
+                <StatusBadge Text="@item.Tone" Tone="@ResolveTone(item.Tone)" />
+                <TextBlock TextStyle="TextStyle.H3" Value="@item.Value" />
+                <TextBlock TextStyle="TextStyle.Body2" Value="@item.Label" />
+                <SmallText Text="@item.Detail" />
+            </Stack>
+        </StatBox>
+    }
+</StatsGrid>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<EconomyKpiItem> Items { get; set; } = Array.Empty<EconomyKpiItem>();
+
+    private static string ResolveTone(string tone)
+        => tone.ToLowerInvariant() switch
+        {
+            "success" => "success",
+            "warning" => "warning",
+            "danger" => "danger",
+            "info" => "info",
+            "accent" => "accent",
+            _ => "neutral"
+        };
+}

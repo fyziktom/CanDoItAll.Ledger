@@ -1,0 +1,274 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<div class="cda-sim-split-grid" data-testid="simulation-bo-rules-tab">
+    <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
+        <Stack FillHeight="true" GapScale="LayoutGap.Medium">
+            <Split Breakpoint="LayoutBreakpoint.None"
+                   AlignItems="AlignItems.Center"
+                   JustifyContent="JustifyContent.SpaceBetween"
+                   Gap="LayoutGap.Small">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Folders" />
+                    <TextBlock TextStyle="TextStyle.H4" Value="@Project.Folders.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                </Stack>
+                <Button Text="Add BO" Icon="add" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" />
+            </Split>
+            <TreeView Items="FolderNodes"
+                      Style="TreeViewStyle.Workbench"
+                      AriaLabel="BO and rule folders"
+                      OnSelect="SelectNode"
+                      OnToggle="ToggleNode" />
+        </Stack>
+    </WorkspacePanel>
+
+    <WorkspacePanel Class="min-h-0 overflow-auto">
+        @if (SelectedDefinition is not null)
+        {
+            <Stack GapScale="LayoutGap.Large" data-testid="simulation-selected-bo-rule-detail">
+                <Split Breakpoint="LayoutBreakpoint.Lg"
+                       AlignItems="AlignItems.Start"
+                       JustifyContent="JustifyContent.SpaceBetween"
+                       Gap="LayoutGap.Medium"
+                       Wrap="FlexWrap.Wrap">
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="@SelectedDefinition.Kind.ToString()" />
+                        <TextBlock TextStyle="TextStyle.H3" Value="@SelectedDefinition.DisplayName" />
+                        <SmallText Text="@SelectedDefinition.DefinitionId" />
+                    </Stack>
+                    <Cluster Gap="LayoutGap.Small">
+                        <StatusBadge Text="@SelectedDefinition.MaterializationStatus.ToString()" Tone="@MaterializationTone(SelectedDefinition.MaterializationStatus)" />
+                        <Button Text="Templates" Icon="account_tree" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="@OpenTemplateCatalogueDialog" data-testid="simulation-template-catalogue-open" />
+                        <Button Text="Edit" Icon="edit" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
+                        <Button Text="Materialize" Icon="account_tree" Size="ButtonSize.Small" />
+                    </Cluster>
+                </Split>
+
+                <FormSection Title="Definition metadata" Description="Simulator-owned BO definition state, safe rule contract, owner hints, and deterministic JSON payload.">
+                    <FormRow Split="true">
+                        <FormField Text="Object type">
+                            <TextBox Value="@SelectedDefinition.ObjectType" ReadOnly="true" />
+                        </FormField>
+                        <FormField Text="Schema">
+                            <TextBox Value="@SelectedDefinition.SchemaVersion" ReadOnly="true" />
+                        </FormField>
+                        <FormField Text="Folder">
+                            <TextBox Value="@(SelectedDefinition.FolderId ?? "unfiled")" ReadOnly="true" />
+                        </FormField>
+                        <FormField Text="Owner BU">
+                            <TextBox Value="@(SelectedDefinition.OwnerBusinessUnitId?.Value ?? "project")" ReadOnly="true" />
+                        </FormField>
+                    </FormRow>
+                </FormSection>
+
+                <SimulationDefinitionSettingsPanel Project="Project" Definition="SelectedDefinition" />
+
+                <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+                    <SectionCard Title="Evidence links" Description="Definitions can be traced into run evidence.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedDefinition.EvidenceObjectIds.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                        <SmallText Text="@string.Join(", ", SelectedDefinition.EvidenceObjectIds.DefaultIfEmpty("none"))" />
+                    </SectionCard>
+                    <SectionCard Title="Trigger type" Description="Existing rule trigger contract.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedTriggerType" />
+                    </SectionCard>
+                    <SectionCard Title="Actions" Description="Rule action count or prepared BO action.">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedActionCount" />
+                    </SectionCard>
+                </Grid>
+
+                <ValidationList Messages="SelectedDefinition.ValidationMessages" />
+            </Stack>
+        }
+        else if (SelectedFolder is not null)
+        {
+            <Stack GapScale="LayoutGap.Large" data-testid="simulation-selected-bo-folder-detail">
+                <Split Breakpoint="LayoutBreakpoint.Md"
+                       AlignItems="AlignItems.Start"
+                       JustifyContent="JustifyContent.SpaceBetween"
+                       Gap="LayoutGap.Medium"
+                       Wrap="FlexWrap.Wrap">
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Selected folder" />
+                        <TextBlock TextStyle="TextStyle.H3" Value="@SelectedFolder.DisplayName" />
+                        <SmallText Text="@SelectedFolder.FolderId" />
+                    </Stack>
+                    <Cluster Gap="LayoutGap.Small">
+                        <StatusBadge Text="@SelectedFolder.Kind.ToString()" Tone="info" />
+                        <Button Text="Templates" Icon="account_tree" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="@OpenTemplateCatalogueDialog" data-testid="simulation-template-catalogue-open" />
+                    </Cluster>
+                </Split>
+
+                <DataGrid TItem="SimulationBusinessObjectDefinitionState" Data="DefinitionsInFolder">
+                    <DataGridColumn TItem="SimulationBusinessObjectDefinitionState" Property="DisplayName" Title="Definition" />
+                    <DataGridColumn TItem="SimulationBusinessObjectDefinitionState" Property="ObjectType" Title="Object type" />
+                    <DataGridColumn TItem="SimulationBusinessObjectDefinitionState" Title="Status">
+                        <Template Context="definition">
+                            <StatusBadge Text="@definition.MaterializationStatus.ToString()" Tone="@MaterializationTone(definition.MaterializationStatus)" />
+                        </Template>
+                    </DataGridColumn>
+                </DataGrid>
+            </Stack>
+        }
+        else
+        {
+            <Stack GapScale="LayoutGap.Medium">
+                <PanelHeading Eyebrow="BOs and rules" Title="Select a folder or definition" Description="Open the template catalogue only when you need to add or inspect setup recipes." />
+                <Cluster Gap="LayoutGap.Small">
+                    <Button Text="Templates" Icon="account_tree" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@OpenTemplateCatalogueDialog" data-testid="simulation-template-catalogue-open" />
+                </Cluster>
+            </Stack>
+        }
+    </WorkspacePanel>
+</div>
+
+<Dialog IsOpen="@isTemplateCatalogueDialogOpen"
+        Title="Simulation templates"
+        Eyebrow="BO and rule catalogue"
+        Subtitle="Search BO, rule, schedule, and model templates with dependency hints. Templates load only while this dialog is open."
+        Size="ModalSize.Full"
+        TestId="simulation-template-catalogue-dialog"
+        OnClose="@CloseTemplateCatalogueDialog">
+    <ChildContent>
+        @if (isTemplateCatalogueDialogOpen)
+        {
+            <SimulationTemplateCataloguePanel Project="Project" />
+        }
+    </ChildContent>
+    <Footer>
+        <Cluster JustifyContent="JustifyContent.End" Gap="LayoutGap.Small">
+            <Button Text="Close" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@CloseTemplateCatalogueDialog" />
+        </Cluster>
+    </Footer>
+</Dialog>
+
+@code {
+    private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);
+    private string? selectedNodeId;
+    private bool isTemplateCatalogueDialogOpen;
+
+    [Parameter, EditorRequired]
+    public SimulationProjectState Project { get; set; } = default!;
+
+    private string SelectedId => selectedNodeId
+        ?? Project.BusinessObjectDefinitions.FirstOrDefault(x => x.Kind == SimulationBusinessObjectDefinitionKind.RuleDefinition)?.DefinitionId
+        ?? Project.Folders.FirstOrDefault()?.FolderId
+        ?? string.Empty;
+
+    private SimulationBusinessObjectDefinitionState? SelectedDefinition => Project.BusinessObjectDefinitions.FirstOrDefault(x => x.DefinitionId == SelectedId);
+
+    private SimulationProjectFolderState? SelectedFolder => Project.Folders.FirstOrDefault(x => x.FolderId == SelectedId);
+
+    private string SelectedTriggerType
+    {
+        get
+        {
+            string? objectType = SelectedDefinition?.RuleDefinition is { Trigger: { } trigger }
+                ? trigger.ObjectType
+                : SelectedDefinition?.ObjectType;
+            return string.IsNullOrWhiteSpace(objectType) ? "n/a" : objectType;
+        }
+    }
+
+    private string SelectedActionCount => SelectedDefinition?.RuleDefinition is { } ruleDefinition
+        ? ruleDefinition.Actions.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        : "n/a";
+
+    private IReadOnlyList<string> RuleValidationErrors
+    {
+        get
+        {
+            if (SelectedDefinition?.RuleDefinition is null)
+            {
+                return [];
+            }
+
+            return RuleTokenAuthority.TryValidate(SelectedDefinition.RuleDefinition, out IReadOnlyList<string> errors)
+                ? []
+                : errors;
+        }
+    }
+
+    private IReadOnlyList<SimulationBusinessObjectDefinitionState> DefinitionsInFolder => SelectedFolder is null
+        ? []
+        : Project.BusinessObjectDefinitions.Where(x => x.FolderId == SelectedFolder.FolderId).ToArray();
+
+    private IReadOnlyList<TreeViewNode> FolderNodes => BuildFolderNodes(Project.Folders.Where(x => x.ParentFolderId is null).OrderBy(x => x.SortOrder));
+
+    protected override void OnParametersSet()
+    {
+        foreach (SimulationProjectFolderState root in Project.Folders.Where(x => x.ParentFolderId is null))
+        {
+            expandedNodeIds.Add(root.FolderId);
+        }
+
+        expandedNodeIds.Add("folder:rule-packs");
+        selectedNodeId ??= Project.BusinessObjectDefinitions.FirstOrDefault(x => x.Kind == SimulationBusinessObjectDefinitionKind.RuleDefinition)?.DefinitionId;
+    }
+
+    private IReadOnlyList<TreeViewNode> BuildFolderNodes(IEnumerable<SimulationProjectFolderState> folders)
+        => folders
+            .Select(folder =>
+            {
+                IReadOnlyList<TreeViewNode> children = Project.Folders
+                    .Where(x => string.Equals(x.ParentFolderId, folder.FolderId, StringComparison.Ordinal))
+                    .OrderBy(x => x.SortOrder)
+                    .SelectMany(child => BuildFolderNodes([child]))
+                    .Concat(Project.BusinessObjectDefinitions
+                        .Where(x => string.Equals(x.FolderId, folder.FolderId, StringComparison.Ordinal))
+                        .OrderBy(x => x.DisplayName, StringComparer.Ordinal)
+                        .Select(definition => new TreeViewNode
+                        {
+                            Id = definition.DefinitionId,
+                            Text = definition.DisplayName,
+                            Icon = definition.Kind == SimulationBusinessObjectDefinitionKind.RuleDefinition ? "rule" : "draft",
+                            BadgeText = definition.Kind.ToString(),
+                            IsSelected = definition.DefinitionId == SelectedId,
+                            DataTestId = $"simulation-bo-node-{definition.DefinitionId}"
+                        }))
+                    .ToArray();
+                return new TreeViewNode
+                {
+                    Id = folder.FolderId,
+                    Text = folder.DisplayName,
+                    Icon = "folder",
+                    BadgeText = folder.Kind.ToString(),
+                    Children = children,
+                    IsExpanded = expandedNodeIds.Contains(folder.FolderId),
+                    IsSelected = folder.FolderId == SelectedId,
+                    DataTestId = $"simulation-bo-folder-{folder.FolderId}"
+                };
+            })
+            .ToArray();
+
+    private Task SelectNode(string nodeId)
+    {
+        selectedNodeId = nodeId;
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleNode(string nodeId)
+    {
+        if (!expandedNodeIds.Add(nodeId))
+        {
+            expandedNodeIds.Remove(nodeId);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void OpenTemplateCatalogueDialog() => isTemplateCatalogueDialogOpen = true;
+
+    private Task CloseTemplateCatalogueDialog()
+    {
+        isTemplateCatalogueDialogOpen = false;
+        return Task.CompletedTask;
+    }
+
+    private static string MaterializationTone(SimulationDefinitionMaterializationStatus status)
+        => status switch
+        {
+            SimulationDefinitionMaterializationStatus.Materialized => "success",
+            SimulationDefinitionMaterializationStatus.Validated => "info",
+            SimulationDefinitionMaterializationStatus.Blocked => "danger",
+            _ => "warning"
+        };
+}

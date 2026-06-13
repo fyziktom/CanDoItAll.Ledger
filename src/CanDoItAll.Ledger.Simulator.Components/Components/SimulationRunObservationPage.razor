@@ -1,0 +1,792 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+
+<PageScaffold Mode="PageScaffoldMode.FocusWorkbench" FillHeight="true" MaxWidthClass="max-w-none">
+    <Header>
+        <Split Breakpoint="LayoutBreakpoint.Lg"
+               AlignItems="AlignItems.Start"
+               JustifyContent="JustifyContent.SpaceBetween"
+               Gap="LayoutGap.Large"
+               Wrap="FlexWrap.Wrap">
+            <Stack GapScale="LayoutGap.Tiny">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Simulation observation" />
+                <TextBlock TextStyle="TextStyle.H2" Value="Run Observation" />
+                <SmallText Text="@($"{Selected.Project.Summary.DisplayName} | {Selected.Run.RunId} | Updated {Selected.Run.LastUpdatedAtUtc:yyyy-MM-dd HH:mm} UTC")" />
+            </Stack>
+            <Cluster Gap="LayoutGap.Small">
+                <StatusBadge Text="@DisplayStatus(Selected.Run.Status)" Tone="@LifecycleTone(Selected.Run.Status)" />
+                <StatusBadge Text="@($"{Selected.Run.CurrentStep}/{Selected.Run.TotalSteps}")" Tone="info" />
+                <Button Text="@PauseResumeText" Icon="@PauseResumeIcon" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@PauseOrResumeAsync" />
+                <Button Text="Stop" Icon="stop" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@(() => CommandRequested.InvokeAsync(SimulationRunCommandKind.Stop))" />
+                <Button Text="Export artifacts" Icon="download" />
+            </Cluster>
+        </Split>
+    </Header>
+
+    <ChildContent>
+        <div class="cda-sim-run-console-layout" data-testid="simulation-run-console-page">
+            <WorkspacePanel Class="min-h-0 overflow-hidden">
+                <Stack FillHeight="true" GapScale="LayoutGap.Medium">
+                    <FormField Text="Project">
+                        <TextBox Value="@Selected.Project.Summary.DisplayName" ReadOnly="true" />
+                    </FormField>
+
+                    <Split Breakpoint="LayoutBreakpoint.None"
+                           AlignItems="AlignItems.Center"
+                           JustifyContent="JustifyContent.SpaceBetween"
+                           Gap="LayoutGap.Small">
+                        <TextBlock TextStyle="TextStyle.H4" Value="Runs" />
+                        <Button Icon="refresh" Variant="Variant.Text" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" aria-label="Refresh runs" />
+                    </Split>
+
+                    <FormField Text="Search runs">
+                        <TextBox Value="@runSearch"
+                                 ValueChanged="@(value => runSearch = value ?? string.Empty)"
+                                 Immediate="true"
+                                 Placeholder="Search runs..." />
+                    </FormField>
+
+                    <div class="cda-sim-run-list" data-testid="simulation-run-list">
+                        @foreach (SimulationRunConsoleState run in FilteredRuns)
+                        {
+                            bool selected = string.Equals(run.Run.RunId, Selected.Run.RunId, StringComparison.Ordinal);
+                            <button type="button"
+                                    class="@RunCardClass(selected)"
+                                    data-testid="@($"simulation-run-row-{run.Run.RunId}")"
+                                    @onclick="@(() => SelectRunAsync(run.Run.RunId))">
+                                <span class="cda-sim-run-card-main">
+                                    <span class="cda-sim-run-card-title">@run.Run.RunId</span>
+                                    <span>@run.Run.ScenarioName</span>
+                                    <span>Started: @run.Run.StartedAtUtc.ToString("MMM d, yyyy HH:mm", CultureInfo.InvariantCulture)</span>
+                                </span>
+                                <span class="cda-sim-run-card-meta">
+                                    <StatusBadge Text="@DisplayStatus(run.Run.Status)" Tone="@LifecycleTone(run.Run.Status)" />
+                                    <span>@(run.Run.ErrorCount == 0 ? $"{run.Run.WarningCount} warning(s)" : $"{run.Run.ErrorCount} error(s)")</span>
+                                    <span>@FormatDuration(run.Run.WallClockElapsed)</span>
+                                </span>
+                            </button>
+                        }
+                    </div>
+
+                    <Button Text="Start new run" Icon="add" ButtonStyle="ButtonStyle.Secondary" Click="@(() => CommandRequested.InvokeAsync(SimulationRunCommandKind.Restart))" />
+                </Stack>
+            </WorkspacePanel>
+
+            <WorkspacePanel Class="min-h-0 overflow-hidden">
+                <Stack FillHeight="true" GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch">
+                    <Split Breakpoint="LayoutBreakpoint.Lg"
+                           AlignItems="AlignItems.Start"
+                           JustifyContent="JustifyContent.SpaceBetween"
+                           Gap="LayoutGap.Large"
+                           Wrap="FlexWrap.Wrap"
+                           data-testid="simulation-run-header">
+                        <div class="cda-sim-run-header-grid">
+                            <RunHeaderFact Label="Project" Value="@Selected.Run.ProjectName" />
+                            <RunHeaderFact Label="Scenario" Value="@Selected.Run.ScenarioName" />
+                            <RunHeaderFact Label="Run ID" Value="@Selected.Run.RunId" Monospace="true" />
+                            <RunHeaderFact Label="Status" Value="@DisplayStatus(Selected.Run.Status)" BadgeTone="@LifecycleTone(Selected.Run.Status)" />
+                            <RunHeaderFact Label="Current step / date" Value="@($"{Selected.Run.CurrentStep}/{Selected.Run.TotalSteps} - {FormatDate(Selected.Run.CurrentDate)}")" />
+                            <RunHeaderFact Label="Elapsed" Value="@FormatDuration(Selected.Run.WallClockElapsed)" />
+                            <RunHeaderFact Label="Output hash" Value="@Short(Selected.Run.OutputHash)" Monospace="true" />
+                        </div>
+                    </Split>
+
+                    @if (Console.CommandMessages.Count > 0)
+                    {
+                        <ValidationList Messages="Console.CommandMessages" />
+                    }
+
+                    <TimelineStepper CurrentStep="@Selected.Run.SelectedStep"
+                                     TotalSteps="@Selected.Run.TotalSteps"
+                                     AvailableStep="@Selected.Run.AvailableStep"
+                                     Mode="@SelectedTimelineMode"
+                                     ShowModeToggle="false"
+                                     StepLabel="@($"{Selected.Setup.StepPeriod} timeline")"
+                                     CurrentLabel="@FormatDate(Selected.Run.CurrentDate)"
+                                     StatusText="@TimelineStatusText"
+                                     StatusTone="@TimelineStatusTone"
+                                     AvailableText="Data available"
+                                     FutureText="Not simulated yet"
+                                     CanStepBack="@CanStepBack"
+                                     CanStepForward="@CanStepForward"
+                                     ShowPlayPause="true"
+                                     IsPlaying="@(Selected.Run.Status == SimulationRunLifecycleStatus.Running)"
+                                     CanPlayPause="@CanPauseOrResume"
+                                     PreviousClicked="@StepPreviousAsync"
+                                     NextClicked="@StepNextAsync"
+                                     PlayPauseClicked="@PauseOrResumeAsync"
+                                     StepSelected="@SelectStepAsync"
+                                     Ticks="@TimelineTicks"
+                                     data-testid="simulation-run-timeline-stepper" />
+
+                    @if (CanApplyInterventions)
+                    {
+                        <section class="cda-sim-panel cda-sim-intervention-panel" data-testid="simulation-run-intervention-panel">
+                            <PanelHeading Title="Manual interventions" LinkText="@($"{RuntimeInterventionCount} applied")" />
+                            <div class="cda-sim-intervention-layout">
+                                <div class="cda-sim-run-mode-grid">
+                                    <button type="button"
+                                            class="@ResolveInterventionKindButtonClass(SimulationRunInterventionKind.DemandChange)"
+                                            aria-pressed="@(pendingInterventionKind == SimulationRunInterventionKind.DemandChange)"
+                                            @onclick="@(() => SelectInterventionKind(SimulationRunInterventionKind.DemandChange))">
+                                        <span class="material-icons" aria-hidden="true">trending_up</span>
+                                        <span>
+                                            <strong>Demand</strong>
+                                            <small>Forecast quantity or multiplier</small>
+                                        </span>
+                                    </button>
+                                    <button type="button"
+                                            class="@ResolveInterventionKindButtonClass(SimulationRunInterventionKind.CapacityExpansion)"
+                                            aria-pressed="@(pendingInterventionKind == SimulationRunInterventionKind.CapacityExpansion)"
+                                            @onclick="@(() => SelectInterventionKind(SimulationRunInterventionKind.CapacityExpansion))">
+                                        <span class="material-icons" aria-hidden="true">precision_manufacturing</span>
+                                        <span>
+                                            <strong>Production line</strong>
+                                            <small>CapEx request and depreciation</small>
+                                        </span>
+                                    </button>
+                                </div>
+
+                                <div class="cda-sim-intervention-fields">
+                                    <FormField Text="@InterventionTargetLabel">
+                                        <TextBox Value="@interventionTargetId"
+                                                 ValueChanged="@(value => interventionTargetId = value ?? string.Empty)"
+                                                 Immediate="true" />
+                                    </FormField>
+                                    <FormField Text="Effective date">
+                                        <TextBox Value="@interventionEffectiveDate"
+                                                 ValueChanged="@(value => interventionEffectiveDate = value ?? string.Empty)"
+                                                 Immediate="true" />
+                                    </FormField>
+                                    @if (pendingInterventionKind == SimulationRunInterventionKind.DemandChange)
+                                    {
+                                        <FormField Text="Multiplier">
+                                            <TextBox Value="@interventionMultiplier"
+                                                     ValueChanged="@(value => interventionMultiplier = value ?? string.Empty)"
+                                                     Immediate="true" />
+                                        </FormField>
+                                        <FormField Text="Quantity delta">
+                                            <TextBox Value="@interventionQuantityDelta"
+                                                     ValueChanged="@(value => interventionQuantityDelta = value ?? string.Empty)"
+                                                     Immediate="true" />
+                                        </FormField>
+                                    }
+                                    else
+                                    {
+                                        <FormField Text="CapEx amount">
+                                            <TextBox Value="@interventionAmount"
+                                                     ValueChanged="@(value => interventionAmount = value ?? string.Empty)"
+                                                     Immediate="true" />
+                                        </FormField>
+                                        <FormField Text="Depreciation months">
+                                            <TextBox Value="@interventionDepreciationMonths"
+                                                     ValueChanged="@(value => interventionDepreciationMonths = value ?? string.Empty)"
+                                                     Immediate="true" />
+                                        </FormField>
+                                    }
+                                    <FormField Text="Reason">
+                                        <TextBox Value="@interventionReason"
+                                                 ValueChanged="@(value => interventionReason = value ?? string.Empty)"
+                                                 Immediate="true" />
+                                    </FormField>
+                                </div>
+
+                                <Cluster JustifyContent="JustifyContent.End" Gap="LayoutGap.Small">
+                                    <Button Text="Reset" Icon="restart_alt" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@ResetInterventionForm" />
+                                    <Button Text="Apply" Icon="playlist_add_check" Click="@ApplyInterventionAsync" data-testid="simulation-apply-intervention" />
+                                </Cluster>
+                            </div>
+                        </section>
+                    }
+
+                    <Tabs AriaLabel="Simulation run observation workspace"
+                          RenderMode="TabRenderMode.Client"
+                          SelectedIndex="@selectedObservationTabIndex"
+                          SelectedIndexChanged="@OnObservationTabChanged"
+                          OverflowMode="TabsOverflowMode.Wrap"
+                          PanelOverflowMode="TabsPanelOverflowMode.Auto"
+                          FillHeight="true"
+                          data-testid="simulation-run-observation-tabs">
+                        <TabsItem Text="State" Icon="monitoring">
+                            <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch" data-testid="simulation-run-state-tab">
+                                <div class="cda-sim-kpi-strip" data-testid="simulation-run-kpi-strip">
+                                    @foreach (SimulationRunKpiSnapshot kpi in Selected.Kpis)
+                                    {
+                                        <section class="cda-sim-kpi-tile">
+                                            <span>@kpi.DisplayName</span>
+                                            <strong>@kpi.Value</strong>
+                                            <small>@kpi.Unit</small>
+                                            <small class="@TrendClass(kpi.Tone)">@kpi.DeltaText</small>
+                                            <small>@kpi.SourceLabel</small>
+                                        </section>
+                                    }
+                                </div>
+
+                                <section class="cda-sim-clock-panel" data-testid="simulation-run-clock">
+                                    <div>
+                                        <TextBlock TextStyle="TextStyle.H4" Value="Run clock" />
+                                        <SmallText Text="Simulation time, step progress, and wall clock state." />
+                                    </div>
+                                    <div class="cda-sim-clock-grid">
+                                        <RunHeaderFact Label="Simulated time" Value="@FormatDate(Selected.Run.CurrentDate)" />
+                                        <RunHeaderFact Label="Period" Value="@($"{Selected.Run.CurrentStep} / {Selected.Run.TotalSteps}")" />
+                                        <RunHeaderFact Label="Steps completed" Value="@Selected.Run.CurrentStep.ToString(CultureInfo.InvariantCulture)" />
+                                        <div>
+                                            <SmallText Text="Step progress" />
+                                            <div class="cda-sim-progress-track">
+                                                <span class="cda-sim-progress-fill" style="@($"width:{ProgressPercent.ToString("0", CultureInfo.InvariantCulture)}%")"></span>
+                                            </div>
+                                            <SmallText Text="@($"{ProgressPercent:0}%")" />
+                                        </div>
+                                        <RunHeaderFact Label="Wall clock elapsed" Value="@FormatDuration(Selected.Run.WallClockElapsed)" />
+                                        <RunHeaderFact Label="Est. time remaining" Value="@(Selected.Run.EstimatedRemaining is null ? "Complete" : FormatDuration(Selected.Run.EstimatedRemaining.Value))" />
+                                    </div>
+                                </section>
+
+                                <div class="cda-sim-state-grid">
+                                    <section class="cda-sim-panel" data-testid="simulation-run-events-panel">
+                                        <PanelHeading Title="Recent events" LinkText="View all events" />
+                                        <table class="cda-sim-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Time (sim)</th>
+                                                    <th>Level</th>
+                                                    <th>Source</th>
+                                                    <th>Message</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (SimulationRunEventState item in Selected.Events.Take(5))
+                                                {
+                                                    <tr>
+                                                        <td>@FormatDate(item.SimulationDate)</td>
+                                                        <td><StatusBadge Text="@item.Level.ToString()" Tone="@SeverityTone(item.Level)" /></td>
+                                                        <td>@item.Source</td>
+                                                        <td>@item.Message</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </section>
+
+                                    <section class="cda-sim-panel" data-testid="simulation-run-top-issues-panel">
+                                        <PanelHeading Title="@($"Top issues ({Selected.TopIssues.Count})")" LinkText="View all issues" />
+                                        <table class="cda-sim-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Severity</th>
+                                                    <th>Source</th>
+                                                    <th>Issue</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (SimulationRunTopIssueState issue in Selected.TopIssues.Take(4))
+                                                {
+                                                    <tr>
+                                                        <td><StatusBadge Text="@issue.Severity.ToString()" Tone="@SeverityTone(issue.Severity)" /></td>
+                                                        <td>@issue.Source</td>
+                                                        <td>@issue.Issue <SmallText Text="@($"First: {FormatDate(issue.FirstSeen)}")" /></td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </section>
+
+                                    <section class="cda-sim-panel" data-testid="simulation-run-resources-panel">
+                                        <PanelHeading Title="Resource usage" LinkText="View run diagnostics" />
+                                        <Stack GapScale="LayoutGap.Small">
+                                            @foreach (SimulationRunResourceMetricState metric in Selected.ResourceUsage.Metrics)
+                                            {
+                                                <div class="cda-sim-resource-row">
+                                                    <span>@metric.DisplayName</span>
+                                                    <div class="cda-sim-progress-track">
+                                                        <span class="cda-sim-progress-fill cda-sim-progress-fill--green" style="@($"width:{metric.Percent.ToString("0", CultureInfo.InvariantCulture)}%")"></span>
+                                                    </div>
+                                                    <span>@metric.Detail</span>
+                                                </div>
+                                            }
+                                        </Stack>
+                                    </section>
+                                </div>
+
+                                <section class="cda-sim-panel" data-testid="simulation-run-pipeline-panel">
+                                    <PanelHeading Title="Simulation pipeline" LinkText="View step details" />
+                                    <div class="cda-sim-pipeline">
+                                        @foreach (SimulationRunPipelineStepState step in Selected.Pipeline.OrderBy(x => x.SortOrder))
+                                        {
+                                            <div class="@PipelineClass(step.Status)">
+                                                <span>@step.SortOrder. @step.DisplayName</span>
+                                                <small>@(step.Duration is null ? step.Detail : FormatDuration(step.Duration.Value))</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </section>
+
+                                <section class="cda-sim-run-footer">
+                                    <span class="@FooterStatusClass"></span>
+                                    <span>Run started: @Selected.Run.StartedAtUtc.ToString("MMM d, yyyy HH:mm", CultureInfo.InvariantCulture) by @Selected.Run.StartedBy</span>
+                                    <span>Last update: @Selected.Run.LastUpdatedAtUtc.ToString("HH:mm:ss", CultureInfo.InvariantCulture)</span>
+                                    <span>Auto-refresh: deterministic sample provider</span>
+                                </section>
+                            </Stack>
+                        </TabsItem>
+                        <TabsItem Text="Summary" Icon="calendar_view_month">
+                            <SimulationPeriodSummaryPanel Run="Selected" />
+                        </TabsItem>
+                        <TabsItem Text="Graphs" Icon="monitoring">
+                            <div data-testid="simulation-run-graphs-tab">
+                                <EconomyScenarioGraphPanel Graphs="Selected.Observation.Graphs"
+                                                           BusinessUnits="GraphBusinessUnits"
+                                                           AddressBindings="GraphAddressBindings" />
+                            </div>
+                        </TabsItem>
+                        <TabsItem Text="BUs" Icon="account_tree">
+                            <SimulationRunBusinessUnitObservationPanel Project="Selected.Project"
+                                                                       Observation="Selected.Observation" />
+                        </TabsItem>
+                        <TabsItem Text="BO Evidence" Icon="rule">
+                            <div class="cda-sim-equal-grid" data-testid="simulation-run-bo-evidence-tab">
+                                <FormSection Title="Rule execution evidence" Description="Evidence generated by existing account-rule automation contracts.">
+                                    <DataGrid TItem="RuleExecutionEvidenceState" Data="Selected.Observation.RuleEvidence">
+                                        <DataGridColumn TItem="RuleExecutionEvidenceState" Property="RuleId" Title="Rule" />
+                                        <DataGridColumn TItem="RuleExecutionEvidenceState" Title="Status">
+                                            <Template Context="evidence">
+                                                <StatusBadge Text="@evidence.Status" Tone="@StatusTone(evidence.Status)" />
+                                            </Template>
+                                        </DataGridColumn>
+                                        <DataGridColumn TItem="RuleExecutionEvidenceState" Property="ActionKind" Title="Action" />
+                                        <DataGridColumn TItem="RuleExecutionEvidenceState" Property="Message" Title="Message" />
+                                    </DataGrid>
+                                </FormSection>
+
+                                <FormSection Title="Output source map" Description="Visible KPI and option outputs mapped to BOs, BUs, and rule evidence.">
+                                    <DataGrid TItem="SimulationOutputSourceRef" Data="Selected.OutputSources" AllowPaging="true" PageSize="8">
+                                        <DataGridColumn TItem="SimulationOutputSourceRef" Property="DisplayName" Title="Output" />
+                                        <DataGridColumn TItem="SimulationOutputSourceRef" Property="SourceKind" Title="Source" />
+                                        <DataGridColumn TItem="SimulationOutputSourceRef" Property="BusinessUnitName" Title="BU" />
+                                        <DataGridColumn TItem="SimulationOutputSourceRef" Property="RuleId" Title="Rule" />
+                                    </DataGrid>
+                                </FormSection>
+                            </div>
+                        </TabsItem>
+                        <TabsItem Text="Issues" Icon="report_problem">
+                            <FormSection Title="Run issues" Description="Deficits, inactive bindings, rule gaps, and failed posting evidence surfaced from the observation read model.">
+                                <DataGrid TItem="SimulationIssue" Data="Selected.Observation.Issues" AllowPaging="true" PageSize="8" data-testid="simulation-run-issues-tab">
+                                    <DataGridColumn TItem="SimulationIssue" Title="Date">
+                                        <Template Context="issue">
+                                            <TextBlock TextStyle="TextStyle.Body2" Value="@FormatDate(issue.Date)" />
+                                        </Template>
+                                    </DataGridColumn>
+                                    <DataGridColumn TItem="SimulationIssue" Property="Code" Title="Code" />
+                                    <DataGridColumn TItem="SimulationIssue" Title="Severity">
+                                        <Template Context="issue">
+                                            <StatusBadge Text="@issue.Severity" Tone="@StatusTone(issue.Severity)" />
+                                        </Template>
+                                    </DataGridColumn>
+                                    <DataGridColumn TItem="SimulationIssue" Title="Business unit">
+                                        <Template Context="issue">
+                                            <SmallText Text="@BusinessUnitName(issue.BusinessUnitId)" />
+                                        </Template>
+                                    </DataGridColumn>
+                                    <DataGridColumn TItem="SimulationIssue" Property="Message" Title="Message" />
+                                </DataGrid>
+                            </FormSection>
+                        </TabsItem>
+                        <TabsItem Text="Artifacts" Icon="inventory_2">
+                            <div class="cda-sim-equal-grid" data-testid="simulation-run-artifacts-tab">
+                                <FormSection Title="Artifacts" Description="Generated run outputs and local or persisted paths.">
+                                    <DataGrid TItem="SimulationRunArtifactState" Data="Selected.Observation.Artifacts">
+                                        <DataGridColumn TItem="SimulationRunArtifactState" Property="DisplayName" Title="Artifact" />
+                                        <DataGridColumn TItem="SimulationRunArtifactState" Property="ArtifactType" Title="Type" />
+                                        <DataGridColumn TItem="SimulationRunArtifactState" Title="Hash">
+                                            <Template Context="artifact">
+                                                <MonoText Text="@Short(artifact.Hash)" />
+                                            </Template>
+                                        </DataGridColumn>
+                                    </DataGrid>
+                                </FormSection>
+
+                                <FormSection Title="Current assumptions" Description="Run setup, financial inputs, and sample policy assumptions used by this run.">
+                                    <DataGrid TItem="SimulationRunAssumptionItem" Data="Selected.Assumptions">
+                                        <DataGridColumn TItem="SimulationRunAssumptionItem" Property="DisplayName" Title="Assumption" />
+                                        <DataGridColumn TItem="SimulationRunAssumptionItem" Property="Value" Title="Value" />
+                                        <DataGridColumn TItem="SimulationRunAssumptionItem" Property="Source" Title="Source" />
+                                    </DataGrid>
+                                </FormSection>
+                            </div>
+                        </TabsItem>
+                    </Tabs>
+                </Stack>
+            </WorkspacePanel>
+        </div>
+    </ChildContent>
+</PageScaffold>
+
+@code {
+    private const int ObservationTabCount = 7;
+
+    private string runSearch = string.Empty;
+    private int selectedObservationTabIndex;
+    private bool observationTabIndexInitialized;
+    private string interventionFormRunId = string.Empty;
+    private SimulationRunInterventionKind pendingInterventionKind = SimulationRunInterventionKind.DemandChange;
+    private string interventionTargetId = string.Empty;
+    private string interventionEffectiveDate = string.Empty;
+    private string interventionMultiplier = "1.25";
+    private string interventionQuantityDelta = "0";
+    private string interventionAmount = "250000";
+    private string interventionDepreciationMonths = "60";
+    private string interventionReason = "Management scenario change";
+
+    [Parameter]
+    public SimulationRunObservationViewModel? ViewModel { get; set; }
+
+    [Parameter]
+    public SimulationRunConsoleViewModel? ConsoleViewModel { get; set; }
+
+    [Parameter]
+    public int InitialObservationTabIndex { get; set; }
+
+    [Parameter]
+    public EventCallback<string> RunSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<SimulationRunCommandKind> CommandRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<SimulationRunStepRequest> StepRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<SimulationRunInterventionRequest> InterventionRequested { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (!observationTabIndexInitialized)
+        {
+            selectedObservationTabIndex = NormalizeObservationTabIndex(InitialObservationTabIndex);
+            observationTabIndexInitialized = true;
+        }
+
+        if (!string.Equals(interventionFormRunId, Selected.Run.RunId, StringComparison.Ordinal))
+        {
+            ResetInterventionFormValues();
+            interventionFormRunId = Selected.Run.RunId;
+        }
+    }
+
+    private SimulationRunConsoleViewModel Console => ConsoleViewModel ?? EconomySimulatorSampleData.CreateRunConsole();
+
+    private SimulationRunConsoleState Selected => Console.SelectedRun;
+
+    private decimal ProgressPercent => Selected.Run.TotalSteps <= 0
+        ? 0m
+        : Math.Clamp(Selected.Run.CurrentStep * 100m / Selected.Run.TotalSteps, 0m, 100m);
+
+    private string PauseResumeText => Selected.Run.Status == SimulationRunLifecycleStatus.Paused ? "Resume" : "Pause";
+
+    private string PauseResumeIcon => Selected.Run.Status == SimulationRunLifecycleStatus.Paused ? "play_arrow" : "pause";
+
+    private bool CanPauseOrResume => Selected.Run.Status is SimulationRunLifecycleStatus.Running or SimulationRunLifecycleStatus.Paused;
+
+    private bool CanStepBack => Selected.Run.SelectedStep > 1;
+
+    private bool CanStepForward => Selected.Run.SelectedStep < Selected.Run.TotalSteps
+        && Selected.Run.Status is not SimulationRunLifecycleStatus.Stopped and not SimulationRunLifecycleStatus.Failed;
+
+    private bool CanApplyInterventions => Selected.Run.RunMode == SimulationRunMode.Manual
+        && Selected.Run.Status is SimulationRunLifecycleStatus.Paused or SimulationRunLifecycleStatus.Running;
+
+    private int RuntimeInterventionCount => Selected.Project.BusinessObjectDefinitions.Count(definition => definition.ObjectType == EconomySimulatorObjectTypes.RuntimeIntervention);
+
+    private string InterventionTargetLabel => pendingInterventionKind == SimulationRunInterventionKind.DemandChange
+        ? "Demand schedule"
+        : "Business unit";
+
+    private TimelineStepperMode SelectedTimelineMode => Selected.Run.RunMode == SimulationRunMode.Automatic
+        ? TimelineStepperMode.Automatic
+        : TimelineStepperMode.Manual;
+
+    private string TimelineStatusText => Selected.Run.SelectedStepHasData
+        ? "Data available"
+        : "Not simulated yet";
+
+    private string TimelineStatusTone => Selected.Run.SelectedStepHasData ? "success" : "warning";
+
+    private string FooterStatusClass => Selected.Run.Status is SimulationRunLifecycleStatus.Failed
+        ? "cda-sim-status-dot cda-sim-status-dot--danger"
+        : "cda-sim-status-dot";
+
+    private Task OnObservationTabChanged(int index)
+    {
+        selectedObservationTabIndex = NormalizeObservationTabIndex(index);
+        return Task.CompletedTask;
+    }
+
+    private static int NormalizeObservationTabIndex(int index)
+        => Math.Clamp(index, 0, ObservationTabCount - 1);
+
+    private IReadOnlyList<SimulationRunConsoleState> FilteredRuns
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(runSearch))
+            {
+                return Console.Runs;
+            }
+
+            return Console.Runs
+                .Where(run => run.Run.RunId.Contains(runSearch, StringComparison.OrdinalIgnoreCase)
+                    || run.Run.ScenarioName.Contains(runSearch, StringComparison.OrdinalIgnoreCase)
+                    || DisplayStatus(run.Run.Status).Contains(runSearch, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+        }
+    }
+
+    private IReadOnlyList<KeyValuePair<string, string>> OutputHashRows => Selected.Observation.OutputHashes
+        .OrderBy(x => x.Key, StringComparer.Ordinal)
+        .ToArray();
+
+    private IReadOnlyList<BusinessUnitNodeItem> GraphBusinessUnits => Selected.Project.BusinessUnits
+        .Select(businessUnit => new BusinessUnitNodeItem(
+            businessUnit.Path,
+            businessUnit.DisplayName,
+            businessUnit.Kind.ToString(),
+            businessUnit.Status.ToString(),
+            Amount.FromDecimal(Selected.Observation.AccountSnapshots.Where(snapshot => snapshot.BusinessUnitId == businessUnit.BusinessUnitId).Sum(snapshot => snapshot.Balance.Value))))
+        .ToArray();
+
+    private IReadOnlyList<AddressBindingItem> GraphAddressBindings => Selected.Project.AddressBindings
+        .Select(binding => new AddressBindingItem(
+            BusinessUnitName(binding.BusinessUnitId),
+            binding.Role.ToString(),
+            binding.Address.Value,
+            binding.Status.ToString(),
+            binding.ValidToUtc is null
+                ? $"{binding.ValidFromUtc:yyyy-MM-dd} onward"
+                : $"{binding.ValidFromUtc:yyyy-MM-dd} to {binding.ValidToUtc:yyyy-MM-dd}"))
+        .ToArray();
+
+    private Task SelectRunAsync(string runId)
+        => RunSelected.InvokeAsync(runId);
+
+    private Task PauseOrResumeAsync()
+        => Selected.Run.Status == SimulationRunLifecycleStatus.Paused
+            ? CommandRequested.InvokeAsync(SimulationRunCommandKind.Resume)
+            : CommandRequested.InvokeAsync(SimulationRunCommandKind.Pause);
+
+    private Task StepPreviousAsync()
+        => StepRequested.InvokeAsync(new SimulationRunStepRequest(SimulationRunStepRequestKind.Previous));
+
+    private Task StepNextAsync()
+        => StepRequested.InvokeAsync(new SimulationRunStepRequest(SimulationRunStepRequestKind.Next));
+
+    private Task SelectStepAsync(int step)
+        => StepRequested.InvokeAsync(new SimulationRunStepRequest(SimulationRunStepRequestKind.Select, step));
+
+    private void SelectInterventionKind(SimulationRunInterventionKind kind)
+    {
+        pendingInterventionKind = kind;
+        interventionTargetId = kind == SimulationRunInterventionKind.DemandChange
+            ? DefaultDemandTarget()
+            : DefaultCapacityTarget();
+    }
+
+    private Task ResetInterventionForm()
+    {
+        ResetInterventionFormValues();
+        return Task.CompletedTask;
+    }
+
+    private void ResetInterventionFormValues()
+    {
+        pendingInterventionKind = SimulationRunInterventionKind.DemandChange;
+        interventionTargetId = DefaultDemandTarget();
+        interventionEffectiveDate = DefaultInterventionDate().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        interventionMultiplier = "1.25";
+        interventionQuantityDelta = "0";
+        interventionAmount = Selected.Project.Summary.BaseCurrencyCode == "EUR" ? "250000" : "250000";
+        interventionDepreciationMonths = "60";
+        interventionReason = "Management scenario change";
+    }
+
+    private Task ApplyInterventionAsync()
+    {
+        DateOnly? effectiveDate = DateOnly.TryParseExact(interventionEffectiveDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly parsedDate)
+            ? parsedDate
+            : null;
+        decimal? multiplier = TryParseDecimal(interventionMultiplier);
+        decimal? quantityDelta = TryParseDecimal(interventionQuantityDelta);
+        decimal? amount = TryParseDecimal(interventionAmount);
+        int? depreciationMonths = int.TryParse(interventionDepreciationMonths, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsedMonths)
+            ? parsedMonths
+            : null;
+        string displayName = pendingInterventionKind == SimulationRunInterventionKind.DemandChange
+            ? "Manual demand change"
+            : "Manual production line request";
+
+        return InterventionRequested.InvokeAsync(new SimulationRunInterventionRequest(
+            pendingInterventionKind,
+            interventionTargetId,
+            effectiveDate,
+            quantityDelta,
+            multiplier,
+            amount,
+            depreciationMonths,
+            displayName,
+            interventionReason,
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["ui"] = "run-console",
+                ["selectedStep"] = Selected.Run.SelectedStep.ToString(CultureInfo.InvariantCulture),
+                ["scenarioName"] = Selected.Run.ScenarioName
+            }));
+    }
+
+    private string BusinessUnitName(BusinessUnitId? businessUnitId)
+    {
+        if (businessUnitId is null)
+        {
+            return "Project";
+        }
+
+        return Selected.Project.BusinessUnits.FirstOrDefault(x => x.BusinessUnitId == businessUnitId.Value)?.DisplayName ?? businessUnitId.Value.Value;
+    }
+
+    private static string FormatDate(DateOnly value)
+        => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private IReadOnlyList<TimelineStepperTick> TimelineTicks => BuildTimelineTicks(Selected.Setup, Selected.Run.TotalSteps, Selected.Run.AvailableStep);
+
+    private DateOnly DefaultInterventionDate()
+        => DateAtStep(Selected.Setup, Math.Min(Selected.Run.TotalSteps, Selected.Run.SelectedStep + 1));
+
+    private string DefaultDemandTarget()
+    {
+        if (Selected.Project.Metadata.TryGetValue("scenarioCode", out string? scenarioCode))
+        {
+            return scenarioCode switch
+            {
+                "S1" => "enterprise-demand",
+                "S2" => "SDF-001-demand",
+                "S3" => "gamma-gsh-g-demand",
+                _ => "demand-schedule"
+            };
+        }
+
+        return "demand-schedule";
+    }
+
+    private string DefaultCapacityTarget()
+    {
+        BusinessUnitState? preferred = Selected.Project.BusinessUnits.FirstOrDefault(unit => unit.Path.Contains("production", StringComparison.OrdinalIgnoreCase))
+            ?? Selected.Project.BusinessUnits.FirstOrDefault(unit => unit.Path.Contains("engineering", StringComparison.OrdinalIgnoreCase))
+            ?? Selected.Project.BusinessUnits.FirstOrDefault(unit => unit.Kind == BusinessUnitKind.CostCenter)
+            ?? Selected.Project.BusinessUnits.FirstOrDefault();
+        return preferred?.BusinessUnitId.Value ?? "bu:project:production";
+    }
+
+    private static IReadOnlyList<TimelineStepperTick> BuildTimelineTicks(SimulationRunSetupState setup, int totalSteps, int availableStep)
+    {
+        int safeTotal = Math.Max(1, totalSteps);
+        int[] candidates = [1, Math.Max(1, safeTotal / 4), Math.Max(1, safeTotal / 2), Math.Max(1, safeTotal * 3 / 4), safeTotal];
+        return candidates
+            .Distinct()
+            .Order()
+            .Select(step => new TimelineStepperTick
+            {
+                Step = step,
+                Label = step == 1
+                    ? "Start"
+                    : step == safeTotal
+                        ? "End"
+                        : step.ToString(CultureInfo.InvariantCulture),
+                Description = DateAtStep(setup, step).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Major = step == 1 || step == safeTotal,
+                Disabled = step > availableStep + 1
+            })
+            .ToArray();
+    }
+
+    private static DateOnly DateAtStep(SimulationRunSetupState setup, int step)
+        => setup.StepPeriod switch
+        {
+            SimulationRunStepPeriod.Day => setup.HorizonStartDate.AddDays(step - 1),
+            SimulationRunStepPeriod.Week => setup.HorizonStartDate.AddDays((step - 1) * 7),
+            SimulationRunStepPeriod.Quarter => setup.HorizonStartDate.AddMonths((step - 1) * 3),
+            SimulationRunStepPeriod.HalfYear => setup.HorizonStartDate.AddMonths((step - 1) * 6),
+            SimulationRunStepPeriod.Year => setup.HorizonStartDate.AddYears(step - 1),
+            _ => setup.HorizonStartDate.AddMonths(step - 1)
+        };
+
+    private static string FormatDuration(TimeSpan value)
+        => value.TotalHours >= 1
+            ? value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)
+            : value.ToString(@"mm\:ss", CultureInfo.InvariantCulture);
+
+    private static string Short(string value)
+        => value.Length <= 22 ? value : $"{value[..10]}...{value[^8..]}";
+
+    private static decimal? TryParseDecimal(string value)
+        => decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed)
+            ? parsed
+            : null;
+
+    private static string DisplayStatus(SimulationRunLifecycleStatus status)
+        => status switch
+        {
+            SimulationRunLifecycleStatus.CompletedWithWarnings => "Completed with warnings",
+            _ => status.ToString()
+        };
+
+    private static string LifecycleTone(SimulationRunLifecycleStatus status)
+        => status switch
+        {
+            SimulationRunLifecycleStatus.Running => "success",
+            SimulationRunLifecycleStatus.Completed => "success",
+            SimulationRunLifecycleStatus.CompletedWithWarnings => "warning",
+            SimulationRunLifecycleStatus.Failed => "danger",
+            SimulationRunLifecycleStatus.Stopped => "muted",
+            SimulationRunLifecycleStatus.Paused => "info",
+            _ => "secondary"
+        };
+
+    private static string StatusTone(string status)
+        => status.Equals("Completed", StringComparison.OrdinalIgnoreCase) || status.Equals("Executed", StringComparison.OrdinalIgnoreCase)
+            ? "success"
+            : status.Equals("Warning", StringComparison.OrdinalIgnoreCase) || status.Equals("Skipped", StringComparison.OrdinalIgnoreCase)
+                ? "warning"
+                : status.Equals("Failed", StringComparison.OrdinalIgnoreCase) || status.Equals("Error", StringComparison.OrdinalIgnoreCase)
+                    ? "danger"
+                    : "info";
+
+    private static string SeverityTone(SimulationValidationSeverity severity)
+        => severity switch
+        {
+            SimulationValidationSeverity.Error => "danger",
+            SimulationValidationSeverity.Warning => "warning",
+            _ => "info"
+        };
+
+    private static string TrendClass(string tone)
+        => tone.Equals("warning", StringComparison.OrdinalIgnoreCase) || tone.Equals("danger", StringComparison.OrdinalIgnoreCase)
+            ? "cda-sim-trend cda-sim-trend--down"
+            : "cda-sim-trend";
+
+    private static string RunCardClass(bool selected)
+        => selected ? "cda-sim-run-card cda-sim-run-card--active" : "cda-sim-run-card";
+
+    private static string PipelineClass(SimulationRunPipelineStepStatus status)
+        => status switch
+        {
+            SimulationRunPipelineStepStatus.Completed => "cda-sim-pipeline-step cda-sim-pipeline-step--done",
+            SimulationRunPipelineStepStatus.Running => "cda-sim-pipeline-step cda-sim-pipeline-step--active",
+            SimulationRunPipelineStepStatus.Failed => "cda-sim-pipeline-step cda-sim-pipeline-step--failed",
+            SimulationRunPipelineStepStatus.Skipped => "cda-sim-pipeline-step cda-sim-pipeline-step--skipped",
+            _ => "cda-sim-pipeline-step"
+        };
+
+    private string ResolveInterventionKindButtonClass(SimulationRunInterventionKind kind)
+        => pendingInterventionKind == kind
+            ? "cda-sim-run-mode-button cda-sim-run-mode-button--active"
+            : "cda-sim-run-mode-button";
+}

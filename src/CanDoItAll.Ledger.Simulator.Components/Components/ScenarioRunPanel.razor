@@ -1,0 +1,19 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Scenario Runner" Description="Configure deterministic scenario runs with a non-null ScenarioId.">
+    <FormRow Split="true">
+        <FormField Text="Scenario ID">
+            <TextBox Value="downside-q3" />
+        </FormField>
+        <FormField Text="Horizon">
+            <TextBox Value="2026-06-01 to 2026-12-31" />
+        </FormField>
+        <FormField Text="Seed">
+            <TextBox Value="42" />
+        </FormField>
+        <FormField Text="Mode">
+            <TextBox Value="deterministic" />
+        </FormField>
+    </FormRow>
+    <Button Text="Run scenario" Icon="play_arrow" />
+</SectionCard>

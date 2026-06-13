@@ -1,0 +1,250 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+
+<Stack GapScale="LayoutGap.Large" data-testid="simulation-definition-settings-panel">
+    @if (RuleProcess is not null)
+    {
+        <FormSection Title="Rule process settings" Description="@RuleProcess.FinanceControlPurpose">
+            <FormRow Split="true">
+                <FormField Text="Process code">
+                    <TextBox Value="@RuleProcess.ProcessCode" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Rule id">
+                    <TextBox Value="@RuleProcess.RuleId" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Kind">
+                    <TextBox Value="@RuleProcess.Kind.ToString()" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Trigger BO">
+                    <TextBox Value="@RuleProcess.TriggerObjectType" ReadOnly="true" />
+                </FormField>
+            </FormRow>
+        </FormSection>
+    }
+
+    @if (Definition.RuleDefinition is not null)
+    {
+        <FormSection Title="Rule settings" Description="Readable account-rule setup before the deterministic rule payload.">
+            <FormRow Split="true">
+                <FormField Text="Namespace">
+                    <TextBox Value="@Definition.RuleDefinition.RuleNamespace" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Enabled">
+                    <TextBox Value="@Definition.RuleDefinition.Enabled.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Trigger">
+                    <TextBox Value="@RuleTriggerText" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Actions">
+                    <TextBox Value="@Definition.RuleDefinition.Actions.Count.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
+                </FormField>
+            </FormRow>
+        </FormSection>
+
+        <AccountRuleLogicPreview Rule="Definition.RuleDefinition"
+                                 ValidationErrors="RuleValidationErrors"
+                                 Compact="true" />
+    }
+    else if (PlannedSchedule is not null)
+    {
+        <FormSection Title="Planned financial schedule settings" Description="@PlannedSchedule.DisplayName">
+            <FormRow Split="true">
+                <FormField Text="Business unit">
+                    <TextBox Value="@OwnerName(PlannedSchedule.BusinessUnitId)" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Kind">
+                    <TextBox Value="@PlannedSchedule.Kind.ToString()" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Approval">
+                    <TextBox Value="@ApprovalText" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Total amount">
+                    <TextBox Value="@FormatAmount(PlannedSchedule.Amounts.Sum(amount => amount.Amount.Value))" ReadOnly="true" />
+                </FormField>
+                <FormField Text="First month">
+                    <TextBox Value="@FormatDate(PlannedSchedule.Amounts.MinBy(amount => amount.EconomicDate)?.EconomicDate)" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Last month">
+                    <TextBox Value="@FormatDate(PlannedSchedule.Amounts.MaxBy(amount => amount.EconomicDate)?.EconomicDate)" ReadOnly="true" />
+                </FormField>
+            </FormRow>
+        </FormSection>
+
+        <SectionCard Title="Scheduled amounts" Description="Economic month, amount, and simulator period.">
+            <DataGrid TItem="ScenarioFinancialScheduleAmountState" Data="PlannedSchedule.Amounts" AllowPaging="true" PageSize="6">
+                <DataGridColumn TItem="ScenarioFinancialScheduleAmountState" Title="Date">
+                    <Template Context="amount">
+                        <SmallText Text="@amount.EconomicDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="ScenarioFinancialScheduleAmountState" Title="Amount">
+                    <Template Context="amount">
+                        <TextBlock Value="@FormatAmount(amount.Amount.Value)" />
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="ScenarioFinancialScheduleAmountState" Property="PeriodCode" Title="Period" />
+            </DataGrid>
+        </SectionCard>
+    }
+    else if (BusinessUnit is not null)
+    {
+        <FormSection Title="Business unit settings" Description="@BusinessUnit.Path">
+            <FormRow Split="true">
+                <FormField Text="Kind">
+                    <TextBox Value="@BusinessUnit.Kind.ToString()" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Primary address">
+                    <TextBox Value="@BusinessUnit.PrimaryAddress.Value" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Cost center">
+                    <TextBox Value="@(BusinessUnit.CostCenterCode ?? "none")" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Revenue center">
+                    <TextBox Value="@(BusinessUnit.RevenueCenterCode ?? "none")" ReadOnly="true" />
+                </FormField>
+            </FormRow>
+        </FormSection>
+    }
+    else if (RuleAutomationPlan is not null)
+    {
+        <FormSection Title="Rule automation plan" Description="@RuleAutomationPlan.RuleNamespace">
+            <FormRow Split="true">
+                <FormField Text="Scenario">
+                    <TextBox Value="@RuleAutomationPlan.ScenarioCode" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Rule count">
+                    <TextBox Value="@RuleAutomationPlan.RuleIds.Count.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
+                </FormField>
+            </FormRow>
+        </FormSection>
+        <SectionCard Title="Rules included" Description="Rule ids materialized by this plan.">
+            @foreach (string ruleId in RuleAutomationPlan.RuleIds)
+            {
+                <SmallText Text="@ruleId" />
+            }
+        </SectionCard>
+    }
+    else if (Model is not null)
+    {
+        <FormSection Title="Project model settings" Description="@Model.Name">
+            <FormRow Split="true">
+                <FormField Text="Currency">
+                    <TextBox Value="@Model.BaseCurrencyCode" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Calendar">
+                    <TextBox Value="@Model.CalendarCode" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Planning start">
+                    <TextBox Value="@Model.PlanningStartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Planning end">
+                    <TextBox Value="@Model.PlanningEndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" ReadOnly="true" />
+                </FormField>
+            </FormRow>
+        </FormSection>
+    }
+    else if (ScenarioModel is not null)
+    {
+        <FormSection Title="Scenario model settings" Description="@ScenarioModel.DisplayName">
+            <FormRow Split="true">
+                <FormField Text="Scenario code">
+                    <TextBox Value="@ScenarioModel.ScenarioCode" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Business units">
+                    <TextBox Value="@ScenarioModel.BusinessUnits.Count.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Products and services">
+                    <TextBox Value="@((ScenarioModel.ProductSkus.Count + ScenarioModel.Offerings.Count).ToString(CultureInfo.InvariantCulture))" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Financial schedules">
+                    <TextBox Value="@ScenarioModel.FinancialSchedules.Count.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
+                </FormField>
+            </FormRow>
+        </FormSection>
+    }
+    else
+    {
+        <FormSection Title="Structured settings" Description="This BO type does not have a specialized settings view yet.">
+            <FormRow Split="true">
+                <FormField Text="Object type">
+                    <TextBox Value="@Definition.ObjectType" ReadOnly="true" />
+                </FormField>
+                <FormField Text="Owner BU">
+                    <TextBox Value="@(Definition.OwnerBusinessUnitId is null ? "project" : OwnerName(Definition.OwnerBusinessUnitId.Value))" ReadOnly="true" />
+                </FormField>
+            </FormRow>
+        </FormSection>
+    }
+
+    <SectionCard Title="Payload preview" Description="Deterministic state payload used for BO materialization and export.">
+        <TextArea Value="@Definition.StateJson" ReadOnly="true" Rows="4" />
+    </SectionCard>
+</Stack>
+
+@code {
+    private static readonly IEconomySimulatorJsonSerializer Serializer = new EconomySimulatorJsonSerializer();
+
+    [Parameter, EditorRequired]
+    public SimulationProjectState Project { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SimulationBusinessObjectDefinitionState Definition { get; set; } = default!;
+
+    private RuleProcessTemplateState? RuleProcess => TryDeserialize<RuleProcessTemplateState>();
+
+    private ScenarioFinancialScheduleState? PlannedSchedule => Definition.ObjectType == EconomySimulatorObjectTypes.PlannedFinancialSchedule
+        ? TryDeserialize<ScenarioFinancialScheduleState>()
+        : null;
+
+    private BusinessUnitState? BusinessUnit => Definition.ObjectType == EconomySimulatorObjectTypes.BusinessUnit
+        ? TryDeserialize<BusinessUnitState>()
+        : null;
+
+    private RuleAutomationPlanState? RuleAutomationPlan => Definition.ObjectType == EconomySimulatorObjectTypes.RuleAutomationPlan
+        ? TryDeserialize<RuleAutomationPlanState>()
+        : null;
+
+    private EconomySimulatorModelState? Model => Definition.ObjectType == EconomySimulatorObjectTypes.ProjectConfiguration
+        ? TryDeserialize<EconomySimulatorModelState>()
+        : null;
+
+    private ScenarioBusinessModelState? ScenarioModel => Definition.ObjectType == EconomySimulatorObjectTypes.Template
+        ? TryDeserialize<ScenarioBusinessModelState>()
+        : null;
+
+    private string RuleTriggerText => Definition.RuleDefinition?.Trigger is { } trigger
+        ? string.IsNullOrWhiteSpace(trigger.ObjectType) ? trigger.Kind.ToString() : $"{trigger.Kind} / {trigger.ObjectType}"
+        : "n/a";
+
+    private string ApprovalText => PlannedSchedule?.Approval is { } approval
+        ? $"{approval.Status} / {approval.RequiredScope}"
+        : "Not required";
+
+    private IReadOnlyList<string> RuleValidationErrors
+        => Definition.RuleDefinition is null
+            ? []
+            : RuleTokenAuthority.TryValidate(Definition.RuleDefinition, out IReadOnlyList<string> errors)
+                ? []
+                : errors;
+
+    private T? TryDeserialize<T>()
+    {
+        try
+        {
+            return Serializer.Deserialize<T>(Definition.StateJson);
+        }
+        catch
+        {
+            return default;
+        }
+    }
+
+    private string OwnerName(BusinessUnitId id)
+        => Project.BusinessUnits.FirstOrDefault(unit => unit.BusinessUnitId == id)?.DisplayName ?? id.Value;
+
+    private static string FormatAmount(decimal amount)
+        => amount.ToString("#,0.##", CultureInfo.InvariantCulture);
+
+    private static string FormatDate(DateOnly? date)
+        => date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "n/a";
+}

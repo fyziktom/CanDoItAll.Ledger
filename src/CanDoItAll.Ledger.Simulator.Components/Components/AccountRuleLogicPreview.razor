@@ -1,0 +1,88 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+
+<SectionCard Title="Rule logic" Description="@Rule.RuleId">
+    <Stack GapScale="LayoutGap.Medium">
+        @if (ValidationErrors.Count > 0)
+        {
+            <FormSection Title="Validation" Description="Rule checks that need attention.">
+                <Stack GapScale="LayoutGap.Small">
+                    @foreach (string error in ValidationErrors)
+                    {
+                        <SmallText Text="@error" />
+                    }
+                </Stack>
+            </FormSection>
+        }
+
+        <FormRow Split="true">
+            <FormField Text="Namespace">
+                <TextBox Value="@Rule.RuleNamespace" ReadOnly="true" />
+            </FormField>
+            <FormField Text="Enabled">
+                <TextBox Value="@Rule.Enabled.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
+            </FormField>
+            <FormField Text="Trigger">
+                <TextBox Value="@TriggerText" ReadOnly="true" />
+            </FormField>
+            <FormField Text="Processing">
+                <TextBox Value="@ProcessingText" ReadOnly="true" />
+            </FormField>
+        </FormRow>
+
+        <FormSection Title="Conditions" Description="@Rule.Conditions.Count.ToString(CultureInfo.InvariantCulture)">
+            <Stack GapScale="LayoutGap.Small">
+                @foreach (string condition in Rule.Conditions)
+                {
+                    <MonoText Text="@condition" />
+                }
+            </Stack>
+        </FormSection>
+
+        <DataGrid TItem="AccountRuleAction" Data="Rule.Actions">
+            <DataGridColumn TItem="AccountRuleAction" Property="Kind" Title="Action" />
+            <DataGridColumn TItem="AccountRuleAction" Title="Target">
+                <Template Context="action">
+                    <SmallText Text="@TargetText(action)" />
+                </Template>
+            </DataGridColumn>
+            <DataGridColumn TItem="AccountRuleAction" Title="Amount">
+                <Template Context="action">
+                    <MonoText Text="@(action.AmountExpression ?? "-")" />
+                </Template>
+            </DataGridColumn>
+        </DataGrid>
+    </Stack>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public AccountRuleDefinition Rule { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<string> ValidationErrors { get; set; } = [];
+
+    [Parameter]
+    public bool Compact { get; set; }
+
+    private string TriggerText => Rule.Trigger is null
+        ? "default"
+        : string.IsNullOrWhiteSpace(Rule.Trigger.ObjectType)
+            ? Rule.Trigger.Kind.ToString()
+            : $"{Rule.Trigger.Kind}: {Rule.Trigger.ObjectType}";
+
+    private string ProcessingText
+    {
+        get
+        {
+            AccountRuleProcessingOptions processing = Rule.Processing ?? AccountRuleProcessingOptions.Default;
+            return $"{processing.MaxActionsPerRefresh.ToString(CultureInfo.InvariantCulture)} actions, processed={processing.MarkTriggerProcessed.ToString(CultureInfo.InvariantCulture)}";
+        }
+    }
+
+    private static string TargetText(AccountRuleAction action)
+        => action.ReceiverAddress
+            ?? action.ObjectIdExpression
+            ?? action.TokenId
+            ?? "-";
+}

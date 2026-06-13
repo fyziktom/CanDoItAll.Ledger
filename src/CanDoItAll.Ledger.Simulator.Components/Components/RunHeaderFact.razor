@@ -1,0 +1,31 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<div class="cda-sim-run-fact">
+    <span>@Label</span>
+    @if (!string.IsNullOrWhiteSpace(BadgeTone))
+    {
+        <StatusBadge Text="@Value" Tone="@BadgeTone" />
+    }
+    else if (Monospace)
+    {
+        <MonoText Text="@Value" />
+    }
+    else
+    {
+        <strong>@Value</strong>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Monospace { get; set; }
+
+    [Parameter]
+    public string? BadgeTone { get; set; }
+}

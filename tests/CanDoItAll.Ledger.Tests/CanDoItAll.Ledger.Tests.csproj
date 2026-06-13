@@ -17,6 +17,10 @@
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Persistence.PostgreSql\CanDoItAll.Economy.Persistence.PostgreSql.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Storage.InMemory\CanDoItAll.Economy.Storage.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator\CanDoItAll.Ledger.Simulator.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator.Components\CanDoItAll.Ledger.Simulator.Components.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator.Persistence.EFCore\CanDoItAll.Ledger.Simulator.Persistence.EFCore.csproj" />
+    <PackageReference Include="bunit.web" Version="1.40.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.4" />

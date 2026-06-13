@@ -1,0 +1,23 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Object Detail" Description="SDK transaction, BusinessObject, token and address details share this host.">
+    <DataGrid TItem="ObjectDetailItem" Data="Items">
+        <DataGridColumn TItem="ObjectDetailItem" Title="Type">
+            <Template Context="item">
+                <StatusBadge Text="@item.Type" Tone="info" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="ObjectDetailItem" Title="ID">
+            <Template Context="item">
+                <MonoText Text="@item.Id" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="ObjectDetailItem" Property="Status" Title="Status" />
+        <DataGridColumn TItem="ObjectDetailItem" Property="Summary" Title="Summary" />
+    </DataGrid>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<ObjectDetailItem> Items { get; set; } = Array.Empty<ObjectDetailItem>();
+}

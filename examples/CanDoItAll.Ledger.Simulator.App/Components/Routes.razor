@@ -1,0 +1,13 @@
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not found</PageTitle>
+        <PageScaffold>
+            <ChildContent>
+                <EmptyState Eyebrow="Economy Simulator" Title="Not found" Description="The requested simulator route does not exist." />
+            </ChildContent>
+        </PageScaffold>
+    </NotFound>
+</Router>

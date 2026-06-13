@@ -1,0 +1,24 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Calibration Recommendations" Description="Recommendations are reviewable and never auto-applied.">
+    <DataGrid TItem="CalibrationRecommendationState" Data="Items">
+        <DataGridColumn TItem="CalibrationRecommendationState" Property="MetricCode" Title="Metric" />
+        <DataGridColumn TItem="CalibrationRecommendationState" Property="PreviousAssumption" Title="Previous" />
+        <DataGridColumn TItem="CalibrationRecommendationState" Property="SuggestedAssumption" Title="Suggested" />
+        <DataGridColumn TItem="CalibrationRecommendationState" Title="Confidence">
+            <Template Context="item">
+                <TextBlock Value="@item.Confidence.ToString("P0", System.Globalization.CultureInfo.InvariantCulture)" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="CalibrationRecommendationState" Title="Status">
+            <Template Context="item">
+                <StatusBadge Text="@item.Status" Tone="warning" />
+            </Template>
+        </DataGridColumn>
+    </DataGrid>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<CalibrationRecommendationState> Items { get; set; } = Array.Empty<CalibrationRecommendationState>();
+}

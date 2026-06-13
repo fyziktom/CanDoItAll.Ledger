@@ -4,6 +4,7 @@
     <Project Path="examples/CanDoItAll.Economy.AppHost/CanDoItAll.Economy.AppHost.csproj" />
     <Project Path="examples/CanDoItAll.Economy.Components.Demo/CanDoItAll.Economy.Components.Demo.csproj" />
     <Project Path="examples/CanDoItAll.Economy.ConsoleDemo/CanDoItAll.Economy.ConsoleDemo.csproj" />
+    <Project Path="examples/CanDoItAll.Ledger.Simulator.App/CanDoItAll.Ledger.Simulator.App.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj" />
@@ -20,6 +21,9 @@
     <Project Path="src/CanDoItAll.Economy.Simulation.Ledger/CanDoItAll.Economy.Simulation.Ledger.csproj" />
     <Project Path="src/CanDoItAll.Economy.Storage.InMemory/CanDoItAll.Economy.Storage.InMemory.csproj" />
     <Project Path="src/CanDoItAll.Ledger.Repository/CanDoItAll.Ledger.Repository.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Simulator/CanDoItAll.Ledger.Simulator.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Simulator.Components/CanDoItAll.Ledger.Simulator.Components.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Simulator.Persistence.EFCore/CanDoItAll.Ledger.Simulator.Persistence.EFCore.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CanDoItAll.Ledger.Tests/CanDoItAll.Ledger.Tests.csproj" />

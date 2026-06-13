@@ -1,0 +1,43 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Cash Flow" Description="Planned, committed, simulated and actual cash movement by date.">
+    <DataGrid TItem="CashFlowProjectionPoint" Data="Items" AllowPaging="true" PageSize="6">
+        <DataGridColumn TItem="CashFlowProjectionPoint" Title="Date">
+            <Template Context="item">
+                <TextBlock TextStyle="TextStyle.Body2" Value="@FormatDate(item.Date)" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="CashFlowProjectionPoint" Title="BU">
+            <Template Context="item">
+                <MonoText Text="@item.BusinessUnitId.Value" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="CashFlowProjectionPoint" Property="CategoryCode" Title="Category" />
+        <DataGridColumn TItem="CashFlowProjectionPoint" Title="Inflow">
+            <Template Context="item">
+                <TextBlock Value="@Money(item.PlannedInflow.Value + item.CommittedInflow.Value + item.ActualInflow.Value + item.SimulatedInflow.Value)" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="CashFlowProjectionPoint" Title="Outflow">
+            <Template Context="item">
+                <TextBlock Value="@Money(item.PlannedOutflow.Value + item.CommittedOutflow.Value + item.ActualOutflow.Value + item.SimulatedOutflow.Value)" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="CashFlowProjectionPoint" Title="Balance">
+            <Template Context="item">
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Money(item.BalanceAfter.Value)" />
+            </Template>
+        </DataGridColumn>
+    </DataGrid>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<CashFlowProjectionPoint> Items { get; set; } = Array.Empty<CashFlowProjectionPoint>();
+
+    private static string Money(decimal value)
+        => value.ToString("$#,0", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string FormatDate(DateOnly value)
+        => value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+}

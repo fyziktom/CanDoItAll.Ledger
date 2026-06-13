@@ -39,8 +39,11 @@ else {
             if ($normalizedReference -match "\.\.\\CanDoItAll\.Economy\\") {
                 $violations.Add("cross-repo Economy project reference: $project -> $reference")
             }
-            if ($normalizedReference -match "Simulation\.SimpleAccounts|Simulation\.ExperimentalEconomics|Simulation\.MemoryEconomy|SimulationSandbox|Simulator") {
+            if ($normalizedReference -match "Simulation\.SimpleAccounts|Simulation\.ExperimentalEconomics|Simulation\.MemoryEconomy|SimulationSandbox") {
                 $violations.Add("basic simulator project reference: $project -> $reference")
+            }
+            if ($normalizedReference -match "Simulator" -and $normalizedReference -notmatch "CanDoItAll\.Ledger\.Simulator") {
+                $violations.Add("non-ledger simulator project reference: $project -> $reference")
             }
         }
 

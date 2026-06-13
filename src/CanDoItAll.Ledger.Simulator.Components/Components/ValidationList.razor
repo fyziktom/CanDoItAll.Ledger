@@ -1,0 +1,39 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Validation" Description="Project validator messages for the selected surface.">
+    @if (Messages.Count == 0)
+    {
+        <Alert AlertStyle="AlertStyle.Success">
+            <strong>No blocking validation messages</strong>
+            <span>The selected simulator project surface is currently clean.</span>
+        </Alert>
+    }
+    else
+    {
+        <Stack GapScale="LayoutGap.Small">
+            @foreach (SimulationProjectValidationMessage message in Messages)
+            {
+                <div class="rounded-md border border-slate-200 bg-white p-3">
+                    <Cluster Gap="LayoutGap.Small">
+                        <StatusBadge Text="@message.Severity.ToString()" Tone="@SeverityTone(message.Severity)" />
+                        <MonoText Text="@message.Code" />
+                    </Cluster>
+                    <SmallText Text="@message.Message" />
+                </div>
+            }
+        </Stack>
+    }
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<SimulationProjectValidationMessage> Messages { get; set; } = [];
+
+    private static string SeverityTone(SimulationValidationSeverity severity)
+        => severity switch
+        {
+            SimulationValidationSeverity.Error => "danger",
+            SimulationValidationSeverity.Warning => "warning",
+            _ => "info"
+        };
+}

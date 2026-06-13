@@ -1,0 +1,118 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+
+<Stack GapScale="LayoutGap.Large" data-testid="simulation-basic-info-tab">
+    <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
+        <SectionCard Title="Status" Description="Current project lifecycle state.">
+            <TextBlock TextStyle="TextStyle.H4" Value="@Project.Summary.Status.ToString()" />
+            <SmallText Text="@($"{Project.Summary.IssueCount} open issue(s)")" />
+        </SectionCard>
+        <SectionCard Title="Currency" Description="Base reporting currency.">
+            <TextBlock TextStyle="TextStyle.H4" Value="@Project.Summary.BaseCurrencyCode" />
+            <SmallText Text="@Project.Model.CalendarCode" />
+        </SectionCard>
+        <SectionCard Title="Planning window" Description="Modeled project horizon.">
+            <TextBlock TextStyle="TextStyle.H4" Value="@($"{FormatDate(Project.Summary.PlanningStartDate)}")" />
+            <SmallText Text="@($"to {FormatDate(Project.Summary.PlanningEndDate)}")" />
+        </SectionCard>
+        <SectionCard Title="Storage" Description="Project registry mode.">
+            <TextBlock TextStyle="TextStyle.H4" Value="@Project.Summary.StorageMode.ToString()" />
+            <SmallText Text="@($"Updated {Project.Summary.UpdatedAtUtc:yyyy-MM-dd HH:mm} UTC")" />
+        </SectionCard>
+    </Grid>
+
+    <Grid ColumnTemplateLg="minmax(0,1.4fr) minmax(18rem,0.8fr)"
+          Gap="LayoutGap.Large">
+        <Stack GapScale="LayoutGap.Large">
+            <FormSection Title="Project identity" Description="Simulator-owned project metadata used by the rail, editor tabs, import/export, and run observation.">
+                <FormRow Split="true">
+                    <FormField Text="Project id">
+                        <TextBox Value="@Project.Summary.ProjectId" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="Display name">
+                        <TextBox Value="@Project.Summary.DisplayName" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="Schema version">
+                        <TextBox Value="@Project.Model.SchemaVersion" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="Calendar">
+                        <TextBox Value="@Project.Model.CalendarCode" ReadOnly="true" />
+                    </FormField>
+                </FormRow>
+            </FormSection>
+
+            <FormSection Title="Scenario defaults" Description="Default rules and core business units for generated run requests.">
+                <FormRow Split="true">
+                    <FormField Text="Default tax rule set">
+                        <TextBox Value="@(Project.Model.DefaultTaxRuleSetId ?? "not configured")" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="Default payroll rule set">
+                        <TextBox Value="@(Project.Model.DefaultPayrollRuleSetId ?? "not configured")" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="Treasury BU">
+                        <TextBox Value="@Project.Model.TreasuryBusinessUnitId.Value" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="External clearing BU">
+                        <TextBox Value="@Project.Model.ExternalClearingBusinessUnitId.Value" ReadOnly="true" />
+                    </FormField>
+                </FormRow>
+            </FormSection>
+
+            <FormSection Title="Metadata" Description="Project-level assumptions and tags stored with the simulator project aggregate.">
+                <DataGrid TItem="KeyValuePair<string, string>" Data="MetadataRows">
+                    <DataGridColumn TItem="KeyValuePair<string, string>" Property="Key" Title="Key" />
+                    <DataGridColumn TItem="KeyValuePair<string, string>" Property="Value" Title="Value" />
+                </DataGrid>
+            </FormSection>
+        </Stack>
+
+        <WorkspacePanel Tone="WorkspacePanelTone.Ghost">
+            <Stack GapScale="LayoutGap.Medium">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Validation summary" />
+                    <TextBlock TextStyle="TextStyle.H4" Value="@ValidationTitle" />
+                    <SmallText Text="Messages are stored on the project state and expanded by validator services." />
+                </Stack>
+
+                <div class="space-y-2">
+                    @foreach (SimulationProjectValidationMessage message in Project.ValidationMessages)
+                    {
+                        <div class="rounded-md border border-slate-200 bg-white p-3">
+                            <Cluster Gap="LayoutGap.Small">
+                                <StatusBadge Text="@message.Severity.ToString()" Tone="@SeverityTone(message.Severity)" />
+                                <MonoText Text="@message.Code" />
+                            </Cluster>
+                            <SmallText Text="@message.Message" />
+                        </div>
+                    }
+                </div>
+            </Stack>
+        </WorkspacePanel>
+    </Grid>
+</Stack>
+
+@code {
+    [Parameter, EditorRequired]
+    public SimulationProjectState Project { get; set; } = default!;
+
+    private IReadOnlyList<KeyValuePair<string, string>> MetadataRows => Project.Metadata
+        .Concat(Project.Model.Metadata)
+        .Concat(Project.Model.Assumptions)
+        .OrderBy(x => x.Key, StringComparer.Ordinal)
+        .ToArray();
+
+    private string ValidationTitle => Project.ValidationMessages.Count == 0
+        ? "No messages"
+        : $"{Project.ValidationMessages.Count} message(s)";
+
+    private static string SeverityTone(SimulationValidationSeverity severity)
+        => severity switch
+        {
+            SimulationValidationSeverity.Error => "danger",
+            SimulationValidationSeverity.Warning => "warning",
+            _ => "info"
+        };
+
+    private static string FormatDate(DateOnly value)
+        => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+}

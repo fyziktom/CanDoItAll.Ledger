@@ -2,7 +2,7 @@
 
 CanDoItAll.Ledger owns the transaction runtime, node host, ledger persistence, ledger UI, SDK, CLI, demos, and ledger-specific tests that were separated from CanDoItAll.Economy.
 
-CanDoItAll.Economy remains the basic simulator repository. Basic account simulation, scenario packs, Smith-like experimental economics, visualization, WebGL observer evidence, and simulator host behavior stay there.
+CanDoItAll.Economy remains the simple-accounts and Smith experimental repository. Basic account simulation, scenario packs, Smith-like experimental economics, visualization, and WebGL observer evidence stay there. Ledger owns the BO/project simulator host behavior.
 
 ## Project Map
 
@@ -21,6 +21,11 @@ src/CanDoItAll.Economy.Simulation.Ledger       Ledger-backed simulation adapter.
 src/CanDoItAll.Economy.Storage.InMemory        In-memory ledger storage.
 src/CanDoItAll.Economy.Cli                     Ledger command-line driver.
 src/CanDoItAll.Ledger.Repository               Repository-local ledger helper project.
+src/CanDoItAll.Ledger.Simulator                BO/project simulator runtime moved from Economy.
+src/CanDoItAll.Ledger.Simulator.Components     BO/project simulator UI moved from Economy.
+src/CanDoItAll.Ledger.Simulator.Persistence.EFCore
+                                                BO/project simulator projection persistence moved from Economy.
+examples/CanDoItAll.Ledger.Simulator.App       BO/project simulator browser host moved from Economy.
 examples/                                     Ledger demos and AppHost projects.
 tests/CanDoItAll.Ledger.Tests                 Ledger, node, persistence, SDK, and boundary tests.
 tools/CanDoItAll.Economy.DemoSeeder           Demo ledger seeding tool.
@@ -57,7 +62,9 @@ dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj -c Rele
 
 ## No-Basic-Simulator Rule
 
-Ledger must not reference or copy Economy basic simulator drivers, scenario-pack content, Smith-like experiment drivers, memory-economy simulator extensions, simulator hosts, or WebGL observer evidence.
+Ledger must not reference or copy Economy simple-account drivers, scenario-pack content, Smith-like experiment drivers, memory-economy simulator extensions, Economy simple/Smith hosts, or WebGL observer evidence.
+
+The `CanDoItAll.Ledger.Simulator*` projects are the BO/project simulator landing zone. They are not the Economy simple/Smith simulator lane.
 
 Ledger-backed simulation may remain here only when it depends on ledger contracts and does not import the Economy basic simulator lane.
 

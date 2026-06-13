@@ -109,7 +109,7 @@ function Get-ForbiddenBasicSimulatorRules {
         [pscustomobject]@{ Id = "basic-experimental-economics"; Pattern = "CanDoItAll\.Economy\.Simulation\.ExperimentalEconomics|Simulation\.ExperimentalEconomics|SmithExperimentalEconomics"; Message = "Ledger must not reference Economy experimental-economics or Smith driver projects." },
         [pscustomobject]@{ Id = "basic-memory-economy"; Pattern = "CanDoItAll\.Economy\.Simulation\.MemoryEconomy|Simulation\.MemoryEconomy"; Message = "Ledger must not reference Economy memory-economy simulator extensions." },
         [pscustomobject]@{ Id = "basic-simulation-sandbox"; Pattern = "CanDoItAll\.Economy\.SimulationSandbox|SimulationSandbox|EconomySimulationSandbox"; Message = "Ledger must not reference the Economy SimulationSandbox." },
-        [pscustomobject]@{ Id = "basic-simulator-host"; Pattern = "CanDoItAll\.Economy\.Simulator"; Message = "Ledger must not reference the Economy simulator host or simulator projects." },
+        [pscustomobject]@{ Id = "basic-simulator-host"; Pattern = "CanDoItAll\.Economy\.Simulator"; Message = "Ledger may reference this only inside the moved BO/project simulator compatibility landing zone." },
         [pscustomobject]@{ Id = "basic-scenario-packs"; Pattern = "ScenarioPacks"; Message = "Ledger must not contain or reference Economy scenario packs." }
     )
 }
@@ -140,7 +140,23 @@ function Test-IsBoundaryDocumentationPath {
     return $normalized -eq "README.md" -or
         $normalized -eq "docs\architecture\repository-boundaries.md" -or
         $normalized -eq "docs\migration\import-inventory.md" -or
-        $normalized -eq "docs\architecture\namespace-compatibility.md"
+        $normalized -eq "docs\architecture\namespace-compatibility.md" -or
+        $normalized -eq "docs\migration\ledger-simulator-runtime-ownership-inventory.md"
+}
+
+function Test-IsLedgerBoSimulatorCompatibilityPath {
+    param([string]$RelativePath)
+
+    $normalized = $RelativePath.Replace("/", "\")
+    return $normalized.StartsWith("src\CanDoItAll.Ledger.Simulator\", [StringComparison]::OrdinalIgnoreCase) -or
+        $normalized.StartsWith("src\CanDoItAll.Ledger.Simulator.Components\", [StringComparison]::OrdinalIgnoreCase) -or
+        $normalized.StartsWith("src\CanDoItAll.Ledger.Simulator.Persistence.EFCore\", [StringComparison]::OrdinalIgnoreCase) -or
+        $normalized.StartsWith("examples\CanDoItAll.Ledger.Simulator.App\", [StringComparison]::OrdinalIgnoreCase) -or
+        $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorTests.cs" -or
+        $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorComponentTests.cs" -or
+        $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorRuleAutomationTests.cs" -or
+        $normalized -eq "tests\CanDoItAll.Ledger.Tests\SimulationApiEndpointTests.cs" -or
+        $normalized -eq "tests\CanDoItAll.Ledger.Tests\SimulationProjectManagementTests.cs"
 }
 
 function Assert-LegacyQuarantineMarker {
@@ -168,7 +184,7 @@ function Find-ContentViolations {
 
     foreach ($rule in @(Get-ForbiddenBasicSimulatorRules)) {
         foreach ($match in [regex]::Matches($Content, $rule.Pattern, [System.Text.RegularExpressions.RegexOptions]::CultureInvariant)) {
-            if ($isLegacyQuarantine -or $isBoundaryDocumentation) {
+            if ($isLegacyQuarantine -or $isBoundaryDocumentation -or ($rule.Id -eq "basic-simulator-host" -and (Test-IsLedgerBoSimulatorCompatibilityPath $RelativePath))) {
                 continue
             }
 
@@ -233,6 +249,9 @@ function Assert-ProjectReferences {
         foreach ($reference in $references) {
             foreach ($rule in @(Get-ForbiddenBasicSimulatorRules)) {
                 if ($reference -match $rule.Pattern) {
+                    if ($rule.Id -eq "basic-simulator-host" -and (Test-IsLedgerBoSimulatorCompatibilityPath $relative)) {
+                        continue
+                    }
                     Add-Violation "forbidden-project-reference" $relative 1 "Project reference '$reference' violates: $($rule.Message)"
                 }
             }

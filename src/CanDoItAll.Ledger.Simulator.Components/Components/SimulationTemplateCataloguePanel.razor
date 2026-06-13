@@ -1,0 +1,378 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+
+<div class="space-y-4" data-testid="simulation-template-catalogue">
+    <Split Breakpoint="LayoutBreakpoint.Md"
+           AlignItems="AlignItems.Start"
+           JustifyContent="JustifyContent.SpaceBetween"
+           Gap="LayoutGap.Medium"
+           Wrap="FlexWrap.Wrap">
+        <Stack GapScale="LayoutGap.Tiny">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Simulation Templates Catalogue" />
+            <TextBlock TextStyle="TextStyle.H3" Value="@FilteredTemplates.Count.ToString(CultureInfo.InvariantCulture)" />
+            <SmallText Text="@CatalogueStatusText" />
+        </Stack>
+        <Cluster Gap="LayoutGap.Small">
+            <StatusBadge Text="@($"{AllTags.Count} tags")" Tone="info" />
+            <StatusBadge Text="@($"{Templates.Count} templates")" Tone="muted" />
+        </Cluster>
+    </Split>
+
+    @if (isLoadingTemplates)
+    {
+        <SectionCard Title="Loading templates" Description="Preparing BO, rule, schedule, and model recipes for this dialog.">
+            <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" data-testid="simulation-template-catalogue-loading">
+                <span class="cda-button__spinner" aria-hidden="true"></span>
+                <SmallText Text="Loading template catalogue..." />
+            </Cluster>
+        </SectionCard>
+    }
+    else if (!string.IsNullOrWhiteSpace(templateLoadError))
+    {
+        <ValidationList Messages="TemplateLoadMessages" />
+    }
+    else
+    {
+        <Stack GapScale="LayoutGap.Large">
+        <SectionCard Title="Template browser" Description="Tree and tag filters for BO, rule, schedule, and model templates.">
+            <Stack GapScale="LayoutGap.Medium">
+            <FormField Text="Search tags, rules, BOs">
+                <TextBox Value="@templateSearch"
+                         ValueChanged="@(value => templateSearch = value ?? string.Empty)"
+                         Immediate="true"
+                         Placeholder="Search tags, rules, BOs..." />
+            </FormField>
+
+            <div class="flex flex-wrap gap-2" data-testid="simulation-template-tag-filter">
+                @foreach (string tag in AllTags.Take(12))
+                {
+                    <button type="button"
+                            class="@TagButtonClass(tag)"
+                            @onclick="@(() => ToggleTag(tag))">
+                        @tag
+                    </button>
+                }
+            </div>
+
+            <TreeView Items="TemplateNodes"
+                      Style="TreeViewStyle.Workbench"
+                      AriaLabel="Simulation template catalogue"
+                      OnSelect="SelectNode"
+                      OnToggle="ToggleNode" />
+            </Stack>
+        </SectionCard>
+
+        <Stack GapScale="LayoutGap.Large">
+                <SectionCard Title="Matching templates" Description="Templates filtered by text and tags. Select one to review required BOs, rules, and setup fields.">
+                    <div class="space-y-2" data-testid="simulation-template-results">
+                        @foreach (EconomySimulatorTemplateState template in FilteredTemplates.Take(10))
+                        {
+                            bool selected = string.Equals(template.TemplateId, SelectedTemplate?.TemplateId, StringComparison.Ordinal);
+                            <button type="button"
+                                    class="@TemplateButtonClass(selected)"
+                                    data-testid="@($"simulation-template-result-{template.TemplateId}")"
+                                    @onclick="@(() => SelectTemplate(template.TemplateId))">
+                                <span class="min-w-0">
+                                    <span class="block truncate text-sm font-semibold text-slate-950">@template.DisplayName</span>
+                                    <span class="block truncate text-xs text-slate-500">@template.TemplateId</span>
+                                </span>
+                                <span class="flex flex-wrap justify-end gap-1">
+                                    @foreach (string tag in Tags(template).Take(4))
+                                    {
+                                        <StatusBadge Text="@tag" Tone="info" />
+                                    }
+                                </span>
+                            </button>
+                        }
+                    </div>
+                </SectionCard>
+
+                @if (SelectedTemplate is not null)
+                {
+                    <FormSection Title="Dependencies" Description="What must exist before this template can be added safely.">
+                        <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+                            <SectionCard Title="Required templates" Description="Add or configure these first.">
+                                @foreach (string dependency in RequiredTemplates(SelectedTemplate).DefaultIfEmpty("none"))
+                                {
+                                    <SmallText Text="@dependency" />
+                                }
+                            </SectionCard>
+                            <SectionCard Title="Required BOs" Description="Object types expected by this template.">
+                                @foreach (string objectType in RequiredObjectTypes(SelectedTemplate).DefaultIfEmpty("none"))
+                                {
+                                    <SmallText Text="@objectType" />
+                                }
+                            </SectionCard>
+                            <SectionCard Title="Required rules" Description="Rule providers or process families.">
+                                @foreach (string rule in SelectedTemplate.RequiredRuleProviders.DefaultIfEmpty("none"))
+                                {
+                                    <SmallText Text="@rule" />
+                                }
+                            </SectionCard>
+                        </Grid>
+                    </FormSection>
+
+                    <FormSection Title="Configuration" Description="@ConfigurationSummary(SelectedTemplate)">
+                        <DataGrid TItem="EconomySimulatorTemplateParameter" Data="SelectedTemplate.Parameters">
+                            <DataGridColumn TItem="EconomySimulatorTemplateParameter" Property="DisplayName" Title="Field" />
+                            <DataGridColumn TItem="EconomySimulatorTemplateParameter" Property="ValueType" Title="Type" />
+                            <DataGridColumn TItem="EconomySimulatorTemplateParameter" Title="Default">
+                                <Template Context="parameter">
+                                    <SmallText Text="@(parameter.DefaultValue ?? "required")" />
+                                </Template>
+                            </DataGridColumn>
+                            <DataGridColumn TItem="EconomySimulatorTemplateParameter" Property="Description" Title="Description" />
+                        </DataGrid>
+                    </FormSection>
+
+                    <FormSection Title="Outputs" Description="BOs, rule states, or configuration objects created by this template.">
+                        <DataGrid TItem="EconomySimulatorTemplateOutput" Data="SelectedTemplate.Outputs">
+                            <DataGridColumn TItem="EconomySimulatorTemplateOutput" Property="ObjectType" Title="Object type" />
+                            <DataGridColumn TItem="EconomySimulatorTemplateOutput" Property="Role" Title="Role" />
+                            <DataGridColumn TItem="EconomySimulatorTemplateOutput" Property="ObjectIdPattern" Title="Object id pattern" />
+                        </DataGrid>
+                    </FormSection>
+
+                    @if (RequiredTemplates(SelectedTemplate).Count > 0 || SelectedTemplate.RequiredRuleProviders.Count > 0)
+                    {
+                        <ValidationList Messages="DependencyMessages(SelectedTemplate)" />
+                    }
+
+                    <Cluster JustifyContent="JustifyContent.End" Gap="LayoutGap.Small">
+                        <Button Text="Add template" Icon="add_circle" Size="ButtonSize.Small" data-testid="simulation-template-add" />
+                </Cluster>
+            }
+        </Stack>
+    </Stack>
+    }
+</div>
+
+@code {
+    private readonly IEconomySimulatorTemplateProvider provider = new EconomySimulatorTemplateProvider();
+    private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> selectedTags = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<EconomySimulatorTemplateState> templates = [];
+    private bool isLoadingTemplates = true;
+    private string? templateLoadError;
+    private string? selectedTemplateId;
+    private string templateSearch = string.Empty;
+
+    [Parameter, EditorRequired]
+    public SimulationProjectState Project { get; set; } = default!;
+
+    private IReadOnlyList<EconomySimulatorTemplateState> Templates => templates;
+
+    private string CatalogueStatusText => isLoadingTemplates
+        ? "Loading templates for this dialog..."
+        : "Searchable BO, rule, schedule, and model templates with dependency hints.";
+
+    private IReadOnlyList<SimulationProjectValidationMessage> TemplateLoadMessages => string.IsNullOrWhiteSpace(templateLoadError)
+        ? []
+        : [new("template-catalogue-load", SimulationValidationSeverity.Error, templateLoadError, "templates.catalogue", Project.Summary.ProjectId)];
+
+    private IReadOnlyList<string> AllTags => Templates
+        .SelectMany(Tags)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .Order(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    private IReadOnlyList<EconomySimulatorTemplateState> FilteredTemplates
+    {
+        get
+        {
+            IEnumerable<EconomySimulatorTemplateState> query = Templates;
+            if (!string.IsNullOrWhiteSpace(templateSearch))
+            {
+                query = query.Where(template => SearchText(template).Contains(templateSearch, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (selectedTags.Count > 0)
+            {
+                query = query.Where(template => selectedTags.All(tag => Tags(template).Contains(tag, StringComparer.OrdinalIgnoreCase)));
+            }
+
+            return query
+                .OrderBy(template => TreePath(template), StringComparer.Ordinal)
+                .ThenBy(template => template.DisplayName, StringComparer.Ordinal)
+                .ToArray();
+        }
+    }
+
+    private EconomySimulatorTemplateState? SelectedTemplate
+        => FilteredTemplates.FirstOrDefault(template => string.Equals(template.TemplateId, selectedTemplateId, StringComparison.Ordinal))
+            ?? FilteredTemplates.FirstOrDefault();
+
+    private IReadOnlyList<TreeViewNode> TemplateNodes => FilteredTemplates
+        .GroupBy(template => TreePath(template).Split('/')[0], StringComparer.Ordinal)
+        .OrderBy(group => group.Key, StringComparer.Ordinal)
+        .Select(group => new TreeViewNode
+        {
+            Id = $"template-group:{group.Key}",
+            Text = group.Key,
+            Icon = "account_tree",
+            BadgeText = group.Count().ToString(CultureInfo.InvariantCulture),
+            IsExpanded = expandedNodeIds.Contains($"template-group:{group.Key}"),
+            Children = group
+                .GroupBy(template => TreePath(template).Contains('/') ? TreePath(template).Split('/')[1] : "Templates", StringComparer.Ordinal)
+                .OrderBy(child => child.Key, StringComparer.Ordinal)
+                .Select(child => new TreeViewNode
+                {
+                    Id = $"template-group:{group.Key}:{child.Key}",
+                    Text = child.Key,
+                    Icon = "folder",
+                    BadgeText = child.Count().ToString(CultureInfo.InvariantCulture),
+                    IsExpanded = expandedNodeIds.Contains($"template-group:{group.Key}:{child.Key}"),
+                    Children = child
+                        .OrderBy(template => template.DisplayName, StringComparer.Ordinal)
+                        .Select(template => new TreeViewNode
+                        {
+                            Id = template.TemplateId,
+                            Text = template.DisplayName,
+                            Icon = TemplateIcon(template),
+                            BadgeText = template.Kind.ToString(),
+                            IsSelected = string.Equals(template.TemplateId, SelectedTemplate?.TemplateId, StringComparison.Ordinal),
+                            DataTestId = $"simulation-template-node-{template.TemplateId}"
+                        })
+                        .ToArray()
+                })
+                .ToArray()
+        })
+        .ToArray();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Yield();
+
+        try
+        {
+            templates = await Task.Run(provider.GetTemplates);
+            ExpandTemplateGroups();
+            selectedTemplateId ??= Templates.FirstOrDefault()?.TemplateId;
+        }
+        catch (Exception exception)
+        {
+            templateLoadError = $"Template catalogue could not be loaded: {exception.Message}";
+        }
+        finally
+        {
+            isLoadingTemplates = false;
+        }
+    }
+
+    private void ExpandTemplateGroups()
+    {
+        foreach (string group in Templates.Select(template => TreePath(template).Split('/')[0]).Distinct(StringComparer.Ordinal))
+        {
+            expandedNodeIds.Add($"template-group:{group}");
+        }
+
+        foreach (string childGroup in Templates
+            .Select(template => TreePath(template))
+            .Where(path => path.Contains('/'))
+            .Select(path =>
+            {
+                string[] parts = path.Split('/');
+                return $"template-group:{parts[0]}:{parts[1]}";
+            })
+            .Distinct(StringComparer.Ordinal))
+        {
+            expandedNodeIds.Add(childGroup);
+        }
+    }
+
+    private Task SelectNode(string nodeId)
+    {
+        if (Templates.Any(template => string.Equals(template.TemplateId, nodeId, StringComparison.Ordinal)))
+        {
+            selectedTemplateId = nodeId;
+        }
+        else if (!expandedNodeIds.Add(nodeId))
+        {
+            expandedNodeIds.Remove(nodeId);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleNode(string nodeId)
+    {
+        if (!expandedNodeIds.Add(nodeId))
+        {
+            expandedNodeIds.Remove(nodeId);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void SelectTemplate(string templateId) => selectedTemplateId = templateId;
+
+    private void ToggleTag(string tag)
+    {
+        if (!selectedTags.Add(tag))
+        {
+            selectedTags.Remove(tag);
+        }
+    }
+
+    private static string TreePath(EconomySimulatorTemplateState template)
+        => template.Metadata.GetValueOrDefault("treePath", template.Kind.ToString());
+
+    private static IReadOnlyList<string> Tags(EconomySimulatorTemplateState template)
+        => SplitMetadata(template.Metadata.GetValueOrDefault("tags", string.Empty));
+
+    private static IReadOnlyList<string> RequiredTemplates(EconomySimulatorTemplateState template)
+        => SplitMetadata(template.Metadata.GetValueOrDefault("requiresTemplates", string.Empty));
+
+    private static IReadOnlyList<string> RequiredObjectTypes(EconomySimulatorTemplateState template)
+        => SplitMetadata(template.Metadata.GetValueOrDefault("requiresObjectTypes", string.Empty));
+
+    private static string ConfigurationSummary(EconomySimulatorTemplateState template)
+        => template.Metadata.GetValueOrDefault("configurationSummary", template.Description);
+
+    private static IReadOnlyList<string> SplitMetadata(string value)
+        => value
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .ToArray();
+
+    private static string SearchText(EconomySimulatorTemplateState template)
+        => string.Join(' ', [
+            template.TemplateId,
+            template.DisplayName,
+            template.Description,
+            template.Kind.ToString(),
+            string.Join(' ', Tags(template)),
+            string.Join(' ', RequiredTemplates(template)),
+            string.Join(' ', RequiredObjectTypes(template))
+        ]);
+
+    private IReadOnlyList<SimulationProjectValidationMessage> DependencyMessages(EconomySimulatorTemplateState template)
+        => [
+            new(
+                $"template-dependency-{template.TemplateId}",
+                SimulationValidationSeverity.Warning,
+                $"Adding '{template.DisplayName}' requires these templates or rule providers first: {string.Join(", ", RequiredTemplates(template).Concat(template.RequiredRuleProviders).DefaultIfEmpty("none"))}.",
+                "templates.dependencies",
+                template.TemplateId)
+        ];
+
+    private string TagButtonClass(string tag)
+        => selectedTags.Contains(tag)
+            ? "rounded-full border border-sky-300 bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800"
+            : "rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:border-sky-200 hover:text-sky-700";
+
+    private static string TemplateButtonClass(bool selected)
+        => string.Join(' ', [
+            "flex w-full min-w-0 items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition",
+            selected ? "border-sky-300 bg-sky-50" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+        ]);
+
+    private static string TemplateIcon(EconomySimulatorTemplateState template)
+        => template.Kind switch
+        {
+            EconomySimulatorTemplateKind.Department => "corporate_fare",
+            EconomySimulatorTemplateKind.Composite => "hub",
+            EconomySimulatorTemplateKind.InvestmentModel => "account_balance",
+            _ => template.Metadata.GetValueOrDefault("treePath", string.Empty).Contains("Rule", StringComparison.OrdinalIgnoreCase) ? "rule" : "draft"
+        };
+}

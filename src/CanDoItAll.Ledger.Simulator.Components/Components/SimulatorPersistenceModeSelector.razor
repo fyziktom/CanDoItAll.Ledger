@@ -1,0 +1,25 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+
+<SectionCard Title="Storage Mode" Description="The app can compose PostgreSQL ledger persistence or an in-memory context-factory path.">
+    <Grid ColumnsMd="2">
+        <StatBox Simple="true">
+            <Stack GapScale="LayoutGap.Small">
+                <StatusBadge Text="Active" Tone="success" />
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Mode" />
+                <SmallText Text="Registered through IDbContextFactory." />
+            </Stack>
+        </StatBox>
+        <StatBox Simple="true">
+            <Stack GapScale="LayoutGap.Small">
+                <StatusBadge Text="Projection cache" Tone="info" />
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Simulator EFCore" />
+                <SmallText Text="Source of truth remains ledger BusinessObjects." />
+            </Stack>
+        </StatBox>
+    </Grid>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public string Mode { get; set; } = "In-memory";
+}
