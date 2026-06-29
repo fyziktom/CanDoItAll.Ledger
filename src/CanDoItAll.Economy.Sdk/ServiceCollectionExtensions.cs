@@ -48,6 +48,30 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddEconomySdkWithBrowserNodeDriver(
+        this IServiceCollection services,
+        Uri nodeBaseUri)
+        => services.AddEconomySdkWithBrowserNodeDriver(nodeBaseUri, configure: null);
+
+    public static IServiceCollection AddEconomySdkWithBrowserNodeDriver(
+        this IServiceCollection services,
+        Uri nodeBaseUri,
+        Action<EconomyBrowserNodeClientOptions>? configure)
+    {
+        var browserOptions = new EconomyBrowserNodeClientOptions();
+        configure?.Invoke(browserOptions);
+        browserOptions.Validate();
+
+        services.AddEconomySdkWithNodeDriver(
+            nodeBaseUri,
+            options =>
+            {
+                options.ApiBasePath = browserOptions.ApiBasePath;
+            });
+        services.AddBusinessObjectBrowserAccountSigning();
+        return services;
+    }
+
     public static IServiceCollection AddEconomySdkWithGateway<TGateway>(this IServiceCollection services)
         where TGateway : class, ILedgerGateway, ILedgerReadClient
     {
@@ -65,4 +89,22 @@ public static class ServiceCollectionExtensions
 internal sealed class SdkSystemClock : ITimeProvider
 {
     public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
+}
+
+public sealed class EconomyBrowserNodeClientOptions
+{
+    public string ApiBasePath { get; set; } = "api/v1";
+
+    internal void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(ApiBasePath))
+        {
+            throw new ArgumentException("API base path is required.", nameof(ApiBasePath));
+        }
+
+        if (ApiBasePath.Contains('?', StringComparison.Ordinal) || ApiBasePath.Contains('#', StringComparison.Ordinal))
+        {
+            throw new ArgumentException("API base path cannot contain a query string or fragment.", nameof(ApiBasePath));
+        }
+    }
 }

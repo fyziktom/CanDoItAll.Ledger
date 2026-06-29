@@ -1,0 +1,13 @@
+SB06 dependency audit transcript
+Date: 2026-06-29
+
+Check: No NBitcoin/BouncyCastle in AccountApp/browser crypto/business objects
+Result: Passed, no matches.
+
+Check: No server framework/IPFS engine in AccountApp/browser crypto project files
+Result: Passed, no matches.
+
+Check: No static auth headers/secrets in AccountApp files
+Result: Passed, no matches.
+
+Expected note: BusinessObjects keeps System.Security.Cryptography in non-WASM compatibility paths; AccountApp routes pasted-key and vault flows through browser crypto.

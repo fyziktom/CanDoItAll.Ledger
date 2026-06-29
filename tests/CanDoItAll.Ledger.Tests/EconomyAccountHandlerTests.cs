@@ -23,6 +23,9 @@ public sealed class EconomyAccountHandlerTests
         using IServiceScope scope = provider.CreateScope();
 
         Assert.IsType<ReplacementAccountHandler>(scope.ServiceProvider.GetRequiredService<IEconomyAccountHandler>());
+        Assert.IsType<InMemoryAccountVaultStore>(scope.ServiceProvider.GetRequiredService<IAccountVaultStore>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<AccountVaultService>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IAccountSetupService>());
     }
 
     [Fact]

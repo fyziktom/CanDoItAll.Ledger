@@ -1,0 +1,7 @@
+{
+  "method": "POST",
+  "path": "/api/v1/ledger/transactions",
+  "body": "{\"ledgerId\":{\"value\":\"account-app-ledger\"},\"scenarioId\":{\"value\":\"browser-demo\"},\"version\":1,\"kind\":\"Transfer\",\"signingMode\":\"Independent\",\"txId\":{\"value\":\"tx-browser-draft\"},\"inputs\":[{\"inputIndex\":0,\"previousOutPoint\":{\"txId\":{\"value\":\"source-tx\"},\"outputIndex\":0},\"address\":{\"value\":\"cdia1browser\"},\"signaturePayloadHash\":{\"value\":\"1dd83bcd9f1ca5ce8a6532d8c5164533b6ee4ee861da34eaab764f48da284258\"},\"signatureBundle\":{\"signatures\":[{\"algorithm\":\"EcdsaP256Sha256\",\"keyId\":\"browser-vault-key\",\"publicKeyHash\":{\"value\":\"e9d46ca7856822f73f7a6a43bba74da0fe93c128efb0ab3342d2e1cb13a04e4f\"},\"payloadHash\":{\"value\":\"1dd83bcd9f1ca5ce8a6532d8c5164533b6ee4ee861da34eaab764f48da284258\"},\"signatureBytes\":\"fYetQCuF0kp1Va23d5xxkDD3JbEdhPiVOt+ge7MXjsUrJ7F3g3Ky7QdoSFEyXCV9eARY18WxfZhJXIPT+cdLMw==\",\"publicKeyMaterial\":\"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEDFsPEV34WFgphmwikaHub4eNmqqDY5xwBZO/JwE15MDe+8Be+BVdKpOfNq75yO9jgxsu44m/H83rVpBW7LgTIQ==\"}]}}],\"outputs\":[{\"outputIndex\":0,\"address\":{\"value\":\"cdia1receiver\"},\"mainAmount\":{\"value\":1}}],\"data\":null}",
+  "containsPrivateKeyField": false,
+  "containsUnsignedDraft": false
+}

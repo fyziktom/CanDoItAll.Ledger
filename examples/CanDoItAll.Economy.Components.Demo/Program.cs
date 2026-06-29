@@ -22,6 +22,7 @@ builder.Services.AddBusinessObjectIpfsStorage(
     new Uri(builder.Configuration["BusinessObjects:IpfsGatewayUrl"] ?? "http://127.0.0.1:5093", UriKind.Absolute));
 builder.Services.AddScoped<IBusinessObjectRendererProvider, PurchaseOrderRendererProvider>();
 builder.Services.AddEconomyDevelopmentWorkspaceSession();
+builder.Services.AddEconomySsrAccountWorkspaceAdapters();
 builder.Services.AddEconomyNodeWorkspaceSession(options =>
 {
     options.NodeBaseUri = builder.Configuration["EconomyUi:NodeBaseUri"] ?? options.NodeBaseUri;

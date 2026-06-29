@@ -43,6 +43,12 @@ public static class EcdsaP256KeyMaterial
         }
     }
 
+    public static byte[] ExportPublicKeyFromPrivateKey(ReadOnlySpan<byte> privateKeyMaterial)
+    {
+        using ECDsa key = CreateSigningKey(privateKeyMaterial);
+        return key.ExportSubjectPublicKeyInfo();
+    }
+
     internal static ECDsa CreateSigningKey(ReadOnlySpan<byte> privateKeyMaterial)
     {
         ECDsa key = ECDsa.Create();

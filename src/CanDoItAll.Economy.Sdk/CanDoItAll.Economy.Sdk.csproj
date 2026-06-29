@@ -5,7 +5,9 @@
     <RootNamespace>CanDoItAll.Economy.Sdk</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj">
+      <AdditionalProperties Condition="'$(EnableBusinessObjectIpfsStorage)' != ''">EnableBusinessObjectIpfsStorage=$(EnableBusinessObjectIpfsStorage)</AdditionalProperties>
+    </ProjectReference>
     <ProjectReference Include="..\CanDoItAll.Economy.Core\CanDoItAll.Economy.Core.csproj" />
     <ProjectReference Include="..\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.4" />

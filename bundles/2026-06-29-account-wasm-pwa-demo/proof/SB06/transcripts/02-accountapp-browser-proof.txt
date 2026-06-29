@@ -1,0 +1,10 @@
+Command: node bundles/2026-06-29-account-wasm-pwa-demo/proof/SB06/accountapp-browser-proof.js
+Exit code: 0
+App origin: http://127.0.0.1:5045
+API origin: http://127.0.0.1:5299
+Screenshots: 9
+Service worker registrations: 1
+Backup format: candoitall-economy-accountapp-vault-backup-v1
+Broadcast assertion: signed transaction included browser signature/public key material and no private key fields
+Storage assertion: IndexedDB vault records contain encrypted private keys only; local/session storage contains no private key or password text
+Account address: cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE

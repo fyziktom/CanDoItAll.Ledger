@@ -9,10 +9,34 @@
         <StatusBadge Text="Required" Tone="warning" />
     </header>
 
-    <AccountBackupPanel Model="Model" />
+    <AccountBackupPanel Model="Model"
+                        CreateAccountRequested="CreateAccountRequested"
+                        UnlockAccountRequested="UnlockAccountRequested"
+                        BackupAccountRequested="BackupAccountRequested"
+                        ImportBackupRequested="ImportBackupRequested"
+                        ImportPastedPrivateKeyRequested="ImportPastedPrivateKeyRequested"
+                        CreateSubAccountRequested="CreateSubAccountRequested" />
 </section>
 
 @code {
     [Parameter, EditorRequired]
     public AccountBackupWorkflowModel Model { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback CreateAccountRequested { get; set; }
+
+    [Parameter]
+    public EventCallback UnlockAccountRequested { get; set; }
+
+    [Parameter]
+    public EventCallback BackupAccountRequested { get; set; }
+
+    [Parameter]
+    public EventCallback ImportBackupRequested { get; set; }
+
+    [Parameter]
+    public EventCallback ImportPastedPrivateKeyRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CreateSubAccountRequested { get; set; }
 }

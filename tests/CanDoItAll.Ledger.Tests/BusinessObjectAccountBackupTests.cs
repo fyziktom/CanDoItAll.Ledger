@@ -1,5 +1,6 @@
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
+using CanDoItAll.Economy.Cryptography;
 using CanDoItAll.Economy.Ledger;
 using Xunit;
 
@@ -12,11 +13,7 @@ public sealed class BusinessObjectAccountBackupTests
     {
         var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-05-06T18:00:00Z"));
         var service = new AccountBackupService(time);
-        var source = new InMemoryAccountKeySource(
-            SignatureAlgorithmId.EcdsaP256Sha256,
-            "demo-key",
-            new byte[] { 1, 2, 3 },
-            new byte[] { 9, 8, 7 });
+        IAccountKeySource source = CreateKeySource("demo-key");
 
         AccountBackupDocument document = await service.ExportAsync(
             source,
@@ -47,11 +44,7 @@ public sealed class BusinessObjectAccountBackupTests
     public async Task AccountBackup_RequiresPasswordForEncryptedBackup()
     {
         var service = new AccountBackupService(new ManualTimeProvider(DateTimeOffset.Parse("2026-05-06T18:00:00Z")));
-        var source = new InMemoryAccountKeySource(
-            SignatureAlgorithmId.EcdsaP256Sha256,
-            "demo-key",
-            new byte[] { 1 },
-            new byte[] { 2 });
+        IAccountKeySource source = CreateKeySource("demo-key");
 
         AccountBackupDocument document = await service.ExportAsync(
             source,
@@ -65,11 +58,7 @@ public sealed class BusinessObjectAccountBackupTests
     public async Task AccountBackup_RejectsForgedAddress()
     {
         var service = new AccountBackupService(new ManualTimeProvider(DateTimeOffset.Parse("2026-05-06T18:00:00Z")));
-        var source = new InMemoryAccountKeySource(
-            SignatureAlgorithmId.EcdsaP256Sha256,
-            "demo-key",
-            new byte[] { 1, 2, 3 },
-            new byte[] { 9, 8, 7 });
+        IAccountKeySource source = CreateKeySource("demo-key");
 
         AccountBackupDocument document = await service.ExportAsync(
             source,
@@ -85,11 +74,7 @@ public sealed class BusinessObjectAccountBackupTests
     public async Task AccountBackup_RejectsForgedPublicKeyHash()
     {
         var service = new AccountBackupService(new ManualTimeProvider(DateTimeOffset.Parse("2026-05-06T18:00:00Z")));
-        var source = new InMemoryAccountKeySource(
-            SignatureAlgorithmId.EcdsaP256Sha256,
-            "demo-key",
-            new byte[] { 1, 2, 3 },
-            new byte[] { 9, 8, 7 });
+        IAccountKeySource source = CreateKeySource("demo-key");
 
         AccountBackupDocument document = await service.ExportAsync(
             source,
@@ -108,5 +93,11 @@ public sealed class BusinessObjectAccountBackupTests
     public void StorageUri_ExtractsIpfsHash(string input, string expected)
     {
         Assert.Equal(expected, BusinessObjectStorageUri.GetHash(input));
+    }
+
+    private static IAccountKeySource CreateKeySource(string keyId)
+    {
+        (byte[] publicKey, byte[] privateKey) = EcdsaP256KeyMaterial.CreateKeyPair();
+        return new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, keyId, publicKey, privateKey);
     }
 }

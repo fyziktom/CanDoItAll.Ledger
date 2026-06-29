@@ -1,0 +1,30 @@
+Tool: mcp__playwright browser_navigate/browser_evaluate/browser_take_screenshot
+URL: http://127.0.0.1:8767/bundles/2026-06-29-account-wasm-pwa-demo/proof/SB02/account-setup-browser-harness.html
+Viewport: 1280x900
+
+Result:
+{
+  "status": "pass",
+  "result": {
+    "status": "pass",
+    "checks": [
+      "account:create-indexeddb-encrypted-vault",
+      "account:unlock-and-sign",
+      "backup:export-encrypted",
+      "backup:reject-wrong-password",
+      "backup:import-and-reencrypt-vault",
+      "import:pasted-private-key"
+    ],
+    "vaultId": "sb02-1782757733559",
+    "importedVaultId": "sb02-1782757733559-imported",
+    "pastedVaultId": "sb02-1782757733559-pasted",
+    "address": "browser-sb02-1782757733559",
+    "signatureLength": 64,
+    "publicKeyMaterialLength": 91,
+    "privateKeyMaterialLength": 138,
+    "backupJsonLength": 1021
+  }
+}
+
+Screenshot:
+bundles/2026-06-29-account-wasm-pwa-demo/proof/SB02/sb02-account-setup-browser-harness.png

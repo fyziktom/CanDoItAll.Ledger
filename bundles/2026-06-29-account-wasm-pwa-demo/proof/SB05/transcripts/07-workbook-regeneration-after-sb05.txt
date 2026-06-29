@@ -1,0 +1,24 @@
+Command:
+Bundled Python/openpyxl update of `bundles/2026-06-29-account-wasm-pwa-demo/plan/account-wasm-pwa-planning.xlsx`.
+
+Result:
+Workbook saved to C:\repositories\CanDoItAll.Ledger\bundles\2026-06-29-account-wasm-pwa-demo\plan\account-wasm-pwa-planning.xlsx
+Inspect result written to C:\repositories\CanDoItAll.Ledger\bundles\2026-06-29-account-wasm-pwa-demo\plan\account-wasm-pwa-planning.xlsx.inspect.ndjson
+
+Readiness Summary:
+Components: Ready/Strong=11, Partial/Planned=3, Missing/Blocked=0
+Crypto: Ready/Strong=8, Partial/Planned=0, Missing/Blocked=0
+API: Ready/Strong=6, Partial/Planned=1, Missing/Blocked=0
+UI: Ready/Strong=5, Partial/Planned=1, Missing/Blocked=0
+Subbundles: Ready/Strong=6, Partial/Planned=0, Missing/Blocked=1
+Validation: Ready/Strong=7, Partial/Planned=0, Missing/Blocked=3
+
+Subbundle Plan:
+SB05 status changed to Closed.
+SB06 status changed to Ready.
+
+Validation Checklist:
+Shared UI SSR/WASM status changed to Passed.
+
+Risk Register:
+SSR service coupling in UI status changed to Mitigated.

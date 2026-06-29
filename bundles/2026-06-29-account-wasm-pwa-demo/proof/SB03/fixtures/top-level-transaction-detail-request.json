@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "path": "/api/v1/transactions/tx-account-app-detail?includeData=true",
+  "headers": {},
+  "body": null,
+  "privateKeyMaterialAllowed": false
+}

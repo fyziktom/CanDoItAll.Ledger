@@ -1,0 +1,5 @@
+Command:
+rg -n "TODO|NotImplementedException|throw new NotImplemented|NBitcoin|BouncyCastle|Org\.BouncyCastle|Portable\.BouncyCastle" src/CanDoItAll.Economy.BusinessObjects/AccountSetup.cs src/CanDoItAll.Economy.BusinessObjects/AccountBackup.cs src/CanDoItAll.Economy.Cryptography/AccountVault.cs src/CanDoItAll.Economy.Cryptography.Browser src/CanDoItAll.Economy.Components/Components/Account/AccountBackupPanel.razor tests/CanDoItAll.Ledger.Tests/AccountSetupFlowTests.cs tests/CanDoItAll.Ledger.Tests/AccountSetupComponentTests.cs
+
+Result:
+No matches. `rg` returned exit code 1 because the audit found zero stub markers and zero forbidden crypto dependency references.

@@ -1,0 +1,638 @@
+{
+  "appOrigin": "http://127.0.0.1:5045",
+  "apiOrigin": "http://127.0.0.1:5299",
+  "screenshots": [
+    "01-first-run-desktop.png",
+    "02-unlocked-workspace.png",
+    "03-transaction-detail.png",
+    "04-signed-broadcast-result.png",
+    "05-backup-export.png",
+    "06-imported-backup-unlocked.png",
+    "07-unlock-stored-vault-after-reload.png",
+    "08-first-run-mobile.png",
+    "09-pasted-key-import-mobile.png"
+  ],
+  "apiRequests": [
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/transactions/tx-account-app-seed?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ledger/transactions",
+      "body": "{\"ledgerId\":{\"value\":\"account-app-ledger\"},\"scenarioId\":{\"value\":\"browser-demo\"},\"version\":1,\"kind\":2,\"signingMode\":0,\"timestamp\":\"2026-06-29T21:36:28.091+00:00\",\"inputs\":[{\"inputIndex\":0,\"previousOutPoint\":{\"txId\":{\"value\":\"tx-account-app-seed\"},\"outputIndex\":0},\"address\":{\"value\":\"cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE\"},\"signatureBundle\":{\"signatures\":[{\"algorithm\":1,\"keyId\":\"account-app-default\",\"publicKeyHash\":{\"value\":\"08c06d33a36b27d9e993a8b4888f460910f71b296a351f0fa359f63a0e283005\"},\"payloadHash\":{\"value\":\"ec1e06ab54746a3710a50bc60d49e47e745bf9704f09d24911643a3fb23ac65b\"},\"signatureBytes\":\"FOegB+rFKSj8A3EG51FqcX7Nyb/rQog35E4neQCNbRo86xdl0E8qF4bqlHTfrvlUVJ4zK4iwwUp96TXY6c+EOw==\",\"publicKeyMaterial\":\"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoPjgdumJtkZJZ2ZSSm2VqgdwY7X9T2jl7FaQ9jxCFKXfTS+97RcAC7QwffR9QRtnrh276OM42Qp2BRzt4DALrw==\"}]},\"signaturePayloadHash\":{\"value\":\"ec1e06ab54746a3710a50bc60d49e47e745bf9704f09d24911643a3fb23ac65b\"}}],\"outputs\":[{\"outputIndex\":0,\"address\":{\"value\":\"cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE\"},\"mainAmount\":{\"value\":1},\"token\":null,\"businessObject\":null,\"metadataHash\":null},{\"outputIndex\":1,\"address\":{\"value\":\"cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE\"},\"mainAmount\":{\"value\":99},\"token\":null,\"businessObject\":null,\"metadataHash\":null}],\"data\":null,\"txId\":{\"value\":\"7e317936d27fb49243b2955a8d9fa650f123416f6794f37a3551d2844bc33064\"},\"txHash\":null,\"status\":0}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/spendable-outputs?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/business-objects?scenarioId=browser-demo",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/account-app-ledger/accounts/cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA/transactions?scenarioId=browser-demo&includeData=true",
+      "body": ""
+    }
+  ],
+  "broadcastAssertion": "signed transaction included browser signature/public key material and no private key fields",
+  "manifest": {
+    "name": "CanDoItAll AccountApp",
+    "short_name": "AccountApp",
+    "id": "./",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#f6f8fb",
+    "theme_color": "#174c63",
+    "prefer_related_applications": false,
+    "icons": [
+      {
+        "src": "icon-512.png",
+        "type": "image/png",
+        "sizes": "512x512"
+      },
+      {
+        "src": "icon-192.png",
+        "type": "image/png",
+        "sizes": "192x192"
+      }
+    ]
+  },
+  "serviceWorkerRegistrations": 1,
+  "storageAuditAssertion": "IndexedDB vault records contain encrypted private keys only; local/session storage contains no private key or password text",
+  "storageAudits": {
+    "createdVault": {
+      "indexedDbRecords": [
+        {
+          "vaultId": "account-app-default",
+          "displayName": "Browser proof account",
+          "keyId": "account-app-default",
+          "address": "cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE",
+          "algorithm": 1,
+          "publicKeyHash": "08c06d33a36b27d9e993a8b4888f460910f71b296a351f0fa359f63a0e283005",
+          "publicKeyMaterialBase64": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoPjgdumJtkZJZ2ZSSm2VqgdwY7X9T2jl7FaQ9jxCFKXfTS+97RcAC7QwffR9QRtnrh276OM42Qp2BRzt4DALrw==",
+          "encryptedPrivateKeyBase64": "zpP6ykM9w5eyixM5OzZFDe71PARbKPlCy27G09NA0MkNGLf/GzgPRqBBWvoElXE5RUvr+TAXTVYQd3IM3jLM7H4aqSPMdKyetQdHersdnYp2lEEHfLfSB+AAxfCjwZz82DfOiQmKNzSzEojBpkH2Y7Ad5lGd490Dcr6M+fP45MXsSzJFhhGHQQYBzs51dMRVdYC0HT3gGZKWsw==",
+          "kdfSaltBase64": "Emn6Y/jY38ZTjlAArvJOGQ==",
+          "nonceBase64": "1QejmYm3VevStP3f",
+          "kdfIterations": 150000,
+          "kdfAlgorithm": "PBKDF2-SHA256",
+          "encryptionAlgorithm": "AES-256-GCM",
+          "createdAtUtc": "2026-06-29T21:36:20.0720000+00:00",
+          "updatedAtUtc": "2026-06-29T21:36:20.0720000+00:00"
+        }
+      ],
+      "localStorage": {},
+      "sessionStorage": {}
+    },
+    "importedVault": {
+      "indexedDbRecords": [
+        {
+          "vaultId": "account-app-default",
+          "displayName": "Browser proof account",
+          "keyId": "account-app-default",
+          "address": "cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE",
+          "algorithm": 1,
+          "publicKeyHash": "08c06d33a36b27d9e993a8b4888f460910f71b296a351f0fa359f63a0e283005",
+          "publicKeyMaterialBase64": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoPjgdumJtkZJZ2ZSSm2VqgdwY7X9T2jl7FaQ9jxCFKXfTS+97RcAC7QwffR9QRtnrh276OM42Qp2BRzt4DALrw==",
+          "encryptedPrivateKeyBase64": "Y1iFqzHwK+hPDWjax/T7k+GYx371VOhvb+SGmrqxPC+q6j0oDsvNRvGm1n6SW6+77W8TiYuDSPZib26JzEdRInzdYsnhkNm0W8Nfm2rIcKlo5HYHVvBBOyKEm0kl4BX5nMr/nL6WQYuWBd/Mrzi0W2nGRz5nOu21INz8a7tQmGlVvElL9SF16a7KPqqKfIXakt991ItXLkERMA==",
+          "kdfSaltBase64": "O+z5ratYK4l0BbZGx+NWaA==",
+          "nonceBase64": "1CpnGJAOknWZu30B",
+          "kdfIterations": 150000,
+          "kdfAlgorithm": "PBKDF2-SHA256",
+          "encryptionAlgorithm": "AES-256-GCM",
+          "createdAtUtc": "2026-06-29T21:37:08.0100000+00:00",
+          "updatedAtUtc": "2026-06-29T21:37:08.0100000+00:00"
+        }
+      ],
+      "localStorage": {},
+      "sessionStorage": {}
+    },
+    "pastedKeyVault": {
+      "indexedDbRecords": [
+        {
+          "vaultId": "account-app-default",
+          "displayName": "Pasted proof key",
+          "keyId": "account-app-default",
+          "address": "cdia1NXFWvYd8ywowma4tBZJXCDdXY6JyQGKrRA",
+          "algorithm": 1,
+          "publicKeyHash": "7c5bc7be0ae488e722c57a3ad4ebf180f7f07615fb2a444274a91ae5080bef9c",
+          "publicKeyMaterialBase64": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzyNpNlquHdKlTLTNPeQN1q/oS2mMCep21efB+Dcu4x8capFLXAoZ3x+tABRu+AgxODCTeh5E/LtpimKwGXt/hg==",
+          "encryptedPrivateKeyBase64": "O4nhoq58+yu7Z3GtsTl/67FqtC78j4Z+6GGBjjO/kO1tq/+/kWeVcmXWFaOycnuPz/z95cmzVKl7dbAYtol9BNb9BCjXvzX+YkCAb70egXIVRaifMYoUncj7IrFnf/qicmqy6axG69634FqZTN6709s/jeEUVtG4Ez22a6xt1RNVodWoWP94197m63DGeG882jl4FGTW5X/5NA==",
+          "kdfSaltBase64": "u8zEfItlSOSCdyTu/deWaw==",
+          "nonceBase64": "89RlAgcQVlmaRqys",
+          "kdfIterations": 150000,
+          "kdfAlgorithm": "PBKDF2-SHA256",
+          "encryptionAlgorithm": "AES-256-GCM",
+          "createdAtUtc": "2026-06-29T21:37:30.4060000+00:00",
+          "updatedAtUtc": "2026-06-29T21:37:30.4060000+00:00"
+        }
+      ],
+      "localStorage": {},
+      "sessionStorage": {}
+    }
+  },
+  "accountAddress": "cdia1NLiF7KgsRnZjSSSeFQZMvvnN69g8yzVJpE",
+  "backupFormat": "candoitall-economy-accountapp-vault-backup-v1",
+  "consoleMessages": [
+    {
+      "type": "info",
+      "text": "Debugging hotkey: Shift+Alt+D (when application has focus)"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "info",
+      "text": "Debugging hotkey: Shift+Alt+D (when application has focus)"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "info",
+      "text": "Debugging hotkey: Shift+Alt+D (when application has focus)"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "info",
+      "text": "Debugging hotkey: Shift+Alt+D (when application has focus)"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "info",
+      "text": "Debugging hotkey: Shift+Alt+D (when application has focus)"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    }
+  ],
+  "appOutputTail": [
+    "info: Microsoft.Hosting.Lifetime[14]",
+    "      Now listening on: http://127.0.0.1:5045",
+    "info: Microsoft.Hosting.Lifetime[0]",
+    "      Application started. Press Ctrl+C to shut down.",
+    "info: Microsoft.Hosting.Lifetime[0]",
+    "      Hosting environment: Development",
+    "info: Microsoft.Hosting.Lifetime[0]",
+    "      Content root path: C:\\repositories\\CanDoItAll.Ledger\\examples\\CanDoItAll.Economy.AccountApp",
+    ""
+  ]
+}

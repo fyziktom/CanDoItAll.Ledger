@@ -1,0 +1,19 @@
+Command:
+dotnet test tests/CanDoItAll.Ledger.Tests/CanDoItAll.Ledger.Tests.csproj --no-restore --filter "FullyQualifiedName~AccountWorkspaceAdapterTests|FullyQualifiedName~EconomyAccountHandlerTests" --logger "console;verbosity=normal"
+
+Result:
+Test Run Successful.
+Total tests: 6
+Passed: 6
+Total time: 10.7953 Seconds
+
+Passing tests:
+- EconomyAccountHandlerTests.AddBusinessObjectAccountLayer_PreservesCustomAccountHandler
+- AccountWorkspaceAdapterTests.WasmWorkspaceAdapter_LoadsWorkspaceAndBroadcastsSignedPaymentWithoutNodeSession
+- AccountWorkspaceAdapterTests.WasmWorkspaceRegistration_DoesNotRegisterSsrNodeSession
+- EconomyAccountHandlerTests.Handler_RoutesSubAccountTransactionEventsThroughParent
+- EconomyAccountHandlerTests.Handler_ManagesSingleRunningRefreshPerAccountAndStopsIt
+- AccountWorkspaceAdapterTests.AdapterHost_RendersSameWorkspaceSurfacesForSsrAndWasmAdapters
+
+Notes:
+An earlier run of this same slice exposed a missing default `ITimeProvider` for `AccountBackupService`; `AddBusinessObjectAccountLayer` now supplies a default clock and vault services while preserving host overrides.

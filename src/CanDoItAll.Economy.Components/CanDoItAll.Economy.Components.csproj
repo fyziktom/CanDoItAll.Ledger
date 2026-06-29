@@ -17,7 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj">
+      <AdditionalProperties Condition="'$(EnableBusinessObjectIpfsStorage)' != ''">EnableBusinessObjectIpfsStorage=$(EnableBusinessObjectIpfsStorage)</AdditionalProperties>
+    </ProjectReference>
     <ProjectReference Include="..\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
     <ProjectReference Include="..\CanDoItAll.Economy.Ledger\CanDoItAll.Economy.Ledger.csproj" />
     <ProjectReference Include="..\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" />

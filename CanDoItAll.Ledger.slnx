@@ -2,6 +2,7 @@
   <Folder Name="/examples/">
     <Project Path="examples/CanDoItAll.Economy.AppHost.DcpProxy/CanDoItAll.Economy.AppHost.DcpProxy.csproj" />
     <Project Path="examples/CanDoItAll.Economy.AppHost/CanDoItAll.Economy.AppHost.csproj" />
+    <Project Path="examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj" />
     <Project Path="examples/CanDoItAll.Economy.Components.Demo/CanDoItAll.Economy.Components.Demo.csproj" />
     <Project Path="examples/CanDoItAll.Economy.ConsoleDemo/CanDoItAll.Economy.ConsoleDemo.csproj" />
     <Project Path="examples/CanDoItAll.Ledger.Simulator.App/CanDoItAll.Ledger.Simulator.App.csproj" />
@@ -12,6 +13,7 @@
     <Project Path="src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj" />
     <Project Path="src/CanDoItAll.Economy.Core/CanDoItAll.Economy.Core.csproj" />
     <Project Path="src/CanDoItAll.Economy.Cryptography/CanDoItAll.Economy.Cryptography.csproj" />
+    <Project Path="src/CanDoItAll.Economy.Cryptography.Browser/CanDoItAll.Economy.Cryptography.Browser.csproj" />
     <Project Path="src/CanDoItAll.Economy.Ledger/CanDoItAll.Economy.Ledger.csproj" />
     <Project Path="src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj" />
     <Project Path="src/CanDoItAll.Economy.Persistence.EFCore/CanDoItAll.Economy.Persistence.EFCore.csproj" />

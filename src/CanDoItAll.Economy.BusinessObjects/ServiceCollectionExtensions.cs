@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Ipfs.Engine.Client;
+using CanDoItAll.Economy.Core;
+using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Economy.Ledger;
 
 namespace CanDoItAll.Economy.BusinessObjects;
 
@@ -17,11 +19,25 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddBusinessObjectAccountLayer(this IServiceCollection services)
     {
+        services.TryAddSingleton<ITimeProvider, SystemClock>();
+        services.TryAddScoped<IEconomyCryptoDriver, DotNetEconomyCryptoDriver>();
+        services.TryAddSingleton<IAccountVaultStore, InMemoryAccountVaultStore>();
+        services.TryAddScoped<AccountVaultService>();
         services.TryAddScoped<IAccountInputSigner, AccountInputSigner>();
+        services.TryAddScoped<IAccountTransactionSigner, AccountTransactionSigner>();
         services.TryAddScoped<IEconomyAccountHandler, EconomyAccountHandler>();
         services.TryAddScoped<IAccountBackupService, AccountBackupService>();
+        services.TryAddScoped<IAccountSetupService, AccountSetupService>();
         services.TryAddScoped<BusinessObjectTransactionBuilder>();
         services.AddBusinessObjectCasting();
+        return services;
+    }
+
+    public static IServiceCollection AddBusinessObjectBrowserAccountSigning(this IServiceCollection services)
+    {
+        services.TryAddScoped<IEconomyCryptoDriver, DotNetEconomyCryptoDriver>();
+        services.Replace(ServiceDescriptor.Scoped<IAccountInputSigner, CryptoDriverAccountInputSigner>());
+        services.TryAddScoped<IAccountTransactionSigner, AccountTransactionSigner>();
         return services;
     }
 
@@ -42,6 +58,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+#if BUSINESS_OBJECT_IPFS
     public static IServiceCollection AddBusinessObjectIpfsStorage(
         this IServiceCollection services,
         Uri apiBaseUri,
@@ -51,10 +68,11 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped(provider =>
         {
             var options = provider.GetRequiredService<BusinessObjectIpfsStorageOptions>();
-            return new IpfsEngineClient(new HttpClient { BaseAddress = options.ApiBaseUri });
+            return new IpfsBusinessObjectStorageClient(new HttpClient { BaseAddress = options.ApiBaseUri });
         });
         services.TryAddScoped<IBusinessObjectDataStorageDriver, IpfsBusinessObjectDataStorageDriver>();
         services.TryAddScoped<IBusinessObjectDataItemUploadService, BusinessObjectDataItemUploadService>();
         return services;
     }
+#endif
 }

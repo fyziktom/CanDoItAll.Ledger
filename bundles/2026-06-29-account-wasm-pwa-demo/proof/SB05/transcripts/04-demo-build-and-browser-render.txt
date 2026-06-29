@@ -1,0 +1,30 @@
+Commands:
+dotnet build examples/CanDoItAll.Economy.Components.Demo/CanDoItAll.Economy.Components.Demo.csproj --no-restore
+dotnet run --project examples/CanDoItAll.Economy.Components.Demo/CanDoItAll.Economy.Components.Demo.csproj --urls http://127.0.0.1:5197
+Playwright browser checks against:
+- http://127.0.0.1:5197/adapter-workspace
+- http://127.0.0.1:5197/adapter-workspace-samples
+
+Build result:
+Build succeeded.
+Warnings only:
+- ncalc restored for .NET Framework target assets against net10.0 projects.
+
+Desktop browser result:
+browser-render-result.json
+- /adapter-workspace: hostCount=1, composerCount=1, historyCount=1, utxoCount=1, missing=[]
+- /adapter-workspace-samples: hostCount=2, composerCount=2, historyCount=2, utxoCount=2, missing=[]
+
+Responsive browser result:
+browser-responsive-result.json
+- tablet 900x900: hostCount=2, composerCount=2, historyCount=2, utxoCount=2, missing=[]
+- mobile 390x844: hostCount=2, composerCount=2, historyCount=2, utxoCount=2, missing=[]
+
+Screenshots:
+- adapter-workspace-ssr.png
+- adapter-workspace-ssr-wasm-samples.png
+- adapter-workspace-ssr-wasm-samples-tablet.png
+- adapter-workspace-ssr-wasm-samples-mobile.png
+
+Cleanup:
+The local demo server on port 5197 was stopped after the browser proof. A port check returned 0 listeners.

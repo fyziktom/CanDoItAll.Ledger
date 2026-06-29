@@ -1,0 +1,23 @@
+{
+  "checkedAtUtc": "2026-06-29T20:02:28.505Z",
+  "routes": [
+    {
+      "route": "/adapter-workspace",
+      "screenshot": "adapter-workspace-ssr.png",
+      "hostCount": 1,
+      "composerCount": 1,
+      "historyCount": 1,
+      "utxoCount": 1,
+      "missing": []
+    },
+    {
+      "route": "/adapter-workspace-samples",
+      "screenshot": "adapter-workspace-ssr-wasm-samples.png",
+      "hostCount": 2,
+      "composerCount": 2,
+      "historyCount": 2,
+      "utxoCount": 2,
+      "missing": []
+    }
+  ]
+}

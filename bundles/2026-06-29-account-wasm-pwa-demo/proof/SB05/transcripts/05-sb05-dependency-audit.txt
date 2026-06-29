@@ -1,0 +1,25 @@
+Commands:
+rg "@inject .*Economy(Node|Development)WorkspaceSession|EconomyNodeWorkspaceSession|EconomyDevelopmentWorkspaceSession" -n src/CanDoItAll.Economy.Components/Components examples/CanDoItAll.Economy.Components.Demo/Components/Pages/AdapterWorkspace.razor examples/CanDoItAll.Economy.Components.Demo/Components/Pages/AdapterWorkspaceSamples.razor
+
+Result:
+No matches.
+
+Command:
+rg "EconomyNodeWorkspaceSession" -n src/CanDoItAll.Economy.Components/Components/Account src/CanDoItAll.Economy.Components/Components/VenftSsrEconomyApp.razor src/CanDoItAll.Economy.Components/Services/EconomyAccountWorkspaceAdapters.cs
+
+Result:
+src/CanDoItAll.Economy.Components/Services/EconomyAccountWorkspaceAdapters.cs:401:    EconomyNodeWorkspaceSession session,
+
+Interpretation:
+The only direct node-session reference in the checked reusable surface is the explicit SSR adapter. The WASM adapter and adapter host do not depend on `EconomyNodeWorkspaceSession`.
+
+Command:
+rg "PrivateKey|privateKey|GetPrivateKeyMaterial" -n src/CanDoItAll.Economy.Components/Components/Account src/CanDoItAll.Economy.Components/Services/EconomyAccountWorkspaceAdapters.cs
+
+Result:
+Only SB02 backup/import labels and callback names were found:
+- AccountBackupPanel.razor: visible "Import private key" command label and callback parameter.
+- AccountBackupWizard.razor: host-neutral callback parameter.
+
+Interpretation:
+The SB05 adapter host and WASM adapter do not expose or read private key material.

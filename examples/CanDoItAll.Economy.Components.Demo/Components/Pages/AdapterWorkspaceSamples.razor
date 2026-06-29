@@ -1,0 +1,54 @@
+@page "/adapter-workspace-samples"
+
+<PageTitle>Account Workspace Adapter Samples</PageTitle>
+
+<PageScaffold MaxWidthClass="max-w-[1680px]">
+    <ChildContent>
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <section>
+                <EconomyAccountWorkspaceAdapterHost Adapter="ssrAdapter" />
+            </section>
+            <section>
+                <EconomyAccountWorkspaceAdapterHost Adapter="wasmAdapter" />
+            </section>
+        </Grid>
+    </ChildContent>
+</PageScaffold>
+
+@code {
+    private readonly IEconomyAccountWorkspaceAdapter ssrAdapter = new SampleWorkspaceAdapter("SSR");
+    private readonly IEconomyAccountWorkspaceAdapter wasmAdapter = new SampleWorkspaceAdapter("WASM");
+
+    private sealed class SampleWorkspaceAdapter(string hostMode) : IEconomyAccountWorkspaceAdapter
+    {
+        public string HostMode => hostMode;
+
+        public bool UsesServerSideAccountSigning => hostMode == "SSR";
+
+        public Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default)
+        {
+            BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace() with
+            {
+                AccountName = $"{hostMode} account workspace",
+                ConnectionLabel = $"{hostMode} adapter"
+            };
+            return Task.FromResult(workspace);
+        }
+
+        public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(
+            TxId txId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<EconomyTransactionDetailsModel?>(
+                EconomyComponentSampleData.CreateTransactionDetails() with { TxId = txId });
+
+        public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
+            BusinessObjectTransactionDraft draft,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(new EconomyTransactionExecutionResult(
+                draft.SelectedMode,
+                Accepted: true,
+                TxId: new TxId($"tx-{hostMode.ToLowerInvariant()}"),
+                LedgerSequence: 1,
+                $"{hostMode} adapter accepted transaction."));
+    }
+}

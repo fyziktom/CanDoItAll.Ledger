@@ -32,8 +32,12 @@
                 </div>
 
                 <Cluster Gap="LayoutGap.Small">
-                    <Button Text="Import backup" Icon="upload_file" Variant="Variant.Outlined" />
-                    <Button Text="Finish setup" Icon="check_circle" ButtonStyle="ButtonStyle.Secondary" />
+                    <Button Text="Import backup" Icon="upload_file" Variant="Variant.Outlined" Click="ImportBackupRequested" />
+                    <Button Text="Finish setup" Icon="check_circle" ButtonStyle="ButtonStyle.Secondary" Click="CreateAccountRequested" />
+                </Cluster>
+                <Cluster Gap="LayoutGap.Small">
+                    <Button Text="Import private key" Icon="key" Variant="Variant.Outlined" Click="ImportPastedPrivateKeyRequested" />
+                    <Button Text="Unlock account" Icon="lock_open" Variant="Variant.Outlined" Click="UnlockAccountRequested" />
                 </Cluster>
             </Stack>
         </SectionCard>
@@ -45,7 +49,7 @@
                     <strong>@Model.BackupFileName</strong>
                     <p>@Model.Address</p>
                 </div>
-                <Button Text="Backup account" Icon="download" ButtonStyle="ButtonStyle.Secondary" />
+                <Button Text="Backup account" Icon="download" ButtonStyle="ButtonStyle.Secondary" Click="BackupAccountRequested" />
                 <Button Text="Add SubAccount" Icon="add" Variant="Variant.Outlined" Click="CreateSubAccountRequested" />
             </Stack>
         </SectionCard>
@@ -55,6 +59,21 @@
 @code {
     [Parameter, EditorRequired]
     public AccountBackupWorkflowModel Model { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback CreateAccountRequested { get; set; }
+
+    [Parameter]
+    public EventCallback UnlockAccountRequested { get; set; }
+
+    [Parameter]
+    public EventCallback BackupAccountRequested { get; set; }
+
+    [Parameter]
+    public EventCallback ImportBackupRequested { get; set; }
+
+    [Parameter]
+    public EventCallback ImportPastedPrivateKeyRequested { get; set; }
 
     [Parameter]
     public EventCallback CreateSubAccountRequested { get; set; }

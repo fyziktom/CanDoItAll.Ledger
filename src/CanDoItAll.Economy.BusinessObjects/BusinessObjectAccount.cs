@@ -40,41 +40,80 @@ public sealed class BusinessObjectAccount(
     public Task<LedgerTransaction> BuildCreateBusinessObjectTransactionAsync(CreateBusinessObjectRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildCreateAsync(Context, keySource, request, cancellationToken);
 
+    public Task<LedgerTransaction> BuildUnsignedCreateBusinessObjectTransactionAsync(CreateBusinessObjectRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedCreateAsync(Context, keySource, request, cancellationToken);
+
     public Task<LedgerTransaction> BuildTransferBusinessObjectTransactionAsync(TransferBusinessObjectRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildTransferAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUnsignedTransferBusinessObjectTransactionAsync(TransferBusinessObjectRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedTransferAsync(Context, keySource, request, cancellationToken);
 
     public Task<LedgerTransaction> BuildPaymentTransactionAsync(PaymentRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildPaymentAsync(Context, keySource, request, cancellationToken);
 
+    public Task<LedgerTransaction> BuildUnsignedPaymentTransactionAsync(PaymentRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedPaymentAsync(Context, keySource, request, cancellationToken);
+
     public Task<LedgerTransaction> BuildTokenTransferTransactionAsync(TokenTransferRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildTokenTransferAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUnsignedTokenTransferTransactionAsync(TokenTransferRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedTokenTransferAsync(Context, keySource, request, cancellationToken);
 
     public Task<LedgerTransaction> BuildTokenMintTransactionAsync(TokenMintRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildTokenMintAsync(Context, keySource, request, cancellationToken);
 
+    public Task<LedgerTransaction> BuildUnsignedTokenMintTransactionAsync(TokenMintRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedTokenMintAsync(Context, keySource, request, cancellationToken);
+
     public Task<LedgerTransaction> BuildPermissionIssueTransactionAsync(PermissionIssueRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildPermissionIssueAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUnsignedPermissionIssueTransactionAsync(PermissionIssueRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedPermissionIssueAsync(Context, keySource, request, cancellationToken);
 
     public Task<LedgerTransaction> BuildCreateRuleTokenTransactionAsync(RuleTokenCreateRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildCreateRuleTokenAsync(Context, keySource, request, cancellationToken);
 
+    public Task<LedgerTransaction> BuildUnsignedCreateRuleTokenTransactionAsync(RuleTokenCreateRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedCreateRuleTokenAsync(Context, keySource, request, cancellationToken);
+
     public Task<LedgerTransaction> BuildUpdateBusinessObjectTransactionAsync(UpdateBusinessObjectRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildUpdateAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUnsignedUpdateBusinessObjectTransactionAsync(UpdateBusinessObjectRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedUpdateAsync(Context, keySource, request, cancellationToken);
 
     public Task<LedgerTransaction> BuildCloseBusinessObjectTransactionAsync(CloseBusinessObjectRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildCloseAsync(Context, keySource, request, cancellationToken);
 
+    public Task<LedgerTransaction> BuildUnsignedCloseBusinessObjectTransactionAsync(CloseBusinessObjectRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedCloseAsync(Context, keySource, request, cancellationToken);
+
     public Task<LedgerTransaction> BuildCloneBusinessObjectTransactionAsync(CloneBusinessObjectRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildCloneAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUnsignedCloneBusinessObjectTransactionAsync(CloneBusinessObjectRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedCloneAsync(Context, keySource, request, cancellationToken);
 
     public Task<LedgerTransaction> BuildMergeBusinessObjectsTransactionAsync(MergeBusinessObjectsRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildMergeAsync(Context, keySource, request, cancellationToken);
 
+    public Task<LedgerTransaction> BuildUnsignedMergeBusinessObjectsTransactionAsync(MergeBusinessObjectsRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedMergeAsync(Context, keySource, request, cancellationToken);
+
     public Task<LedgerTransaction> BuildSplitBusinessObjectPaymentTransactionAsync(SplitBusinessObjectPaymentRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildSplitPaymentAsync(Context, keySource, request, cancellationToken);
 
+    public Task<LedgerTransaction> BuildUnsignedSplitBusinessObjectPaymentTransactionAsync(SplitBusinessObjectPaymentRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedSplitPaymentAsync(Context, keySource, request, cancellationToken);
+
     public Task<LedgerTransaction> BuildSetBusinessObjectPriceTransactionAsync(SetBusinessObjectPriceRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildSetPriceAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUnsignedSetBusinessObjectPriceTransactionAsync(SetBusinessObjectPriceRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedSetPriceAsync(Context, keySource, request, cancellationToken);
 
     public async Task<LedgerSubmitResult> CreateBusinessObjectAsync(CreateBusinessObjectRequest request, CancellationToken cancellationToken)
     {

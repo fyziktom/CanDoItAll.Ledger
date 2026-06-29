@@ -1,0 +1,9 @@
+Command:
+dotnet test tests/CanDoItAll.Ledger.Tests/CanDoItAll.Ledger.Tests.csproj --filter FullyQualifiedName~BusinessObjectTransactionAssemblySigningSplitTests --no-restore
+
+Result:
+Expected red compile before SB04 implementation.
+
+Key diagnostics:
+C:\repositories\CanDoItAll.Ledger\tests\CanDoItAll.Ledger.Tests\BusinessObjectTransactionAssemblySigningSplitTests.cs(124,13): error CS0246: The type or namespace name 'IAccountTransactionSigner' could not be found (are you missing a using directive or an assembly reference?) [C:\repositories\CanDoItAll.Ledger\tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj]
+C:\repositories\CanDoItAll.Ledger\tests\CanDoItAll.Ledger.Tests\BusinessObjectTransactionAssemblySigningSplitTests.cs(137,16): error CS0246: The type or namespace name 'IAccountTransactionSigner' could not be found (are you missing a using directive or an assembly reference?) [C:\repositories\CanDoItAll.Ledger\tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj]

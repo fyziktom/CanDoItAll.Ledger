@@ -1,7 +1,3 @@
-using Ipfs;
-using Ipfs.CoreApi;
-using Ipfs.Engine.Client;
-
 namespace CanDoItAll.Economy.BusinessObjects;
 
 public enum BusinessObjectDataStorageKind
@@ -41,51 +37,6 @@ public interface IBusinessObjectDataStorageDriver
     Task<BusinessObjectStorageReadResult> ReadAsync(
         string hashOrUri,
         CancellationToken cancellationToken);
-}
-
-public sealed record BusinessObjectIpfsStorageOptions(
-    Uri GatewayBaseUri,
-    Uri ApiBaseUri);
-
-public sealed class IpfsBusinessObjectDataStorageDriver(
-    IpfsEngineClient client,
-    BusinessObjectIpfsStorageOptions options) : IBusinessObjectDataStorageDriver
-{
-    public BusinessObjectDataStorageKind Storage => BusinessObjectDataStorageKind.Ipfs;
-
-    public async Task<BusinessObjectStorageWriteResult> SaveAsync(
-        BusinessObjectStorageWriteRequest request,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request.Data);
-
-        IFileSystemNode node = await client.FileSystem.AddAsync(
-            request.Data,
-            request.FileName,
-            new AddFileOptions { Pin = request.Pin },
-            cancellationToken).ConfigureAwait(false);
-
-        string hash = node.Id.ToString();
-        return new BusinessObjectStorageWriteResult(
-            BusinessObjectDataStorageKind.Ipfs,
-            hash,
-            BuildIpfsUri(hash),
-            request.FileName,
-            request.ContentType,
-            node.Size);
-    }
-
-    public async Task<BusinessObjectStorageReadResult> ReadAsync(
-        string hashOrUri,
-        CancellationToken cancellationToken)
-    {
-        string hash = BusinessObjectStorageUri.GetHash(hashOrUri);
-        Stream stream = await client.FileSystem.ReadFileAsync(hash, cancellationToken).ConfigureAwait(false);
-        return new BusinessObjectStorageReadResult(stream, hash, "application/octet-stream");
-    }
-
-    private Uri BuildIpfsUri(string hash)
-        => new(options.GatewayBaseUri, $"ipfs/{hash}");
 }
 
 public static class BusinessObjectStorageUri

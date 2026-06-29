@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableBusinessObjectIpfsStorage>false</EnableBusinessObjectIpfsStorage>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.8" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=false" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Components\CanDoItAll.Economy.Components.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=false" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Core\CanDoItAll.Economy.Core.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Cryptography.Browser\CanDoItAll.Economy.Cryptography.Browser.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=false" />
+    <ProjectReference Include="..\..\..\CanDoItAll.Components\src\CanDoItAll.Components.BaseLib\CanDoItAll.Components.BaseLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+
+</Project>

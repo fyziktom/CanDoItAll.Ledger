@@ -1,0 +1,100 @@
+@namespace CanDoItAll.Economy.Components
+@using CanDoItAll.Economy.Components.Services
+
+@if (loadError is not null)
+{
+    <Alert AlertStyle="AlertStyle.Danger">
+        <strong>@Adapter.HostMode workspace failed</strong>
+        <span>@loadError</span>
+    </Alert>
+}
+else if (workspace is null)
+{
+    <EmptyState Eyebrow="@Adapter.HostMode"
+                Title="Loading account workspace"
+                Description="Account workspace data is being loaded." />
+}
+else
+{
+    <section class="cda-economy-adapter-workspace" data-testid="adapter-workspace-host">
+        <div class="cda-economy-adapter-host-mode" data-testid="adapter-host-mode">
+            <span>@Adapter.HostMode</span>
+            <strong>@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")</strong>
+        </div>
+
+        <EconomyAccountWorkspace Workspace="workspace"
+                                 RefreshRequested="RefreshAsync"
+                                 AddTransactionRequested="SubmitCurrentDraftAsync"
+                                 TransactionSubmitRequested="SubmitTransactionAsync"
+                                 TransactionDetailsRequested="LoadTransactionDetailsAsync" />
+
+        <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-economy-adapter-grid">
+            <section data-testid="adapter-utxo-explorer">
+                <UtxoExplorer Outputs="workspace.SpendableOutputsOrEmpty" />
+            </section>
+
+            <section data-testid="adapter-transaction-history">
+                <TransactionHistoryBrowser Transactions="workspace.Transactions" />
+            </section>
+
+            <section data-testid="adapter-transaction-composer">
+                <TransactionComposerShell Draft="workspace.TransactionDraft"
+                                          TokenOptions="workspace.TokenOptions"
+                                          SubmitRequested="SubmitTransactionAsync" />
+            </section>
+        </Grid>
+
+        @if (lastResult is not null)
+        {
+            <TransactionReceipt Result="lastResult" />
+        }
+    </section>
+}
+
+@code {
+    private BusinessObjectWorkspaceModel? workspace;
+    private EconomyTransactionExecutionResult? lastResult;
+    private string? loadError;
+
+    [Parameter, EditorRequired]
+    public IEconomyAccountWorkspaceAdapter Adapter { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BusinessObjectWorkspaceModel> WorkspaceLoaded { get; set; }
+
+    [Parameter]
+    public EventCallback<EconomyTransactionExecutionResult> TransactionSubmitted { get; set; }
+
+    protected override async Task OnInitializedAsync()
+        => await RefreshAsync().ConfigureAwait(false);
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            loadError = null;
+            workspace = await Adapter.GetWorkspaceAsync().ConfigureAwait(false);
+            await WorkspaceLoaded.InvokeAsync(workspace).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            loadError = exception.Message;
+            workspace = null;
+        }
+    }
+
+    private Task SubmitCurrentDraftAsync()
+        => workspace is null
+            ? Task.CompletedTask
+            : SubmitTransactionAsync(workspace.TransactionDraft);
+
+    private async Task SubmitTransactionAsync(BusinessObjectTransactionDraft draft)
+    {
+        lastResult = await Adapter.SubmitTransactionAsync(draft).ConfigureAwait(false);
+        await TransactionSubmitted.InvokeAsync(lastResult).ConfigureAwait(false);
+        await RefreshAsync().ConfigureAwait(false);
+    }
+
+    private Task LoadTransactionDetailsAsync(LedgerTransactionSummary transaction)
+        => Adapter.GetTransactionDetailsAsync(transaction.TxId);
+}

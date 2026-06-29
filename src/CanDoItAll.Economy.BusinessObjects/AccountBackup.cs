@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using CanDoItAll.Economy.Core;
+using CanDoItAll.Economy.Cryptography;
 
 namespace CanDoItAll.Economy.BusinessObjects;
 
@@ -89,6 +90,7 @@ public sealed class AccountBackupService(ITimeProvider timeProvider) : IAccountB
 
         byte[] publicKey = Convert.FromBase64String(request.Document.PublicKeyMaterial);
         byte[] privateKey = Unprotect(request.Document, request.Password);
+        EnsurePrivateKeyMatchesPublicKey(request.Document.Algorithm, publicKey, privateKey);
 
         return new InMemoryAccountKeySource(
             request.Document.Address,
@@ -162,6 +164,23 @@ public sealed class AccountBackupService(ITimeProvider timeProvider) : IAccountB
             210_000,
             HashAlgorithmName.SHA256,
             32);
+
+    private static void EnsurePrivateKeyMatchesPublicKey(
+        SignatureAlgorithmId algorithm,
+        byte[] publicKeyMaterial,
+        byte[] privateKeyMaterial)
+    {
+        if (algorithm != SignatureAlgorithmId.EcdsaP256Sha256)
+        {
+            return;
+        }
+
+        byte[] exportedPublicKey = EcdsaP256KeyMaterial.ExportPublicKeyFromPrivateKey(privateKeyMaterial);
+        if (!publicKeyMaterial.SequenceEqual(exportedPublicKey))
+        {
+            throw new CryptographicException("Backup private key does not match public key material.");
+        }
+    }
 
     private sealed record ProtectedSecret(
         string Protection,

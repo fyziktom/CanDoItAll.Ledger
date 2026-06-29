@@ -1,0 +1,32 @@
+{
+  "checkedAtUtc": "2026-06-29T20:07:28.824Z",
+  "route": "/adapter-workspace-samples",
+  "viewports": [
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 900,
+        "height": 900
+      },
+      "screenshot": "adapter-workspace-ssr-wasm-samples-tablet.png",
+      "hostCount": 2,
+      "composerCount": 2,
+      "historyCount": 2,
+      "utxoCount": 2,
+      "missing": []
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "adapter-workspace-ssr-wasm-samples-mobile.png",
+      "hostCount": 2,
+      "composerCount": 2,
+      "historyCount": 2,
+      "utxoCount": 2,
+      "missing": []
+    }
+  ]
+}

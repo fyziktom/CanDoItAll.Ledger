@@ -9,7 +9,22 @@ public sealed class BusinessObjectTransactionBuilder(
     IAccountInputSigner inputSigner,
     ITimeProvider timeProvider)
 {
+    private readonly IAccountTransactionSigner transactionSigner = new AccountTransactionSigner(
+        transactionHasher,
+        signaturePayloadBuilder,
+        inputSigner);
+
     public async Task<LedgerTransaction> BuildCreateAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        CreateBusinessObjectRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedCreateAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedCreateAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         CreateBusinessObjectRequest request,
@@ -49,10 +64,20 @@ public sealed class BusinessObjectTransactionBuilder(
         AddSelectedChangeOutput(outputs, selected, keySource.Address, mainAmount, request.Token);
 
         LedgerTransaction unsigned = CreateMultiInputTransaction(context, keySource, selected, outputs, TransactionKind.BusinessObject, data);
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildTransferAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        TransferBusinessObjectRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedTransferAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedTransferAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         TransferBusinessObjectRequest request,
@@ -113,14 +138,20 @@ public sealed class BusinessObjectTransactionBuilder(
             },
             outputs,
             data);
-
-        TxId txId = transactionHasher.CalculateTxId(unsigned);
-        LedgerTransaction withTxId = unsigned with { TxId = txId };
-        TransactionInput signedInput = await SignInputAsync(withTxId, withTxId.Inputs[0], keySource, cancellationToken).ConfigureAwait(false);
-        return withTxId with { Inputs = new[] { signedInput } };
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildPaymentAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        PaymentRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedPaymentAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedPaymentAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         PaymentRequest request,
@@ -147,10 +178,20 @@ public sealed class BusinessObjectTransactionBuilder(
         }
 
         LedgerTransaction unsigned = CreateMultiInputTransaction(context, keySource, selected, outputs, TransactionKind.Transfer, data: null);
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildTokenTransferAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        TokenTransferRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedTokenTransferAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedTokenTransferAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         TokenTransferRequest request,
@@ -198,10 +239,20 @@ public sealed class BusinessObjectTransactionBuilder(
         }
 
         LedgerTransaction unsigned = CreateMultiInputTransaction(context, keySource, selected, outputs, TransactionKind.Transfer, data: null);
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildTokenMintAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        TokenMintRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedTokenMintAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedTokenMintAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         TokenMintRequest request,
@@ -266,10 +317,20 @@ public sealed class BusinessObjectTransactionBuilder(
             outputs,
             Data: null);
 
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildPermissionIssueAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        PermissionIssueRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedPermissionIssueAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedPermissionIssueAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         PermissionIssueRequest request,
@@ -342,10 +403,20 @@ public sealed class BusinessObjectTransactionBuilder(
             outputs,
             data);
 
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildCreateRuleTokenAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        RuleTokenCreateRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedCreateRuleTokenAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedCreateRuleTokenAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         RuleTokenCreateRequest request,
@@ -411,10 +482,20 @@ public sealed class BusinessObjectTransactionBuilder(
             outputs,
             data);
 
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildUpdateAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        UpdateBusinessObjectRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedUpdateAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedUpdateAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         UpdateBusinessObjectRequest request,
@@ -437,10 +518,20 @@ public sealed class BusinessObjectTransactionBuilder(
             },
             data);
 
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildCloseAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        CloseBusinessObjectRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedCloseAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedCloseAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         CloseBusinessObjectRequest request,
@@ -458,10 +549,20 @@ public sealed class BusinessObjectTransactionBuilder(
             },
             data);
 
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildCloneAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        CloneBusinessObjectRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedCloneAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedCloneAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         CloneBusinessObjectRequest request,
@@ -507,10 +608,20 @@ public sealed class BusinessObjectTransactionBuilder(
             },
             data);
 
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildMergeAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        MergeBusinessObjectsRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedMergeAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedMergeAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         MergeBusinessObjectsRequest request,
@@ -553,10 +664,20 @@ public sealed class BusinessObjectTransactionBuilder(
             },
             data);
 
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildSplitPaymentAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        SplitBusinessObjectPaymentRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedSplitPaymentAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedSplitPaymentAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         SplitBusinessObjectPaymentRequest request,
@@ -611,10 +732,20 @@ public sealed class BusinessObjectTransactionBuilder(
         }
 
         var unsigned = CreateSingleInputTransaction(context, keySource, selected, outputs, data);
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildSetPriceAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        SetBusinessObjectPriceRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedSetPriceAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedSetPriceAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
         SetBusinessObjectPriceRequest request,
@@ -644,7 +775,7 @@ public sealed class BusinessObjectTransactionBuilder(
             },
             data);
 
-        return await SignInputsAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+        return unsigned;
     }
 
     private async Task<LedgerSpendableOutput> GetOwnedBusinessObjectAsync(
@@ -919,38 +1050,4 @@ public sealed class BusinessObjectTransactionBuilder(
             outputs,
             data);
 
-    private async Task<LedgerTransaction> SignInputsAsync(
-        LedgerTransaction unsigned,
-        IAccountKeySource keySource,
-        CancellationToken cancellationToken)
-    {
-        TxId txId = transactionHasher.CalculateTxId(unsigned);
-        LedgerTransaction withTxId = unsigned with { TxId = txId };
-        var signedInputs = new List<TransactionInput>(withTxId.Inputs.Count);
-
-        foreach (TransactionInput input in withTxId.Inputs.OrderBy(x => x.InputIndex))
-        {
-            signedInputs.Add(await SignInputAsync(withTxId, input, keySource, cancellationToken).ConfigureAwait(false));
-        }
-
-        return withTxId with { Inputs = signedInputs };
-    }
-
-    private async Task<TransactionInput> SignInputAsync(
-        LedgerTransaction transaction,
-        TransactionInput input,
-        IAccountKeySource keySource,
-        CancellationToken cancellationToken)
-    {
-        HashHex payloadHash = transaction.SigningMode == SigningMode.Ordered
-            ? signaturePayloadBuilder.BuildOrderedInputPayloadHash(transaction, input)
-            : signaturePayloadBuilder.BuildIndependentInputPayloadHash(transaction, input);
-        SignatureEnvelope signature = await inputSigner.SignAsync(keySource, payloadHash, cancellationToken).ConfigureAwait(false);
-
-        return input with
-        {
-            SignaturePayloadHash = payloadHash,
-            SignatureBundle = new SignatureBundle(new[] { signature })
-        };
-    }
 }
