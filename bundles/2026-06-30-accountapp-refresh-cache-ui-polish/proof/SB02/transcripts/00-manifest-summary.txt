@@ -1,0 +1,13 @@
+Command: bundle manifest proof summary for SB02 notification and width
+ExitCode: 0
+
+SB02-UI-FEEDBACK-WIDTH-001
+
+Passing evidence:
+- AccountApp build passed.
+- Components.Demo build passed.
+- Playwright width assertion reported rootWidth=1920 and rootX=0.
+- Playwright notification assertion reported inlineRefreshAlerts=0, inlineReceiptLike=0, and afterDismissMatches=0.
+
+Anti-stub audit:
+- No TODO, NotImplemented, fixture-specific, or stub markers were found in changed implementation/test files.

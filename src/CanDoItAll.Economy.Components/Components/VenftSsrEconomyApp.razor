@@ -41,24 +41,6 @@
             </div>
         </header>
 
-        @if (LastResult is not null)
-        {
-            <Alert AlertStyle="@(LastResult.Accepted ? AlertStyle.Success : AlertStyle.Danger)" Class="cda-vef-alert">
-                <strong>@LastResult.Mode</strong>
-                <span>@LastResult.Message</span>
-            </Alert>
-        }
-
-        @if (!string.IsNullOrWhiteSpace(RefreshNotification))
-        {
-            <div data-testid="venft-refresh-alert">
-                <Alert AlertStyle="AlertStyle.Info" Class="cda-vef-alert">
-                    <strong>Auto refresh</strong>
-                    <span>@RefreshNotification</span>
-                </Alert>
-            </div>
-        }
-
         @switch (selectedView)
         {
             case "gallery":
@@ -125,12 +107,6 @@
 
     [Parameter, EditorRequired]
     public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
-
-    [Parameter]
-    public EconomyTransactionExecutionResult? LastResult { get; set; }
-
-    [Parameter]
-    public string? RefreshNotification { get; set; }
 
     [Parameter]
     public EventCallback RefreshRequested { get; set; }

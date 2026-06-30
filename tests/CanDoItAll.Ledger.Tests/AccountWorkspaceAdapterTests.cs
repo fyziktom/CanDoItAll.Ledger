@@ -56,6 +56,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             rig.TransactionBuilder,
             rig.TransactionSigner,
             rig.CryptoDriver,
+            new InMemoryAccountWorkspaceCache(),
             rig.CastRegistry,
             rig.TimeProvider,
             new WasmAccountWorkspaceOptions
@@ -87,6 +88,90 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
     }
 
     [Fact]
+    public async Task AdapterHost_AutoRefreshSkipsWorkspaceReloadWhenSnapshotIsUnchanged()
+    {
+        var adapter = new RefreshProbeWorkspaceAdapter(
+            "WASM",
+            initialTransactionId: "tx-refresh-stable",
+            probeTransactionId: "tx-refresh-stable");
+
+        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+            parameters => parameters
+                .Add(x => x.Adapter, adapter)
+                .Add(x => x.AutoRefreshInterval, TimeSpan.FromMilliseconds(20))
+                .Add(x => x.AutoRefreshTransactionProbeCount, 10));
+
+        await WaitForAsync(() => adapter.RefreshProbeCount > 0, TimeSpan.FromSeconds(2));
+        await component.Instance.DisposeAsync();
+
+        Assert.Equal(1, adapter.WorkspaceLoadCount);
+    }
+
+    [Fact]
+    public async Task AdapterHost_AutoRefreshReloadsWorkspaceWhenSnapshotChanges()
+    {
+        var adapter = new RefreshProbeWorkspaceAdapter(
+            "WASM",
+            initialTransactionId: "tx-refresh-before",
+            probeTransactionId: "tx-refresh-after");
+
+        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+            parameters => parameters
+                .Add(x => x.Adapter, adapter)
+                .Add(x => x.AutoRefreshInterval, TimeSpan.FromMilliseconds(20))
+                .Add(x => x.AutoRefreshTransactionProbeCount, 10));
+
+        await WaitForAsync(() => adapter.WorkspaceLoadCount >= 2, TimeSpan.FromSeconds(2));
+        await component.Instance.DisposeAsync();
+
+        Assert.True(adapter.RefreshProbeCount > 0);
+    }
+
+    [Fact]
+    public async Task WasmWorkspaceAdapter_CachesTransactionDetailsByContextAndTxId()
+    {
+        WasmAdapterRig rig = await WasmAdapterRig.CreateAsync();
+        var readClient = new CountingLedgerReadClient(rig.Gateway);
+        var adapter = new WasmAccountWorkspaceAdapter(
+            rig.Gateway,
+            readClient,
+            rig.TransactionBuilder,
+            rig.TransactionSigner,
+            rig.CryptoDriver,
+            new InMemoryAccountWorkspaceCache(),
+            rig.CastRegistry,
+            rig.TimeProvider,
+            new WasmAccountWorkspaceOptions
+            {
+                LedgerId = Context.LedgerId.Value,
+                ScenarioId = Context.ScenarioId?.Value,
+                AccountName = "Browser account",
+                ConnectionLabel = "Browser API"
+            });
+        await adapter.UseUnlockedAccountAsync(rig.UnlockedKey, CancellationToken.None);
+
+        BusinessObjectWorkspaceModel workspace = await adapter.GetWorkspaceAsync(CancellationToken.None);
+        EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(
+            workspace.TransactionDraft with
+            {
+                SelectedMode = BusinessObjectTransactionMode.MainPayment,
+                PaymentReceiverAddress = Receiver,
+                PaymentAmount = Amount.FromInt64(5)
+            },
+            CancellationToken.None);
+        Assert.NotNull(result.TxId);
+        TxId txId = result.TxId ?? throw new InvalidOperationException("Accepted transaction did not return a tx id.");
+
+        EconomyTransactionDetailsModel? first = await adapter.GetTransactionDetailsAsync(txId, CancellationToken.None);
+        EconomyTransactionDetailsModel? second = await adapter.GetTransactionDetailsAsync(txId, CancellationToken.None);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal(first.TxId, second.TxId);
+        Assert.Equal(1, readClient.TransactionDetailReadCount);
+    }
+
+    [Fact]
     public void WasmWorkspaceRegistration_DoesNotRegisterSsrNodeSession()
     {
         var services = new ServiceCollection();
@@ -115,6 +200,17 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                 ConnectionLabel = $"{hostMode} adapter"
             };
             return Task.FromResult(sample);
+        }
+
+        public Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+            int maxTransactions = 10,
+            CancellationToken cancellationToken = default)
+        {
+            BusinessObjectWorkspaceModel sample = EconomyComponentSampleData.CreateWorkspace();
+            return Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(
+                sample,
+                maxTransactions,
+                DateTimeOffset.Parse("2026-06-29T12:00:00Z")));
         }
 
         public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
@@ -179,6 +275,125 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                 $"{hostMode} adapter accepted transaction.");
     }
 
+    private sealed class RefreshProbeWorkspaceAdapter(
+        string hostMode,
+        string initialTransactionId,
+        string probeTransactionId) : IEconomyAccountWorkspaceAdapter
+    {
+        private readonly DateTimeOffset timestamp = DateTimeOffset.Parse("2026-06-29T12:00:00Z");
+
+        public int WorkspaceLoadCount { get; private set; }
+
+        public int RefreshProbeCount { get; private set; }
+
+        public string HostMode => hostMode;
+
+        public bool UsesServerSideAccountSigning => false;
+
+        public Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default)
+        {
+            WorkspaceLoadCount++;
+            string txId = WorkspaceLoadCount == 1 ? initialTransactionId : probeTransactionId;
+            BusinessObjectWorkspaceModel sample = EconomyComponentSampleData.CreateWorkspace() with
+            {
+                AccountName = $"{hostMode} refresh workspace",
+                Transactions = new[] { CreateTransaction(txId, timestamp) }
+            };
+            return Task.FromResult(sample);
+        }
+
+        public Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+            int maxTransactions = 10,
+            CancellationToken cancellationToken = default)
+        {
+            RefreshProbeCount++;
+            BusinessObjectWorkspaceModel sample = EconomyComponentSampleData.CreateWorkspace() with
+            {
+                Transactions = new[] { CreateTransaction(probeTransactionId, timestamp) }
+            };
+            return Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(sample, maxTransactions, timestamp));
+        }
+
+        public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
+            => Task.FromResult<EconomyTransactionDetailsModel?>(EconomyComponentSampleData.CreateTransactionDetails() with { TxId = txId });
+
+        public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
+            BusinessObjectTransactionDraft draft,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(draft.SelectedMode));
+
+        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(BusinessObjectSendRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
+
+        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(BusinessObjectPriceRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(EconomyTokenCreationRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));
+
+        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(EconomyRuleTokenCreationRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.CreateRuleToken));
+
+        public Task<MessageSecurityActionResult> SignMessageAsync(MessageSecuritySignRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
+
+        public Task<MessageSecurityActionResult> VerifyMessageAsync(MessageSecurityVerifyRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
+
+        public Task<MessageSecurityActionResult> EncryptMessageAsync(MessageSecurityEncryptRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
+
+        public Task<MessageSecurityActionResult> DecryptMessageAsync(MessageSecurityDecryptRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
+
+        private EconomyTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
+            => new(mode, true, new TxId($"tx-refresh-{mode}"), 1, "Accepted.");
+    }
+
+    private sealed class CountingLedgerReadClient(ILedgerReadClient inner) : ILedgerReadClient
+    {
+        public int TransactionDetailReadCount { get; private set; }
+
+        public Task<IReadOnlyList<LedgerSpendableOutput>> GetSpendableOutputsAsync(
+            LedgerAddressQuery query,
+            CancellationToken cancellationToken)
+            => inner.GetSpendableOutputsAsync(query, cancellationToken);
+
+        public Task<LedgerAccountBalance> GetBalanceAsync(LedgerAddressQuery query, CancellationToken cancellationToken)
+            => inner.GetBalanceAsync(query, cancellationToken);
+
+        public Task<IReadOnlyList<LedgerBusinessObjectHolding>> GetBusinessObjectsAsync(
+            LedgerAddressQuery query,
+            CancellationToken cancellationToken)
+            => inner.GetBusinessObjectsAsync(query, cancellationToken);
+
+        public Task<IReadOnlyList<LedgerTransactionSummary>> GetTransactionsAsync(
+            LedgerAddressQuery query,
+            CancellationToken cancellationToken)
+            => inner.GetTransactionsAsync(query, cancellationToken);
+
+        public Task<IReadOnlyList<LedgerTransactionSummary>> GetTransactionsAsync(
+            LedgerAddressQuery query,
+            bool includeData,
+            CancellationToken cancellationToken)
+            => inner.GetTransactionsAsync(query, includeData, cancellationToken);
+
+        public Task<LedgerTransactionSummary?> GetTransactionAsync(
+            LedgerAccountContext context,
+            TxId txId,
+            bool includeData,
+            CancellationToken cancellationToken)
+        {
+            TransactionDetailReadCount++;
+            return inner.GetTransactionAsync(context, txId, includeData, cancellationToken);
+        }
+
+        public Task<IReadOnlyList<LedgerTransactionSummary>> QueryTransactionsAsync(
+            LedgerTransactionQuery query,
+            CancellationToken cancellationToken)
+            => inner.QueryTransactionsAsync(query, cancellationToken);
+    }
+
     private sealed class ThrowingLedgerClient : ILedgerGateway, ILedgerReadClient
     {
         public Task<LedgerSubmitResult> SubmitTransactionAsync(LedgerTransaction transaction, CancellationToken cancellationToken)
@@ -201,6 +416,34 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             LedgerAddressQuery query,
             CancellationToken cancellationToken)
             => throw new InvalidOperationException("The DI registration test must not read ledger transactions.");
+    }
+
+    private static LedgerTransactionSummary CreateTransaction(string txId, DateTimeOffset timestamp)
+        => new(
+            Context,
+            new TxId(txId),
+            TransactionKind.Transfer,
+            TransactionStatus.Confirmed,
+            timestamp,
+            new[] { Receiver },
+            new[] { Receiver },
+            Array.Empty<LedgerTransactionInputSummary>(),
+            Array.Empty<LedgerTransactionOutputSummary>());
+
+    private static async Task WaitForAsync(Func<bool> condition, TimeSpan timeout)
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(timeout);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            if (condition())
+            {
+                return;
+            }
+
+            await Task.Delay(20);
+        }
+
+        Assert.True(condition(), "Condition did not become true before the timeout.");
     }
 
     private sealed class WasmAdapterRig

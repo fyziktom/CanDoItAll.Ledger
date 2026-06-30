@@ -1,5 +1,6 @@
 @namespace CanDoItAll.Economy.Components
 @using CanDoItAll.Economy.Components.Services
+@implements IAsyncDisposable
 @inject DialogService DialogService
 @inject NotificationService Notifications
 
@@ -27,8 +28,6 @@ else
         @if (UseFullAppShell)
         {
             <VenftSsrEconomyApp Workspace="workspace"
-                                LastResult="lastResult"
-                                RefreshNotification="@refreshNotification"
                                 RefreshRequested="RefreshAsync"
                                 CreateSubAccountRequested="OpenSubAccountDialogAsync"
                                 ValidateRequested="RefreshAsync"
@@ -73,19 +72,18 @@ else
                 </section>
             </Grid>
 
-            @if (lastResult is not null)
-            {
-                <TransactionReceipt Result="lastResult" />
-            }
         }
     </section>
 }
 
 @code {
     private BusinessObjectWorkspaceModel? workspace;
+    private AccountWorkspaceRefreshSnapshot? refreshSnapshot;
     private EconomyTransactionExecutionResult? lastResult;
-    private string? refreshNotification;
     private string? loadError;
+    private readonly SemaphoreSlim refreshGate = new(1, 1);
+    private CancellationTokenSource? autoRefreshCancellation;
+    private Task? autoRefreshTask;
 
     [Parameter, EditorRequired]
     public IEconomyAccountWorkspaceAdapter Adapter { get; set; } = default!;
@@ -99,22 +97,46 @@ else
     [Parameter]
     public bool UseFullAppShell { get; set; }
 
+    [Parameter]
+    public bool AutoRefreshEnabled { get; set; } = true;
+
+    [Parameter]
+    public TimeSpan AutoRefreshInterval { get; set; } = TimeSpan.FromSeconds(30);
+
+    [Parameter]
+    public int AutoRefreshTransactionProbeCount { get; set; } = 10;
+
     protected override async Task OnInitializedAsync()
-        => await RefreshAsync().ConfigureAwait(false);
+    {
+        await RefreshWorkspaceAsync(showNotification: false);
+        StartAutoRefreshLoop();
+    }
 
     private async Task RefreshAsync()
+        => await RefreshWorkspaceAsync(showNotification: true);
+
+    private async Task RefreshWorkspaceAsync(bool showNotification)
     {
+        await refreshGate.WaitAsync();
         try
         {
-            loadError = null;
-            workspace = await Adapter.GetWorkspaceAsync().ConfigureAwait(false);
-            refreshNotification = $"Workspace refreshed for {workspace.AccountName}.";
-            await WorkspaceLoaded.InvokeAsync(workspace).ConfigureAwait(false);
+            await LoadWorkspaceCoreAsync();
+            if (showNotification && workspace is not null)
+            {
+                Notifications.Info(
+                    "Workspace refreshed",
+                    $"Workspace refreshed for {workspace.AccountName}.",
+                    position: NotificationPosition.BottomCenter);
+            }
         }
         catch (Exception exception)
         {
             loadError = exception.Message;
             workspace = null;
+        }
+        finally
+        {
+            refreshGate.Release();
         }
     }
 
@@ -330,9 +352,9 @@ else
     {
         try
         {
-            lastResult = await action().ConfigureAwait(false);
-            await TransactionSubmitted.InvokeAsync(lastResult).ConfigureAwait(false);
-            await RefreshAsync().ConfigureAwait(false);
+            lastResult = await action();
+            await TransactionSubmitted.InvokeAsync(lastResult);
+            await RefreshWorkspaceAsync(showNotification: false);
 
             if (lastResult.Accepted)
             {
@@ -351,11 +373,119 @@ else
                 TxId: null,
                 LedgerSequence: null,
                 exception.Message);
-            await TransactionSubmitted.InvokeAsync(lastResult).ConfigureAwait(false);
+            await TransactionSubmitted.InvokeAsync(lastResult);
             Notifications.Error("Economy action failed", exception.Message, position: NotificationPosition.BottomCenter);
         }
     }
 
     private Task LoadTransactionDetailsAsync(LedgerTransactionSummary transaction)
         => Adapter.GetTransactionDetailsAsync(transaction.TxId);
+
+    private async Task LoadWorkspaceCoreAsync()
+    {
+        loadError = null;
+        BusinessObjectWorkspaceModel loaded = await Adapter.GetWorkspaceAsync();
+        workspace = loaded;
+        refreshSnapshot = AccountWorkspaceRefreshSnapshot.Create(
+            loaded,
+            AutoRefreshTransactionProbeCount,
+            loaded.ViewedAtUtc);
+        await WorkspaceLoaded.InvokeAsync(loaded);
+    }
+
+    private void StartAutoRefreshLoop()
+    {
+        if (!AutoRefreshEnabled || AutoRefreshInterval <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        autoRefreshCancellation = new CancellationTokenSource();
+        autoRefreshTask = RunAutoRefreshLoopAsync(autoRefreshCancellation.Token);
+    }
+
+    private async Task RunAutoRefreshLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(AutoRefreshInterval);
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                await InvokeAsync(async () =>
+                {
+                    await ProbeAndRefreshIfChangedAsync(cancellationToken);
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private async Task ProbeAndRefreshIfChangedAsync(CancellationToken cancellationToken)
+    {
+        await refreshGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (workspace is null)
+            {
+                await LoadWorkspaceCoreAsync();
+                return;
+            }
+
+            AccountWorkspaceRefreshSnapshot latest = await Adapter
+                .GetRefreshSnapshotAsync(AutoRefreshTransactionProbeCount, cancellationToken);
+            if (refreshSnapshot is not null && refreshSnapshot.HasSameTransactions(latest))
+            {
+                return;
+            }
+
+            await LoadWorkspaceCoreAsync();
+            if (workspace is not null)
+            {
+                Notifications.Info(
+                    "Auto refresh",
+                    $"Workspace refreshed for {workspace.AccountName}.",
+                    position: NotificationPosition.BottomCenter);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            loadError = exception.Message;
+        }
+        finally
+        {
+            refreshGate.Release();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (autoRefreshCancellation is not null)
+        {
+            await autoRefreshCancellation.CancelAsync();
+        }
+
+        if (autoRefreshTask is not null)
+        {
+            try
+            {
+                await autoRefreshTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        autoRefreshCancellation?.Dispose();
+        refreshGate.Dispose();
+    }
 }

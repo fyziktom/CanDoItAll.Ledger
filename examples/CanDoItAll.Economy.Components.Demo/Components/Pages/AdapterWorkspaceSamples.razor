@@ -6,10 +6,10 @@
     <ChildContent>
         <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
             <section>
-                <EconomyAccountWorkspaceAdapterHost Adapter="ssrAdapter" />
+                <EconomyAccountWorkspaceAdapterHost Adapter="ssrAdapter" AutoRefreshEnabled="false" />
             </section>
             <section>
-                <EconomyAccountWorkspaceAdapterHost Adapter="wasmAdapter" />
+                <EconomyAccountWorkspaceAdapterHost Adapter="wasmAdapter" AutoRefreshEnabled="false" />
             </section>
         </Grid>
     </ChildContent>
@@ -41,6 +41,17 @@
             => Task.FromResult<EconomyTransactionDetailsModel?>(
                 EconomyComponentSampleData.CreateTransactionDetails() with { TxId = txId });
 
+        public Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+            int maxTransactions = 10,
+            CancellationToken cancellationToken = default)
+        {
+            BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+            return Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(
+                workspace,
+                maxTransactions,
+                DateTimeOffset.Parse("2026-06-29T12:00:00Z")));
+        }
+
         public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
             BusinessObjectTransactionDraft draft,
             CancellationToken cancellationToken = default)
@@ -50,5 +61,53 @@
                 TxId: new TxId($"tx-{hostMode.ToLowerInvariant()}"),
                 LedgerSequence: 1,
                 $"{hostMode} adapter accepted transaction."));
+
+        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+            BusinessObjectSendRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
+
+        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+            BusinessObjectPriceRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
+            EconomyTokenCreationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));
+
+        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
+            EconomyRuleTokenCreationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.CreateRuleToken));
+
+        public Task<MessageSecurityActionResult> SignMessageAsync(
+            MessageSecuritySignRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not sign messages."));
+
+        public Task<MessageSecurityActionResult> VerifyMessageAsync(
+            MessageSecurityVerifyRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not verify messages."));
+
+        public Task<MessageSecurityActionResult> EncryptMessageAsync(
+            MessageSecurityEncryptRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not encrypt messages."));
+
+        public Task<MessageSecurityActionResult> DecryptMessageAsync(
+            MessageSecurityDecryptRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not decrypt messages."));
+
+        private EconomyTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
+            => new(
+                mode,
+                Accepted: true,
+                TxId: new TxId($"tx-{hostMode.ToLowerInvariant()}"),
+                LedgerSequence: 1,
+                $"{hostMode} adapter accepted transaction.");
     }
 }

@@ -3,7 +3,7 @@
 
 <PageTitle>CanDoItAll AccountApp</PageTitle>
 
-<div class="account-app" data-testid="account-app-root">
+<div class="account-app @(Session.IsUnlocked ? "account-app--unlocked" : "account-app--locked")" data-testid="account-app-root">
     <header class="account-app__topbar">
         <div>
             <span class="account-app__eyebrow">AccountApp WASM PWA</span>
@@ -174,11 +174,6 @@
                 <span>Export encrypted backup</span>
             </button>
         </section>
-
-        @if (Session.LastTransactionResult is not null)
-        {
-            <TransactionReceipt Result="Session.LastTransactionResult" />
-        }
 
         @if (!string.IsNullOrWhiteSpace(Session.BackupJson))
         {

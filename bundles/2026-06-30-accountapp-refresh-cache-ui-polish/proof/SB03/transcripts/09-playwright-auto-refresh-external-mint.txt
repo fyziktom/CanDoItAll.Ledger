@@ -1,0 +1,426 @@
+﻿Original Alice page auto-refresh proof after signed transaction from second AccountApp session
+
+### Result
+{"beforeWait":{"main":99990,"txs":9,"bos":4,"utxos":7},"afterWait":{"main":99990,"txs":9,"bos":4,"utxos":7},"refreshed":true}
+### Ran Playwright code
+```js
+await (async page => {
+  const readStats = async () => page.evaluate(() => {
+    const findStat = label => {
+      const nodes = Array.from(document.querySelectorAll('*'));
+      const labelNode = nodes.find(node => node.textContent && node.textContent.trim() === label);
+      const valueNode = labelNode?.parentElement?.querySelector('strong');
+      const value = valueNode?.textContent?.trim();
+      return value ? Number(value.replace(/[^0-9.-]/g, '')) : null;
+    };
+
+    return {
+      main: findStat('Main'),
+      txs: findStat('Txs'),
+      bos: findStat('BOs'),
+      utxos: findStat('UTXOs')
+    };
+  });
+
+  const beforeWait = await readStats();
+  if ((beforeWait.txs ?? 0) < 9) {
+    await page.waitForFunction(() => {
+      const nodes = Array.from(document.querySelectorAll('*'));
+      const labelNode = nodes.find(node => node.textContent && node.textContent.trim() === 'Txs');
+      const valueNode = labelNode?.parentElement?.querySelector('strong');
+      const txs = valueNode?.textContent ? Number(valueNode.textContent.replace(/[^0-9.-]/g, '')) : null;
+      return txs !== null && txs >= 9;
+    }, undefined, { timeout: 70000, polling: 1000 });
+  }
+
+  const afterWait = await readStats();
+  await page.screenshot({
+    path: 'bundles/2026-06-30-accountapp-refresh-cache-ui-polish/proof/SB03/accountapp-auto-refresh-after-external-mint.png',
+    fullPage: true
+  });
+
+  return {
+    beforeWait,
+    afterWait,
+    refreshed: (afterWait.txs ?? 0) >= 9
+  };
+}
+)(page);
+```
+### Page
+- Page URL: http://localhost:5081/
+- Page Title: CanDoItAll AccountApp
+### Snapshot
+```yaml
+- main [ref=e7]:
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - text: AccountApp WASM PWA
+        - heading "Browser account workspace" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e13]: hub
+        - generic [ref=e14]:
+          - strong [ref=e15]: http://localhost:5081/
+          - generic [ref=e16]: api/v1 / default / live
+    - generic [ref=e17]:
+      - generic [ref=e18]: encrypted
+      - generic [ref=e19]:
+        - strong [ref=e20]: Unlocked browser vault
+        - generic [ref=e21]: Encrypted backup imported, re-encrypted, and unlocked.
+    - generic [ref=e93]:
+      - generic [ref=e94]:
+        - text: Account
+        - strong [ref=e95]: Alice demo account
+      - generic [ref=e96]:
+        - text: Address
+        - strong [ref=e97]: cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu
+      - generic [ref=e98]:
+        - text: Signing
+        - strong [ref=e99]: Browser WebCrypto
+    - generic [ref=e100]:
+      - button "Refresh API data" [ref=e101] [cursor=pointer]:
+        - generic [ref=e102]: refresh
+        - generic [ref=e103]: Refresh API data
+      - button "Load latest detail" [ref=e104] [cursor=pointer]:
+        - generic [ref=e105]: info
+        - generic [ref=e106]: Load latest detail
+      - button "Sign and broadcast" [ref=e107] [cursor=pointer]:
+        - generic [ref=e108]: send
+        - generic [ref=e109]: Sign and broadcast
+      - button "Export encrypted backup" [ref=e110] [cursor=pointer]:
+        - generic [ref=e111]: download
+        - generic [ref=e112]: Export encrypted backup
+    - generic [ref=e114]:
+      - generic [ref=e115]:
+        - text: WASM
+        - strong [ref=e116]: Browser signing
+      - generic [ref=e117]:
+        - complementary [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]: VE
+            - strong [ref=e121]: VENFT
+            - generic [ref=e122]: menu
+          - navigation "VENFT economy app" [ref=e123]:
+            - button "Home" [ref=e124] [cursor=pointer]:
+              - generic [ref=e125]: home
+              - generic [ref=e126]: Home
+            - button "Gallery" [ref=e127] [cursor=pointer]:
+              - generic [ref=e128]: photo_library
+              - generic [ref=e129]: Gallery
+            - button "New Ticket" [ref=e130] [cursor=pointer]:
+              - generic [ref=e131]: add
+              - generic [ref=e132]: New Ticket
+            - button "New Event" [ref=e133] [cursor=pointer]:
+              - generic [ref=e134]: add
+              - generic [ref=e135]: New Event
+            - button "New Post" [ref=e136] [cursor=pointer]:
+              - generic [ref=e137]: add
+              - generic [ref=e138]: New Post
+            - button "New Music" [ref=e139] [cursor=pointer]:
+              - generic [ref=e140]: add
+              - generic [ref=e141]: New Music
+            - button "New Image" [ref=e142] [cursor=pointer]:
+              - generic [ref=e143]: add
+              - generic [ref=e144]: New Image
+            - button "New Rule" [ref=e145] [cursor=pointer]:
+              - generic [ref=e146]: account_tree
+              - generic [ref=e147]: New Rule
+            - button "Introduction" [ref=e148] [cursor=pointer]:
+              - generic [ref=e149]: help
+              - generic [ref=e150]: Introduction
+          - button "Account" [ref=e151] [cursor=pointer]:
+            - generic [ref=e152]: account_balance_wallet
+            - generic [ref=e153]: Account
+            - generic [ref=e154]: expand_more
+        - main [ref=e155]:
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - heading "VENFT" [level=1] [ref=e158]
+              - paragraph [ref=e159]: Browser API
+            - generic "Breadcrumb" [ref=e160]:
+              - generic [ref=e161]: home
+              - generic [ref=e162]: VENFT
+              - generic [ref=e163]: /
+              - strong [ref=e164]: compose-demo-alice-b8082499ad8e49e588a7ade91533c821
+          - generic [ref=e165]:
+            - generic [ref=e166]:
+              - generic [ref=e167]:
+                - generic [ref=e168]: BO
+                - generic [ref=e169]:
+                  - generic [ref=e170]: live
+                  - heading "Alice demo account" [level=2] [ref=e171]
+                  - paragraph [ref=e172]:
+                    - generic [ref=e173]:
+                      - generic [ref=e174]: cdia1Ngb3m...LPsSu
+                      - button "Copy account address" [ref=e175] [cursor=pointer]:
+                        - generic [ref=e176]: content_copy
+                        - generic [ref=e177]: Copy account address
+              - generic [ref=e179]:
+                - generic [ref=e180]:
+                  - generic [ref=e181]: Main
+                  - strong [ref=e182]: "99990"
+                - generic [ref=e183]:
+                  - generic [ref=e184]: Token types
+                  - strong [ref=e185]: "1"
+                - generic [ref=e186]:
+                  - generic [ref=e187]: BOs
+                  - strong [ref=e188]: "4"
+                - generic [ref=e189]:
+                  - generic [ref=e190]: UTXOs
+                  - strong [ref=e191]: "7"
+                - generic [ref=e192]:
+                  - generic [ref=e193]: Txs
+                  - strong [ref=e194]: "9"
+                - generic [ref=e195]:
+                  - generic [ref=e196]: Node
+                  - strong [ref=e197]: http://localhost:5081/
+              - generic [ref=e198]:
+                - button "Send" [ref=e199]:
+                  - generic [ref=e200]: send
+                  - generic [ref=e201]: Send
+                - button "Token" [ref=e202]:
+                  - generic [ref=e203]: add_circle
+                  - generic [ref=e204]: Token
+                - button "Security" [ref=e205]:
+                  - generic [ref=e206]: security
+                  - generic [ref=e207]: Security
+                - button "Settings" [ref=e208]:
+                  - generic [ref=e209]: tune
+                  - generic [ref=e210]: Settings
+                - button "Refresh" [ref=e211]:
+                  - generic [ref=e212]: refresh
+                  - generic [ref=e213]: Refresh
+                - button "Subaccount" [ref=e214]:
+                  - generic [ref=e215]: add
+                  - generic [ref=e216]: Subaccount
+            - generic [ref=e217]:
+              - generic [ref=e218]:
+                - generic [ref=e219]:
+                  - generic [ref=e220]: Balances
+                  - button "Show QR Code" [ref=e221]:
+                    - generic [ref=e222]: qr_code
+                    - generic [ref=e223]: qr code
+                - table [ref=e226]:
+                  - rowgroup [ref=e227]:
+                    - row "Asset Amount Shape" [ref=e228]:
+                      - columnheader "Asset" [ref=e229]
+                      - columnheader "Amount" [ref=e230]
+                      - columnheader "Shape" [ref=e231]
+                  - rowgroup [ref=e232]:
+                    - row "Main 99990 native" [ref=e233]:
+                      - cell "Main" [ref=e234]
+                      - cell "99990" [ref=e235]
+                      - cell "native" [ref=e236]
+                    - row "bo.posts 99999000 99999000 source / 0 unique" [ref=e237]:
+                      - cell "bo.posts" [ref=e238]
+                      - cell "99999000" [ref=e239]
+                      - cell "99999000 source / 0 unique" [ref=e240]
+              - generic [ref=e241]:
+                - generic [ref=e242]: Token Sources
+                - article [ref=e244]:
+                  - generic [ref=e245]:
+                    - strong [ref=e246]: bo.posts
+                    - generic [ref=e247]:
+                      - generic [ref=e248]: a651f958...451f:1
+                      - button "Copy token source outpoint" [ref=e249] [cursor=pointer]:
+                        - generic [ref=e250]: content_copy
+                        - generic [ref=e251]: Copy token source outpoint
+                  - generic [ref=e253]: Source
+                  - strong [ref=e254]: "99999000"
+              - generic [ref=e255]:
+                - generic [ref=e256]:
+                  - generic [ref=e257]: Recent Transactions
+                  - button "Show All Transactions" [ref=e258]:
+                    - generic [ref=e259]: open_in_full
+                    - generic [ref=e260]: Show All Transactions
+                - generic [ref=e261]:
+                  - article [ref=e262]:
+                    - generic [ref=e263]: north
+                    - generic [ref=e264]:
+                      - strong [ref=e265]:
+                        - generic [ref=e266]:
+                          - generic [ref=e267]: aad87e7e...ae1300
+                          - button "Copy transaction id" [ref=e268] [cursor=pointer]:
+                            - generic [ref=e269]: content_copy
+                            - generic [ref=e270]: Copy transaction id
+                      - generic [ref=e272]:
+                        - generic [ref=e273]: cdia1Ngb3miLzYorvF...H6Kw6LPsSu
+                        - button "Copy transaction route" [ref=e274] [cursor=pointer]:
+                          - generic [ref=e275]: content_copy
+                          - generic [ref=e276]: Copy transaction route
+                      - generic [ref=e278]: Transfer / Confirmed / 09:39
+                    - button "Open transaction details" [ref=e279]:
+                      - generic [ref=e280]: info
+                      - generic [ref=e281]: info
+                  - article [ref=e282]:
+                    - generic [ref=e283]: north
+                    - generic [ref=e284]:
+                      - strong [ref=e285]:
+                        - generic [ref=e286]:
+                          - generic [ref=e287]: da5e9af2...f1fcef
+                          - button "Copy transaction id" [ref=e288] [cursor=pointer]:
+                            - generic [ref=e289]: content_copy
+                            - generic [ref=e290]: Copy transaction id
+                      - generic [ref=e292]:
+                        - generic [ref=e293]: cdia1Ngb3miLzYorvF...H6Kw6LPsSu
+                        - button "Copy transaction route" [ref=e294] [cursor=pointer]:
+                          - generic [ref=e295]: content_copy
+                          - generic [ref=e296]: Copy transaction route
+                      - generic [ref=e298]: BusinessObject / Confirmed / 09:39
+                    - button "Open transaction details" [ref=e299]:
+                      - generic [ref=e300]: info
+                      - generic [ref=e301]: info
+                  - article [ref=e302]:
+                    - generic [ref=e303]: north
+                    - generic [ref=e304]:
+                      - strong [ref=e305]:
+                        - generic [ref=e306]:
+                          - generic [ref=e307]: ceb6e117...356b13
+                          - button "Copy transaction id" [ref=e308] [cursor=pointer]:
+                            - generic [ref=e309]: content_copy
+                            - generic [ref=e310]: Copy transaction id
+                      - generic [ref=e312]:
+                        - generic [ref=e313]: cdia1Ngb3miLzYorvF...H6Kw6LPsSu
+                        - button "Copy transaction route" [ref=e314] [cursor=pointer]:
+                          - generic [ref=e315]: content_copy
+                          - generic [ref=e316]: Copy transaction route
+                      - generic [ref=e318]: Transfer / Confirmed / 09:39
+                    - button "Open transaction details" [ref=e319]:
+                      - generic [ref=e320]: info
+                      - generic [ref=e321]: info
+                  - article [ref=e322]:
+                    - generic [ref=e323]: north
+                    - generic [ref=e324]:
+                      - strong [ref=e325]:
+                        - generic [ref=e326]:
+                          - generic [ref=e327]: 5953a60a...5a4b2a
+                          - button "Copy transaction id" [ref=e328] [cursor=pointer]:
+                            - generic [ref=e329]: content_copy
+                            - generic [ref=e330]: Copy transaction id
+                      - generic [ref=e332]:
+                        - generic [ref=e333]: cdia1Ngb3miLzYorvF...H6Kw6LPsSu
+                        - button "Copy transaction route" [ref=e334] [cursor=pointer]:
+                          - generic [ref=e335]: content_copy
+                          - generic [ref=e336]: Copy transaction route
+                      - generic [ref=e338]: BusinessObject / Confirmed / 23:02
+                    - button "Open transaction details" [ref=e339]:
+                      - generic [ref=e340]: info
+                      - generic [ref=e341]: info
+                  - article [ref=e342]:
+                    - generic [ref=e343]: north
+                    - generic [ref=e344]:
+                      - strong [ref=e345]:
+                        - generic [ref=e346]:
+                          - generic [ref=e347]: 4b2b90f3...11ff7a
+                          - button "Copy transaction id" [ref=e348] [cursor=pointer]:
+                            - generic [ref=e349]: content_copy
+                            - generic [ref=e350]: Copy transaction id
+                      - generic [ref=e352]:
+                        - generic [ref=e353]: cdia1Ngb3miLzYorvF...H6Kw6LPsSu
+                        - button "Copy transaction route" [ref=e354] [cursor=pointer]:
+                          - generic [ref=e355]: content_copy
+                          - generic [ref=e356]: Copy transaction route
+                      - generic [ref=e358]: BusinessObject / Confirmed / 22:33
+                    - button "Open transaction details" [ref=e359]:
+                      - generic [ref=e360]: info
+                      - generic [ref=e361]: info
+            - generic [ref=e362]:
+              - generic [ref=e363]:
+                - generic [ref=e364]:
+                  - heading "Account balance trend" [level=3] [ref=e365]
+                  - paragraph [ref=e366]: Generic account-level balance projection from ledger activity.
+                - generic [ref=e1254]:
+                  - img [ref=e1255]:
+                    - generic [ref=e1257]:
+                      - generic [ref=e1258]:
+                        - generic "100000.00 main" [ref=e1259]
+                        - generic "99000.00 main" [ref=e1260]
+                        - generic "98000.00 main" [ref=e1261]
+                        - generic "97000.00 main" [ref=e1262]
+                        - generic "96000.00 main" [ref=e1263]
+                        - generic "95000.00 main" [ref=e1264]
+                      - generic [ref=e1266]: Value (main)
+                    - generic [ref=e1279]:
+                      - generic "06.27" [ref=e1280]
+                      - generic "06.28" [ref=e1281]
+                      - generic "06.29" [ref=e1282]
+                      - generic "06.30" [ref=e1283]
+                  - generic: �%
+              - generic [ref=e398]:
+                - generic [ref=e399]:
+                  - heading "Token allocation" [level=3] [ref=e400]
+                  - paragraph [ref=e401]: Available token balances by asset label.
+                - generic [ref=e1284]:
+                  - img [ref=e1285]:
+                    - generic [ref=e1291]:
+                      - generic:
+                        - generic: 99.9%
+                  - generic [ref=e1296]:
+                    - generic [ref=e1297] [cursor=pointer]:
+                      - generic [ref=e1298]:
+                        - img
+                      - generic [ref=e1299]: Main
+                    - generic [ref=e1300] [cursor=pointer]:
+                      - generic [ref=e1301]:
+                        - img
+                      - generic [ref=e1302]: bo.posts
+                  - generic: �% �%
+              - generic [ref=e422]:
+                - generic [ref=e423]:
+                  - heading "Transaction kinds" [level=3] [ref=e424]
+                  - paragraph [ref=e425]: Kind mix across account history.
+                - generic [ref=e1303]:
+                  - img [ref=e1304]:
+                    - generic [ref=e1307]:
+                      - generic "10.00" [ref=e1308]
+                      - generic "8.00" [ref=e1309]
+                      - generic "6.00" [ref=e1310]
+                      - generic "4.00" [ref=e1311]
+                      - generic "2.00" [ref=e1312]
+                      - generic "0.00" [ref=e1313]
+                    - generic "Current" [ref=e1330]
+                  - generic [ref=e1331]:
+                    - generic [ref=e1332] [cursor=pointer]:
+                      - generic [ref=e1333]:
+                        - img
+                      - generic [ref=e1334]: Transfer
+                    - generic [ref=e1335] [cursor=pointer]:
+                      - generic [ref=e1336]:
+                        - img
+                      - generic [ref=e1337]: BusinessObject
+                  - generic: �% �%
+            - generic [ref=e460]:
+              - generic [ref=e461]:
+                - generic [ref=e462]: Address
+                - strong [ref=e463]:
+                  - generic [ref=e464]:
+                    - generic [ref=e465]: cdia1Ngb3miL...Kw6LPsSu
+                    - button "Copy account address" [ref=e466] [cursor=pointer]:
+                      - generic [ref=e467]: content_copy
+                      - generic [ref=e468]: Copy account address
+              - generic [ref=e470]:
+                - generic [ref=e471]: Ledger
+                - strong [ref=e472]:
+                  - generic [ref=e473]:
+                    - generic [ref=e474]: default
+                    - button "Copy ledger id" [ref=e475] [cursor=pointer]:
+                      - generic [ref=e476]: content_copy
+                      - generic [ref=e477]: Copy ledger id
+              - generic [ref=e479]:
+                - generic [ref=e480]: Scenario
+                - strong [ref=e481]:
+                  - generic [ref=e482]:
+                    - generic [ref=e483]: live
+                    - button "Copy scenario id" [ref=e484] [cursor=pointer]:
+                      - generic [ref=e485]: content_copy
+                      - generic [ref=e486]: Copy scenario id
+              - generic [ref=e488]:
+                - button "Backup" [ref=e489]:
+                  - generic [ref=e490]: download
+                  - generic [ref=e491]: Backup
+                - button "Edit" [ref=e492]:
+                  - generic [ref=e493]: edit
+                  - generic [ref=e494]: Edit
+```
+

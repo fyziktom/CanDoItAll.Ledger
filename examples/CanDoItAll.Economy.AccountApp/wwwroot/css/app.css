@@ -52,6 +52,13 @@ h1:focus {
     padding: 20px;
 }
 
+.account-app--unlocked {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 12px;
+}
+
 .account-app__topbar,
 .account-app__status,
 .account-app__account-bar,

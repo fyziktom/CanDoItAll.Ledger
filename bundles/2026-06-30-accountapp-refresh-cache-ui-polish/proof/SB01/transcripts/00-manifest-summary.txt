@@ -1,0 +1,11 @@
+Command: bundle manifest proof summary for SB01 refresh/cache
+ExitCode: 0
+
+SB01-REFRESH-CACHE-001
+
+Passing evidence:
+- Focused adapter tests passed for refresh skip, refresh reload, and transaction detail caching.
+- Node API contract build passed.
+
+Anti-stub audit:
+- No TODO, NotImplemented, fixture-specific, or stub markers were found in changed implementation/test files.

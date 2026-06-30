@@ -1,0 +1,12 @@
+﻿Docker compose status after AccountApp image rebuild and restart
+NAME                                                   IMAGE                                COMMAND                  SERVICE            CREATED              STATUS                 PORTS
+candoitall-ledger-accountapp-demo-accountapp-alice-1   candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-alice   About a minute ago   Up About a minute      0.0.0.0:5081->80/tcp, [::]:5081->80/tcp
+candoitall-ledger-accountapp-demo-accountapp-bob-1     candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-bob     About a minute ago   Up About a minute      0.0.0.0:5082->80/tcp, [::]:5082->80/tcp
+candoitall-ledger-accountapp-demo-accountapp-lab-1     candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-lab     About a minute ago   Up About a minute      0.0.0.0:5083->80/tcp, [::]:5083->80/tcp
+candoitall-ledger-accountapp-demo-economy-node-1       candoitall-ledger-economy-node:dev   "dotnet CanDoItAll.E…"   economy-node       12 hours ago         Up 2 hours             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+candoitall-ledger-accountapp-demo-postgres-1           postgres:16-alpine                   "docker-entrypoint.s…"   postgres           13 hours ago         Up 2 hours (healthy)   0.0.0.0:54329->5432/tcp, [::]:54329->5432/tcp
+ALICE_HTTP=200
+BOB_HTTP=200
+LAB_HTTP=200
+API_READINESS_HTTP=200
+NODE_UI_HTTP=200

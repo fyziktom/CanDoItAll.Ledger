@@ -19,6 +19,7 @@ builder.Services.AddCanDoItAllBrowserCrypto();
 builder.Services.AddEconomySdkWithBrowserNodeDriver(
     accountAppOptions.NodeBaseUri,
     options => options.ApiBasePath = accountAppOptions.ApiBasePath);
+builder.Services.AddScoped<IAccountWorkspaceCache, BrowserLocalStorageAccountWorkspaceCache>();
 builder.Services.AddScoped(_ => new WasmAccountWorkspaceOptions
 {
     LedgerId = accountAppOptions.LedgerId,

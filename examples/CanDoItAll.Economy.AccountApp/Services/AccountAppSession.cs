@@ -242,8 +242,8 @@ public sealed class AccountAppSession(
                 .ConfigureAwait(false);
             Workspace = await workspaceAdapter.GetWorkspaceAsync(cancellationToken).ConfigureAwait(false);
             StatusMessage = LastTransactionResult.Accepted
-                ? "Signed payment smoke transaction was broadcast to the node API."
-                : "Signed payment smoke transaction was rejected by the node API.";
+                ? "Signed payment smoke transaction completed."
+                : "Signed payment smoke transaction was rejected.";
         }).ConfigureAwait(false);
 
     public void ApplyWorkspace(BusinessObjectWorkspaceModel workspace)
@@ -254,7 +254,6 @@ public sealed class AccountAppSession(
     public void ApplyTransactionResult(EconomyTransactionExecutionResult result)
     {
         LastTransactionResult = result;
-        StatusMessage = result.Message;
     }
 
     private async Task ActivateAsync(AccountVaultUnlockedKey unlocked, CancellationToken cancellationToken)

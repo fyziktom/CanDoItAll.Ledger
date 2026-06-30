@@ -17,6 +17,10 @@ public interface IEconomyAccountWorkspaceAdapter
 
     Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default);
 
+    Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+        int maxTransactions = 10,
+        CancellationToken cancellationToken = default);
+
     Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default);
 
     Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
@@ -80,6 +84,7 @@ public sealed class WasmAccountWorkspaceAdapter(
     BusinessObjectTransactionBuilder transactionBuilder,
     IAccountTransactionSigner transactionSigner,
     IEconomyCryptoDriver cryptoDriver,
+    IAccountWorkspaceCache workspaceCache,
     IBusinessObjectCastRegistry castRegistry,
     ITimeProvider timeProvider,
     WasmAccountWorkspaceOptions? options = null) : IEconomyAccountWorkspaceAdapter
@@ -185,10 +190,59 @@ public sealed class WasmAccountWorkspaceAdapter(
         TxId txId,
         CancellationToken cancellationToken = default)
     {
+        AccountWorkspaceCacheKey cacheKey = TransactionDetailsCacheKey(txId);
+        EconomyTransactionDetailsModel? cached = await workspaceCache
+            .GetJsonAsync<EconomyTransactionDetailsModel>(cacheKey, cancellationToken)
+            .ConfigureAwait(false);
+        if (cached is not null)
+        {
+            return cached;
+        }
+
         LedgerTransactionSummary? summary = await ledgerReadClient
             .GetTransactionAsync(Context, txId, includeData: true, cancellationToken)
             .ConfigureAwait(false);
-        return summary is null ? null : ToDetails(summary);
+        EconomyTransactionDetailsModel? details = summary is null ? null : ToDetails(summary);
+        if (details is not null)
+        {
+            await workspaceCache.SetJsonAsync(cacheKey, details, cancellationToken).ConfigureAwait(false);
+        }
+
+        return details;
+    }
+
+    public async Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+        int maxTransactions = 10,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectAccount account = CreateAccount();
+        IReadOnlyList<LedgerTransactionSummary> transactions;
+        try
+        {
+            transactions = await ledgerReadClient
+                .QueryTransactionsAsync(
+                    new LedgerTransactionQuery(
+                        Context,
+                        Address: account.Address,
+                        IncludeData: false,
+                        Skip: 0,
+                        Take: Math.Clamp(maxTransactions, 1, 100)),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (NotSupportedException)
+        {
+            transactions = await account
+                .GetTransactionsAsync(maxTransactions, includeData: false, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return AccountWorkspaceRefreshSnapshot.Create(
+            Context,
+            account.Address,
+            transactions,
+            maxTransactions,
+            timeProvider.UtcNow);
     }
 
     public async Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
@@ -643,6 +697,12 @@ public sealed class WasmAccountWorkspaceAdapter(
     private static string ShortHash(string value)
         => value.Length > 12 ? $"{value[..12]}..." : value;
 
+    private AccountWorkspaceCacheKey TransactionDetailsCacheKey(TxId txId)
+        => new(
+            "transaction-details",
+            $"{Context.LedgerId.Value}|{Context.ScenarioId?.Value ?? "live"}",
+            txId.Value);
+
     private static string LabelFor(BusinessObjectTransactionMode mode)
         => mode switch
         {
@@ -671,7 +731,9 @@ public sealed class WasmAccountWorkspaceAdapter(
         => amount.Value > 0m ? amount : Amount.FromInt64(fallback);
 }
 
-public sealed class DevelopmentEconomyWorkspaceAdapter(EconomyDevelopmentWorkspaceSession session) : IEconomyAccountWorkspaceAdapter
+public sealed class DevelopmentEconomyWorkspaceAdapter(
+    EconomyDevelopmentWorkspaceSession session,
+    IAccountWorkspaceCache workspaceCache) : IEconomyAccountWorkspaceAdapter
 {
     public string HostMode => "SSR";
 
@@ -680,8 +742,36 @@ public sealed class DevelopmentEconomyWorkspaceAdapter(EconomyDevelopmentWorkspa
     public Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default)
         => session.GetWorkspaceAsync(cancellationToken);
 
-    public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
-        => session.GetTransactionDetailsAsync(txId, cancellationToken);
+    public async Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+        int maxTransactions = 10,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectWorkspaceModel workspace = await session.GetWorkspaceAsync(cancellationToken).ConfigureAwait(false);
+        return AccountWorkspaceRefreshSnapshot.Create(workspace, maxTransactions, workspace.ViewedAtUtc);
+    }
+
+    public async Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(
+        TxId txId,
+        CancellationToken cancellationToken = default)
+    {
+        AccountWorkspaceCacheKey cacheKey = new("transaction-details", "development", txId.Value);
+        EconomyTransactionDetailsModel? cached = await workspaceCache
+            .GetJsonAsync<EconomyTransactionDetailsModel>(cacheKey, cancellationToken)
+            .ConfigureAwait(false);
+        if (cached is not null)
+        {
+            return cached;
+        }
+
+        EconomyTransactionDetailsModel? details = await session.GetTransactionDetailsAsync(txId, cancellationToken)
+            .ConfigureAwait(false);
+        if (details is not null)
+        {
+            await workspaceCache.SetJsonAsync(cacheKey, details, cancellationToken).ConfigureAwait(false);
+        }
+
+        return details;
+    }
 
     public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
         BusinessObjectTransactionDraft draft,
@@ -747,6 +837,7 @@ public sealed class DevelopmentEconomyWorkspaceAdapter(EconomyDevelopmentWorkspa
 
 public sealed class NodeEconomyWorkspaceAdapter(
     EconomyNodeWorkspaceSession session,
+    IAccountWorkspaceCache workspaceCache,
     NodeAccountWorkspaceAdapterOptions? options = null) : IEconomyAccountWorkspaceAdapter
 {
     private readonly NodeAccountWorkspaceAdapterOptions options = options ?? new();
@@ -758,8 +849,37 @@ public sealed class NodeEconomyWorkspaceAdapter(
     public Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default)
         => session.GetWorkspaceAsync(options.AccountName, cancellationToken);
 
-    public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
-        => session.GetTransactionDetailsAsync(txId, cancellationToken);
+    public async Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+        int maxTransactions = 10,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectWorkspaceModel workspace = await session.GetWorkspaceAsync(options.AccountName, cancellationToken)
+            .ConfigureAwait(false);
+        return AccountWorkspaceRefreshSnapshot.Create(workspace, maxTransactions, workspace.ViewedAtUtc);
+    }
+
+    public async Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(
+        TxId txId,
+        CancellationToken cancellationToken = default)
+    {
+        AccountWorkspaceCacheKey cacheKey = new("transaction-details", $"node|{options.AccountName}", txId.Value);
+        EconomyTransactionDetailsModel? cached = await workspaceCache
+            .GetJsonAsync<EconomyTransactionDetailsModel>(cacheKey, cancellationToken)
+            .ConfigureAwait(false);
+        if (cached is not null)
+        {
+            return cached;
+        }
+
+        EconomyTransactionDetailsModel? details = await session.GetTransactionDetailsAsync(txId, cancellationToken)
+            .ConfigureAwait(false);
+        if (details is not null)
+        {
+            await workspaceCache.SetJsonAsync(cacheKey, details, cancellationToken).ConfigureAwait(false);
+        }
+
+        return details;
+    }
 
     public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
         BusinessObjectTransactionDraft draft,
@@ -817,6 +937,7 @@ public static class EconomyAccountWorkspaceAdapterServiceCollectionExtensions
         services.TryAddScoped<ITimeProvider, ComponentSystemClock>();
         services.AddBusinessObjectBrowserAccountSigning();
         services.AddBusinessObjectCasting();
+        services.TryAddScoped<IAccountWorkspaceCache, InMemoryAccountWorkspaceCache>();
         services.TryAddScoped<BusinessObjectTransactionBuilder>();
         services.TryAddScoped<WasmAccountWorkspaceAdapter>();
         services.TryAddScoped<IEconomyAccountWorkspaceAdapter>(provider => provider.GetRequiredService<WasmAccountWorkspaceAdapter>());
@@ -825,6 +946,7 @@ public static class EconomyAccountWorkspaceAdapterServiceCollectionExtensions
 
     public static IServiceCollection AddEconomySsrAccountWorkspaceAdapters(this IServiceCollection services)
     {
+        services.TryAddScoped<IAccountWorkspaceCache, InMemoryAccountWorkspaceCache>();
         services.TryAddScoped<DevelopmentEconomyWorkspaceAdapter>();
         services.TryAddScoped<NodeEconomyWorkspaceAdapter>();
         return services;
