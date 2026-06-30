@@ -85,6 +85,8 @@ output
 
 docker/devcerts/*
 !docker/devcerts/.gitkeep
+docker/data/*
+!docker/data/.gitkeep
 docker/demo-keys/*
 !docker/demo-keys/.gitkeep
 

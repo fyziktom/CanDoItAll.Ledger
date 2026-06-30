@@ -171,7 +171,7 @@ public sealed class BusinessObjectRecordConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.ObjectId).HasMaxLength(128).IsRequired();
         builder.Property(x => x.ObjectType).HasMaxLength(128).IsRequired();
         builder.Property(x => x.CurrentOwnerAddress).HasMaxLength(256).IsRequired();
-        builder.Property(x => x.CurrentState).HasMaxLength(128).IsRequired();
+        builder.Property(x => x.CurrentState).IsRequired();
         builder.Property(x => x.CurrentHash).HasMaxLength(128).IsRequired();
         builder.HasIndex(x => new { x.LedgerId, x.ScenarioId, x.ObjectId }).IsUnique();
         builder.HasIndex(x => new { x.LedgerId, x.ScenarioId, x.CurrentOwnerAddress });
@@ -189,7 +189,7 @@ public sealed class BusinessObjectVersionRecordConfiguration : IEntityTypeConfig
         builder.Property(x => x.ObjectId).HasMaxLength(128).IsRequired();
         builder.Property(x => x.TxId).HasMaxLength(128).IsRequired();
         builder.Property(x => x.OwnerAddress).HasMaxLength(256).IsRequired();
-        builder.Property(x => x.State).HasMaxLength(128).IsRequired();
+        builder.Property(x => x.State).IsRequired();
         builder.Property(x => x.SchemaVersion).HasMaxLength(64).IsRequired();
         builder.Property(x => x.DataHash).HasMaxLength(128).IsRequired();
         builder.HasIndex(x => new { x.LedgerId, x.ScenarioId, x.ObjectId, x.Version }).IsUnique();

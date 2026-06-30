@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Components.Models;
 using CanDoItAll.Economy.Core;
@@ -19,6 +21,38 @@ public interface IEconomyAccountWorkspaceAdapter
 
     Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
         BusinessObjectTransactionDraft draft,
+        CancellationToken cancellationToken = default);
+
+    Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+        BusinessObjectSendRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+        BusinessObjectPriceRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EconomyTransactionExecutionResult> CreateTokenAsync(
+        EconomyTokenCreationRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
+        EconomyRuleTokenCreationRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<MessageSecurityActionResult> SignMessageAsync(
+        MessageSecuritySignRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<MessageSecurityActionResult> VerifyMessageAsync(
+        MessageSecurityVerifyRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<MessageSecurityActionResult> EncryptMessageAsync(
+        MessageSecurityEncryptRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<MessageSecurityActionResult> DecryptMessageAsync(
+        MessageSecurityDecryptRequest request,
         CancellationToken cancellationToken = default);
 }
 
@@ -45,10 +79,16 @@ public sealed class WasmAccountWorkspaceAdapter(
     ILedgerReadClient ledgerReadClient,
     BusinessObjectTransactionBuilder transactionBuilder,
     IAccountTransactionSigner transactionSigner,
+    IEconomyCryptoDriver cryptoDriver,
     IBusinessObjectCastRegistry castRegistry,
     ITimeProvider timeProvider,
     WasmAccountWorkspaceOptions? options = null) : IEconomyAccountWorkspaceAdapter
 {
+    private static readonly JsonSerializerOptions MessageJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = true
+    };
+
     private readonly WasmAccountWorkspaceOptions options = options ?? new();
     private IAccountKeySource? keySource;
     private string? accountNameOverride;
@@ -157,17 +197,200 @@ public sealed class WasmAccountWorkspaceAdapter(
     {
         BusinessObjectAccount account = CreateAccount();
         LedgerTransaction unsigned = await BuildUnsignedTransactionAsync(account, draft, cancellationToken).ConfigureAwait(false);
-        LedgerTransaction signed = await transactionSigner.SignAsync(unsigned, RequiredKeySource, cancellationToken).ConfigureAwait(false);
-        LedgerSubmitResult result = await ledgerGateway.SubmitTransactionAsync(signed, cancellationToken).ConfigureAwait(false);
+        return await SignAndSubmitAsync(draft.SelectedMode, unsigned, LabelFor(draft.SelectedMode), cancellationToken).ConfigureAwait(false);
+    }
 
-        return new EconomyTransactionExecutionResult(
-            draft.SelectedMode,
-            result.Accepted,
-            result.TxId,
-            result.LedgerSequence,
-            result.Accepted
-                ? $"{LabelFor(draft.SelectedMode)} accepted at ledger sequence {result.LedgerSequence}."
-                : string.Join("; ", result.Errors.Select(error => $"{error.Code}: {error.Message}")));
+    public async Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+        BusinessObjectSendRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectAccount account = CreateAccount();
+        LedgerTransaction unsigned = request.Mode == BusinessObjectSendMode.Clone
+            ? await account.BuildUnsignedCloneBusinessObjectTransactionAsync(
+                new CloneBusinessObjectRequest(
+                    request.ObjectId,
+                    UniqueObjectId(request.ObjectId),
+                    SafeText(request.ObjectType, "business-object"),
+                    SafeJson(request.StateJson),
+                    SafeText(request.SchemaVersion, "1.0"),
+                    request.ReceiverAddress),
+                cancellationToken).ConfigureAwait(false)
+            : await account.BuildUnsignedTransferBusinessObjectTransactionAsync(
+                new TransferBusinessObjectRequest(
+                    request.ObjectId,
+                    request.ReceiverAddress,
+                    null,
+                    SafeJson(request.StateJson),
+                    SafeNullable(request.ExternalRef)),
+                cancellationToken).ConfigureAwait(false);
+
+        BusinessObjectTransactionMode mode = request.Mode == BusinessObjectSendMode.Clone
+            ? BusinessObjectTransactionMode.CloneObject
+            : BusinessObjectTransactionMode.TransferObject;
+        return await SignAndSubmitAsync(
+            mode,
+            unsigned,
+            request.Mode == BusinessObjectSendMode.Clone ? "BO clone send" : "BO send",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+        BusinessObjectPriceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectAccount account = CreateAccount();
+        Amount priceAmount = PositiveOrDefault(request.PriceAmount, 1);
+        LedgerTransaction unsigned = await account.BuildUnsignedSetBusinessObjectPriceTransactionAsync(
+            new SetBusinessObjectPriceRequest(
+                request.ObjectId,
+                priceAmount,
+                request.TokenId,
+                MergePriceJson(request.StateJson, priceAmount, request.TokenId),
+                SafeNullable(request.ExternalRef)),
+            cancellationToken).ConfigureAwait(false);
+
+        return await SignAndSubmitAsync(BusinessObjectTransactionMode.UpdateObject, unsigned, "BO price update", cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<EconomyTransactionExecutionResult> CreateTokenAsync(
+        EconomyTokenCreationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectAccount account = CreateAccount();
+        string tokenNamespace = PermissionTokenAuthority.NormalizeNamespace(request.TokenNamespace);
+        string tokenName = NormalizeTokenSegment(request.TokenName, "asset");
+        var tokenId = new TokenId($"{tokenNamespace}.{tokenName}");
+        LedgerTransaction unsigned = await account.BuildUnsignedTokenMintTransactionAsync(
+            new TokenMintRequest(tokenId, PositiveOrDefault(request.Amount, 1)),
+            cancellationToken).ConfigureAwait(false);
+
+        return await SignAndSubmitAsync(BusinessObjectTransactionMode.Create, unsigned, $"Token {tokenId.Value}", cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
+        EconomyRuleTokenCreationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectAccount account = CreateAccount();
+        AccountRuleDefinition rule = RuleTokenAuthority.Normalize(request.Rule);
+        LedgerTransaction unsigned = await account.BuildUnsignedCreateRuleTokenTransactionAsync(
+            new RuleTokenCreateRequest(rule, PermissionSourceOutPoint: request.PermissionSourceOutPoint),
+            cancellationToken).ConfigureAwait(false);
+
+        return await SignAndSubmitAsync(BusinessObjectTransactionMode.CreateRuleToken, unsigned, $"Rule {rule.RuleId}", cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<MessageSecurityActionResult> SignMessageAsync(
+        MessageSecuritySignRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Message))
+        {
+            return MessageSecurityActionResult.Fail("Message cannot be empty.");
+        }
+
+        try
+        {
+            IAccountKeySource source = RequiredKeySource;
+            HashHex payloadHash = await CreateMessagePayloadHashAsync(request.Message, cancellationToken).ConfigureAwait(false);
+            ReadOnlyMemory<byte> privateKey = await source.GetPrivateKeyMaterialAsync(cancellationToken).ConfigureAwait(false);
+            byte[] signatureBytes = await cryptoDriver
+                .SignEcdsaP256Sha256Async(Encoding.UTF8.GetBytes(payloadHash.Value), privateKey, cancellationToken)
+                .ConfigureAwait(false);
+            var signature = new EconomyMessageSignature(
+                source.Algorithm,
+                source.KeyId,
+                source.Address,
+                source.PublicKeyHash,
+                payloadHash,
+                signatureBytes,
+                source.PublicKeyMaterial.ToArray());
+
+            return MessageSecurityActionResult.Ok(
+                $"Signed by {signature.SignerAddress.Value}. Payload hash {ShortHash(signature.PayloadHash.Value)}.",
+                JsonSerializer.Serialize(signature, MessageJsonOptions));
+        }
+        catch (Exception exception)
+        {
+            return MessageSecurityActionResult.Fail(exception.Message);
+        }
+    }
+
+    public async Task<MessageSecurityActionResult> VerifyMessageAsync(
+        MessageSecurityVerifyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Message))
+        {
+            return MessageSecurityActionResult.Fail("Verification message cannot be empty.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.SignatureJson))
+        {
+            return MessageSecurityActionResult.Fail("Signature JSON is required.");
+        }
+
+        try
+        {
+            EconomyMessageSignature? signature = JsonSerializer.Deserialize<EconomyMessageSignature>(
+                request.SignatureJson,
+                MessageJsonOptions);
+            if (signature is null)
+            {
+                return MessageSecurityActionResult.Fail("Signature JSON could not be parsed.");
+            }
+
+            if (!signature.SignerAddress.MatchesPublicKey(signature.PublicKeyMaterial)
+                || Address.CalculatePublicKeyHash(signature.PublicKeyMaterial) != signature.PublicKeyHash)
+            {
+                return MessageSecurityActionResult.Fail("Signature public key does not match its signer address.");
+            }
+
+            HashHex payloadHash = await CreateMessagePayloadHashAsync(request.Message, cancellationToken).ConfigureAwait(false);
+            if (signature.PayloadHash != payloadHash)
+            {
+                return MessageSecurityActionResult.Fail("Signature is not valid for this message or public key.");
+            }
+
+            bool valid = await cryptoDriver
+                .VerifyEcdsaP256Sha256Async(
+                    Encoding.UTF8.GetBytes(payloadHash.Value),
+                    signature.SignatureBytes,
+                    signature.PublicKeyMaterial,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            return valid
+                ? MessageSecurityActionResult.Ok($"Signature is valid for {signature.SignerAddress.Value}.")
+                : MessageSecurityActionResult.Fail("Signature is not valid for this message or public key.");
+        }
+        catch (Exception exception)
+        {
+            return MessageSecurityActionResult.Fail(exception.Message);
+        }
+    }
+
+    public Task<MessageSecurityActionResult> EncryptMessageAsync(
+        MessageSecurityEncryptRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = request;
+        _ = cancellationToken;
+        return Task.FromResult(MessageSecurityActionResult.Fail(
+            "Browser-only account encryption needs receiver public-key discovery before it can encrypt messages."));
+    }
+
+    public Task<MessageSecurityActionResult> DecryptMessageAsync(
+        MessageSecurityDecryptRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = request;
+        _ = cancellationToken;
+        return Task.FromResult(MessageSecurityActionResult.Fail(
+            "Browser-only account encryption is not available until ECDH is implemented through the browser crypto bridge."));
     }
 
     private LedgerAccountContext Context
@@ -352,6 +575,74 @@ public sealed class WasmAccountWorkspaceAdapter(
                     output.MetadataHash))
                 .ToArray());
 
+    private async Task<EconomyTransactionExecutionResult> SignAndSubmitAsync(
+        BusinessObjectTransactionMode mode,
+        LedgerTransaction unsigned,
+        string label,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction signed = await transactionSigner.SignAsync(unsigned, RequiredKeySource, cancellationToken).ConfigureAwait(false);
+        LedgerSubmitResult result = await ledgerGateway.SubmitTransactionAsync(signed, cancellationToken).ConfigureAwait(false);
+        return ToExecutionResult(mode, result, label);
+    }
+
+    private static EconomyTransactionExecutionResult ToExecutionResult(
+        BusinessObjectTransactionMode mode,
+        LedgerSubmitResult result,
+        string label)
+        => new(
+            mode,
+            result.Accepted,
+            result.TxId,
+            result.LedgerSequence,
+            result.Accepted
+                ? $"{label} accepted at ledger sequence {result.LedgerSequence}."
+                : string.Join("; ", result.Errors.Select(error => $"{error.Code}: {error.Message}")));
+
+    private async ValueTask<HashHex> CreateMessagePayloadHashAsync(
+        string message,
+        CancellationToken cancellationToken)
+    {
+        byte[] hash = await cryptoDriver
+            .Sha256Async(Encoding.UTF8.GetBytes(message), cancellationToken)
+            .ConfigureAwait(false);
+        return new HashHex(Convert.ToHexString(hash).ToLowerInvariant());
+    }
+
+    private static BusinessObjectId UniqueObjectId(BusinessObjectId objectId)
+        => new($"{objectId.Value}:{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}");
+
+    private static string NormalizeTokenSegment(string value, string fallback)
+    {
+        string candidate = string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+        var builder = new StringBuilder(candidate.Length);
+        foreach (char character in candidate)
+        {
+            builder.Append(char.IsLetterOrDigit(character) || character is '_' or '-'
+                ? char.ToLowerInvariant(character)
+                : '-');
+        }
+
+        string normalized = builder.ToString().Trim('-');
+        return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
+    }
+
+    private static string MergePriceJson(string stateJson, Amount priceAmount, TokenId? tokenId)
+        => JsonSerializer.Serialize(new
+        {
+            previous = SafeJson(stateJson),
+            price = new
+            {
+                amount = priceAmount.Value,
+                tokenId = tokenId?.Value,
+                asset = tokenId?.Value ?? "MAIN",
+                pricedAtUtc = DateTimeOffset.UtcNow
+            }
+        });
+
+    private static string ShortHash(string value)
+        => value.Length > 12 ? $"{value[..12]}..." : value;
+
     private static string LabelFor(BusinessObjectTransactionMode mode)
         => mode switch
         {
@@ -363,6 +654,7 @@ public sealed class WasmAccountWorkspaceAdapter(
             BusinessObjectTransactionMode.CloneObject => "BusinessObject clone",
             BusinessObjectTransactionMode.MergeObjects => "BusinessObject merge",
             BusinessObjectTransactionMode.SplitBusinessObjectPayment => "BusinessObject split payment",
+            BusinessObjectTransactionMode.CreateRuleToken => "Rule BO create",
             _ => "Transaction"
         };
 
@@ -395,6 +687,62 @@ public sealed class DevelopmentEconomyWorkspaceAdapter(EconomyDevelopmentWorkspa
         BusinessObjectTransactionDraft draft,
         CancellationToken cancellationToken = default)
         => session.SubmitTransactionAsync(draft, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+        BusinessObjectSendRequest request,
+        CancellationToken cancellationToken = default)
+        => session.SendBusinessObjectAsync(request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+        BusinessObjectPriceRequest request,
+        CancellationToken cancellationToken = default)
+        => session.SetBusinessObjectPriceAsync(request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
+        EconomyTokenCreationRequest request,
+        CancellationToken cancellationToken = default)
+        => session.CreateTokenAsync(request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
+        EconomyRuleTokenCreationRequest request,
+        CancellationToken cancellationToken = default)
+        => session.CreateRuleTokenAsync(request, cancellationToken);
+
+    public Task<MessageSecurityActionResult> SignMessageAsync(
+        MessageSecuritySignRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = request;
+        _ = cancellationToken;
+        return Task.FromResult(MessageSecurityActionResult.Fail("The development adapter does not expose message signing."));
+    }
+
+    public Task<MessageSecurityActionResult> VerifyMessageAsync(
+        MessageSecurityVerifyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = request;
+        _ = cancellationToken;
+        return Task.FromResult(MessageSecurityActionResult.Fail("The development adapter does not expose message verification."));
+    }
+
+    public Task<MessageSecurityActionResult> EncryptMessageAsync(
+        MessageSecurityEncryptRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = request;
+        _ = cancellationToken;
+        return Task.FromResult(MessageSecurityActionResult.Fail("The development adapter does not expose message encryption."));
+    }
+
+    public Task<MessageSecurityActionResult> DecryptMessageAsync(
+        MessageSecurityDecryptRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = request;
+        _ = cancellationToken;
+        return Task.FromResult(MessageSecurityActionResult.Fail("The development adapter does not expose message decryption."));
+    }
 }
 
 public sealed class NodeEconomyWorkspaceAdapter(
@@ -417,6 +765,46 @@ public sealed class NodeEconomyWorkspaceAdapter(
         BusinessObjectTransactionDraft draft,
         CancellationToken cancellationToken = default)
         => session.SubmitTransactionAsync(options.AccountName, draft, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+        BusinessObjectSendRequest request,
+        CancellationToken cancellationToken = default)
+        => session.SendBusinessObjectAsync(options.AccountName, request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+        BusinessObjectPriceRequest request,
+        CancellationToken cancellationToken = default)
+        => session.SetBusinessObjectPriceAsync(options.AccountName, request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
+        EconomyTokenCreationRequest request,
+        CancellationToken cancellationToken = default)
+        => session.CreateTokenAsync(options.AccountName, request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
+        EconomyRuleTokenCreationRequest request,
+        CancellationToken cancellationToken = default)
+        => session.CreateRuleTokenAsync(options.AccountName, request, cancellationToken);
+
+    public Task<MessageSecurityActionResult> SignMessageAsync(
+        MessageSecuritySignRequest request,
+        CancellationToken cancellationToken = default)
+        => session.SignMessageAsync(request with { AccountAlias = options.AccountName }, cancellationToken);
+
+    public Task<MessageSecurityActionResult> VerifyMessageAsync(
+        MessageSecurityVerifyRequest request,
+        CancellationToken cancellationToken = default)
+        => session.VerifyMessageAsync(request with { AccountAlias = options.AccountName }, cancellationToken);
+
+    public Task<MessageSecurityActionResult> EncryptMessageAsync(
+        MessageSecurityEncryptRequest request,
+        CancellationToken cancellationToken = default)
+        => session.EncryptMessageAsync(request with { AccountAlias = options.AccountName }, cancellationToken);
+
+    public Task<MessageSecurityActionResult> DecryptMessageAsync(
+        MessageSecurityDecryptRequest request,
+        CancellationToken cancellationToken = default)
+        => session.DecryptMessageAsync(request with { AccountAlias = options.AccountName }, cancellationToken);
 }
 
 public static class EconomyAccountWorkspaceAdapterServiceCollectionExtensions

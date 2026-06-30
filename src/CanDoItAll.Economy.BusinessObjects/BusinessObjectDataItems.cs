@@ -97,7 +97,7 @@ public sealed record BusinessObjectMediaPayload(
     IReadOnlyList<BusinessObjectDataItem>? DataItems = null)
 {
     public IReadOnlyList<string> TagList
-        => Tags
+        => (Tags ?? string.Empty)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(tag => tag.TrimStart('#'))
             .Where(tag => !string.IsNullOrWhiteSpace(tag))

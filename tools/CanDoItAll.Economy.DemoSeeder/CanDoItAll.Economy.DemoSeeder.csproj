@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=false" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Core\CanDoItAll.Economy.Core.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=false" />
   </ItemGroup>
 </Project>

@@ -55,6 +55,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             rig.Gateway,
             rig.TransactionBuilder,
             rig.TransactionSigner,
+            rig.CryptoDriver,
             rig.CastRegistry,
             rig.TimeProvider,
             new WasmAccountWorkspaceOptions
@@ -128,6 +129,54 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                 TxId: new TxId($"tx-{hostMode.ToLowerInvariant()}"),
                 LedgerSequence: 1,
                 $"{hostMode} adapter accepted transaction."));
+
+        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+            BusinessObjectSendRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
+
+        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+            BusinessObjectPriceRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
+            EconomyTokenCreationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));
+
+        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
+            EconomyRuleTokenCreationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.CreateRuleToken));
+
+        public Task<MessageSecurityActionResult> SignMessageAsync(
+            MessageSecuritySignRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not sign messages."));
+
+        public Task<MessageSecurityActionResult> VerifyMessageAsync(
+            MessageSecurityVerifyRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not verify messages."));
+
+        public Task<MessageSecurityActionResult> EncryptMessageAsync(
+            MessageSecurityEncryptRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not encrypt messages."));
+
+        public Task<MessageSecurityActionResult> DecryptMessageAsync(
+            MessageSecurityDecryptRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not decrypt messages."));
+
+        private EconomyTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
+            => new(
+                mode,
+                Accepted: true,
+                TxId: new TxId($"tx-{hostMode.ToLowerInvariant()}"),
+                LedgerSequence: 1,
+                $"{hostMode} adapter accepted transaction.");
     }
 
     private sealed class ThrowingLedgerClient : ILedgerGateway, ILedgerReadClient
@@ -160,6 +209,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             InProcessLedgerGateway gateway,
             BusinessObjectTransactionBuilder transactionBuilder,
             IAccountTransactionSigner transactionSigner,
+            IEconomyCryptoDriver cryptoDriver,
             IBusinessObjectCastRegistry castRegistry,
             ManualTimeProvider timeProvider,
             AccountVaultUnlockedKey unlockedKey)
@@ -167,6 +217,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             Gateway = gateway;
             TransactionBuilder = transactionBuilder;
             TransactionSigner = transactionSigner;
+            CryptoDriver = cryptoDriver;
             CastRegistry = castRegistry;
             TimeProvider = timeProvider;
             UnlockedKey = unlockedKey;
@@ -177,6 +228,8 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         public BusinessObjectTransactionBuilder TransactionBuilder { get; }
 
         public IAccountTransactionSigner TransactionSigner { get; }
+
+        public IEconomyCryptoDriver CryptoDriver { get; }
 
         public IBusinessObjectCastRegistry CastRegistry { get; }
 
@@ -226,7 +279,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                 new GenericBusinessObjectCaster(timeProvider)
             });
 
-            return new WasmAdapterRig(gateway, transactionBuilder, transactionSigner, castRegistry, timeProvider, created.UnlockedKey);
+            return new WasmAdapterRig(gateway, transactionBuilder, transactionSigner, cryptoDriver, castRegistry, timeProvider, created.UnlockedKey);
         }
     }
 
