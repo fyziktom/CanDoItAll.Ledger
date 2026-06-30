@@ -1,6 +1,4 @@
 @namespace CanDoItAll.Economy.Components
-@using System.Text.Json
-
 @if (Object is null)
 {
     <EmptyState Eyebrow="Business object" Title="Details are unavailable" Description="No BusinessObject is selected in the current gallery session." />
@@ -50,6 +48,15 @@ else
                             <div class="cda-economy-fact"><span>Data items</span><strong>@DataItems.Count</strong></div>
                             <div class="cda-economy-fact"><span>Created</span><strong>@Object.CreatedAt.ToString("MM.dd HH:mm")</strong></div>
                         </Grid>
+                        @if (TypedFacts.Count > 0)
+                        {
+                            <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-vef-bo-overview-facts">
+                                @foreach (BusinessObjectDisplayFact fact in TypedFacts)
+                                {
+                                    <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
+                                }
+                            </Grid>
+                        }
 
                         <section class="cda-vef-bo-gallery-rail" aria-label="Business object data items">
                             <div class="cda-vef-bo-gallery-rail__header">
@@ -182,10 +189,6 @@ else
 }
 
 @code {
-    private static readonly JsonSerializerOptions PayloadOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNameCaseInsensitive = true
-    };
     private BusinessObjectDataItem? selectedItem;
 
     [Parameter]
@@ -213,6 +216,15 @@ else
 
     private BusinessObjectMediaPayload? Payload
         => Object is null ? null : PayloadFor(Object);
+
+    private ITypedBusinessObjectView? TypedObject
+        => Object as ITypedBusinessObjectView;
+
+    private IReadOnlyList<BusinessObjectDisplayFact> TypedFacts
+        => TypedObject?.Facts
+            ?? (Object is not null && BusinessObjectFamilyCatalog.TryFindByObjectType(Object.ObjectType, out BusinessObjectFamilyDefinition definition)
+                ? BusinessObjectPayloadBuilder.CreateFacts(definition, Payload?.Fields)
+                : []);
 
     private IReadOnlyList<BusinessObjectDataItem> DataItems
         => Object is IMediaBusinessObjectView media
@@ -249,7 +261,9 @@ else
                     : Object?.StateJson ?? "Ledger-owned object.";
 
     private string ObjectIcon
-        => Object?.ObjectType switch
+        => Object is not null && BusinessObjectFamilyCatalog.TryFindByObjectType(Object.ObjectType, out BusinessObjectFamilyDefinition definition)
+            ? definition.Icon
+            : Object?.ObjectType switch
         {
             "image" or "bo-image" => "image",
             "post" or "bo-post" => "article",
@@ -283,36 +297,9 @@ else
             && left.Hash.Equals(right.Hash, StringComparison.Ordinal);
 
     private static BusinessObjectMediaPayload? PayloadFor(IBusinessObjectView item)
-    {
-        if (string.IsNullOrWhiteSpace(item.StateJson))
-        {
-            return null;
-        }
-
-        try
-        {
-            string json = UnwrapStateJson(item.StateJson);
-            return JsonSerializer.Deserialize<BusinessObjectMediaPayload>(json, PayloadOptions);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private static string UnwrapStateJson(string stateJson)
-    {
-        using JsonDocument document = JsonDocument.Parse(stateJson);
-        if (document.RootElement.ValueKind == JsonValueKind.Object
-            && document.RootElement.TryGetProperty("stateJson", out JsonElement inner)
-            && inner.ValueKind == JsonValueKind.String
-            && !string.IsNullOrWhiteSpace(inner.GetString()))
-        {
-            return inner.GetString()!;
-        }
-
-        return stateJson;
-    }
+        => BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload)
+            ? payload
+            : null;
 
     private static string FormatSize(long? size)
         => size is null ? "unknown" : $"{size.Value:N0} bytes";

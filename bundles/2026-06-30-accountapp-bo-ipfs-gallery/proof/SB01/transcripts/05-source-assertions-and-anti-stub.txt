@@ -1,0 +1,45 @@
+﻿Command: rg source assertions for SB01
+
+docker-compose.yml:91:      ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5081/ipfs-api/
+docker-compose.yml:92:      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5081/ipfs-api/cat?arg=
+docker-compose.yml:113:      ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5082/ipfs-api/
+docker-compose.yml:114:      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5082/ipfs-api/cat?arg=
+docker-compose.yml:135:      ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5083/ipfs-api/
+docker-compose.yml:136:      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5083/ipfs-api/cat?arg=
+tests\CanDoItAll.Ledger.Tests\BusinessObjectDataItemTests.cs:79:            BaseAddress = new Uri("http://localhost:5081/ipfs-api/")
+tests\CanDoItAll.Ledger.Tests\BusinessObjectDataItemTests.cs:81:        var service = new HttpIpfsBusinessObjectDataItemUploadService(
+tests\CanDoItAll.Ledger.Tests\BusinessObjectDataItemTests.cs:84:                new Uri("http://localhost:5081/ipfs-api/"),
+tests\CanDoItAll.Ledger.Tests\BusinessObjectDataItemTests.cs:85:                "http://localhost:5081/ipfs-api/cat?arg="));
+tests\CanDoItAll.Ledger.Tests\BusinessObjectDataItemTests.cs:92:        Assert.Equal("http://localhost:5081/ipfs-api/add?pin=true", handler.RequestUri);
+tests\CanDoItAll.Ledger.Tests\BusinessObjectDataItemTests.cs:96:        Assert.Equal("http://localhost:5081/ipfs-api/cat?arg=QmBrowserUpload", item.Uri?.ToString());
+docker\accountapp\nginx.conf:20:    location /ipfs-api/ {
+docker\accountapp\docker-entrypoint-accountapp.sh:14:: "${ACCOUNT_APP_IPFS_API_BASE_URI:=http://localhost:5081/ipfs-api/}"
+docker\accountapp\docker-entrypoint-accountapp.sh:15:: "${ACCOUNT_APP_IPFS_GATEWAY_BASE_URI:=http://localhost:5081/ipfs-api/cat?arg=}"
+docker\accountapp\docker-entrypoint-accountapp.sh:32:    "EnableIpfsUploads": $ACCOUNT_APP_ENABLE_IPFS_UPLOADS,
+docker\accountapp\docker-entrypoint-accountapp.sh:33:    "IpfsApiBaseUri": "$(json_escape "$ACCOUNT_APP_IPFS_API_BASE_URI")",
+docker\accountapp\docker-entrypoint-accountapp.sh:34:    "IpfsGatewayBaseUri": "$(json_escape "$ACCOUNT_APP_IPFS_GATEWAY_BASE_URI")"
+examples\CanDoItAll.Economy.AccountApp\Program.cs:23:if (accountAppOptions.EnableIpfsUploads && accountAppOptions.IpfsApiBaseUri is not null)
+examples\CanDoItAll.Economy.AccountApp\Program.cs:26:        new HttpIpfsBusinessObjectDataItemUploadService(
+examples\CanDoItAll.Economy.AccountApp\Program.cs:27:            new HttpClient { BaseAddress = accountAppOptions.IpfsApiBaseUri },
+examples\CanDoItAll.Economy.AccountApp\Program.cs:29:                accountAppOptions.IpfsApiBaseUri,
+examples\CanDoItAll.Economy.AccountApp\Program.cs:30:                accountAppOptions.IpfsGatewayBaseUri)));
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectDataItemStorageService.cs:28:public sealed class HttpIpfsBusinessObjectDataItemUploadService(
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectDataItemStorageService.cs:58:        HttpIpfsAddResponse addResponse = ParseAddResponse(responseText);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectDataItemStorageService.cs:113:            || path.EndsWith("/ipfs-api", StringComparison.Ordinal);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectDataItemStorageService.cs:116:    private static HttpIpfsAddResponse ParseAddResponse(string responseText)
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectIpfsStorage.cs:47:        IpfsAddResponse addResponse = ParseAddResponse(responseText);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectIpfsStorage.cs:92:    private static IpfsAddResponse ParseAddResponse(string responseText)
+examples\CanDoItAll.Economy.AccountApp\Services\AccountAppOptions.cs:17:    public bool EnableIpfsUploads { get; init; }
+examples\CanDoItAll.Economy.AccountApp\Services\AccountAppOptions.cs:19:    public Uri? IpfsApiBaseUri { get; init; }
+examples\CanDoItAll.Economy.AccountApp\Services\AccountAppOptions.cs:21:    public string IpfsGatewayBaseUri { get; init; } = "http://127.0.0.1:5001/api/v0/cat?arg=";
+examples\CanDoItAll.Economy.AccountApp\wwwroot\appsettings.json:9:    "EnableIpfsUploads": true,
+examples\CanDoItAll.Economy.AccountApp\wwwroot\appsettings.json:10:    "IpfsApiBaseUri": "http://127.0.0.1:5001/",
+examples\CanDoItAll.Economy.AccountApp\wwwroot\appsettings.json:11:    "IpfsGatewayBaseUri": "http://127.0.0.1:5001/api/v0/cat?arg="
+
+Command: rg anti-stub audit for SB01 production files
+No anti-stub matches in SB01 production files.
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB01-INV-01, SB01-INV-02

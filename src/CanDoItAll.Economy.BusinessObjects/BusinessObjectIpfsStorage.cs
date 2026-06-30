@@ -1,7 +1,7 @@
 #if BUSINESS_OBJECT_IPFS
 using System.Globalization;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace CanDoItAll.Economy.BusinessObjects;
@@ -41,10 +41,10 @@ public sealed class IpfsBusinessObjectDataStorageDriver(
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        IpfsAddResponse addResponse = await response.Content
-            .ReadFromJsonAsync<IpfsAddResponse>(cancellationToken)
-            .ConfigureAwait(false)
-            ?? throw new InvalidOperationException("IPFS add response was empty.");
+        string responseText = await response.Content
+            .ReadAsStringAsync(cancellationToken)
+            .ConfigureAwait(false);
+        IpfsAddResponse addResponse = ParseAddResponse(responseText);
 
         if (string.IsNullOrWhiteSpace(addResponse.Hash))
         {
@@ -87,6 +87,27 @@ public sealed class IpfsBusinessObjectDataStorageDriver(
         {
             return 0;
         }
+    }
+
+    private static IpfsAddResponse ParseAddResponse(string responseText)
+    {
+        if (string.IsNullOrWhiteSpace(responseText))
+        {
+            throw new InvalidOperationException("IPFS add response was empty.");
+        }
+
+        foreach (string line in responseText
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Reverse())
+        {
+            IpfsAddResponse? parsed = JsonSerializer.Deserialize<IpfsAddResponse>(line, BusinessObjectPayloadBuilder.SerializerOptions);
+            if (!string.IsNullOrWhiteSpace(parsed?.Hash))
+            {
+                return parsed;
+            }
+        }
+
+        throw new InvalidOperationException("IPFS add response did not include a CID.");
     }
 
     private sealed record IpfsAddResponse(

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using CanDoItAll.Components.BaseLib;
 using CanDoItAll.Economy.AccountApp;
 using CanDoItAll.Economy.AccountApp.Services;
+using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Components.Services;
 using CanDoItAll.Economy.Cryptography.Browser;
 using CanDoItAll.Economy.Sdk;
@@ -19,6 +20,16 @@ builder.Services.AddCanDoItAllBrowserCrypto();
 builder.Services.AddEconomySdkWithBrowserNodeDriver(
     accountAppOptions.NodeBaseUri,
     options => options.ApiBasePath = accountAppOptions.ApiBasePath);
+if (accountAppOptions.EnableIpfsUploads && accountAppOptions.IpfsApiBaseUri is not null)
+{
+    builder.Services.AddScoped<IBusinessObjectDataItemUploadService>(_ =>
+        new HttpIpfsBusinessObjectDataItemUploadService(
+            new HttpClient { BaseAddress = accountAppOptions.IpfsApiBaseUri },
+            new HttpIpfsBusinessObjectDataItemUploadOptions(
+                accountAppOptions.IpfsApiBaseUri,
+                accountAppOptions.IpfsGatewayBaseUri)));
+}
+
 builder.Services.AddScoped<IAccountWorkspaceCache, BrowserLocalStorageAccountWorkspaceCache>();
 builder.Services.AddScoped(_ => new WasmAccountWorkspaceOptions
 {

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.BusinessObjects;
@@ -94,7 +93,9 @@ public sealed record BusinessObjectMediaPayload(
     string? Author = null,
     string? Link = null,
     string? ImageLink = null,
-    IReadOnlyList<BusinessObjectDataItem>? DataItems = null)
+    IReadOnlyList<BusinessObjectDataItem>? DataItems = null,
+    string? Family = null,
+    IReadOnlyDictionary<string, string>? Fields = null)
 {
     public IReadOnlyList<string> TagList
         => (Tags ?? string.Empty)
@@ -170,11 +171,6 @@ public sealed record PostBusinessObjectView(
 
 public abstract class MediaBusinessObjectCaster(ITimeProvider timeProvider) : IBusinessObjectCaster
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     public abstract int Priority { get; }
 
     public abstract bool CanCast(BusinessObjectCastSource source);
@@ -186,38 +182,9 @@ public abstract class MediaBusinessObjectCaster(ITimeProvider timeProvider) : IB
 
     public ValueTask<IBusinessObjectView> CastAsync(BusinessObjectCastSource source, CancellationToken cancellationToken)
     {
-        BusinessObjectMediaPayload payload = ParsePayload(source.StateJson, source.ObjectId.Value);
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, source.ObjectId.Value);
         return ValueTask.FromResult<IBusinessObjectView>(CreateView(source, payload, timeProvider.UtcNow));
     }
-
-    private static BusinessObjectMediaPayload ParsePayload(string? stateJson, string fallbackName)
-    {
-        if (string.IsNullOrWhiteSpace(stateJson))
-        {
-            return Empty(fallbackName);
-        }
-
-        string json = UnwrapStateJson(stateJson);
-        BusinessObjectMediaPayload? payload = JsonSerializer.Deserialize<BusinessObjectMediaPayload>(json, SerializerOptions);
-        return payload is null ? Empty(fallbackName) : payload with { DataItems = payload.DataItems ?? Array.Empty<BusinessObjectDataItem>() };
-    }
-
-    private static string UnwrapStateJson(string stateJson)
-    {
-        using JsonDocument document = JsonDocument.Parse(stateJson);
-        if (document.RootElement.ValueKind == JsonValueKind.Object
-            && document.RootElement.TryGetProperty("stateJson", out JsonElement inner)
-            && inner.ValueKind == JsonValueKind.String
-            && !string.IsNullOrWhiteSpace(inner.GetString()))
-        {
-            return inner.GetString()!;
-        }
-
-        return stateJson;
-    }
-
-    private static BusinessObjectMediaPayload Empty(string fallbackName)
-        => new(fallbackName, string.Empty, string.Empty, string.Empty, DataItems: Array.Empty<BusinessObjectDataItem>());
 }
 
 public sealed class ImageBusinessObjectCaster(ITimeProvider timeProvider) : MediaBusinessObjectCaster(timeProvider)

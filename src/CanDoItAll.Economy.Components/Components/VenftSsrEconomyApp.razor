@@ -41,67 +41,65 @@
             </div>
         </header>
 
-        @switch (selectedView)
+        @if (selectedView == "gallery")
         {
-            case "gallery":
-                <BusinessObjectLedgerGallery Workspace="Workspace"
-                                             SendRequested="BusinessObjectSendRequested"
-                                             SetPriceRequested="BusinessObjectSetPriceRequested"
-                                             TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested" />
-                break;
-            case "ticket":
-            case "event":
-            case "post":
-            case "music":
-            case "image":
-                <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
-                                              Workspace="Workspace"
-                                              StageBusinessObjectRequested="TransactionSubmitRequested" />
-                break;
-            case "rule":
-                <AccountRuleDesigner Workspace="Workspace"
-                                     SubmitRequested="RuleTokenCreateRequested" />
-                break;
-            case "intro":
-                <SectionCard Title="Introduction" Description="VENFT-style SSR surface backed by the real in-memory economy session.">
-                    <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-                        <div class="cda-economy-fact"><span>Ledger</span><strong>@Workspace.Context.LedgerId</strong></div>
-                        <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
-                        <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
-                    </Grid>
-                </SectionCard>
-                break;
-            default:
-                <EconomyAccountWorkspace Workspace="Workspace"
-                                         RefreshRequested="RefreshRequested"
-                                         CreateSubAccountRequested="CreateSubAccountRequested"
-                                         ValidateRequested="ValidateRequested"
-                                         CreateTokenRequested="CreateTokenRequested"
-                                         AddTransactionRequested="OpenSendTransactionRequested"
-                                         TransactionDetailsRequested="TransactionDetailsRequested"
-                                         TransactionSubmitRequested="TransactionSubmitRequested"
-                                         MessageSignRequested="MessageSignRequested"
-                                         MessageVerifyRequested="MessageVerifyRequested"
-                                         MessageEncryptRequested="MessageEncryptRequested"
-                                         MessageDecryptRequested="MessageDecryptRequested" />
-                break;
+            <BusinessObjectLedgerGallery Workspace="Workspace"
+                                         SendRequested="BusinessObjectSendRequested"
+                                         SetPriceRequested="BusinessObjectSetPriceRequested"
+                                         TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested" />
+        }
+        else if (IsCreationView)
+        {
+            <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
+                                          Workspace="Workspace"
+                                          StageBusinessObjectRequested="TransactionSubmitRequested" />
+        }
+        else if (selectedView == "rule")
+        {
+            <AccountRuleDesigner Workspace="Workspace"
+                                 SubmitRequested="RuleTokenCreateRequested" />
+        }
+        else if (selectedView == "intro")
+        {
+            <SectionCard Title="Introduction" Description="VENFT-style SSR surface backed by the real in-memory economy session.">
+                <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+                    <div class="cda-economy-fact"><span>Ledger</span><strong>@Workspace.Context.LedgerId</strong></div>
+                    <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
+                    <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
+                </Grid>
+            </SectionCard>
+        }
+        else
+        {
+            <EconomyAccountWorkspace Workspace="Workspace"
+                                     RefreshRequested="RefreshRequested"
+                                     CreateSubAccountRequested="CreateSubAccountRequested"
+                                     ValidateRequested="ValidateRequested"
+                                     CreateTokenRequested="CreateTokenRequested"
+                                     AddTransactionRequested="OpenSendTransactionRequested"
+                                     TransactionDetailsRequested="TransactionDetailsRequested"
+                                     TransactionSubmitRequested="TransactionSubmitRequested"
+                                     MessageSignRequested="MessageSignRequested"
+                                     MessageVerifyRequested="MessageVerifyRequested"
+                                     MessageEncryptRequested="MessageEncryptRequested"
+                                     MessageDecryptRequested="MessageDecryptRequested" />
         }
     </main>
 </div>
 
 @code {
-    private static readonly IReadOnlyList<VenftNavItem> NavItems =
-    [
-        new("home", "Home", "home"),
-        new("gallery", "Gallery", "photo_library"),
-        new("ticket", "New Ticket", "add"),
-        new("event", "New Event", "add"),
-        new("post", "New Post", "add"),
-        new("music", "New Music", "add"),
-        new("image", "New Image", "add"),
-        new("rule", "New Rule", "account_tree"),
-        new("intro", "Introduction", "help")
-    ];
+    private static readonly IReadOnlyList<VenftNavItem> NavItems = new[]
+        {
+            new VenftNavItem("home", "Home", "home"),
+            new VenftNavItem("gallery", "Gallery", "photo_library")
+        }
+        .Concat(BusinessObjectFamilyCatalog.Families.Select(family => new VenftNavItem(family.ObjectType, $"New {family.DisplayName}", family.Icon)))
+        .Concat(
+        [
+            new VenftNavItem("rule", "New Rule", "account_tree"),
+            new VenftNavItem("intro", "Introduction", "help")
+        ])
+        .ToArray();
 
     private string selectedView = "home";
 
@@ -154,36 +152,36 @@
     public Func<MessageSecurityDecryptRequest, Task<MessageSecurityActionResult>>? MessageDecryptRequested { get; set; }
 
     private string PageTitle
-        => selectedView switch
-        {
-            "gallery" => "Gallery",
-            "ticket" => "Add New Ticket",
-            "event" => "Add New Event",
-            "post" => "Add New Post",
-            "music" => "Add New Music",
-            "image" => "Add New Image",
-            "rule" => "Add New Rule",
-            "intro" => "Introduction",
-            _ => "VENFT"
-        };
+        => selectedView == "gallery"
+            ? "Gallery"
+            : IsCreationView
+                ? $"Add New {BusinessObjectFamilyCatalog.FindOrDefault(selectedView).DisplayName}"
+                : selectedView switch
+                {
+                    "rule" => "Add New Rule",
+                    "intro" => "Introduction",
+                    _ => "VENFT"
+                };
 
     private BusinessObjectCreationWizardModel CreationWizardForSelectedView
-        => new(
-            selectedView,
-            Step: selectedView is "ticket" or "event" ? 3 : 1,
-            selectedView switch
-            {
-                "ticket" => "Operations approval ticket",
-                "event" => "Warehouse receiving event",
-                "music" => "Audio proof package",
-                "image" => "Ledger state image",
-                _ => "Purchase order post"
-            },
-            "#VEFramework #Neblio #NET #Blazor #OpenSource",
-            "BusinessObject data item prepared from the SSR ledger session.",
-            Workspace.TransactionDraft.StateJson,
-            [],
-            null);
+    {
+        get
+        {
+            BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(selectedView);
+            return new(
+                definition.ObjectType,
+                Step: 1,
+                BusinessObjectPayloadBuilder.DefaultName(definition),
+                "#VEFramework #Neblio #NET #Blazor #OpenSource",
+                definition.Description,
+                Workspace.TransactionDraft.StateJson,
+                [],
+                null);
+        }
+    }
+
+    private bool IsCreationView
+        => BusinessObjectFamilyCatalog.TryFindByObjectType(selectedView, out _);
 
     private string NavClass(string view)
         => selectedView == view ? "cda-vef-nav-item is-active" : "cda-vef-nav-item";

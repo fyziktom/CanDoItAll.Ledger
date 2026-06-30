@@ -64,6 +64,46 @@ public sealed class BusinessObjectCastingTests
         Assert.Equal(timeProvider.UtcNow, generic.ViewedAt);
     }
 
+    [Theory]
+    [InlineData("post", "Post")]
+    [InlineData("ticket", "Ticket")]
+    [InlineData("event", "Event")]
+    [InlineData("payment", "Payment")]
+    [InlineData("purchase", "Purchase")]
+    [InlineData("receipt", "Receipt")]
+    [InlineData("invoice", "Invoice")]
+    [InlineData("message", "Message")]
+    [InlineData("product", "Product")]
+    [InlineData("profile", "Profile")]
+    public async Task Registry_CastsGenericFamiliesAsTypedMediaViews(string objectType, string expectedDisplayName)
+    {
+        var timeProvider = new ManualTimeProvider(DateTimeOffset.Parse("2026-05-08T00:00:00Z"));
+        ServiceProvider provider = new ServiceCollection()
+            .AddSingleton<ITimeProvider>(timeProvider)
+            .AddBusinessObjectCasting()
+            .BuildServiceProvider();
+        IBusinessObjectCastRegistry registry = provider.GetRequiredService<IBusinessObjectCastRegistry>();
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
+        string firstField = definition.Fields.First().Key;
+        string stateJson = BusinessObjectPayloadBuilder.Serialize(BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            $"{expectedDisplayName} sample",
+            definition.Description,
+            "Typed BO body",
+            "#typed #bo",
+            [],
+            new Dictionary<string, string> { [firstField] = "typed field value" }));
+
+        IBusinessObjectView view = await registry.CastAsync(CreateSource(objectType, TransactionDataItemType.BusinessObject, stateJson), CancellationToken.None);
+
+        ITypedBusinessObjectView typed = Assert.IsAssignableFrom<ITypedBusinessObjectView>(view);
+        Assert.Equal(expectedDisplayName, typed.Definition.DisplayName);
+        Assert.Equal($"{expectedDisplayName} sample", typed.Name);
+        Assert.Contains("typed", typed.Tags);
+        Assert.Contains(typed.Facts, fact => fact.Value == "typed field value");
+        Assert.Equal(timeProvider.UtcNow, typed.ViewedAt);
+    }
+
     private static BusinessObjectCastSource CreateSource(string objectType, TransactionDataItemType itemType, string stateJson)
         => new(
             Context,

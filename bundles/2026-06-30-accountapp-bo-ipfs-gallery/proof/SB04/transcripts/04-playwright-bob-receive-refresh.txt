@@ -1,0 +1,16 @@
+Playwright result:
+- Bob imported encrypted backup and loaded WASM browser-signing workspace.
+- Bob created Payment BO: Bob Payment 1782841767019.
+- Alice created Message BO and sent original to Bob: Alice To Bob Message 1782842125249.
+- Bob refreshed and verified the transferred Message BO in gallery.
+
+Screenshots:
+- bob-payment-gallery.png
+- alice-transfer-message-details-before-send.png
+- alice-transfer-message-sent.png
+- bob-received-transferred-message.png
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB04-INV-01, SB04-INV-02

@@ -1,0 +1,49 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260630141753
+Username: DESKTOP-5FDLU29\dell
+RunAs User: DESKTOP-5FDLU29\dell
+Configuration Name: 
+Machine: DESKTOP-5FDLU29 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference='Continue'; $transcript='C:\repositories\CanDoItAll.Ledger\bundles\2026-06-30-accountapp-bo-ipfs-gallery\proof\SB01\transcripts\01-ipfs-docker-build-start.txt'; Start-Transcript -Path $transcript -Force; $repo=(Resolve-Path .).Path; $backupRoot=Join-Path $repo '.artifacts\docker-volume-backups'; $backup=Join-Path $backupRoot ('ipfs-node-data-' + (Get-Date -Format 'yyyyMMdd-HHmmss')); New-Item -ItemType Directory -Force -Path $backup | Out-Null; Write-Host "Backup target: $backup"; Write-Host 'Command: docker compose down'; docker compose down; $downExit=$LASTEXITCODE; Write-Host "Exit code (down): $downExit"; Write-Host 'Command: backup existing ipfs-node-data volume'; docker run --rm -v candoitall-ipfs_ipfs-node-data:/from:ro -v "${backup}:/to" alpine sh -c "cd /from && tar cf - . | tar xf - -C /to"; $backupExit=$LASTEXITCODE; Write-Host "Exit code (backup): $backupExit"; Write-Host 'Command: docker volume rm candoitall-ipfs_ipfs-node-data'; docker volume rm candoitall-ipfs_ipfs-node-data; $rmExit=$LASTEXITCODE; Write-Host "Exit code (volume rm): $rmExit"; if ([string]::IsNullOrWhiteSpace($env:IPFS_PASS)) { $env:IPFS_PASS='Ipfs@2020' }; Write-Host 'Command: docker compose up -d'; docker compose up -d; $upExit=$LASTEXITCODE; Write-Host "Exit code (up): $upExit"; Start-Sleep -Seconds 25; Write-Host 'Command: docker compose ps'; docker compose ps; $psExit=$LASTEXITCODE; Write-Host "Exit code (ps): $psExit"; Write-Host 'Command: curl IPFS id'; curl.exe -s -X POST http://localhost:5001/api/v0/id; $idExit=$LASTEXITCODE; Write-Host "`nExit code (id): $idExit"; Stop-Transcript; if (($downExit -ne 0) -or ($backupExit -ne 0) -or ($rmExit -ne 0) -or ($upExit -ne 0) -or ($psExit -ne 0) -or ($idExit -ne 0)) { exit 1 }
+Process ID: 21748
+PSVersion: 5.1.26100.8655
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8655
+BuildVersion: 10.0.26100.8655
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\repositories\CanDoItAll.Ledger\bundles\2026-06-30-accountapp-bo-ipfs-gallery\proof\SB01\transcripts\01-ipfs-docker-build-start.txt
+Backup target: C:\repositories\CanDoItAll.IPFS\.artifacts\docker-volume-backups\ipfs-node-data-20260630-141754
+Command: docker compose down
+
+Exit code (down): 0
+Command: backup existing ipfs-node-data volume
+
+Exit code (backup): 0
+Command: docker volume rm candoitall-ipfs_ipfs-node-data
+
+Exit code (volume rm): 0
+Command: docker compose up -d
+
+Exit code (up): 0
+Command: docker compose ps
+
+Exit code (ps): 0
+Command: curl IPFS id
+
+
+Exit code (id): 0
+**********************
+Windows PowerShell transcript end
+End time: 20260630141905
+**********************
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB01-INV-01, SB01-INV-02

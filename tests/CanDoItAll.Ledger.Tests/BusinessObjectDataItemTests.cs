@@ -3,6 +3,7 @@ using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
 using CanDoItAll.Economy.Ledger;
+using System.Net;
 using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
@@ -66,7 +67,34 @@ public sealed class BusinessObjectDataItemTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             service.SaveToIpfsAsync(
                 new BusinessObjectDataItemUploadRequest(stream, "diagram.png", "image/png", 4),
-                CancellationToken.None));
+            CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task HttpIpfsUploadService_PostsMultipartAndBuildsGatewayUrl()
+    {
+        var handler = new FakeIpfsHttpHandler();
+        using var client = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("http://localhost:5081/ipfs-api/")
+        };
+        var service = new HttpIpfsBusinessObjectDataItemUploadService(
+            client,
+            new HttpIpfsBusinessObjectDataItemUploadOptions(
+                new Uri("http://localhost:5081/ipfs-api/"),
+                "http://localhost:5081/ipfs-api/cat?arg="));
+        await using var stream = new MemoryStream([1, 2, 3, 4]);
+
+        BusinessObjectDataItem item = await service.SaveToIpfsAsync(
+            new BusinessObjectDataItemUploadRequest(stream, "alice-post.png", "image/png", 4, IsMain: true),
+            CancellationToken.None);
+
+        Assert.Equal("http://localhost:5081/ipfs-api/add?pin=true", handler.RequestUri);
+        Assert.Equal(BusinessObjectDataItemStorage.Ipfs, item.Storage);
+        Assert.Equal(BusinessObjectDataItemType.Image, item.Type);
+        Assert.Equal("QmBrowserUpload", item.Hash);
+        Assert.Equal("http://localhost:5081/ipfs-api/cat?arg=QmBrowserUpload", item.Uri?.ToString());
+        Assert.True(item.IsMain);
     }
 
     [Fact]
@@ -168,5 +196,30 @@ public sealed class BusinessObjectDataItemTests
             string hashOrUri,
             CancellationToken cancellationToken)
             => throw new NotSupportedException();
+    }
+
+    private sealed class FakeIpfsHttpHandler : HttpMessageHandler
+    {
+        public string? RequestUri { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestUri = request.RequestUri?.ToString();
+            Assert.Equal(HttpMethod.Post, request.Method);
+            Assert.IsType<MultipartFormDataContent>(request.Content);
+
+            if (request.Content is not null)
+            {
+                await request.Content.ReadAsStringAsync(cancellationToken);
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    {"Name":"alice-post.png","Bytes":4}
+                    {"Name":"QmBrowserUpload","Hash":"QmBrowserUpload","Size":"4"}
+                    """)
+            };
+        }
     }
 }

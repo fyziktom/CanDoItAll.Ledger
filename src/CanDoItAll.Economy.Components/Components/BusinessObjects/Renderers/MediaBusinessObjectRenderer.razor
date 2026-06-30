@@ -36,6 +36,10 @@ else
             {
                 <SummaryTile Label="Description" Value="@Media.Description" />
             }
+            @foreach (BusinessObjectDisplayFact fact in TypedFacts)
+            {
+                <SummaryTile Label="@fact.Label" Value="@fact.Value" />
+            }
         </Grid>
 
         @if (Media.Tags.Count > 0)
@@ -114,6 +118,9 @@ else
 
     private IMediaBusinessObjectView? Media
         => Object as IMediaBusinessObjectView;
+
+    private IReadOnlyList<BusinessObjectDisplayFact> TypedFacts
+        => Object is ITypedBusinessObjectView typed ? typed.Facts : [];
 
     private string DataItemCountLabel
         => Media is null

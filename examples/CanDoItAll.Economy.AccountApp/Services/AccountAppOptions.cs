@@ -13,4 +13,10 @@ public sealed record AccountAppOptions
     public string VaultId { get; init; } = "account-app-default";
 
     public string DefaultAccountName { get; init; } = "Browser account";
+
+    public bool EnableIpfsUploads { get; init; }
+
+    public Uri? IpfsApiBaseUri { get; init; }
+
+    public string IpfsGatewayBaseUri { get; init; } = "http://127.0.0.1:5001/api/v0/cat?arg=";
 }

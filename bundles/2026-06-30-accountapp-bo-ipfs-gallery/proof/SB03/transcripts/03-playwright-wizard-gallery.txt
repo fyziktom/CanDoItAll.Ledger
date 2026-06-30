@@ -1,0 +1,18 @@
+Playwright route:
+- http://localhost:5081
+
+Viewport:
+- 1600x1000
+
+Actions:
+- Imported Alice backup.
+- Created and verified gallery cards for Post, Message, Event, Ticket, Purchase, Receipt, Invoice, Product, Profile, and Music.
+
+Result:
+- Passed.
+- Screenshot: proof/SB04/screenshots/alice-all-generic-types-gallery.png
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB03-INV-01, SB03-INV-02

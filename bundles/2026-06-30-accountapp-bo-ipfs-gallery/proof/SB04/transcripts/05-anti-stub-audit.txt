@@ -1,0 +1,11 @@
+Anti-stub audit:
+- No manual database inserts were used.
+- No server-side signing bypass was used for browser proof.
+- IPFS proof used real docker IPFS API through AccountApp nginx `/ipfs-api/` proxy.
+- Alice and Bob proofs used generated encrypted backup JSON files from `docker/demo-keys/accountapp-demo/imports`.
+- Gallery proof verified DOM state after signed transaction broadcast and refresh.
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB04-INV-01, SB04-INV-02

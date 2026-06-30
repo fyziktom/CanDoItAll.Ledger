@@ -1,0 +1,44 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260630141931
+Username: DESKTOP-5FDLU29\dell
+RunAs User: DESKTOP-5FDLU29\dell
+Configuration Name: 
+Machine: DESKTOP-5FDLU29 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference='Continue'; $transcript='C:\repositories\CanDoItAll.Ledger\bundles\2026-06-30-accountapp-bo-ipfs-gallery\proof\SB01\transcripts\02-ipfs-health-add-cat.txt'; Start-Transcript -Path $transcript -Force; $temp=Join-Path $env:TEMP 'candoitall-bo-ipfs-proof.txt'; Set-Content -LiteralPath $temp -Value 'hello bo ipfs current node' -NoNewline; Write-Host 'Command: docker compose ps'; docker compose ps; $psExit=$LASTEXITCODE; Write-Host "Exit code (ps): $psExit"; Write-Host 'Command: IPFS add proof file'; $add = curl.exe -s -X POST -F "file=@$temp" "http://localhost:5001/api/v0/add?pin=true"; $addExit=$LASTEXITCODE; Write-Host $add; Write-Host "Exit code (add): $addExit"; $cid = (($add -split "`n") | Where-Object { $_ -match '"Hash"' } | Select-Object -Last 1 | ConvertFrom-Json).Hash; Write-Host "CID: $cid"; Write-Host 'Command: IPFS cat proof CID'; $cat = curl.exe -s -X POST "http://localhost:5001/api/v0/cat?arg=$cid"; $catExit=$LASTEXITCODE; Write-Host $cat; Write-Host "`nExit code (cat): $catExit"; Write-Host 'Command: AccountApp nginx proxy cat proof CID'; $proxy = curl.exe -s "http://localhost:5081/ipfs-api/cat?arg=$cid"; $proxyExit=$LASTEXITCODE; Write-Host $proxy; Write-Host "`nExit code (proxy): $proxyExit"; Stop-Transcript; if (($psExit -ne 0) -or ($addExit -ne 0) -or ($catExit -ne 0) -or ($proxyExit -ne 0) -or ($cat -ne 'hello bo ipfs current node') -or ($proxy -ne 'hello bo ipfs current node')) { exit 1 }
+Process ID: 16240
+PSVersion: 5.1.26100.8655
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8655
+BuildVersion: 10.0.26100.8655
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\repositories\CanDoItAll.Ledger\bundles\2026-06-30-accountapp-bo-ipfs-gallery\proof\SB01\transcripts\02-ipfs-health-add-cat.txt
+Command: docker compose ps
+
+Exit code (ps): 0
+Command: IPFS add proof file
+{"Name":"candoitall-bo-ipfs-proof.txt","Bytes":26} {"Name":"QmdKEA6Ta1jNwNTai9t11b3HBnjR9uDu9DUaodE916CT2n","Hash":"QmdKEA6Ta1jNwNTai9t11b3HBnjR9uDu9DUaodE916CT2n","Size":"26"}
+Exit code (add): 0
+CID: QmdKEA6Ta1jNwNTai9t11b3HBnjR9uDu9DUaodE916CT2n
+Command: IPFS cat proof CID
+hello bo ipfs current node
+
+Exit code (cat): 0
+Command: AccountApp nginx proxy cat proof CID
+hello bo ipfs current node
+
+Exit code (proxy): 0
+**********************
+Windows PowerShell transcript end
+End time: 20260630141946
+**********************
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB01-INV-01, SB01-INV-02

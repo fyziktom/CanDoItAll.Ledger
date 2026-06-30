@@ -1,0 +1,19 @@
+Commands:
+- docker compose build accountapp-alice
+- docker compose up -d --no-deps accountapp-alice accountapp-bob accountapp-lab
+- docker compose ps in C:/repositories/CanDoItAll.Ledger
+- docker compose ps in C:/repositories/CanDoItAll.IPFS
+
+Result:
+- Ledger node running on 8080.
+- Postgres healthy on 54329.
+- AccountApp Alice running on 5081.
+- AccountApp Bob running on 5082.
+- AccountApp Lab running on 5083.
+- IPFS API running and healthy on 5001.
+- IPFS node-control running and healthy on 5093.
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB04-INV-01, SB04-INV-02

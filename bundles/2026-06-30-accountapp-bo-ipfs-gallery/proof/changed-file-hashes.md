@@ -1,0 +1,23 @@
+﻿# Changed File Hashes
+
+| File | Before SHA-256 | After SHA-256 |
+|---|---|---|
+| repo://docker-compose.yml | d5dce2ea90a51f98e92818a33fe0b3885c43fdbb83edd84df3ad18b45512d6b2 | 71ff1aa5157e06e8502157099d0f6d106783de72ffb9d9d5a47543d308926747 |
+| repo://docker/accountapp/docker-entrypoint-accountapp.sh | 9b434014cc9b6a32b5c967ded176992911435034dca6d7f81614d5e33a95fdf3 | 0e621c6e2712adc1b080b7d131c84e80372f3ef6b7cd6ef10a297f73dd90ffb1 |
+| repo://docker/accountapp/nginx.conf | e185206734aa75200792c3deb7292dd84ea2beee2fe15a1cb6e75d52e2b67709 | e7c618a21241180aa965397143931b071b68ad20a0c461f56e123642322894bf |
+| repo://examples/CanDoItAll.Economy.AccountApp/Program.cs | 59d25f914b5e54e865c5bbfae35a06f3c8a4afe8249dd79a81e59bf64d3d7904 | 0339abf12176d4f323a38f9d88c078db94acac2ae09ac51303977586b808f932 |
+| repo://examples/CanDoItAll.Economy.AccountApp/Services/AccountAppOptions.cs | d15f036af20cc4b330253fd1ad1d8590a8faa104ad39abdc14c3793b9399b6a6 | a218209ab3db4d5acf8958edafa92ff9bb9728cc02c982193cca0d448115b40f |
+| repo://examples/CanDoItAll.Economy.AccountApp/wwwroot/appsettings.json | 7f7a1dcf38cefe67fe5c92b94f2e164f7547dd7e61b7b361ef1f10f8ccacfc5e | 0bf09351e5f50b145969e004a993eb388c0e0d158fe565a27d82a2e95f45fae6 |
+| repo://src/CanDoItAll.Economy.BusinessObjects/BusinessObjectDataItemStorageService.cs | 8bae652431d160ca5c12cfe46140c826e8eeb3d81b180464b078a4736f0b13a0 | 727f40a6313b11193241a02331d0074ee07abbb6c7b2a483d5446662f441ae0e |
+| repo://src/CanDoItAll.Economy.BusinessObjects/BusinessObjectDataItems.cs | 2a366b554f84ef3df3cb1bd85888dfd6bc8f07d9ddb2442ecc5f13c23f7b8429 | 59caaf5645aeec5c17c0969fceb51abfaab4c3e91c9f4c89d1225e1f12b19623 |
+| repo://src/CanDoItAll.Economy.BusinessObjects/BusinessObjectFamilyCatalog.cs | NEW | 071e9c6d27e817611f902daeddb3436b03089f4298274a48cd2724b7ddc230a7 |
+| repo://src/CanDoItAll.Economy.BusinessObjects/BusinessObjectIpfsStorage.cs | 42c911b90247ee112db4ba20bdfeddeff04bbf3a680845db2798130112f2250a | 48061fdc8e8bc547bec995ff3a50bd164d3c9e02afb3297862cd90e7cd8539c1 |
+| repo://src/CanDoItAll.Economy.BusinessObjects/ServiceCollectionExtensions.cs | 9698c4ce23038aee2aa968b6ab14f89f3c0070ba6c90dbb75884adc5a211e045 | d351bb3208b97a750a5edf1d48f020fadfedd5840a5d341675b4ad5d4e93d9b9 |
+| repo://src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor | 423497fd5d9b751c3505f071f7902596bea012745eda351046f05685bf26e8c3 | a1e9df53e41660a7c616a8afbbcee59a4e5ffaa4ce7cb8bfd7665a5e5fe332b5 |
+| repo://src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectLedgerDetailsDialogContent.razor | 8eb264c6556cbb011c0ca2f151fe6ae110a18a66842d0ad2a988ad5d077ed137 | f5ad7c79ef2a58d68011f9816dab288a74202ff48c3166149b6d651c248dd417 |
+| repo://src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectLedgerGallery.razor | aa299cbf79e68195143892b6a689e4e19fb4fd9049266caeec36bd1a33de1519 | d4b13d41d5c47dbf3c0fbec12a0efd9877aa1996f115104fe07aaa56a57f5f5d |
+| repo://src/CanDoItAll.Economy.Components/Components/BusinessObjects/Renderers/MediaBusinessObjectRenderer.razor | f6f55ba44daab4c247545a909fd8c57f3fde9826e93f0b01055cb326e3791d0e | 9866d29e07c875058ebdab6b7af229ba2302369885ff4ce6de7f9b90d819444b |
+| repo://src/CanDoItAll.Economy.Components/Components/VenftBusinessObjectApp.razor | 039e2be396f27432e8db129d3f620054207cabf1c0538beb349d8d523e4ea11b | 64f80a77f1c245efc5be3a21d719256cb529d7a7a11340d6eea1a860bb475a71 |
+| repo://src/CanDoItAll.Economy.Components/Components/VenftSsrEconomyApp.razor | 48660ae6d1a3ea4bfb1005f51d6b9ff00a5ab038ce7ca1b85413c15fba3b47d6 | 9bf7c8005ffcf850703c4434a657b295d6c52830e684110cabdf7bd5a94fb253 |
+| repo://tests/CanDoItAll.Ledger.Tests/BusinessObjectCastingTests.cs | a80b0e79b22a1f46064765aa9b754ffe83510ba4b8fa2b4246bc12d6f762f085 | 83c5027fd4f57b3e9d045ba8dba719b9e04ef4049164c2a842cec9f732513ce1 |
+| repo://tests/CanDoItAll.Ledger.Tests/BusinessObjectDataItemTests.cs | 13d8d5a8ecf96036b432ef5e9592adeaa5d2cdd4bab188605cd6406b1e1bfc83 | f180a7b50ab9d8544841b03197cdd369288178a23954b5b919e610afef750545 |

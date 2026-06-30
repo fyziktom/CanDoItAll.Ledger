@@ -10,26 +10,13 @@
         </div>
 
         <nav class="cda-venft-nav" aria-label="Business object demo">
-            <button type="button" class="@NavClass("home")" @onclick="@(() => SelectView("home"))">
-                <span class="material-icons">home</span>
-                Home
-            </button>
-            <button type="button" class="@NavClass("gallery")" @onclick="@(() => SelectView("gallery"))">
-                <span class="material-icons">photo_library</span>
-                Gallery
-            </button>
-            <button type="button" class="@NavClass("post")" @onclick="@(() => SelectView("post"))">
-                <span class="material-icons">add</span>
-                New Post
-            </button>
-            <button type="button" class="@NavClass("image")" @onclick="@(() => SelectView("image"))">
-                <span class="material-icons">add_photo_alternate</span>
-                New Image
-            </button>
-            <button type="button" class="@NavClass("account")" @onclick="@(() => SelectView("account"))">
-                <span class="material-icons">account_circle</span>
-                Account
-            </button>
+            @foreach (VenftNavItem item in NavItems)
+            {
+                <button type="button" class="@NavClass(item.Key)" @onclick="@(() => SelectView(item.Key))">
+                    <span class="material-icons">@item.Icon</span>
+                    @item.Label
+                </button>
+            }
         </nav>
 
         <div class="cda-venft-sidebar-footer">
@@ -62,7 +49,7 @@
             <BusinessObjectGallery Items="GalleryItems" />
         }
 
-        @if (selectedView == "post" || selectedView == "image")
+        @if (IsCreationView)
         {
             <BusinessObjectCreationWizard Model="WizardForSelectedView" />
         }
@@ -84,27 +71,59 @@
 
     private string selectedView = "gallery";
 
-    private BusinessObjectCreationWizardModel WizardForSelectedView
-        => selectedView == "image" ? ImageWizard : PostWizard;
+    private static readonly IReadOnlyList<VenftNavItem> NavItems = new[]
+        {
+            new VenftNavItem("home", "Home", "home"),
+            new VenftNavItem("gallery", "Gallery", "photo_library")
+        }
+        .Concat(BusinessObjectFamilyCatalog.Families.Select(family => new VenftNavItem(family.ObjectType, $"New {family.DisplayName}", family.Icon)))
+        .Concat([new VenftNavItem("account", "Account", "account_circle")])
+        .ToArray();
 
-    private string PageTitle
+    private BusinessObjectCreationWizardModel WizardForSelectedView
         => selectedView switch
         {
-            "account" => "Account",
-            "post" => "Add New Post",
-            "image" => "Add New Image",
-            "home" => "Home",
-            _ => "Gallery"
+            "image" => ImageWizard,
+            "post" => PostWizard,
+            _ => CreateDefaultWizard(selectedView)
         };
 
+    private string PageTitle
+        => IsCreationView
+            ? $"Add New {BusinessObjectFamilyCatalog.FindOrDefault(selectedView).DisplayName}"
+            : selectedView switch
+            {
+                "account" => "Account",
+                "home" => "Home",
+                _ => "Gallery"
+            };
+
     private string PageSubtitle
-        => selectedView switch
+        => IsCreationView
+            ? "Upload data, add information, and stage a BO transaction."
+            : selectedView switch
         {
-            "post" or "image" => "Upload data, add information, and stage a BO transaction.",
             "account" => "Create, import, backup, and manage subaccounts.",
             "home" => "Account controls and latest BusinessObjects.",
             _ => "Browse Image and Post BusinessObjects by address and tags."
         };
+
+    private bool IsCreationView
+        => BusinessObjectFamilyCatalog.TryFindByObjectType(selectedView, out _);
+
+    private static BusinessObjectCreationWizardModel CreateDefaultWizard(string objectType)
+    {
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
+        return new(
+            definition.ObjectType,
+            1,
+            BusinessObjectPayloadBuilder.DefaultName(definition),
+            "#VEFramework #Neblio #NET #Blazor #OpenSource",
+            definition.Description,
+            string.Empty,
+            [],
+            null);
+    }
 
     private string NavClass(string view)
         => selectedView == view ? "cda-venft-nav-item cda-venft-nav-item--active" : "cda-venft-nav-item";
@@ -127,4 +146,6 @@
                 Size = ModalSize.Medium,
                 TestId = "cda-subaccount-dialog"
             });
+
+    private sealed record VenftNavItem(string Key, string Label, string Icon);
 }

@@ -1,0 +1,58 @@
+﻿Command: rg source assertions for SB02
+
+tests\CanDoItAll.Ledger.Tests\BusinessObjectCastingTests.cs:86:        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
+tests\CanDoItAll.Ledger.Tests\BusinessObjectCastingTests.cs:87:        string firstField = definition.Fields.First().Key;
+tests\CanDoItAll.Ledger.Tests\BusinessObjectCastingTests.cs:88:        string stateJson = BusinessObjectPayloadBuilder.Serialize(BusinessObjectPayloadBuilder.CreatePayload(
+tests\CanDoItAll.Ledger.Tests\BusinessObjectCastingTests.cs:99:        ITypedBusinessObjectView typed = Assert.IsAssignableFrom<ITypedBusinessObjectView>(view);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectDataItems.cs:97:    string? Family = null,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectDataItems.cs:98:    IReadOnlyDictionary<string, string>? Fields = null)
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectDataItems.cs:185:        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, source.ObjectId.Value);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectDataItemStorageService.cs:127:            HttpIpfsAddResponse? parsed = JsonSerializer.Deserialize<HttpIpfsAddResponse>(line, BusinessObjectPayloadBuilder.SerializerOptions);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:25:public sealed record BusinessObjectFamilyDefinition(
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:26:    string Family,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:31:    IReadOnlyList<BusinessObjectFieldDefinition> Fields,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:45:public interface ITypedBusinessObjectView : IMediaBusinessObjectView
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:47:    BusinessObjectFamilyDefinition Definition { get; }
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:49:    IReadOnlyDictionary<string, string> Fields { get; }
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:54:public sealed record GenericTypedBusinessObjectView(
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:77:    BusinessObjectFamilyDefinition Definition,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:78:    IReadOnlyDictionary<string, string> Fields,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:79:    IReadOnlyList<BusinessObjectDisplayFact> Facts) : ITypedBusinessObjectView;
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:81:public static class BusinessObjectFamilyCatalog
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:83:    private static readonly IReadOnlyList<BusinessObjectFamilyDefinition> BuiltInFamilies =
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:251:    public static IReadOnlyList<BusinessObjectFamilyDefinition> Families => BuiltInFamilies;
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:253:    public static bool TryFindByObjectType(string? objectType, out BusinessObjectFamilyDefinition definition)
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:261:        BusinessObjectFamilyDefinition? match = BuiltInFamilies.FirstOrDefault(family => family.Matches(objectType.Trim()));
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:271:    public static BusinessObjectFamilyDefinition FindOrDefault(string? objectType)
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:272:        => TryFindByObjectType(objectType, out BusinessObjectFamilyDefinition definition)
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:277:public static class BusinessObjectPayloadBuilder
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:285:        BusinessObjectFamilyDefinition definition,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:298:            Family: definition.Family,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:299:            Fields: NormalizeFields(definition, fields));
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:338:    public static IReadOnlyDictionary<string, string> NormalizeFields(
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:339:        BusinessObjectFamilyDefinition definition,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:347:        HashSet<string> knownKeys = definition.Fields
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:359:            string trimmedKey = definition.Fields
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:373:        BusinessObjectFamilyDefinition definition,
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:376:        IReadOnlyDictionary<string, string> normalized = NormalizeFields(definition, fields);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:383:        foreach (BusinessObjectFieldDefinition field in definition.Fields)
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:394:            if (definition.Fields.Any(field => field.Key.Equals(key, StringComparison.OrdinalIgnoreCase)))
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:405:    public static string DefaultName(BusinessObjectFamilyDefinition definition)
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:431:            Fields = payload.Fields ?? new Dictionary<string, string>(StringComparer.Ordinal)
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:469:public sealed class GenericTypedBusinessObjectCaster(ITimeProvider timeProvider) : IBusinessObjectCaster
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:475:            && BusinessObjectFamilyCatalog.TryFindByObjectType(source.ObjectType, out _);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:479:        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(source.ObjectType);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:480:        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, source.ObjectId.Value);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:481:        IReadOnlyDictionary<string, string> fields = BusinessObjectPayloadBuilder.NormalizeFields(definition, payload.Fields);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:482:        IReadOnlyList<BusinessObjectDisplayFact> facts = BusinessObjectPayloadBuilder.CreateFacts(definition, fields);
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectFamilyCatalog.cs:484:        return ValueTask.FromResult<IBusinessObjectView>(new GenericTypedBusinessObjectView(
+src\CanDoItAll.Economy.BusinessObjects\BusinessObjectIpfsStorage.cs:103:            IpfsAddResponse? parsed = JsonSerializer.Deserialize<IpfsAddResponse>(line, BusinessObjectPayloadBuilder.SerializerOptions);
+src\CanDoItAll.Economy.BusinessObjects\ServiceCollectionExtensions.cs:47:        services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectCaster, GenericTypedBusinessObjectCaster>());
+
+Command: rg anti-stub audit for SB02 production files
+No anti-stub matches in SB02 production files.
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB02-INV-01, SB02-INV-02

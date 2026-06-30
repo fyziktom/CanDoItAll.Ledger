@@ -52,7 +52,7 @@
                                     RootTestHookId="bo-upload"
                                     DropZoneTestHookId="bo-upload-zone" />
                         <Grid ColumnsMd="3" Gap="LayoutGap.Small" Class="cda-venft-upload-facts">
-                            <div class="cda-economy-fact"><span>Type</span><strong>@Model.ObjectType</strong></div>
+                            <div class="cda-economy-fact"><span>Type</span><strong>@SelectedDefinition.DisplayName</strong></div>
                             <div class="cda-economy-fact"><span>Main</span><strong>@(MainDataItem?.Name ?? "none")</strong></div>
                             <div class="cda-economy-fact"><span>Loaded</span><strong>@DisplayDataItems.Count</strong></div>
                             <div class="cda-economy-fact"><span>Storage</span><strong>@UploadStorageLabel</strong></div>
@@ -120,11 +120,20 @@
             <div class="cda-vef-panel-body">
                 <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-venft-data-info-layout">
                     <Stack GapScale="LayoutGap.Small" Class="min-w-0">
+                        <FormField Text="Type">
+                            <DropDown TValue="string"
+                                      Data="ObjectTypeOptions"
+                                      TextProperty="Text"
+                                      ValueProperty="Value"
+                                      Value="@selectedObjectType"
+                                      ValueChanged="SelectObjectType"
+                                      aria-label="BusinessObject type" />
+                        </FormField>
                         <FormField Text="Name">
-                            <TextBox Value="@Model.Name" aria-label="BusinessObject name" />
+                            <TextBox Value="@name" ValueChanged="@(value => name = value ?? string.Empty)" Immediate="true" aria-label="BusinessObject name" />
                         </FormField>
                         <FormField Text="Tags">
-                            <TextBox Value="@Model.Tags" aria-label="BusinessObject tags" />
+                            <TextBox Value="@tags" ValueChanged="@(value => tags = value ?? string.Empty)" Immediate="true" aria-label="BusinessObject tags" />
                         </FormField>
                         <div class="cda-venft-tag-row">
                             @foreach (string tag in Tags)
@@ -133,12 +142,40 @@
                             }
                         </div>
                         <FormField Text="Short description">
-                            <TextBox Value="@Model.Description" aria-label="BusinessObject description" />
+                            <TextBox Value="@description" ValueChanged="@(value => description = value ?? string.Empty)" Immediate="true" aria-label="BusinessObject description" />
                         </FormField>
                     </Stack>
-                    <FormField Text="Long description" ContainerClass="cda-economy-field cda-economy-field--wide">
-                        <TextArea Value="@Model.Text" Rows="10" aria-label="BusinessObject text" />
-                    </FormField>
+                    <Stack GapScale="LayoutGap.Small" Class="min-w-0">
+                        <FormField Text="Long description" ContainerClass="cda-economy-field cda-economy-field--wide">
+                            <TextArea Value="@text" ValueChanged="@(value => text = value ?? string.Empty)" Immediate="true" Rows="10" aria-label="BusinessObject text" />
+                        </FormField>
+                        @if (SelectedDefinition.Fields.Count > 0)
+                        {
+                            <Grid ColumnsMd="2" Gap="LayoutGap.Small">
+                                @foreach (BusinessObjectFieldDefinition field in SelectedDefinition.Fields)
+                                {
+                                    <FormField Text="@field.Label" ContainerClass="cda-economy-field">
+                                        @if (field.Kind == BusinessObjectFieldKind.LongText)
+                                        {
+                                            <TextArea Value="@FieldValue(field.Key)"
+                                                      ValueChanged="@(value => SetFieldValue(field.Key, value))"
+                                                      Immediate="true"
+                                                      Rows="4"
+                                                      aria-label="@field.Label" />
+                                        }
+                                        else
+                                        {
+                                            <TextBox Value="@FieldValue(field.Key)"
+                                                     ValueChanged="@(value => SetFieldValue(field.Key, value))"
+                                                     Immediate="true"
+                                                     Placeholder="@field.Placeholder"
+                                                     aria-label="@field.Label" />
+                                        }
+                                    </FormField>
+                                }
+                            </Grid>
+                        }
+                    </Stack>
                 </Grid>
             </div>
         </section>
@@ -158,16 +195,16 @@
                             else
                             {
                                 <span class="material-icons" aria-hidden="true">@FinishIcon</span>
-                                <strong>@ShortType(Model.ObjectType)</strong>
+                                <strong>@ShortType(selectedObjectType)</strong>
                             }
                         </button>
                         <Stack GapScale="LayoutGap.Small" Class="cda-venft-finish-copy">
-                            <h3>@Model.Name</h3>
-                            <p>@Model.Description</p>
+                            <h3>@name</h3>
+                            <p>@description</p>
                             <div class="cda-vef-badges">
                                 <span>VENFT</span>
                                 <span>BO</span>
-                                <span>@Model.ObjectType</span>
+                                <span>@selectedObjectType</span>
                             </div>
                             <div class="cda-vef-tags">
                                 @foreach (string tag in Tags)
@@ -180,10 +217,19 @@
 
                     <Stack GapScale="LayoutGap.Medium" Class="cda-venft-finish-inspector min-w-0">
                         <Grid ColumnsMd="2" Gap="LayoutGap.Small">
-                            <div class="cda-economy-fact"><span>Type</span><strong>@Model.ObjectType</strong></div>
+                            <div class="cda-economy-fact"><span>Type</span><strong>@SelectedDefinition.DisplayName</strong></div>
                             <div class="cda-economy-fact"><span>DataItems</span><strong>@DisplayDataItems.Count</strong></div>
-                            <div class="cda-economy-fact cda-economy-fact--wide"><span>Name</span><strong>@Model.Name</strong></div>
+                            <div class="cda-economy-fact cda-economy-fact--wide"><span>Name</span><strong>@name</strong></div>
                         </Grid>
+                        @if (TypedFacts.Count > 0)
+                        {
+                            <Grid ColumnsMd="2" Gap="LayoutGap.Small">
+                                @foreach (BusinessObjectDisplayFact fact in TypedFacts.Take(4))
+                                {
+                                    <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
+                                }
+                            </Grid>
+                        }
                         @if (Workspace is not null)
                         {
                             <AvailableTokenSelector Options="Workspace.TokenOptions"
@@ -220,6 +266,12 @@
     private int currentStep = 1;
     private string? currentModelKey;
     private string? selectedTokenKey = EconomyTokenOption.MainKey;
+    private string selectedObjectType = "post";
+    private string name = string.Empty;
+    private string tags = string.Empty;
+    private string description = string.Empty;
+    private string text = string.Empty;
+    private Dictionary<string, string> fieldValues = new(StringComparer.Ordinal);
     private IReadOnlyList<BusinessObjectDataItem> uploadedItems = [];
     private bool uploadInProgress;
 
@@ -233,6 +285,16 @@
 
         currentModelKey = modelKey;
         currentStep = Math.Clamp(Model.Step, 1, 3);
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(Model.ObjectType);
+        selectedObjectType = definition.ObjectType;
+        name = Model.Name;
+        tags = Model.Tags;
+        description = Model.Description;
+        text = Model.Text;
+        fieldValues = new Dictionary<string, string>(
+            BusinessObjectPayloadBuilder.NormalizeFields(definition, null),
+            StringComparer.Ordinal);
+        EnsureFieldKeys();
         selectedTokenKey ??= Workspace?.TokenOptions.FirstOrDefault()?.Key ?? EconomyTokenOption.MainKey;
     }
 
@@ -244,6 +306,17 @@
 
     private BusinessObjectDataItem? MainDataItem
         => DisplayDataItems.FirstOrDefault(item => item.IsMain) ?? DisplayDataItems.FirstOrDefault();
+
+    private BusinessObjectFamilyDefinition SelectedDefinition
+        => BusinessObjectFamilyCatalog.FindOrDefault(selectedObjectType);
+
+    private IReadOnlyList<BusinessObjectDisplayFact> TypedFacts
+        => BusinessObjectPayloadBuilder.CreateFacts(SelectedDefinition, fieldValues);
+
+    private IReadOnlyList<FilterOption> ObjectTypeOptions
+        => BusinessObjectFamilyCatalog.Families
+            .Select(family => new FilterOption(family.ObjectType, family.DisplayName))
+            .ToArray();
 
     private EconomyTokenOption? SelectedToken
         => Workspace?.TokenOptions.FirstOrDefault(option => option.Key == selectedTokenKey);
@@ -266,7 +339,7 @@
                 : "IPFS CID";
 
     private IReadOnlyList<string> Tags
-        => Model.Tags.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        => tags.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(tag => tag.TrimStart('#'))
             .ToArray();
 
@@ -284,6 +357,46 @@
     private void PreviousStep()
     {
         currentStep = Math.Max(1, currentStep - 1);
+    }
+
+    private void SelectObjectType(string? objectType)
+    {
+        BusinessObjectFamilyDefinition previous = SelectedDefinition;
+        BusinessObjectFamilyDefinition next = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
+        selectedObjectType = next.ObjectType;
+        if (string.IsNullOrWhiteSpace(name) || name.Equals(BusinessObjectPayloadBuilder.DefaultName(previous), StringComparison.Ordinal))
+        {
+            name = BusinessObjectPayloadBuilder.DefaultName(next);
+        }
+
+        if (string.IsNullOrWhiteSpace(description) || description.Equals(previous.Description, StringComparison.Ordinal))
+        {
+            description = next.Description;
+        }
+
+        EnsureFieldKeys();
+    }
+
+    private string FieldValue(string key)
+        => fieldValues.TryGetValue(key, out string? value) ? value : string.Empty;
+
+    private void SetFieldValue(string key, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            fieldValues.Remove(key);
+            return;
+        }
+
+        fieldValues[key] = value.Trim();
+    }
+
+    private void EnsureFieldKeys()
+    {
+        foreach (BusinessObjectFieldDefinition field in SelectedDefinition.Fields)
+        {
+            fieldValues.TryAdd(field.Key, string.Empty);
+        }
     }
 
     private async Task NextStepAsync()
@@ -398,16 +511,12 @@
             return;
         }
 
-        string stateJson = System.Text.Json.JsonSerializer.Serialize(new BusinessObjectMediaPayload(
-            Model.Name,
-            Model.Description,
-            Model.Text,
-            Model.Tags,
-            DataItems: DisplayDataItems));
+        BusinessObjectMediaPayload payload = CreatePayload();
+        string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
         Amount mainAmount = selectedToken?.IsMain == false ? Amount.Zero : Amount.FromInt64(1);
         var draft = new BusinessObjectTransactionDraft(
-            new BusinessObjectId($"bo:{Model.ObjectType}:{NormalizeName(Model.Name)}"),
-            Model.ObjectType,
+            new BusinessObjectId($"bo:{selectedObjectType}:{NormalizeName(payload.Name)}"),
+            selectedObjectType,
             "1.0",
             Workspace.Address,
             Workspace.AddressBookmarks.FirstOrDefault()?.Address ?? Workspace.Address,
@@ -415,7 +524,7 @@
             mainAmount,
             Amount.Zero,
             stateJson,
-            $"preview://{Model.ObjectType}/{NormalizeName(Model.Name)}",
+            $"preview://{selectedObjectType}/{NormalizeName(payload.Name)}",
             BusinessObjectTransactionMode.Create,
             TokenId: selectedToken?.IsMain == true ? null : selectedToken?.TokenId,
             TokenAmount: selectedToken?.IsMain == true || selectedToken?.TokenId is null ? null : Amount.FromInt64(1));
@@ -427,17 +536,14 @@
     {
         DateTimeOffset viewedAt = Workspace?.ViewedAtUtc ?? DateTimeOffset.UtcNow;
         Address owner = Workspace?.Address ?? new Address("preview");
-        string stateJson = System.Text.Json.JsonSerializer.Serialize(new BusinessObjectMediaPayload(
-            Model.Name,
-            Model.Description,
-            Model.Text,
-            Model.Tags,
-            DataItems: DisplayDataItems));
+        BusinessObjectMediaPayload payload = CreatePayload();
+        string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
+        IReadOnlyDictionary<string, string> fields = BusinessObjectPayloadBuilder.NormalizeFields(SelectedDefinition, payload.Fields);
 
-        return new GenericBusinessObjectView(
+        return new GenericTypedBusinessObjectView(
             Workspace?.Context ?? new LedgerAccountContext(new LedgerId("preview"), null),
-            new BusinessObjectId($"bo:preview:{Model.ObjectType}:{NormalizeName(Model.Name)}"),
-            Model.ObjectType,
+            new BusinessObjectId($"bo:preview:{selectedObjectType}:{NormalizeName(payload.Name)}"),
+            selectedObjectType,
             "1.0",
             1,
             owner,
@@ -448,18 +554,32 @@
             "preview://business-object",
             TransactionDataItemType.BusinessObject,
             viewedAt,
-            viewedAt);
+            viewedAt,
+            payload.Name,
+            payload.Description,
+            payload.Text,
+            payload.Author,
+            payload.Link,
+            payload.ImageLink,
+            payload.TagList,
+            payload.DataItems ?? Array.Empty<BusinessObjectDataItem>(),
+            SelectedDefinition,
+            fields,
+            BusinessObjectPayloadBuilder.CreateFacts(SelectedDefinition, fields));
     }
 
     private string FinishIcon
-        => Model.ObjectType switch
-        {
-            "image" => "image",
-            "music" => "music_note",
-            "event" => "event",
-            "ticket" => "confirmation_number",
-            _ => "article"
-        };
+        => SelectedDefinition.Icon;
+
+    private BusinessObjectMediaPayload CreatePayload()
+        => BusinessObjectPayloadBuilder.CreatePayload(
+            SelectedDefinition,
+            name,
+            description,
+            text,
+            tags,
+            DisplayDataItems,
+            fieldValues);
 
     private static string ShortHash(string hash)
         => hash.Length > 18 ? $"{hash[..18]}..." : hash;
@@ -468,6 +588,11 @@
         => value.Length > 18 ? $"{value[..18]}..." : value;
 
     private static string NormalizeName(string value)
-        => string.Join('-', value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    {
+        string normalized = string.Join('-', value.Split([' ', ':', '/', '\\'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             .ToLowerInvariant();
+        return string.IsNullOrWhiteSpace(normalized) ? "business-object" : normalized;
+    }
+
+    private sealed record FilterOption(string Value, string Text);
 }

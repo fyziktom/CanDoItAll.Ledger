@@ -1,5 +1,4 @@
 @namespace CanDoItAll.Economy.Components
-@using System.Text.Json
 @inject DialogService DialogService
 
 <section class="cda-vef-gallery" data-testid="ssr-bo-gallery">
@@ -81,6 +80,15 @@
                         <span>@ShortObjectId(item.ObjectId)</span>
                         <span>@item.CreatedAt.ToString("MM.dd.yyyy")</span>
                     </div>
+                    @if (FactsFor(item).Count > 0)
+                    {
+                        <div class="cda-vef-gallery-meta">
+                            @foreach (BusinessObjectDisplayFact fact in FactsFor(item).Take(2))
+                            {
+                                <span>@fact.Label: @fact.Value</span>
+                            }
+                        </div>
+                    }
                     <div class="cda-vef-tags">
                         @foreach (string tag in TagsFor(item))
                         {
@@ -101,10 +109,6 @@
     private string search = string.Empty;
     private string selectedType = AllFilter;
     private string selectedOperation = AllFilter;
-    private static readonly JsonSerializerOptions PayloadOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNameCaseInsensitive = true
-    };
 
     [Parameter, EditorRequired]
     public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
@@ -189,7 +193,8 @@
             item.ObjectType,
             item.Operation,
             StateText(item),
-            string.Join(' ', TagsFor(item)));
+            string.Join(' ', TagsFor(item)),
+            string.Join(' ', FactsFor(item).Select(fact => $"{fact.Label} {fact.Value}")));
 
         return probe.Contains(search.TrimStart('#'), StringComparison.OrdinalIgnoreCase);
     }
@@ -204,6 +209,11 @@
 
     private static string DisplayName(IBusinessObjectView item)
     {
+        if (item is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name))
+        {
+            return media.Name;
+        }
+
         BusinessObjectMediaPayload? payload = PayloadFor(item);
         return string.IsNullOrWhiteSpace(payload?.Name)
             ? item.ObjectId.Value
@@ -212,6 +222,17 @@
 
     private static string Description(IBusinessObjectView item)
     {
+        if (item is IMediaBusinessObjectView media)
+        {
+            string mediaDescription = !string.IsNullOrWhiteSpace(media.Description)
+                ? media.Description
+                : media.Text;
+            if (!string.IsNullOrWhiteSpace(mediaDescription))
+            {
+                return mediaDescription.Length > 120 ? $"{mediaDescription[..120]}..." : mediaDescription;
+            }
+        }
+
         BusinessObjectMediaPayload? payload = PayloadFor(item);
         string state = !string.IsNullOrWhiteSpace(payload?.Description)
             ? payload.Description
@@ -227,6 +248,9 @@
 
     private static IReadOnlyList<string> TagsFor(IBusinessObjectView item)
     {
+        IEnumerable<string> mediaTags = item is IMediaBusinessObjectView media
+            ? media.Tags
+            : [];
         BusinessObjectMediaPayload? payload = PayloadFor(item);
         IEnumerable<string> payloadTags = string.IsNullOrWhiteSpace(payload?.Tags)
             ? []
@@ -234,7 +258,8 @@
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(tag => tag.TrimStart('#'));
 
-        return payloadTags
+        return mediaTags
+            .Concat(payloadTags)
             .Concat(item.ObjectType.Split(['-', ':', '.'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             .Concat([item.Operation.ToString(), $"v{item.Version}"])
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -244,8 +269,12 @@
 
     private static BusinessObjectDataItem? ImageFor(IBusinessObjectView item)
     {
+        IReadOnlyList<BusinessObjectDataItem> mediaDataItems = item is IMediaBusinessObjectView media
+            ? media.DataItems
+            : [];
         BusinessObjectMediaPayload? payload = PayloadFor(item);
-        BusinessObjectDataItem? dataItem = payload?.DataItems?
+        BusinessObjectDataItem? dataItem = mediaDataItems
+            .Concat(payload?.DataItems ?? [])
             .OrderByDescending(dataItem => dataItem.IsMain)
             .FirstOrDefault(dataItem => dataItem.Type == BusinessObjectDataItemType.Image && dataItem.Uri is not null);
 
@@ -272,23 +301,33 @@
 
     private static BusinessObjectMediaPayload? PayloadFor(IBusinessObjectView item)
     {
-        if (string.IsNullOrWhiteSpace(item.StateJson))
+        if (BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload))
         {
-            return null;
+            return payload;
         }
 
-        try
+        return null;
+    }
+
+    private static IReadOnlyList<BusinessObjectDisplayFact> FactsFor(IBusinessObjectView item)
+    {
+        if (item is ITypedBusinessObjectView typed)
         {
-            return JsonSerializer.Deserialize<BusinessObjectMediaPayload>(item.StateJson, PayloadOptions);
+            return typed.Facts;
         }
-        catch (JsonException)
+
+        if (!BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out BusinessObjectFamilyDefinition definition))
         {
-            return null;
+            return [];
         }
+
+        return BusinessObjectPayloadBuilder.CreateFacts(definition, PayloadFor(item)?.Fields);
     }
 
     private static string PreviewIcon(IBusinessObjectView item)
-        => item.ObjectType switch
+        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out BusinessObjectFamilyDefinition definition)
+            ? definition.Icon
+            : item.ObjectType switch
         {
             "settings" or "account-settings" => "settings",
             "purchase-order" => "receipt_long",
@@ -297,7 +336,9 @@
         };
 
     private static string PreviewClass(IBusinessObjectView item)
-        => item.ObjectType switch
+        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out _)
+            ? "cda-vef-gallery-preview cda-vef-gallery-preview--icon"
+            : item.ObjectType switch
         {
             "settings" or "account-settings" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--settings",
             "purchase-order" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--order",

@@ -1,0 +1,61 @@
+﻿Command: rg source assertions for SB03
+
+src\CanDoItAll.Economy.Components\Components\VenftSsrEconomyApp.razor:96:        .Concat(BusinessObjectFamilyCatalog.Families.Select(family => new VenftNavItem(family.ObjectType, $"New {family.DisplayName}", family.Icon)))
+src\CanDoItAll.Economy.Components\Components\VenftSsrEconomyApp.razor:158:                ? $"Add New {BusinessObjectFamilyCatalog.FindOrDefault(selectedView).DisplayName}"
+src\CanDoItAll.Economy.Components\Components\VenftSsrEconomyApp.razor:170:            BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(selectedView);
+src\CanDoItAll.Economy.Components\Components\VenftSsrEconomyApp.razor:184:        => BusinessObjectFamilyCatalog.TryFindByObjectType(selectedView, out _);
+src\CanDoItAll.Economy.Components\Components\VenftBusinessObjectApp.razor:79:        .Concat(BusinessObjectFamilyCatalog.Families.Select(family => new VenftNavItem(family.ObjectType, $"New {family.DisplayName}", family.Icon)))
+src\CanDoItAll.Economy.Components\Components\VenftBusinessObjectApp.razor:93:            ? $"Add New {BusinessObjectFamilyCatalog.FindOrDefault(selectedView).DisplayName}"
+src\CanDoItAll.Economy.Components\Components\VenftBusinessObjectApp.razor:112:        => BusinessObjectFamilyCatalog.TryFindByObjectType(selectedView, out _);
+src\CanDoItAll.Economy.Components\Components\VenftBusinessObjectApp.razor:116:        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\Renderers\RuleBusinessObjectRenderer.razor:27:    private AccountRuleDefinition? rule;
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\Renderers\RuleBusinessObjectRenderer.razor:43:        rule = RuleBusinessObjectDisplay.TryReadRule(Object, out AccountRuleDefinition parsed)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:55:                            <div class="cda-economy-fact"><span>Type</span><strong>@SelectedDefinition.DisplayName</strong></div>
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:152:                        @if (SelectedDefinition.Fields.Count > 0)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:155:                                @foreach (BusinessObjectFieldDefinition field in SelectedDefinition.Fields)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:220:                            <div class="cda-economy-fact"><span>Type</span><strong>@SelectedDefinition.DisplayName</strong></div>
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:224:                        @if (TypedFacts.Count > 0)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:227:                                @foreach (BusinessObjectDisplayFact fact in TypedFacts.Take(4))
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:288:        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(Model.ObjectType);
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:310:    private BusinessObjectFamilyDefinition SelectedDefinition
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:311:        => BusinessObjectFamilyCatalog.FindOrDefault(selectedObjectType);
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:313:    private IReadOnlyList<BusinessObjectDisplayFact> TypedFacts
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:314:        => BusinessObjectPayloadBuilder.CreateFacts(SelectedDefinition, fieldValues);
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:317:        => BusinessObjectFamilyCatalog.Families
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:364:        BusinessObjectFamilyDefinition previous = SelectedDefinition;
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:365:        BusinessObjectFamilyDefinition next = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:396:        foreach (BusinessObjectFieldDefinition field in SelectedDefinition.Fields)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:541:        IReadOnlyDictionary<string, string> fields = BusinessObjectPayloadBuilder.NormalizeFields(SelectedDefinition, payload.Fields);
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:566:            SelectedDefinition,
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:568:            BusinessObjectPayloadBuilder.CreateFacts(SelectedDefinition, fields));
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:572:        => SelectedDefinition.Icon;
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectCreationWizard.razor:576:            SelectedDefinition,
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\Renderers\MediaBusinessObjectRenderer.razor:39:            @foreach (BusinessObjectDisplayFact fact in TypedFacts)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\Renderers\MediaBusinessObjectRenderer.razor:122:    private IReadOnlyList<BusinessObjectDisplayFact> TypedFacts
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\Renderers\MediaBusinessObjectRenderer.razor:123:        => Object is ITypedBusinessObjectView typed ? typed.Facts : [];
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\AccountRuleLogicPreview.razor:113:    public AccountRuleDefinition? Rule { get; set; }
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:51:                        @if (TypedFacts.Count > 0)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:54:                                @foreach (BusinessObjectDisplayFact fact in TypedFacts)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:220:    private ITypedBusinessObjectView? TypedObject
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:221:        => Object as ITypedBusinessObjectView;
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:223:    private IReadOnlyList<BusinessObjectDisplayFact> TypedFacts
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:225:            ?? (Object is not null && BusinessObjectFamilyCatalog.TryFindByObjectType(Object.ObjectType, out BusinessObjectFamilyDefinition definition)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:264:        => Object is not null && BusinessObjectFamilyCatalog.TryFindByObjectType(Object.ObjectType, out BusinessObjectFamilyDefinition definition)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\AccountRuleDesigner.razor:216:    private AccountRuleDefinition? PreviewRule
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\AccountRuleDesigner.razor:217:        => TryBuildRule(out AccountRuleDefinition rule, out _) ? rule : null;
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\AccountRuleDesigner.razor:306:        if (!TryBuildRule(out AccountRuleDefinition rule, out _))
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\AccountRuleDesigner.razor:314:    private bool TryBuildRule(out AccountRuleDefinition rule, out IReadOnlyList<string> errors)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\AccountRuleDesigner.razor:317:        rule = AccountRuleDefinition.Empty;
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\AccountRuleDesigner.razor:345:        rule = new AccountRuleDefinition(
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerGallery.razor:314:        if (item is ITypedBusinessObjectView typed)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerGallery.razor:319:        if (!BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out BusinessObjectFamilyDefinition definition))
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerGallery.razor:328:        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out BusinessObjectFamilyDefinition definition)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerGallery.razor:339:        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out _)
+
+Command: rg anti-stub audit for SB03 production files
+No anti-stub matches in SB03 production files.
+
+--- Validator Metadata ---
+Command: proof transcript metadata normalization
+Exit code: 0
+Invariant IDs: SB03-INV-01, SB03-INV-02
