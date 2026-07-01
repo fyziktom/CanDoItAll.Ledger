@@ -52,7 +52,7 @@
         {
             <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
                                           Workspace="Workspace"
-                                          StageBusinessObjectRequested="TransactionSubmitRequested" />
+                                          StageBusinessObjectRequested="StageBusinessObjectAsync" />
         }
         else if (selectedView == "rule")
         {
@@ -102,9 +102,13 @@
         .ToArray();
 
     private string selectedView = "home";
+    private string? appliedInitialView;
 
     [Parameter, EditorRequired]
     public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    [Parameter]
+    public string? InitialView { get; set; }
 
     [Parameter]
     public EventCallback RefreshRequested { get; set; }
@@ -151,6 +155,16 @@
     [Parameter]
     public Func<MessageSecurityDecryptRequest, Task<MessageSecurityActionResult>>? MessageDecryptRequested { get; set; }
 
+    protected override void OnParametersSet()
+    {
+        string? normalizedInitialView = NormalizeView(InitialView);
+        if (normalizedInitialView is not null && !string.Equals(appliedInitialView, normalizedInitialView, StringComparison.Ordinal))
+        {
+            selectedView = normalizedInitialView;
+            appliedInitialView = normalizedInitialView;
+        }
+    }
+
     private string PageTitle
         => selectedView == "gallery"
             ? "Gallery"
@@ -183,12 +197,32 @@
     private bool IsCreationView
         => BusinessObjectFamilyCatalog.TryFindByObjectType(selectedView, out _);
 
+    private static string? NormalizeView(string? view)
+    {
+        if (string.IsNullOrWhiteSpace(view))
+        {
+            return null;
+        }
+
+        string normalized = view.Trim();
+        return normalized is "home" or "gallery" or "rule" or "intro"
+            || BusinessObjectFamilyCatalog.TryFindByObjectType(normalized, out _)
+            ? normalized
+            : null;
+    }
+
     private string NavClass(string view)
         => selectedView == view ? "cda-vef-nav-item is-active" : "cda-vef-nav-item";
 
     private void SelectView(string view)
     {
         selectedView = view;
+    }
+
+    private async Task StageBusinessObjectAsync(BusinessObjectTransactionDraft draft)
+    {
+        await TransactionSubmitRequested.InvokeAsync(draft);
+        selectedView = "gallery";
     }
 
     private void SelectHome()

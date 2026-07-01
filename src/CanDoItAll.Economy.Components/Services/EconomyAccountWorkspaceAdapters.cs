@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using CanDoItAll.Economy.BusinessObjects;
+using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
@@ -142,9 +143,10 @@ public sealed class WasmAccountWorkspaceAdapter(
         IReadOnlyList<EconomyAddressBookmark> bookmarks = CreateAddressBookmarks(account.Address, transactions);
         Address receiver = bookmarks.FirstOrDefault(bookmark => bookmark.Address != account.Address)?.Address ?? account.Address;
         DateTimeOffset now = timeProvider.UtcNow;
+        BusinessObjectId draftObjectId = BusinessObjectCreateIdFactory.CreateNewObjectId("account-app", "account app message");
 
         var draft = new BusinessObjectTransactionDraft(
-            new BusinessObjectId($"bo:account-app:{now:yyyyMMddHHmmss}"),
+            draftObjectId,
             "account-app-message",
             "1.0",
             account.Address,
@@ -153,7 +155,7 @@ public sealed class WasmAccountWorkspaceAdapter(
             Amount.Zero,
             Amount.FromInt64(1),
             "{\"source\":\"account-app\"}",
-            $"account-app://draft/{now:yyyyMMddHHmmss}");
+            $"account-app://draft/{draftObjectId.Value}");
 
         IBusinessObjectView? selected = businessObjects.FirstOrDefault();
         var editor = new BusinessObjectEditorModel(

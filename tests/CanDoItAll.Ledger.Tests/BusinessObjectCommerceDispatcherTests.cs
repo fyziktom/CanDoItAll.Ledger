@@ -14,6 +14,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-dispatch-public"));
     private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-dispatch-public"));
     private static readonly BusinessObjectId TargetObjectId = new("bo:post:dispatch-target");
+    private static readonly BusinessObjectId ImageTargetObjectId = new("bo:image:dispatch-target");
     private static readonly BusinessObjectId PaymentObjectId = new("bo:payment:dispatch-payment");
     private static readonly DateTimeOffset Now = DateTimeOffset.Parse("2026-06-30T12:00:00Z");
 
@@ -134,45 +135,114 @@ public sealed class BusinessObjectCommerceDispatcherTests
         Assert.Equal(TargetObjectId.Value, completedPayment.DeliveredObjectId);
     }
 
+    [Fact]
+    public async Task OriginalImageSale_DispatchesTransferWithImagePayloadForBuyerGallery()
+    {
+        ITypedBusinessObjectView target = CreateListedTarget(
+            BusinessObjectSaleMode.Original,
+            objectId: ImageTargetObjectId,
+            objectType: "image",
+            includeImageDataItem: true);
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync(
+            BusinessObjectSaleMode.Original,
+            ImageTargetObjectId);
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(target, payment);
+        var adapter = new CapturingWorkspaceAdapter(workspace);
+        var dispatcher = new BusinessObjectCommerceDispatcher(() => Now.AddMinutes(5));
+
+        BusinessObjectCommerceDispatchResult result = await dispatcher.DispatchPendingAsync(adapter, workspace);
+
+        Assert.Equal(4, result.AcceptedCount);
+        BusinessObjectTransactionDraft transferDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.SelectedMode == BusinessObjectTransactionMode.TransferObject);
+        Assert.Equal("image", transferDraft.ObjectType);
+        Assert.Equal(ImageTargetObjectId, transferDraft.SourceObjectId);
+        Assert.Equal(Bob, transferDraft.ReceiverAddress);
+
+        BusinessObjectMediaPayload transferredPayload = BusinessObjectPayloadBuilder.ParseMediaPayload(
+            transferDraft.StateJson,
+            ImageTargetObjectId.Value);
+        BusinessObjectDataItem imageItem = Assert.Single(transferredPayload.DataItems ?? []);
+        Assert.Equal(BusinessObjectDataItemType.Image, imageItem.Type);
+        Assert.True(imageItem.IsMain);
+        Assert.Equal("Dispatch image", imageItem.Name);
+
+        var imageCaster = new ImageBusinessObjectCaster(new ManualTimeProvider(Now.AddMinutes(6)));
+        IBusinessObjectView transferredView = await imageCaster.CastAsync(
+            CreateSource(ImageTargetObjectId, "image", transferDraft.StateJson, Bob),
+            CancellationToken.None);
+        ImageBusinessObjectView imageView = Assert.IsType<ImageBusinessObjectView>(transferredView);
+        Assert.Equal(Bob, imageView.OwnerAddress);
+        Assert.Equal("Dispatch image target", imageView.Name);
+        Assert.Single(imageView.DataItems);
+    }
+
     private static ITypedBusinessObjectView CreateListedTarget(
         BusinessObjectSaleMode saleMode,
         int? maxClones = null,
-        int soldCount = 0)
+        int soldCount = 0,
+        BusinessObjectId? objectId = null,
+        string objectType = "post",
+        bool includeImageDataItem = false)
     {
-        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");
+        BusinessObjectId targetObjectId = objectId ?? TargetObjectId;
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
+        IReadOnlyList<BusinessObjectDataItem> dataItems = includeImageDataItem
+            ?
+            [
+                new BusinessObjectDataItem(
+                    "Dispatch image",
+                    BusinessObjectDataItemType.Image,
+                    BusinessObjectDataItemStorage.Url,
+                    "https://example.test/dispatch-image.png",
+                    new Uri("https://example.test/dispatch-image.png"),
+                    "image/png",
+                    "dispatch-image.png",
+                    1024,
+                    IsMain: true,
+                    "Image payload used by the commerce dispatch regression.")
+            ]
+            : [];
         BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
             definition,
-            "Dispatch target",
+            includeImageDataItem ? "Dispatch image target" : "Dispatch target",
             "Target BO for commerce dispatch.",
             "Long target body.",
             "#commerce",
-            []);
+            dataItems);
         BusinessObjectSaleTerms sale = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
             saleMode,
             Amount.FromDecimal(7.25m),
             Alice,
             Now,
             maxClones,
-            sharePath: $"/buy-bo/{Uri.EscapeDataString(TargetObjectId.Value)}") with
+            sharePath: $"/buy-bo/tx/{Uri.EscapeDataString($"tx-{objectType}")}/0") with
         {
             SoldCount = soldCount,
             Status = BusinessObjectSaleStatus.Listed
         };
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
             BusinessObjectCommercePayloadBuilder.WithSaleTerms(payload, sale));
-        return CreateTypedView(TargetObjectId, "post", stateJson, Alice);
+        return CreateTypedView(targetObjectId, objectType, stateJson, Alice);
     }
 
     private static Task<ICommerceBusinessObjectView> CreatePaymentViewAsync(BusinessObjectSaleMode saleMode)
         => CreatePaymentViewAsync(CreatePaymentRecord(saleMode));
 
-    private static BusinessObjectPaymentRecord CreatePaymentRecord(BusinessObjectSaleMode saleMode)
+    private static Task<ICommerceBusinessObjectView> CreatePaymentViewAsync(
+        BusinessObjectSaleMode saleMode,
+        BusinessObjectId targetObjectId)
+        => CreatePaymentViewAsync(CreatePaymentRecord(saleMode, targetObjectId));
+
+    private static BusinessObjectPaymentRecord CreatePaymentRecord(
+        BusinessObjectSaleMode saleMode,
+        BusinessObjectId? targetObjectId = null)
     {
+        BusinessObjectId targetId = targetObjectId ?? TargetObjectId;
         BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
             PaymentObjectId,
             Bob,
             Alice,
-            TargetObjectId,
+            targetId,
             targetVersion: 1,
             targetOutPoint: new OutPoint(new TxId("tx-target"), 0),
             Amount.FromDecimal(7.25m),

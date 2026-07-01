@@ -40,6 +40,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         Assert.Contains("For sale", panel.TextContent, StringComparison.Ordinal);
         Assert.Contains("Copy / 12.5 MAIN", panel.TextContent, StringComparison.Ordinal);
         Assert.Contains("0 / 3", panel.TextContent, StringComparison.Ordinal);
+        Assert.Contains("/buy-bo/tx/", panel.InnerHtml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -54,6 +55,147 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         IElement badge = component.Find("[data-testid='cda-bo-sale-badge']");
 
         Assert.Equal("Copy / 12.5 MAIN", badge.TextContent.Trim());
+    }
+
+    [Fact]
+    public void Gallery_OrdersBusinessObjectsFromNewestToOldest()
+    {
+        ITypedBusinessObjectView older = CreatePost(
+            new BusinessObjectId("bo:post:older"),
+            "Older listing",
+            ListedAtUtc.AddMinutes(-5));
+        ITypedBusinessObjectView newest = CreatePost(
+            new BusinessObjectId("bo:post:newest"),
+            "Newest listing",
+            ListedAtUtc.AddMinutes(5));
+        ITypedBusinessObjectView middle = CreatePost(
+            new BusinessObjectId("bo:post:middle"),
+            "Middle listing",
+            ListedAtUtc);
+
+        IRenderedComponent<BusinessObjectLedgerGallery> component =
+            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+                .Add(x => x.Workspace, CreateWorkspace(older, newest, middle)));
+
+        string[] headings = component.FindAll(".cda-vef-gallery-card h3")
+            .Select(element => element.TextContent.Trim())
+            .ToArray();
+
+        Assert.Equal(["Newest listing", "Middle listing", "Older listing"], headings);
+    }
+
+    [Fact]
+    public void Gallery_OrdersBusinessObjectsByCurrentTransactionTimestamp()
+    {
+        ITypedBusinessObjectView older = CreatePost(
+            new BusinessObjectId("bo:post:tx-older"),
+            "Older transaction",
+            ListedAtUtc);
+        ITypedBusinessObjectView newest = CreatePost(
+            new BusinessObjectId("bo:post:tx-newest"),
+            "Newest transaction",
+            ListedAtUtc);
+        ITypedBusinessObjectView middle = CreatePost(
+            new BusinessObjectId("bo:post:tx-middle"),
+            "Middle transaction",
+            ListedAtUtc);
+
+        IRenderedComponent<BusinessObjectLedgerGallery> component =
+            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+                .Add(
+                    x => x.Workspace,
+                    CreateWorkspace(
+                        [older, newest, middle],
+                        [
+                            CreateObjectTransaction(older, ListedAtUtc.AddMinutes(1)),
+                            CreateObjectTransaction(newest, ListedAtUtc.AddMinutes(3)),
+                            CreateObjectTransaction(middle, ListedAtUtc.AddMinutes(2))
+                        ])));
+
+        string[] headings = component.FindAll(".cda-vef-gallery-card h3")
+            .Select(element => element.TextContent.Trim())
+            .ToArray();
+
+        Assert.Equal(["Newest transaction", "Middle transaction", "Older transaction"], headings);
+        Assert.Contains("06.30.2026 10:03", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Gallery_UsesTransactionListOrderWhenTimestampsTie()
+    {
+        ITypedBusinessObjectView older = CreatePost(
+            new BusinessObjectId("bo:post:tie-older"),
+            "Older tie transaction",
+            ListedAtUtc);
+        ITypedBusinessObjectView newest = CreatePost(
+            new BusinessObjectId("bo:post:tie-newest"),
+            "Newest tie transaction",
+            ListedAtUtc);
+        ITypedBusinessObjectView middle = CreatePost(
+            new BusinessObjectId("bo:post:tie-middle"),
+            "Middle tie transaction",
+            ListedAtUtc);
+
+        IRenderedComponent<BusinessObjectLedgerGallery> component =
+            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+                .Add(
+                    x => x.Workspace,
+                    CreateWorkspace(
+                        [older, newest, middle],
+                        [
+                            CreateObjectTransaction(newest, ListedAtUtc),
+                            CreateObjectTransaction(middle, ListedAtUtc),
+                            CreateObjectTransaction(older, ListedAtUtc)
+                        ])));
+
+        string[] headings = component.FindAll(".cda-vef-gallery-card h3")
+            .Select(element => element.TextContent.Trim())
+            .ToArray();
+
+        Assert.Equal(["Newest tie transaction", "Middle tie transaction", "Older tie transaction"], headings);
+    }
+
+    [Fact]
+    public async Task Gallery_HidesCommerceArtifactsFromCards()
+    {
+        ITypedBusinessObjectView post = CreatePost(
+            new BusinessObjectId("bo:post:visible-gallery-post"),
+            "Visible gallery post",
+            ListedAtUtc);
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
+
+        IRenderedComponent<BusinessObjectLedgerGallery> component =
+            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+                .Add(
+                    x => x.Workspace,
+                    CreateWorkspace(
+                        [post, payment],
+                        [
+                            CreateObjectTransaction(post, ListedAtUtc.AddMinutes(1)),
+                            CreateObjectTransaction(payment, ListedAtUtc.AddMinutes(2))
+                        ])));
+
+        IElement card = Assert.Single(component.FindAll(".cda-vef-gallery-card"));
+
+        Assert.Contains("Visible gallery post", card.TextContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("Payment for", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SetSaleDialog_HidesMaxCopiesUntilCopyModeIsSelected()
+    {
+        ITypedBusinessObjectView originalSalePost = CreateListedPost(BusinessObjectSaleMode.Original);
+
+        IRenderedComponent<BusinessObjectSetPriceDialogContent> component =
+            RenderComponent<BusinessObjectSetPriceDialogContent>(parameters => parameters
+                .Add(x => x.Object, originalSalePost)
+                .Add(x => x.TokenOptions, CreateTokenOptions()));
+
+        Assert.Empty(component.FindAll("[data-testid='bo-sale-max-clones']"));
+
+        component.Find("[data-testid='bo-sale-mode']").Change(nameof(BusinessObjectSaleMode.Copy));
+
+        Assert.Single(component.FindAll("[data-testid='bo-sale-max-clones']"));
     }
 
     [Fact]
@@ -85,7 +227,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         Assert.Equal(14.75m, request.PriceAmount.Value);
         Assert.Equal(4, request.MaxClones);
         Assert.False(request.ClearSale);
-        Assert.Equal($"/buy-bo/{Uri.EscapeDataString(ListedObjectId.Value)}", request.SharePath);
+        Assert.Equal(BuyPathFor(listedPost.CurrentOutPoint), request.SharePath);
     }
 
     [Fact]
@@ -104,7 +246,8 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         Assert.Contains(ListedObjectId.Value, row.TextContent, StringComparison.Ordinal);
     }
 
-    private static ITypedBusinessObjectView CreateListedPost()
+    private static ITypedBusinessObjectView CreateListedPost(
+        BusinessObjectSaleMode saleMode = BusinessObjectSaleMode.Copy)
     {
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");
         BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
@@ -120,16 +263,33 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                 ["visibility"] = "public"
             });
         BusinessObjectSaleTerms terms = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
-            BusinessObjectSaleMode.Copy,
+            saleMode,
             Amount.FromDecimal(12.5m),
             Alice,
             ListedAtUtc,
-            maxClones: 3,
-            sharePath: $"/buy-bo/{Uri.EscapeDataString(ListedObjectId.Value)}");
+            maxClones: saleMode == BusinessObjectSaleMode.Copy ? 3 : null,
+            sharePath: BuyPathFor(OutPointFor("post", ListedObjectId)));
         BusinessObjectMediaPayload listedPayload = BusinessObjectCommercePayloadBuilder.WithSaleTerms(payload, terms);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(listedPayload);
 
         return CreateTypedView(ListedObjectId, "post", stateJson);
+    }
+
+    private static ITypedBusinessObjectView CreatePost(
+        BusinessObjectId objectId,
+        string name,
+        DateTimeOffset createdAt)
+    {
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            name,
+            $"{name} short description",
+            $"{name} long description",
+            "#commerce",
+            []);
+        string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
+        return CreateTypedView(objectId, "post", stateJson, createdAt);
     }
 
     private static async Task<ICommerceBusinessObjectView> CreatePaymentViewAsync()
@@ -159,10 +319,12 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     private static ITypedBusinessObjectView CreateTypedView(
         BusinessObjectId objectId,
         string objectType,
-        string stateJson)
+        string stateJson,
+        DateTimeOffset? createdAt = null)
     {
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
         BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(stateJson, objectId.Value);
+        DateTimeOffset timestamp = createdAt ?? ListedAtUtc;
 
         return new GenericTypedBusinessObjectView(
             Context,
@@ -173,12 +335,12 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             Alice,
             BusinessObjectOperation.Create,
             new HashHex(new string('1', 64)),
-            new OutPoint(new TxId($"tx-{objectType}-listed"), 0),
+            OutPointFor(objectType, objectId),
             stateJson,
             $"ledger://{objectId.Value}",
             TransactionDataItemType.BusinessObject,
-            ListedAtUtc,
-            ListedAtUtc,
+            timestamp,
+            timestamp,
             payload.Name,
             payload.Description,
             payload.Text,
@@ -212,13 +374,18 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             ListedAtUtc);
 
     private static BusinessObjectWorkspaceModel CreateWorkspace(params IBusinessObjectView[] businessObjects)
+        => CreateWorkspace(businessObjects, []);
+
+    private static BusinessObjectWorkspaceModel CreateWorkspace(
+        IReadOnlyList<IBusinessObjectView> businessObjects,
+        IReadOnlyList<LedgerTransactionSummary> transactions)
     {
         LedgerAccountBalance balance = new(
             Context,
             Alice,
             Amount.FromInt64(1000),
             new Dictionary<TokenId, Amount>(),
-            businessObjects.Length,
+            businessObjects.Count,
             ListedAtUtc);
         BusinessObjectTransactionDraft draft = new(
             new BusinessObjectId("bo:post:draft"),
@@ -249,11 +416,42 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             [],
             businessObjects,
             [],
-            [],
+            transactions,
             draft,
             editor,
             ListedAtUtc);
     }
+
+    private static LedgerTransactionSummary CreateObjectTransaction(
+        IBusinessObjectView businessObject,
+        DateTimeOffset timestamp)
+        => new(
+            Context,
+            businessObject.CurrentOutPoint.TxId,
+            TransactionKind.BusinessObject,
+            TransactionStatus.Confirmed,
+            timestamp,
+            [Alice],
+            [businessObject.OwnerAddress],
+            [],
+            [
+                new LedgerTransactionOutputSummary(
+                    businessObject.CurrentOutPoint.OutputIndex,
+                    businessObject.OwnerAddress,
+                    Amount.Zero,
+                    null,
+                    new BusinessObjectRef(
+                        businessObject.ObjectId,
+                        businessObject.Version,
+                        businessObject.Operation,
+                        businessObject.DataHash))
+            ]);
+
+    private static OutPoint OutPointFor(string objectType, BusinessObjectId objectId)
+        => new(new TxId($"tx-{objectType}-{objectId.Value.Replace(':', '-')}"), 0);
+
+    private static string BuyPathFor(OutPoint outPoint)
+        => $"/buy-bo/tx/{Uri.EscapeDataString(outPoint.TxId.Value)}/{outPoint.OutputIndex}";
 
     private static IReadOnlyList<EconomyTokenOption> CreateTokenOptions()
         =>

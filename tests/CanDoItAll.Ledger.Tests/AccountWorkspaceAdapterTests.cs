@@ -47,6 +47,21 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
     }
 
     [Fact]
+    public void AdapterHost_FullShellStartsOnInitialGalleryView()
+    {
+        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+            parameters => parameters
+                .Add(x => x.Adapter, new SampleWorkspaceAdapter("WASM"))
+                .Add(x => x.UseFullAppShell, true)
+                .Add(x => x.AutoRefreshEnabled, false)
+                .Add(x => x.InitialView, "gallery"));
+
+        component.WaitForAssertion(
+            () => Assert.NotEmpty(component.FindAll("[data-testid='ssr-bo-gallery']")),
+            TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
     public async Task WasmWorkspaceAdapter_LoadsWorkspaceAndBroadcastsSignedPaymentWithoutNodeSession()
     {
         WasmAdapterRig rig = await WasmAdapterRig.CreateAsync();

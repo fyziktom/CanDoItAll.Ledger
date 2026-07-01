@@ -28,6 +28,7 @@ else
         @if (UseFullAppShell)
         {
             <VenftSsrEconomyApp Workspace="workspace"
+                                InitialView="@InitialView"
                                 RefreshRequested="RefreshAsync"
                                 CreateSubAccountRequested="OpenSubAccountDialogAsync"
                                 ValidateRequested="RefreshAsync"
@@ -97,6 +98,9 @@ else
 
     [Parameter]
     public bool UseFullAppShell { get; set; }
+
+    [Parameter]
+    public string? InitialView { get; set; }
 
     [Parameter]
     public bool AutoRefreshEnabled { get; set; } = true;

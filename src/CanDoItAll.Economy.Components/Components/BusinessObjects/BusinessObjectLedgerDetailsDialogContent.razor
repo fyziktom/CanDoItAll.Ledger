@@ -120,60 +120,63 @@ else
                 </section>
             </TabsItem>
 
-            <TabsItem Text="Actions" Icon="bolt">
-                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-bo-action-grid">
-                    <section class="cda-vef-panel">
-                        <div class="cda-vef-panel-header">Object actions</div>
-                        <div class="cda-vef-panel-body">
-                            <div class="cda-vef-bo-action-list">
-                                <Button Text="Show QR Code" Icon="qr_code" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
-                                <Button Text="Upload DataItem" Icon="upload_file" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
-                                <Button Text="Send" Icon="send" ButtonStyle="ButtonStyle.Secondary" Click="SendAsync" />
-                                <Button Text="Set Sale" Icon="sell" ButtonStyle="ButtonStyle.Secondary" Click="SetPriceAsync" />
-                                <Button Text="Recycle" Icon="delete" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Warning" />
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="cda-vef-panel">
-                        <div class="cda-vef-panel-header">Data item actions</div>
-                        <div class="cda-vef-panel-body">
-                            @if (DataItems.Count == 0)
-                            {
-                                <p class="cda-vef-empty-line">Attach a data item to enable asset-specific commands.</p>
-                            }
-                            else
-                            {
-                                <div class="cda-vef-bo-action-table">
-                                    @foreach (BusinessObjectDataItem item in DataItems)
-                                    {
-                                        <article>
-                                            <div>
-                                                <strong>@item.Name</strong>
-                                                <span>@item.Type / @FormatSize(item.Size)</span>
-                                            </div>
-                                            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
-                                                <CopyButton Text="CID"
-                                                            Value="@item.Hash"
-                                                            Size="CopyButtonSize.Small"
-                                                            ButtonStyle="ButtonStyle.Secondary" />
-                                                <Button Text="Open"
-                                                        Icon="open_in_new"
-                                                        Size="ButtonSize.Small"
-                                                        Variant="Variant.Outlined"
-                                                        Href="@item.Uri?.ToString()"
-                                                        Target="_blank"
-                                                        Rel="noopener noreferrer"
-                                                        Disabled="@(item.Uri is null)" />
-                                            </Cluster>
-                                        </article>
-                                    }
+            @if (ShowActions)
+            {
+                <TabsItem Text="Actions" Icon="bolt">
+                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-bo-action-grid">
+                        <section class="cda-vef-panel">
+                            <div class="cda-vef-panel-header">Object actions</div>
+                            <div class="cda-vef-panel-body">
+                                <div class="cda-vef-bo-action-list">
+                                    <Button Text="Show QR Code" Icon="qr_code" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
+                                    <Button Text="Upload DataItem" Icon="upload_file" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
+                                    <Button Text="Send" Icon="send" ButtonStyle="ButtonStyle.Secondary" Click="SendAsync" />
+                                    <Button Text="Set Sale" Icon="sell" ButtonStyle="ButtonStyle.Secondary" Click="SetPriceAsync" />
+                                    <Button Text="Recycle" Icon="delete" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Warning" />
                                 </div>
-                            }
-                        </div>
-                    </section>
-                </Grid>
-            </TabsItem>
+                            </div>
+                        </section>
+
+                        <section class="cda-vef-panel">
+                            <div class="cda-vef-panel-header">Data item actions</div>
+                            <div class="cda-vef-panel-body">
+                                @if (DataItems.Count == 0)
+                                {
+                                    <p class="cda-vef-empty-line">Attach a data item to enable asset-specific commands.</p>
+                                }
+                                else
+                                {
+                                    <div class="cda-vef-bo-action-table">
+                                        @foreach (BusinessObjectDataItem item in DataItems)
+                                        {
+                                            <article>
+                                                <div>
+                                                    <strong>@item.Name</strong>
+                                                    <span>@item.Type / @FormatSize(item.Size)</span>
+                                                </div>
+                                                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                                                    <CopyButton Text="CID"
+                                                                Value="@item.Hash"
+                                                                Size="CopyButtonSize.Small"
+                                                                ButtonStyle="ButtonStyle.Secondary" />
+                                                    <Button Text="Open"
+                                                            Icon="open_in_new"
+                                                            Size="ButtonSize.Small"
+                                                            Variant="Variant.Outlined"
+                                                            Href="@item.Uri?.ToString()"
+                                                            Target="_blank"
+                                                            Rel="noopener noreferrer"
+                                                            Disabled="@(item.Uri is null)" />
+                                                </Cluster>
+                                            </article>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </section>
+                    </Grid>
+                </TabsItem>
+            }
 
             <TabsItem Text="Ledger details" Icon="data_object">
                 <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-bo-raw-grid">
@@ -225,6 +228,9 @@ else
 
     [Parameter]
     public DateTimeOffset? ViewedAtUtc { get; set; }
+
+    [Parameter]
+    public bool ShowActions { get; set; } = true;
 
     [Parameter]
     public EventCallback<IBusinessObjectView> SendRequested { get; set; }
@@ -306,7 +312,7 @@ else
     private string BuyPath
         => Object is null
             ? "/buy-bo"
-            : $"/buy-bo/{Uri.EscapeDataString(Object.ObjectId.Value)}";
+            : BuyPathFor(Object.CurrentOutPoint);
 
     private string BuyLink => Navigation.ToAbsoluteUri(BuyPath).ToString();
 
@@ -356,4 +362,7 @@ else
 
     private static string FormatPrice(decimal amount, string? tokenId)
         => $"{amount.ToString("0.#############################", CultureInfo.InvariantCulture)} {(string.IsNullOrWhiteSpace(tokenId) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : tokenId)}";
+
+    private static string BuyPathFor(OutPoint outPoint)
+        => $"/buy-bo/tx/{Uri.EscapeDataString(outPoint.TxId.Value)}/{outPoint.OutputIndex}";
 }

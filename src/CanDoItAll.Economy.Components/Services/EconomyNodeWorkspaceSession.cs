@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CanDoItAll.Economy.BusinessObjects;
+using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
@@ -111,9 +112,10 @@ public sealed class EconomyNodeWorkspaceSession(
             .FirstOrDefault(option => !option.IsMain && option.HasReusableSource);
         Address peerAddress = bookmarks.FirstOrDefault()?.Address ?? account.Address;
         DateTimeOffset viewedAt = DateTimeOffset.UtcNow;
+        BusinessObjectId draftObjectId = BusinessObjectCreateIdFactory.CreateNewObjectId("ui-message", $"Message from {normalizedAccount}");
 
         var draft = new BusinessObjectTransactionDraft(
-            new BusinessObjectId($"bo:ui-message:{normalizedAccount}:{viewedAt:yyyyMMddHHmmss}"),
+            draftObjectId,
             "message",
             "1.0",
             account.Address,
@@ -128,7 +130,7 @@ public sealed class EconomyNodeWorkspaceSession(
                 account = account.Address.Value,
                 viewedAtUtc = viewedAt
             }),
-            $"venft://{normalizedAccount}/message/{viewedAt:yyyyMMddHHmmss}",
+            $"venft://{normalizedAccount}/message/{draftObjectId.Value}",
             TokenId: defaultToken?.TokenId,
             TokenAmount: defaultToken is null ? null : Amount.FromInt64(1));
 
@@ -364,7 +366,7 @@ public sealed class EconomyNodeWorkspaceSession(
         {
             BusinessObjectTransactionMode.Create => await account.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    UniqueObjectId(draft.ObjectId),
+                    draft.ObjectId,
                     SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),

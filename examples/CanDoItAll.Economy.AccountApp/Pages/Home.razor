@@ -190,6 +190,7 @@
         <section data-testid="wasm-workspace">
             <EconomyAccountWorkspaceAdapterHost Adapter="Session.WorkspaceAdapter"
                                                 UseFullAppShell="true"
+                                                InitialView="@View"
                                                 WorkspaceLoaded="OnWorkspaceLoaded"
                                                 TransactionSubmitted="OnTransactionSubmitted" />
         </section>
@@ -204,6 +205,9 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "view")]
+    public string? View { get; set; }
+
     protected override async Task OnInitializedAsync()
         => await Session.InitializeAsync();
 

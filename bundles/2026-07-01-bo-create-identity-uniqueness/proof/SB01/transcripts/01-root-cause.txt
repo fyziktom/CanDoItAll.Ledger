@@ -1,0 +1,25 @@
+Root cause proof
+
+1. Ledger duplicate-create guard
+   - Source: src/CanDoItAll.Economy.Ledger/BusinessObjectTransitionValidator.cs
+   - Behavior: a Create output is invalid only when the transaction consumes an existing current output for the same BusinessObjectId, and Create must start at version 1.
+   - Decision: keep this guard. It prevents overwriting the current state for a versioned BO lineage.
+
+2. Faulty create-time identity source
+   - Source: src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+   - Previous behavior: the wizard created draft IDs as bo:{type}:{NormalizeName(payload.Name)}.
+   - Reproduction implication: two image BOs named "New Image BO" both produced bo:image:new-image-bo, causing the second create to trip the ledger guard.
+
+3. Transaction builder check
+   - Source: src/CanDoItAll.Economy.BusinessObjects/BusinessObjectTransactionBuilder.cs
+   - Behavior: BuildUnsignedCreateAsync forwards the request ObjectId into the BusinessObjectRef output and the transaction data hash. It does not re-normalize based on name.
+   - Decision: this is not a transaction-hash bug. The wrong identity already exists in the draft.
+
+4. VEFramework reference mapping
+   - Source: C:\repositories\VirtualEconomyFramework\VirtualEconomyFramework\VEDriversLite\NFT\CommonNFT.cs
+   - Source: C:\repositories\VirtualEconomyFramework\VirtualEconomyFramework\VEDriversLite\NFT\NFTFactory.cs
+   - Common metadata includes Name, Description, Text, Image, DataItems, SourceUtxo, and NFTOriginTxId.
+   - Factory assigns Utxo and UtxoIndex to the loaded NFT instance.
+   - Decision: display metadata can repeat; ledger identity must not be just the display name.
+
+Gate result: passed. The fix belongs in create draft identity generation, with the ledger invariant preserved.

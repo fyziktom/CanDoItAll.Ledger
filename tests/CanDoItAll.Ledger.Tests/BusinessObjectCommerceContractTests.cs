@@ -33,7 +33,7 @@ public sealed class BusinessObjectCommerceContractTests
             Alice,
             ListedAtUtc,
             maxClones: 3,
-            sharePath: "/buy-bo/bo:post:commerce-target");
+            sharePath: "/buy-bo/tx/tx-commerce-target/0");
 
         BusinessObjectCommerceValidationResult validation = BusinessObjectCommerceValidator.ValidateSaleTerms(terms);
         Assert.True(validation.IsValid, string.Join("; ", validation.Errors));

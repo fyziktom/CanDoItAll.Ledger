@@ -82,7 +82,7 @@
                     </div>
                     <div class="cda-vef-gallery-meta">
                         <span>@ShortObjectId(item.ObjectId)</span>
-                        <span>@item.CreatedAt.ToString("MM.dd.yyyy")</span>
+                        <span>@SortTimestampFor(item).ToString("MM.dd.yyyy HH:mm")</span>
                     </div>
                     @if (FactsFor(item).Count > 0)
                     {
@@ -128,20 +128,29 @@
 
     private string ActiveTabLabel => $"AT - {Workspace.AccountName}";
 
-    private IReadOnlyList<IBusinessObjectView> FilteredItems
+    private IReadOnlyList<IBusinessObjectView> GalleryItems
         => Workspace.BusinessObjects
+            .Where(IsGalleryItem)
+            .ToArray();
+
+    private IReadOnlyList<IBusinessObjectView> FilteredItems
+        => GalleryItems
             .Where(MatchesFilters)
-            .OrderByDescending(item => item.CreatedAt)
+            .OrderByDescending(SortTimestampFor)
+            .ThenBy(TransactionOrderFor)
+            .ThenByDescending(item => item.Version)
+            .ThenByDescending(item => item.CurrentOutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenByDescending(item => item.CurrentOutPoint.OutputIndex)
             .ToArray();
 
     private IReadOnlyList<FilterOption> TypeOptions
-        => FilterOptions(Workspace.BusinessObjects.Select(item => item.ObjectType));
+        => FilterOptions(GalleryItems.Select(item => item.ObjectType));
 
     private IReadOnlyList<FilterOption> OperationOptions
-        => FilterOptions(Workspace.BusinessObjects.Select(item => item.Operation.ToString()));
+        => FilterOptions(GalleryItems.Select(item => item.Operation.ToString()));
 
     private IReadOnlyList<string> FeaturedTags
-        => Workspace.BusinessObjects
+        => GalleryItems
             .SelectMany(TagsFor)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(6)
@@ -202,6 +211,43 @@
 
         return probe.Contains(search.TrimStart('#'), StringComparison.OrdinalIgnoreCase);
     }
+
+    private DateTimeOffset SortTimestampFor(IBusinessObjectView item)
+        => Workspace.Transactions
+            .FirstOrDefault(transaction => transaction.TxId == item.CurrentOutPoint.TxId)
+            ?.Timestamp
+            ?? item.CreatedAt;
+
+    private int TransactionOrderFor(IBusinessObjectView item)
+    {
+        for (int index = 0; index < Workspace.Transactions.Count; index++)
+        {
+            if (Workspace.Transactions[index].TxId == item.CurrentOutPoint.TxId)
+            {
+                return index;
+            }
+        }
+
+        return int.MaxValue;
+    }
+
+    private static bool IsGalleryItem(IBusinessObjectView item)
+    {
+        if (item is ICommerceBusinessObjectView commerce
+            && (commerce.Commerce.Payment is not null
+                || commerce.Commerce.Purchase is not null
+                || commerce.Commerce.Receipt is not null))
+        {
+            return false;
+        }
+
+        return !IsCommerceObjectType(item.ObjectType);
+    }
+
+    private static bool IsCommerceObjectType(string objectType)
+        => string.Equals(objectType, "payment", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(objectType, "purchase", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(objectType, "receipt", StringComparison.OrdinalIgnoreCase);
 
     private static IReadOnlyList<FilterOption> FilterOptions(IEnumerable<string> values)
         => new[] { new FilterOption(AllFilter, "All") }

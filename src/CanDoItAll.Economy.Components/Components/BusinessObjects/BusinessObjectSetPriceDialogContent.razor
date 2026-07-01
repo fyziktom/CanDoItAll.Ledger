@@ -46,15 +46,17 @@
                                     Label="Price asset"
                                     DataTestId="bo-price-token-selector" />
 
-            <FormField Text="Max copies" ContainerClass="cda-economy-field">
-                <input class="cda-economy-input"
-                       data-testid="bo-sale-max-clones"
-                       value="@maxClones"
-                       @oninput="OnMaxClonesInput"
-                       disabled="@(!IsCopyMode)"
-                       placeholder="10"
-                       aria-label="Max copies" />
-            </FormField>
+            @if (IsCopyMode)
+            {
+                <FormField Text="Max copies" ContainerClass="cda-economy-field">
+                    <input class="cda-economy-input"
+                           data-testid="bo-sale-max-clones"
+                           value="@maxClones"
+                           @oninput="OnMaxClonesInput"
+                           placeholder="10"
+                           aria-label="Max copies" />
+                </FormField>
+            }
         </Grid>
 
         <div class="cda-vef-sale-share" data-testid="bo-sale-share-link">
@@ -110,7 +112,7 @@
     private string BuyPath
         => Object is null
             ? "/buy-bo"
-            : $"/buy-bo/{Uri.EscapeDataString(Object.ObjectId.Value)}";
+            : BuyPathFor(Object.CurrentOutPoint);
 
     private string BuyLink => Navigation.ToAbsoluteUri(BuyPath).ToString();
 
@@ -214,4 +216,7 @@
 
     private static string FormatPrice(decimal amount, string? tokenId)
         => $"{amount.ToString("0.#############################", CultureInfo.InvariantCulture)} {(string.IsNullOrWhiteSpace(tokenId) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : tokenId)}";
+
+    private static string BuyPathFor(OutPoint outPoint)
+        => $"/buy-bo/tx/{Uri.EscapeDataString(outPoint.TxId.Value)}/{outPoint.OutputIndex}";
 }
