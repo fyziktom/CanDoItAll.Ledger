@@ -112,6 +112,129 @@ public sealed class BusinessObjectAdvancedTransactionTests
     }
 
     [Fact]
+    public async Task Account_BuildsBusinessObjectEditsAsSelfUpdateTransactions()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-08T06:00:00Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        BusinessObjectId objectId = new("self-updated-post");
+        LedgerSubmitResult funding = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.FromInt64(15)));
+        Assert.True(funding.Accepted);
+
+        LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
+            new CreateBusinessObjectRequest(
+                objectId,
+                "post",
+                "{\"title\":\"draft\"}",
+                MainAmount: Amount.FromInt64(15)),
+            CancellationToken.None);
+        Assert.True(create.Accepted, string.Join("; ", create.Errors));
+        LedgerBusinessObjectHolding current = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
+
+        rig.Time.Advance(TimeSpan.FromMinutes(10));
+        const string nextStateJson = "{\"title\":\"edited\",\"longDescription\":\"BO edit persisted by ledger update.\"}";
+        LedgerTransaction update = await alice.BuildUpdateBusinessObjectTransactionAsync(
+            new UpdateBusinessObjectRequest(objectId, nextStateJson, "bo-update://self-updated-post"),
+            CancellationToken.None);
+
+        AssertSingleSelfUpdateTransaction(
+            update,
+            current,
+            Alice,
+            objectId,
+            Amount.FromInt64(15),
+            expectedVersion: 2,
+            nextStateJson,
+            "bo-update://self-updated-post");
+
+        LedgerSubmitResult result = await alice.SubmitTransactionAsync(update, CancellationToken.None);
+
+        Assert.True(result.Accepted, string.Join("; ", result.Errors));
+        LedgerBusinessObjectHolding updated = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
+        Assert.Equal(2, updated.Version);
+        Assert.Equal(nextStateJson, updated.StateJson);
+    }
+
+    [Fact]
+    public async Task Account_BuildsPriceChangesAsSelfUpdateTransactionsWithSaleTerms()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-08T07:00:00Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        BusinessObjectId objectId = new("self-priced-post");
+        LedgerSubmitResult funding = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.FromInt64(20)));
+        Assert.True(funding.Accepted);
+
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            BusinessObjectFamilyCatalog.FindOrDefault("post"),
+            "Self priced post",
+            "Sale setup test",
+            "This object is listed by writing a BO update transaction back to the seller.",
+            "#sale #ledger",
+            Array.Empty<BusinessObjectDataItem>());
+        string initialStateJson = BusinessObjectPayloadBuilder.Serialize(payload);
+        LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
+            new CreateBusinessObjectRequest(
+                objectId,
+                "post",
+                initialStateJson,
+                MainAmount: Amount.FromInt64(20)),
+            CancellationToken.None);
+        Assert.True(create.Accepted, string.Join("; ", create.Errors));
+        LedgerBusinessObjectHolding current = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
+
+        rig.Time.Advance(TimeSpan.FromMinutes(5));
+        Amount price = Amount.FromDecimal(12.5m);
+        BusinessObjectSaleTerms saleTerms = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
+            BusinessObjectSaleMode.Original,
+            price,
+            Alice,
+            rig.Time.UtcNow,
+            sharePath: "/buy-bo/self-priced-post");
+        string saleStateJson = BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(
+            initialStateJson,
+            objectId.Value,
+            saleTerms);
+        LedgerTransaction priceUpdate = await alice.BuildSetBusinessObjectPriceTransactionAsync(
+            new SetBusinessObjectPriceRequest(
+                objectId,
+                price,
+                null,
+                saleStateJson,
+                "bo-commerce://sale/self-priced-post"),
+            CancellationToken.None);
+
+        AssertSingleSelfUpdateTransaction(
+            priceUpdate,
+            current,
+            Alice,
+            objectId,
+            Amount.FromInt64(20),
+            expectedVersion: 2,
+            saleStateJson,
+            "bo-commerce://sale/self-priced-post");
+        Assert.True(BusinessObjectCommercePayloadBuilder.TryGetSaleTerms(
+            priceUpdate.Data!.InlineJson,
+            out BusinessObjectSaleTerms? transactionSaleTerms));
+        Assert.Equal(BusinessObjectSaleStatus.Listed, transactionSaleTerms!.Status);
+        Assert.Equal(BusinessObjectSaleMode.Original, transactionSaleTerms.Mode);
+        Assert.Equal(price.Value, transactionSaleTerms.PriceAmount);
+        Assert.Equal(Alice.Value, transactionSaleTerms.SellerAddress);
+
+        LedgerSubmitResult result = await alice.SubmitTransactionAsync(priceUpdate, CancellationToken.None);
+
+        Assert.True(result.Accepted, string.Join("; ", result.Errors));
+        LedgerBusinessObjectHolding updated = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
+        Assert.Equal(2, updated.Version);
+        Assert.Equal(saleStateJson, updated.StateJson);
+        Assert.True(BusinessObjectCommercePayloadBuilder.TryGetSaleTerms(updated.StateJson, out BusinessObjectSaleTerms? persistedSaleTerms));
+        Assert.Equal(price.Value, persistedSaleTerms!.PriceAmount);
+        Assert.Equal(Alice.Value, persistedSaleTerms.SellerAddress);
+    }
+
+    [Fact]
     public async Task Account_RejectsInvalidAdvancedRequestsBeforeAssembly()
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-08T00:00:00Z"));
@@ -486,6 +609,42 @@ public sealed class BusinessObjectAdvancedTransactionTests
         var settings = Assert.IsType<AccountSettingsBusinessObjectView>(view);
         Assert.Equal("light", settings.Settings["theme"]);
         Assert.Equal(DateTimeOffset.Parse("2026-05-09T03:15:00Z"), settings.ViewedAt);
+    }
+
+    private static void AssertSingleSelfUpdateTransaction(
+        LedgerTransaction transaction,
+        LedgerBusinessObjectHolding current,
+        Address owner,
+        BusinessObjectId objectId,
+        Amount expectedMainAmount,
+        int expectedVersion,
+        string expectedStateJson,
+        string? expectedExternalRef)
+    {
+        Assert.Equal(TransactionKind.BusinessObject, transaction.Kind);
+        TransactionInput input = Assert.Single(transaction.Inputs);
+        Assert.Equal(owner, input.Address);
+        Assert.Equal(current.CurrentOutPoint, input.PreviousOutPoint);
+        Assert.NotEmpty(input.SignatureBundle.Signatures);
+
+        TransactionOutput output = Assert.Single(transaction.Outputs);
+        Assert.Equal(owner, output.Address);
+        Assert.Equal(expectedMainAmount, output.MainAmount);
+        Assert.Null(output.Token);
+        BusinessObjectRef? businessObject = output.BusinessObject;
+        Assert.NotNull(businessObject);
+        Assert.Equal(objectId, businessObject!.ObjectId);
+        Assert.Equal(expectedVersion, businessObject.Version);
+        Assert.Equal(BusinessObjectOperation.Update, businessObject.Operation);
+        Assert.NotEqual(current.DataHash, businessObject.DataHash);
+
+        TransactionData? data = transaction.Data;
+        Assert.NotNull(data);
+        Assert.Equal(TransactionDataItemType.BusinessObject, data!.ItemType);
+        Assert.Equal(expectedStateJson, data.InlineJson);
+        Assert.Equal(expectedExternalRef, data.ExternalRef);
+        Assert.NotNull(data.DataHash);
+        Assert.Equal(data.DataHash.Value, businessObject.DataHash);
     }
 
     private static TestRig CreateRig(
