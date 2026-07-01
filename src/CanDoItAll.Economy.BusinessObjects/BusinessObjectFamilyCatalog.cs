@@ -12,7 +12,8 @@ public enum BusinessObjectFieldKind
     Amount = 3,
     Address = 4,
     Url = 5,
-    Status = 6
+    Status = 6,
+    Boolean = 7
 }
 
 public sealed record BusinessObjectFieldDefinition(
@@ -29,7 +30,8 @@ public sealed record BusinessObjectFamilyDefinition(
     string Icon,
     string Description,
     IReadOnlyList<BusinessObjectFieldDefinition> Fields,
-    IReadOnlyList<string>? Aliases = null)
+    IReadOnlyList<string>? Aliases = null,
+    bool IsUserMintable = true)
 {
     public IReadOnlyList<string> TypeKeys
         => [ObjectType, .. Aliases ?? []];
@@ -127,8 +129,16 @@ public static class BusinessObjectFamilyCatalog
             [
                 new("startsAt", "Starts at", BusinessObjectFieldKind.DateTime),
                 new("endsAt", "Ends at", BusinessObjectFieldKind.DateTime),
+                new("eventId", "Event id"),
+                new("eventDate", "Event date", BusinessObjectFieldKind.DateTime),
+                new("eventClass", "Event class", BusinessObjectFieldKind.Status, Placeholder: "Birthday, Concert, OnlineMeeting"),
                 new("location", "Location"),
+                new("locationCoordinates", "Location coordinates", Placeholder: "50.087,14.421"),
                 new("organizer", "Organizer"),
+                new("authorLink", "Author website", BusinessObjectFieldKind.Url),
+                new("videoLink", "Video link", BusinessObjectFieldKind.Url),
+                new("musicInLink", "Music in link", BusinessObjectFieldKind.Boolean),
+                new("mintAuthorAddress", "Mint author address", BusinessObjectFieldKind.Address),
                 new("status", "Status", BusinessObjectFieldKind.Status)
             ],
             ["events"]),
@@ -140,9 +150,18 @@ public static class BusinessObjectFamilyCatalog
             "Ticket, access pass, service case, or approval ticket.",
             [
                 new("ticketNumber", "Ticket number"),
-                new("event", "Event"),
+                new("eventId", "Event BO outpoint"),
+                new("eventAddress", "Event owner address", BusinessObjectFieldKind.Address),
+                new("eventDate", "Event date", BusinessObjectFieldKind.DateTime),
+                new("location", "Location"),
+                new("locationCoordinates", "Location coordinates", Placeholder: "50.087,14.421"),
+                new("authorLink", "Author website", BusinessObjectFieldKind.Url),
+                new("ticketClass", "Ticket class", BusinessObjectFieldKind.Status, Placeholder: "Standard, VIP, Family"),
+                new("ticketDuration", "Ticket duration", BusinessObjectFieldKind.Status, Placeholder: "Day, Weekend, Week"),
                 new("holder", "Holder"),
                 new("seat", "Seat or scope"),
+                new("used", "Used", BusinessObjectFieldKind.Boolean),
+                new("usedAt", "Used at", BusinessObjectFieldKind.DateTime),
                 new("status", "Status", BusinessObjectFieldKind.Status)
             ],
             ["tickets"]),
@@ -160,7 +179,8 @@ public static class BusinessObjectFamilyCatalog
                 new("reference", "Reference"),
                 new("status", "Status", BusinessObjectFieldKind.Status)
             ],
-            ["payments"]),
+            ["payments"],
+            IsUserMintable: false),
         new(
             "commerce",
             "purchase",
@@ -175,7 +195,8 @@ public static class BusinessObjectFamilyCatalog
                 new("orderNumber", "Order number"),
                 new("status", "Status", BusinessObjectFieldKind.Status)
             ],
-            ["purchase-order", "order", "orders", "purchases"]),
+            ["purchase-order", "order", "orders", "purchases"],
+            IsUserMintable: false),
         new(
             "commerce",
             "receipt",
@@ -190,7 +211,8 @@ public static class BusinessObjectFamilyCatalog
                 new("receivedBy", "Received by"),
                 new("issuedAt", "Issued at", BusinessObjectFieldKind.DateTime)
             ],
-            ["receipts"]),
+            ["receipts"],
+            IsUserMintable: false),
         new(
             "commerce",
             "invoice",
@@ -228,12 +250,23 @@ public static class BusinessObjectFamilyCatalog
             "badge",
             "Public profile, organization card, or account identity record.",
             [
+                new("firstName", "First name"),
+                new("surname", "Surname"),
+                new("nickname", "Nickname"),
+                new("bio", "Bio", BusinessObjectFieldKind.LongText),
+                new("imageLink", "Image link", BusinessObjectFieldKind.Url),
                 new("displayName", "Display name"),
                 new("contact", "Contact"),
                 new("website", "Website", BusinessObjectFieldKind.Url),
-                new("role", "Role")
+                new("role", "Role"),
+                new("age", "Age"),
+                new("relationshipStatus", "Relationship status"),
+                new("currency", "Currency"),
+                new("approvalMode", "Approval mode"),
+                new("simulationClock", "Simulation clock")
             ],
-            ["profiles"]),
+            ["profiles"],
+            IsUserMintable: false),
         new(
             "content",
             "music",
@@ -249,6 +282,9 @@ public static class BusinessObjectFamilyCatalog
     ];
 
     public static IReadOnlyList<BusinessObjectFamilyDefinition> Families => BuiltInFamilies;
+
+    public static IReadOnlyList<BusinessObjectFamilyDefinition> UserMintableFamilies
+        => BuiltInFamilies.Where(family => family.IsUserMintable).ToArray();
 
     public static bool TryFindByObjectType(string? objectType, out BusinessObjectFamilyDefinition definition)
     {

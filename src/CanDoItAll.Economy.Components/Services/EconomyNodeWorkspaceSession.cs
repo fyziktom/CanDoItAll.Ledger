@@ -487,19 +487,115 @@ public sealed class EconomyNodeWorkspaceSession(
         CancellationToken cancellationToken = default)
     {
         using NodeAccountDriver driver = await LoadDriverAsync(accountName, cancellationToken).ConfigureAwait(false);
-        string nextState = JsonSerializer.Serialize(new
-        {
-            currency = SafeText(request.Currency, "USD"),
-            approvalMode = SafeText(request.ApprovalMode, "two-step"),
-            displayName = SafeText(request.DisplayName, ToDisplayName(NormalizeAccountName(accountName))),
-            simulationClock = SafeText(request.SimulationClock, "real-node"),
-            previous = SafeJson(request.StateJson)
-        });
-        LedgerSubmitResult result = await driver.Account.UpdateBusinessObjectAsync(
-            new UpdateBusinessObjectRequest(request.ObjectId, nextState, SafeNullable(request.ExternalRef)),
-            cancellationToken).ConfigureAwait(false);
+        string nextState = WasmAccountWorkspaceAdapter.BuildProfileStateJson(
+            request,
+            ToDisplayName(NormalizeAccountName(accountName)));
+        LedgerSubmitResult result = request.CreateNew
+            ? await driver.Account.CreateBusinessObjectAsync(
+                new CreateBusinessObjectRequest(
+                    request.ObjectId,
+                    "profile",
+                    nextState,
+                    MainAmount: Amount.FromInt64(1),
+                    ExternalRef: SafeNullable(request.ExternalRef)),
+                cancellationToken).ConfigureAwait(false)
+            : await driver.Account.UpdateBusinessObjectAsync(
+                new UpdateBusinessObjectRequest(request.ObjectId, nextState, SafeNullable(request.ExternalRef)),
+                cancellationToken).ConfigureAwait(false);
 
         return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "Profile update");
+    }
+
+    public async Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        string? accountName,
+        BusinessObjectTicketVerificationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        using NodeAccountDriver driver = await LoadDriverAsync(accountName, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<LedgerTransactionSummary> history = await driver.LedgerDriver.QueryTransactionsAsync(
+            new LedgerTransactionQuery(
+                driver.Context,
+                BusinessObjectId: request.ObjectId,
+                IncludeData: true,
+                Skip: 0,
+                Take: 100),
+            cancellationToken).ConfigureAwait(false);
+        BusinessObjectTicketHistoryValidation validation = BusinessObjectTicketVerification.ValidateHistory(
+            request.ObjectType,
+            request.ObjectId,
+            history);
+        BusinessObjectTicketVerificationMessage message = BusinessObjectTicketVerification.CreateVerificationMessage(
+            request.ObjectId,
+            request.CurrentOutPoint,
+            request.OwnerAddress,
+            DateTimeOffset.UtcNow);
+        if (!validation.IsValid)
+        {
+            return new BusinessObjectTicketVerificationResult(
+                Success: false,
+                validation.Summary,
+                message.Message,
+                message.MessageHash,
+                SignatureJson: null,
+                message.GeneratedAtUtc,
+                message.ExpiresAtUtc,
+                validation);
+        }
+
+        EconomyMessageSignature signature = await driver.Account.SignMessageAsync(message.Message, cancellationToken).ConfigureAwait(false);
+        string signatureJson = JsonSerializer.Serialize(signature, MessageJsonOptions);
+        return new BusinessObjectTicketVerificationResult(
+            Success: true,
+            "Ticket ownership code was signed for the current unused ticket.",
+            message.Message,
+            message.MessageHash,
+            signatureJson,
+            message.GeneratedAtUtc,
+            message.ExpiresAtUtc,
+            validation);
+    }
+
+    public async Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        string? accountName,
+        BusinessObjectTicketUseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        using NodeAccountDriver driver = await LoadDriverAsync(accountName, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<LedgerTransactionSummary> history = await driver.LedgerDriver.QueryTransactionsAsync(
+            new LedgerTransactionQuery(
+                driver.Context,
+                BusinessObjectId: request.ObjectId,
+                IncludeData: true,
+                Skip: 0,
+                Take: 100),
+            cancellationToken).ConfigureAwait(false);
+        BusinessObjectTicketHistoryValidation validation = BusinessObjectTicketVerification.ValidateHistory(
+            "ticket",
+            request.ObjectId,
+            history);
+        if (!validation.IsValid)
+        {
+            return new EconomyTransactionExecutionResult(
+                BusinessObjectTransactionMode.UpdateObject,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                validation.Summary);
+        }
+
+        string nextState = BusinessObjectTicketVerification.BuildUsedStateJson(
+            request.StateJson,
+            request.ObjectId,
+            DateTimeOffset.UtcNow,
+            request.VerificationHash);
+        LedgerSubmitResult result = await driver.Account.UpdateBusinessObjectAsync(
+            new UpdateBusinessObjectRequest(
+                request.ObjectId,
+                nextState,
+                SafeNullable(request.ExternalRef)),
+            cancellationToken).ConfigureAwait(false);
+
+        return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "Ticket use");
     }
 
     public async Task<EconomyTransactionExecutionResult> CreateTokenAsync(

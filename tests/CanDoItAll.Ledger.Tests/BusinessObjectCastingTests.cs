@@ -104,6 +104,29 @@ public sealed class BusinessObjectCastingTests
         Assert.Equal(timeProvider.UtcNow, typed.ViewedAt);
     }
 
+    [Fact]
+    public void Catalog_SeparatesUserMintableFamiliesFromBackgroundRecords()
+    {
+        string[] mintableTypes = BusinessObjectFamilyCatalog.UserMintableFamilies
+            .Select(family => family.ObjectType)
+            .ToArray();
+
+        Assert.Contains("post", mintableTypes);
+        Assert.Contains("event", mintableTypes);
+        Assert.Contains("ticket", mintableTypes);
+        Assert.DoesNotContain("payment", mintableTypes);
+        Assert.DoesNotContain("purchase", mintableTypes);
+        Assert.DoesNotContain("receipt", mintableTypes);
+        Assert.DoesNotContain("profile", mintableTypes);
+        Assert.False(BusinessObjectFamilyCatalog.FindOrDefault("profile").IsUserMintable);
+        Assert.Contains(BusinessObjectFamilyCatalog.FindOrDefault("event").Fields, field => field.Key == "eventClass");
+        Assert.Contains(BusinessObjectFamilyCatalog.FindOrDefault("event").Fields, field => field.Key == "locationCoordinates");
+        Assert.Contains(BusinessObjectFamilyCatalog.FindOrDefault("ticket").Fields, field => field.Key == "eventId");
+        Assert.Contains(BusinessObjectFamilyCatalog.FindOrDefault("ticket").Fields, field => field.Key == "ticketClass");
+        Assert.Contains(BusinessObjectFamilyCatalog.FindOrDefault("ticket").Fields, field => field.Key == "ticketDuration");
+        Assert.Contains(BusinessObjectFamilyCatalog.FindOrDefault("ticket").Fields, field => field.Key == "used");
+    }
+
     private static BusinessObjectCastSource CreateSource(string objectType, TransactionDataItemType itemType, string stateJson)
         => new(
             Context,

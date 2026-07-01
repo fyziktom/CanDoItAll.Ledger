@@ -458,6 +458,21 @@ public sealed class BusinessObjectCommerceDispatcherTests
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException("Dispatcher must submit explicit update drafts.");
 
+        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+            ProfileEditRequest request,
+            CancellationToken cancellationToken = default)
+            => throw new NotSupportedException();
+
+        public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+            BusinessObjectTicketVerificationRequest request,
+            CancellationToken cancellationToken = default)
+            => throw new NotSupportedException();
+
+        public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+            BusinessObjectTicketUseRequest request,
+            CancellationToken cancellationToken = default)
+            => throw new NotSupportedException();
+
         public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
             EconomyTokenCreationRequest request,
             CancellationToken cancellationToken = default)

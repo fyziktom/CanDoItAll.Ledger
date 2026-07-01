@@ -72,4 +72,38 @@ public sealed record ProfileEditRequest(
     string DisplayName,
     string SimulationClock,
     string StateJson,
-    string? ExternalRef = null);
+    string? ExternalRef = null,
+    bool CreateNew = false,
+    string FirstName = "",
+    string Surname = "",
+    string Nickname = "",
+    string Bio = "",
+    string ImageLink = "",
+    string Age = "",
+    string RelationshipStatus = "",
+    string Contact = "",
+    string Website = "",
+    string Role = "");
+
+public sealed record BusinessObjectTicketVerificationRequest(
+    BusinessObjectId ObjectId,
+    string ObjectType,
+    OutPoint CurrentOutPoint,
+    Address OwnerAddress,
+    string StateJson);
+
+public sealed record BusinessObjectTicketVerificationResult(
+    bool Success,
+    string Summary,
+    string Message,
+    HashHex? MessageHash,
+    string? SignatureJson,
+    DateTimeOffset GeneratedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    BusinessObjectTicketHistoryValidation History);
+
+public sealed record BusinessObjectTicketUseRequest(
+    BusinessObjectId ObjectId,
+    string StateJson,
+    string? ExternalRef = null,
+    HashHex? VerificationHash = null);

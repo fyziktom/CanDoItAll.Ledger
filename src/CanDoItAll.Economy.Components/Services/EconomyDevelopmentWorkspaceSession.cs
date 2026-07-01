@@ -770,17 +770,111 @@ public sealed class EconomyDevelopmentWorkspaceSession(
         await EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
         BusinessObjectAccount account = mainAccount ?? throw new InvalidOperationException("The development workspace was not initialized.");
         timeProvider.Advance(TimeSpan.FromMinutes(5));
+        string nextState = WasmAccountWorkspaceAdapter.BuildProfileStateJson(request, "Operations account");
+        LedgerSubmitResult result = request.CreateNew
+            ? await account.CreateBusinessObjectAsync(
+                new CreateBusinessObjectRequest(
+                    request.ObjectId,
+                    "profile",
+                    nextState,
+                    MainAmount: Amount.FromInt64(1),
+                    ExternalRef: SafeNullable(request.ExternalRef)),
+                cancellationToken).ConfigureAwait(false)
+            : await account.UpdateBusinessObjectAsync(
+                new UpdateBusinessObjectRequest(
+                    request.ObjectId,
+                    nextState,
+                    SafeNullable(request.ExternalRef)),
+                cancellationToken).ConfigureAwait(false);
 
-        string nextState = MergeJson(
+        return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "Profile update");
+    }
+
+    public async Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        BusinessObjectTicketVerificationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+        BusinessObjectAccount account = mainAccount ?? throw new InvalidOperationException("The development workspace was not initialized.");
+        IReadOnlyList<LedgerTransactionSummary> history = await economyClient.QueryTransactionsAsync(
+            new LedgerTransactionQuery(
+                SeedContext,
+                BusinessObjectId: request.ObjectId,
+                IncludeData: true,
+                Skip: 0,
+                Take: 100),
+            cancellationToken).ConfigureAwait(false);
+        BusinessObjectTicketHistoryValidation validation = BusinessObjectTicketVerification.ValidateHistory(
+            request.ObjectType,
+            request.ObjectId,
+            history);
+        BusinessObjectTicketVerificationMessage message = BusinessObjectTicketVerification.CreateVerificationMessage(
+            request.ObjectId,
+            request.CurrentOutPoint,
+            request.OwnerAddress,
+            timeProvider.UtcNow);
+        if (!validation.IsValid)
+        {
+            return new BusinessObjectTicketVerificationResult(
+                Success: false,
+                validation.Summary,
+                message.Message,
+                message.MessageHash,
+                SignatureJson: null,
+                message.GeneratedAtUtc,
+                message.ExpiresAtUtc,
+                validation);
+        }
+
+        EconomyMessageSignature signature = await AccountMessageSecurity
+            .SignMessageAsync(account.KeySource, message.Message, cancellationToken)
+            .ConfigureAwait(false);
+        string signatureJson = JsonSerializer.Serialize(signature, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true });
+        return new BusinessObjectTicketVerificationResult(
+            Success: true,
+            "Ticket ownership code was signed for the current unused ticket.",
+            message.Message,
+            message.MessageHash,
+            signatureJson,
+            message.GeneratedAtUtc,
+            message.ExpiresAtUtc,
+            validation);
+    }
+
+    public async Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        BusinessObjectTicketUseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+        BusinessObjectAccount account = mainAccount ?? throw new InvalidOperationException("The development workspace was not initialized.");
+        IReadOnlyList<LedgerTransactionSummary> history = await economyClient.QueryTransactionsAsync(
+            new LedgerTransactionQuery(
+                SeedContext,
+                BusinessObjectId: request.ObjectId,
+                IncludeData: true,
+                Skip: 0,
+                Take: 100),
+            cancellationToken).ConfigureAwait(false);
+        BusinessObjectTicketHistoryValidation validation = BusinessObjectTicketVerification.ValidateHistory(
+            "ticket",
+            request.ObjectId,
+            history);
+        if (!validation.IsValid)
+        {
+            return new EconomyTransactionExecutionResult(
+                BusinessObjectTransactionMode.UpdateObject,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                validation.Summary);
+        }
+
+        timeProvider.Advance(TimeSpan.FromMinutes(5));
+        string nextState = BusinessObjectTicketVerification.BuildUsedStateJson(
             request.StateJson,
-            root =>
-            {
-                root["currency"] = SafeText(request.Currency, "USD");
-                root["approvalMode"] = SafeText(request.ApprovalMode, "two-step");
-                root["displayName"] = SafeText(request.DisplayName, "Operations account");
-                root["simulationClock"] = SafeText(request.SimulationClock, "manual");
-            });
-
+            request.ObjectId,
+            timeProvider.UtcNow,
+            request.VerificationHash);
         LedgerSubmitResult result = await account.UpdateBusinessObjectAsync(
             new UpdateBusinessObjectRequest(
                 request.ObjectId,
@@ -788,7 +882,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 SafeNullable(request.ExternalRef)),
             cancellationToken).ConfigureAwait(false);
 
-        return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "Profile update");
+        return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "Ticket use");
     }
 
     public async Task<EconomyTransactionExecutionResult> CreateTokenAsync(

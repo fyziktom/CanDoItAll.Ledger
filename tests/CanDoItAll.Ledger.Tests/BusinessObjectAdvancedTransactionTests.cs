@@ -235,6 +235,84 @@ public sealed class BusinessObjectAdvancedTransactionTests
     }
 
     [Fact]
+    public async Task TicketVerification_ValidatesLedgerHistoryAndRejectsUsedTickets()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-08T08:00:00Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        BusinessObjectId eventId = new("bo:event:ledger-conf-2026");
+        BusinessObjectId ticketId = new("bo:ticket:ledger-conf-2026-001");
+        LedgerSubmitResult funding = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.FromInt64(30)));
+        Assert.True(funding.Accepted);
+
+        LedgerSubmitResult createEvent = await alice.CreateBusinessObjectAsync(
+            new CreateBusinessObjectRequest(
+                eventId,
+                "event",
+                CreateEventStateJson(eventId),
+                MainAmount: Amount.FromInt64(10)),
+            CancellationToken.None);
+        Assert.True(createEvent.Accepted, string.Join("; ", createEvent.Errors));
+
+        LedgerSubmitResult createTicket = await alice.CreateBusinessObjectAsync(
+            new CreateBusinessObjectRequest(
+                ticketId,
+                "ticket",
+                CreateTicketStateJson(ticketId, eventId, used: false),
+                MainAmount: Amount.FromInt64(20)),
+            CancellationToken.None);
+        Assert.True(createTicket.Accepted, string.Join("; ", createTicket.Errors));
+
+        IReadOnlyList<LedgerTransactionSummary> historyBeforeUse = await rig.Gateway.QueryTransactionsAsync(
+            new LedgerTransactionQuery(
+                Context,
+                BusinessObjectId: ticketId,
+                IncludeData: true),
+            CancellationToken.None);
+        BusinessObjectTicketHistoryValidation valid = BusinessObjectTicketVerification.ValidateHistory(
+            "ticket",
+            ticketId,
+            historyBeforeUse);
+
+        Assert.True(valid.IsValid, valid.Summary);
+        Assert.Equal(createTicket.TxId, valid.OriginTxId);
+        Assert.Contains(valid.Entries, entry => entry.Version == 1 && !entry.Used);
+
+        LedgerBusinessObjectHolding ticket = (await alice.GetBusinessObjectsAsync(CancellationToken.None))
+            .Single(holding => holding.ObjectId == ticketId);
+        rig.Time.Advance(TimeSpan.FromMinutes(15));
+        string usedStateJson = BusinessObjectTicketVerification.BuildUsedStateJson(
+            ticket.StateJson,
+            ticketId,
+            rig.Time.UtcNow,
+            new HashHex(new string('1', 64)));
+        LedgerSubmitResult useTicket = await alice.UpdateBusinessObjectAsync(
+            new UpdateBusinessObjectRequest(ticketId, usedStateJson, "ticket-used://ledger-conf-2026-001"),
+            CancellationToken.None);
+        Assert.True(useTicket.Accepted, string.Join("; ", useTicket.Errors));
+
+        IReadOnlyList<LedgerTransactionSummary> historyAfterUse = await rig.Gateway.QueryTransactionsAsync(
+            new LedgerTransactionQuery(
+                Context,
+                BusinessObjectId: ticketId,
+                IncludeData: true),
+            CancellationToken.None);
+        BusinessObjectTicketHistoryValidation used = BusinessObjectTicketVerification.ValidateHistory(
+            "ticket",
+            ticketId,
+            historyAfterUse);
+
+        Assert.False(used.IsValid);
+        Assert.True(used.IsUsed);
+        Assert.Equal(createTicket.TxId, used.OriginTxId);
+        Assert.Equal(useTicket.TxId, used.UsedTxId);
+        Assert.Contains(used.Entries, entry => entry.Version == 2 && entry.Used);
+        Assert.Contains("\"used\":\"true\"", usedStateJson, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("lastVerificationHash", usedStateJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Account_RejectsInvalidAdvancedRequestsBeforeAssembly()
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-08T00:00:00Z"));
@@ -647,6 +725,59 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal(data.DataHash.Value, businessObject.DataHash);
     }
 
+    private static string CreateEventStateJson(BusinessObjectId objectId)
+    {
+        var fields = new Dictionary<string, string>
+        {
+            ["eventId"] = objectId.Value,
+            ["eventDate"] = "2026-07-01T18:00:00Z",
+            ["eventClass"] = "Conference",
+            ["location"] = "Prague",
+            ["locationCoordinates"] = "50.087,14.421",
+            ["organizer"] = "CanDoItAll",
+            ["mintAuthorAddress"] = Alice.Value,
+            ["status"] = "Scheduled"
+        };
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            BusinessObjectFamilyCatalog.FindOrDefault("event"),
+            "Ledger Conference",
+            "Event used by ticket verification tests.",
+            "Ledger Conference validates event and ticket BO relationships.",
+            "#event #ledger",
+            Array.Empty<BusinessObjectDataItem>(),
+            fields);
+        return BusinessObjectPayloadBuilder.Serialize(payload);
+    }
+
+    private static string CreateTicketStateJson(BusinessObjectId ticketId, BusinessObjectId eventId, bool used)
+    {
+        var fields = new Dictionary<string, string>
+        {
+            ["ticketNumber"] = "001",
+            ["eventId"] = eventId.Value,
+            ["eventAddress"] = Alice.Value,
+            ["eventDate"] = "2026-07-01T18:00:00Z",
+            ["location"] = "Prague",
+            ["locationCoordinates"] = "50.087,14.421",
+            ["ticketClass"] = "VIP",
+            ["ticketDuration"] = "Day",
+            ["holder"] = "Alice",
+            ["seat"] = "A1",
+            ["used"] = used ? "true" : "false",
+            ["status"] = used ? "Used" : "FreeToUse",
+            ["externalId"] = ticketId.Value
+        };
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            BusinessObjectFamilyCatalog.FindOrDefault("ticket"),
+            "Ledger Conference Ticket 001",
+            "Ticket related to Ledger Conference.",
+            "Ticket verification follows BO history back to its origin.",
+            "#ticket #event",
+            Array.Empty<BusinessObjectDataItem>(),
+            fields);
+        return BusinessObjectPayloadBuilder.Serialize(payload);
+    }
+
     private static TestRig CreateRig(
         DateTimeOffset utcNow,
         bool enforceTokenPolicy = false,
@@ -708,10 +839,14 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
     private sealed class TestRig(InProcessLedgerGateway gateway, BusinessObjectTransactionBuilder builder, ManualTimeProvider time)
     {
+        public InProcessLedgerGateway Gateway { get; } = gateway;
+
+        public BusinessObjectTransactionBuilder Builder { get; } = builder;
+
         public ManualTimeProvider Time { get; } = time;
 
         public BusinessObjectAccount CreateAccount(string keyId)
-            => new(Context, CreateKey(keyId), gateway, gateway, builder);
+            => new(Context, CreateKey(keyId), Gateway, Gateway, Builder);
 
         public IAccountKeySource CreateKey(string keyId)
             => new InMemoryAccountKeySource(
@@ -723,7 +858,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
         public async Task<LedgerSubmitResult> SubmitMintAsync(CancellationToken cancellationToken, params TransactionOutput[] outputs)
         {
             IAccountKeySource bootstrapKey = CreateKey("bootstrap");
-            LedgerSpendableOutput selected = (await gateway
+            LedgerSpendableOutput selected = (await Gateway
                 .GetSpendableOutputsAsync(new LedgerAddressQuery(Context, Bootstrap), cancellationToken)
                 .ConfigureAwait(false))
                 .First(output => output.Token is null && output.BusinessObject is null);
@@ -742,7 +877,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
                 allOutputs,
                 null);
 
-            return await gateway.SubmitTransactionAsync(
+            return await Gateway.SubmitTransactionAsync(
                 await SignAsync(unsigned, bootstrapKey, cancellationToken).ConfigureAwait(false),
                 cancellationToken).ConfigureAwait(false);
         }

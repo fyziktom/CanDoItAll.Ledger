@@ -31,6 +31,8 @@ else
                         BusinessObjectTransactionDetailsRequested="OpenTransactionDetailsByIdAsync"
                         BusinessObjectSendRequested="OpenBusinessObjectSendDialogAsync"
                         BusinessObjectSetPriceRequested="OpenBusinessObjectSetPriceDialogAsync"
+                        BusinessObjectTicketVerificationRequested="CreateTicketVerificationAsync"
+                        BusinessObjectTicketUseRequested="UseTicketAsync"
                         TransactionSubmitRequested="SubmitTransactionAsync"
                         MessageSignRequested="SignMessageAsync"
                         MessageVerifyRequested="VerifyMessageAsync"
@@ -244,17 +246,10 @@ else
         }
 
         IBusinessObjectView? profileObject = workspace.BusinessObjects.FirstOrDefault(item =>
-            item is AccountSettingsBusinessObjectView
-            || item.ObjectType.Equals("settings", StringComparison.OrdinalIgnoreCase)
-            || item.ObjectType.Equals("account-settings", StringComparison.OrdinalIgnoreCase));
-        if (profileObject is null)
-        {
-            Notifications.Warning("Profile missing", "No profile/settings BO was found in this workspace.", position: NotificationPosition.BottomCenter);
-            return Task.CompletedTask;
-        }
+            item.ObjectType.Equals("profile", StringComparison.OrdinalIgnoreCase));
 
         return DialogService.OpenAsync<ProfileEditDialogContent>(
-            "Edit Profile",
+            profileObject is null ? "Create Profile" : "Edit Profile",
             new Dictionary<string, object?>
             {
                 [nameof(ProfileEditDialogContent.ProfileObject)] = profileObject,
@@ -264,7 +259,7 @@ else
             },
             new DialogOptions
             {
-                Subtitle = "Profile BusinessObject",
+                Subtitle = profileObject?.ObjectId.Value ?? "New profile BusinessObject",
                 Size = ModalSize.Medium,
                 Class = "cda-vef-dialog cda-vef-dialog--form",
                 TestId = "cda-profile-edit-dialog"
@@ -314,7 +309,55 @@ else
             () => usingDevelopmentWorkspace
                 ? DevelopmentSession.UpdateProfileAsync(request)
                 : EconomySession.UpdateProfileAsync(activeAccount, request),
-            "Profile updated");
+            request.CreateNew ? "Profile created" : "Profile updated");
+
+    private Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        BusinessObjectTicketVerificationRequest request)
+        => usingDevelopmentWorkspace
+            ? DevelopmentSession.CreateTicketVerificationAsync(request)
+            : EconomySession.CreateTicketVerificationAsync(activeAccount, request);
+
+    private async Task<EconomyTransactionExecutionResult> UseTicketAsync(BusinessObjectTicketUseRequest request)
+    {
+        try
+        {
+            lastResult = await (usingDevelopmentWorkspace
+                ? DevelopmentSession.UseTicketAsync(request)
+                : EconomySession.UseTicketAsync(activeAccount, request));
+            await refreshLock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+            try
+            {
+                workspace = EnrichWorkspaceForGallery(await LoadWorkspaceSnapshotAsync(allowDevelopmentFallback: true, CancellationToken.None));
+                SeedObservedTransactions(workspace.Transactions);
+            }
+            finally
+            {
+                refreshLock.Release();
+            }
+
+            if (lastResult.Accepted)
+            {
+                Notifications.Success("Ticket used", lastResult.Message, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                Notifications.Error("Ledger rejected transaction", lastResult.Message, position: NotificationPosition.BottomCenter);
+            }
+
+            return lastResult;
+        }
+        catch (Exception exception)
+        {
+            lastResult = new EconomyTransactionExecutionResult(
+                BusinessObjectTransactionMode.UpdateObject,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                exception.Message);
+            Notifications.Error("Economy action failed", exception.Message, position: NotificationPosition.BottomCenter);
+            return lastResult;
+        }
+    }
 
     private Task SubmitTokenCreationAsync(EconomyTokenCreationRequest request)
         => ExecuteAndRefreshAsync(

@@ -126,6 +126,12 @@
     [Parameter]
     public EventCallback<TxId> TransactionDetailsRequested { get; set; }
 
+    [Parameter]
+    public Func<BusinessObjectTicketVerificationRequest, Task<BusinessObjectTicketVerificationResult>>? TicketVerificationRequested { get; set; }
+
+    [Parameter]
+    public Func<BusinessObjectTicketUseRequest, Task<EconomyTransactionExecutionResult>>? TicketUseRequested { get; set; }
+
     private string ActiveTabLabel => $"AT - {Workspace.AccountName}";
 
     private IReadOnlyList<IBusinessObjectView> GalleryItems
@@ -170,7 +176,9 @@
                 [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.SendRequested)] = SendRequested,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.SetPriceRequested)] = SetPriceRequested,
-                [nameof(BusinessObjectLedgerDetailsDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested
+                [nameof(BusinessObjectLedgerDetailsDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.TicketVerificationRequested)] = TicketVerificationRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.TicketUseRequested)] = TicketUseRequested
             },
             new DialogOptions
             {

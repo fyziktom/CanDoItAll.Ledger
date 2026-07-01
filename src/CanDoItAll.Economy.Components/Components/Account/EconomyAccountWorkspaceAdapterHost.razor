@@ -31,7 +31,7 @@ else
                                 InitialView="@InitialView"
                                 RefreshRequested="RefreshAsync"
                                 CreateSubAccountRequested="OpenSubAccountDialogAsync"
-                                ValidateRequested="RefreshAsync"
+                                ValidateRequested="OpenProfileEditDialogAsync"
                                 OpenSendTransactionRequested="OpenSendTransactionDialogAsync"
                                 TransactionSubmitRequested="SubmitTransactionAsync"
                                 RuleTokenCreateRequested="SubmitRuleTokenCreationAsync"
@@ -40,6 +40,8 @@ else
                                 CreateTokenRequested="OpenTokenCreationDialogAsync"
                                 BusinessObjectSendRequested="OpenBusinessObjectSendDialogAsync"
                                 BusinessObjectSetPriceRequested="OpenBusinessObjectSetPriceDialogAsync"
+                                BusinessObjectTicketVerificationRequested="CreateTicketVerificationAsync"
+                                BusinessObjectTicketUseRequested="UseTicketAsync"
                                 MessageSignRequested="SignMessageAsync"
                                 MessageVerifyRequested="VerifyMessageAsync"
                                 MessageEncryptRequested="EncryptMessageAsync"
@@ -50,6 +52,7 @@ else
             <EconomyAccountWorkspace Workspace="workspace"
                                      RefreshRequested="RefreshAsync"
                                      AddTransactionRequested="SubmitCurrentDraftAsync"
+                                     ValidateRequested="OpenProfileEditDialogAsync"
                                      TransactionSubmitRequested="SubmitTransactionAsync"
                                      TransactionDetailsRequested="LoadTransactionDetailsAsync"
                                      MessageSignRequested="SignMessageAsync"
@@ -301,6 +304,34 @@ else
             });
     }
 
+    private Task OpenProfileEditDialogAsync()
+    {
+        if (workspace is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        IBusinessObjectView? profileObject = workspace.BusinessObjects.FirstOrDefault(item =>
+            item.ObjectType.Equals("profile", StringComparison.OrdinalIgnoreCase));
+
+        return DialogService.OpenAsync<ProfileEditDialogContent>(
+            profileObject is null ? "Create Profile" : "Edit Profile",
+            new Dictionary<string, object?>
+            {
+                [nameof(ProfileEditDialogContent.ProfileObject)] = profileObject,
+                [nameof(ProfileEditDialogContent.AccountName)] = workspace.AccountName,
+                [nameof(ProfileEditDialogContent.SubmitRequested)] =
+                    EventCallback.Factory.Create<ProfileEditRequest>(this, SubmitProfileEditAsync)
+            },
+            new DialogOptions
+            {
+                Subtitle = profileObject?.ObjectId.Value ?? "New profile BusinessObject",
+                Size = ModalSize.Medium,
+                Class = "cda-vef-dialog cda-vef-dialog--form",
+                TestId = "cda-profile-edit-dialog"
+            });
+    }
+
     private Task OpenTokenCreationDialogAsync()
     {
         if (workspace is null)
@@ -335,6 +366,11 @@ else
             () => Adapter.SetBusinessObjectPriceAsync(request),
             request.ClearSale ? "Sale cleared" : "Sale updated");
 
+    private Task SubmitProfileEditAsync(ProfileEditRequest request)
+        => ExecuteAndRefreshAsync(
+            () => Adapter.UpdateProfileAsync(request),
+            request.CreateNew ? "Profile created" : "Profile updated");
+
     private Task SubmitTokenCreationAsync(EconomyTokenCreationRequest request)
         => ExecuteAndRefreshAsync(
             () => Adapter.CreateTokenAsync(request),
@@ -356,6 +392,44 @@ else
 
     private Task<MessageSecurityActionResult> DecryptMessageAsync(MessageSecurityDecryptRequest request)
         => Adapter.DecryptMessageAsync(request);
+
+    private Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        BusinessObjectTicketVerificationRequest request)
+        => Adapter.CreateTicketVerificationAsync(request);
+
+    private async Task<EconomyTransactionExecutionResult> UseTicketAsync(BusinessObjectTicketUseRequest request)
+    {
+        try
+        {
+            EconomyTransactionExecutionResult result = await Adapter.UseTicketAsync(request).ConfigureAwait(false);
+            lastResult = result;
+            await TransactionSubmitted.InvokeAsync(result);
+            await RefreshWorkspaceAsync(showNotification: false);
+
+            if (result.Accepted)
+            {
+                Notifications.Success("Ticket used", result.Message, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                Notifications.Error("Ledger rejected transaction", result.Message, position: NotificationPosition.BottomCenter);
+            }
+
+            return result;
+        }
+        catch (Exception exception)
+        {
+            lastResult = new EconomyTransactionExecutionResult(
+                BusinessObjectTransactionMode.UpdateObject,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                exception.Message);
+            await TransactionSubmitted.InvokeAsync(lastResult);
+            Notifications.Error("Economy action failed", exception.Message, position: NotificationPosition.BottomCenter);
+            return lastResult;
+        }
+    }
 
     private async Task ExecuteAndRefreshAsync(
         Func<Task<EconomyTransactionExecutionResult>> action,

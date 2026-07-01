@@ -36,6 +36,18 @@ public interface IEconomyAccountWorkspaceAdapter
         BusinessObjectPriceRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+        ProfileEditRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        BusinessObjectTicketVerificationRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        BusinessObjectTicketUseRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         EconomyTokenCreationRequest request,
         CancellationToken cancellationToken = default);
@@ -307,6 +319,127 @@ public sealed class WasmAccountWorkspaceAdapter(
             cancellationToken).ConfigureAwait(false);
 
         return await SignAndSubmitAsync(BusinessObjectTransactionMode.UpdateObject, unsigned, "BO sale update", cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+        ProfileEditRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectAccount account = CreateAccount();
+        string nextState = BuildProfileStateJson(request, accountNameOverride ?? options.AccountName);
+        LedgerTransaction unsigned = request.CreateNew
+            ? await account.BuildUnsignedCreateBusinessObjectTransactionAsync(
+                new CreateBusinessObjectRequest(
+                    request.ObjectId,
+                    "profile",
+                    nextState,
+                    MainAmount: Amount.FromInt64(1),
+                    ExternalRef: SafeNullable(request.ExternalRef)),
+                cancellationToken).ConfigureAwait(false)
+            : await account.BuildUnsignedUpdateBusinessObjectTransactionAsync(
+                new UpdateBusinessObjectRequest(
+                    request.ObjectId,
+                    nextState,
+                    SafeNullable(request.ExternalRef)),
+                cancellationToken).ConfigureAwait(false);
+
+        return await SignAndSubmitAsync(BusinessObjectTransactionMode.UpdateObject, unsigned, request.CreateNew ? "Profile create" : "Profile update", cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        BusinessObjectTicketVerificationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<LedgerTransactionSummary> history = await ledgerReadClient
+            .QueryTransactionsAsync(
+                new LedgerTransactionQuery(
+                    Context,
+                    BusinessObjectId: request.ObjectId,
+                    IncludeData: true,
+                    Skip: 0,
+                    Take: 100),
+                cancellationToken)
+            .ConfigureAwait(false);
+        BusinessObjectTicketHistoryValidation validation = BusinessObjectTicketVerification.ValidateHistory(
+            request.ObjectType,
+            request.ObjectId,
+            history);
+        BusinessObjectTicketVerificationMessage message = BusinessObjectTicketVerification.CreateVerificationMessage(
+            request.ObjectId,
+            request.CurrentOutPoint,
+            request.OwnerAddress,
+            timeProvider.UtcNow);
+        if (!validation.IsValid)
+        {
+            return new BusinessObjectTicketVerificationResult(
+                Success: false,
+                validation.Summary,
+                message.Message,
+                message.MessageHash,
+                SignatureJson: null,
+                message.GeneratedAtUtc,
+                message.ExpiresAtUtc,
+                validation);
+        }
+
+        MessageSecurityActionResult signature = await SignMessageAsync(
+            new MessageSecuritySignRequest(accountNameOverride ?? options.AccountName, message.Message),
+            cancellationToken).ConfigureAwait(false);
+        return new BusinessObjectTicketVerificationResult(
+            signature.Success,
+            signature.Success ? "Ticket ownership code was signed for the current unused ticket." : signature.Summary,
+            message.Message,
+            message.MessageHash,
+            signature.PayloadJson,
+            message.GeneratedAtUtc,
+            message.ExpiresAtUtc,
+            validation);
+    }
+
+    public async Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        BusinessObjectTicketUseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectAccount account = CreateAccount();
+        IReadOnlyList<LedgerTransactionSummary> history = await ledgerReadClient
+            .QueryTransactionsAsync(
+                new LedgerTransactionQuery(
+                    Context,
+                    BusinessObjectId: request.ObjectId,
+                    IncludeData: true,
+                    Skip: 0,
+                    Take: 100),
+                cancellationToken)
+            .ConfigureAwait(false);
+        BusinessObjectTicketHistoryValidation validation = BusinessObjectTicketVerification.ValidateHistory(
+            "ticket",
+            request.ObjectId,
+            history);
+        if (!validation.IsValid)
+        {
+            return new EconomyTransactionExecutionResult(
+                BusinessObjectTransactionMode.UpdateObject,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                validation.Summary);
+        }
+
+        string nextState = BusinessObjectTicketVerification.BuildUsedStateJson(
+            request.StateJson,
+            request.ObjectId,
+            timeProvider.UtcNow,
+            request.VerificationHash);
+        LedgerTransaction unsigned = await account.BuildUnsignedUpdateBusinessObjectTransactionAsync(
+            new UpdateBusinessObjectRequest(
+                request.ObjectId,
+                nextState,
+                SafeNullable(request.ExternalRef)),
+            cancellationToken).ConfigureAwait(false);
+
+        return await SignAndSubmitAsync(BusinessObjectTransactionMode.UpdateObject, unsigned, "Ticket use", cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -706,6 +839,55 @@ public sealed class WasmAccountWorkspaceAdapter(
         return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, request.ObjectId.Value, terms);
     }
 
+    internal static string BuildProfileStateJson(ProfileEditRequest request, string accountName)
+    {
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("profile");
+        string displayName = SafeText(request.DisplayName, accountName);
+        string bio = SafeText(request.Bio, "Public account profile.");
+        var fields = new SortedDictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["displayName"] = displayName,
+            ["currency"] = SafeText(request.Currency, "USD"),
+            ["approvalMode"] = SafeText(request.ApprovalMode, "two-step"),
+            ["simulationClock"] = SafeText(request.SimulationClock, "manual")
+        };
+
+        AddField(fields, "firstName", request.FirstName);
+        AddField(fields, "surname", request.Surname);
+        AddField(fields, "nickname", request.Nickname);
+        AddField(fields, "bio", request.Bio);
+        AddField(fields, "imageLink", request.ImageLink);
+        AddField(fields, "age", request.Age);
+        AddField(fields, "relationshipStatus", request.RelationshipStatus);
+        AddField(fields, "contact", request.Contact);
+        AddField(fields, "website", request.Website);
+        AddField(fields, "role", request.Role);
+
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            displayName,
+            bio,
+            bio,
+            "#profile #account",
+            Array.Empty<BusinessObjectDataItem>(),
+            fields) with
+            {
+                Author = displayName,
+                Link = SafeNullable(request.Website),
+                ImageLink = SafeNullable(request.ImageLink)
+            };
+
+        return BusinessObjectPayloadBuilder.Serialize(payload);
+    }
+
+    private static void AddField(IDictionary<string, string> fields, string key, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            fields[key] = value.Trim();
+        }
+    }
+
     private static string ShortHash(string value)
         => value.Length > 12 ? $"{value[..12]}..." : value;
 
@@ -799,6 +981,21 @@ public sealed class DevelopmentEconomyWorkspaceAdapter(
         BusinessObjectPriceRequest request,
         CancellationToken cancellationToken = default)
         => session.SetBusinessObjectPriceAsync(request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+        ProfileEditRequest request,
+        CancellationToken cancellationToken = default)
+        => session.UpdateProfileAsync(request, cancellationToken);
+
+    public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        BusinessObjectTicketVerificationRequest request,
+        CancellationToken cancellationToken = default)
+        => session.CreateTicketVerificationAsync(request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        BusinessObjectTicketUseRequest request,
+        CancellationToken cancellationToken = default)
+        => session.UseTicketAsync(request, cancellationToken);
 
     public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         EconomyTokenCreationRequest request,
@@ -907,6 +1104,21 @@ public sealed class NodeEconomyWorkspaceAdapter(
         BusinessObjectPriceRequest request,
         CancellationToken cancellationToken = default)
         => session.SetBusinessObjectPriceAsync(options.AccountName, request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+        ProfileEditRequest request,
+        CancellationToken cancellationToken = default)
+        => session.UpdateProfileAsync(options.AccountName, request, cancellationToken);
+
+    public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        BusinessObjectTicketVerificationRequest request,
+        CancellationToken cancellationToken = default)
+        => session.CreateTicketVerificationAsync(options.AccountName, request, cancellationToken);
+
+    public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        BusinessObjectTicketUseRequest request,
+        CancellationToken cancellationToken = default)
+        => session.UseTicketAsync(options.AccountName, request, cancellationToken);
 
     public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         EconomyTokenCreationRequest request,

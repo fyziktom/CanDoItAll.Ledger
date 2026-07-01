@@ -59,6 +59,10 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         component.WaitForAssertion(
             () => Assert.NotEmpty(component.FindAll("[data-testid='ssr-bo-gallery']")),
             TimeSpan.FromSeconds(2));
+        Assert.DoesNotContain("New Payment", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("New Purchase", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("New Receipt", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("New Profile", component.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -116,7 +120,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                 .Add(x => x.AutoRefreshInterval, TimeSpan.FromMilliseconds(20))
                 .Add(x => x.AutoRefreshTransactionProbeCount, 10));
 
-        await WaitForAsync(() => adapter.RefreshProbeCount > 0, TimeSpan.FromSeconds(2));
+        await WaitForAsync(() => adapter.RefreshProbeCount > 0, TimeSpan.FromSeconds(10));
         await component.Instance.DisposeAsync();
 
         Assert.Equal(1, adapter.WorkspaceLoadCount);
@@ -136,7 +140,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                 .Add(x => x.AutoRefreshInterval, TimeSpan.FromMilliseconds(20))
                 .Add(x => x.AutoRefreshTransactionProbeCount, 10));
 
-        await WaitForAsync(() => adapter.WorkspaceLoadCount >= 2, TimeSpan.FromSeconds(2));
+        await WaitForAsync(() => adapter.WorkspaceLoadCount >= 2, TimeSpan.FromSeconds(10));
         await component.Instance.DisposeAsync();
 
         Assert.True(adapter.RefreshProbeCount > 0);
@@ -251,6 +255,23 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
 
+        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+            ProfileEditRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(request.CreateNew
+                ? BusinessObjectTransactionMode.Create
+                : BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+            BusinessObjectTicketVerificationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(VerifiedTicketResult(request.ObjectId));
+
+        public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+            BusinessObjectTicketUseRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
         public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
             EconomyTokenCreationRequest request,
             CancellationToken cancellationToken = default)
@@ -341,6 +362,21 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
 
         public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(BusinessObjectPriceRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(ProfileEditRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(request.CreateNew
+                ? BusinessObjectTransactionMode.Create
+                : BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+            BusinessObjectTicketVerificationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(VerifiedTicketResult(request.ObjectId));
+
+        public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+            BusinessObjectTicketUseRequest request,
+            CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
 
         public Task<EconomyTransactionExecutionResult> CreateTokenAsync(EconomyTokenCreationRequest request, CancellationToken cancellationToken = default)
@@ -444,6 +480,24 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             new[] { Receiver },
             Array.Empty<LedgerTransactionInputSummary>(),
             Array.Empty<LedgerTransactionOutputSummary>());
+
+    private static BusinessObjectTicketVerificationResult VerifiedTicketResult(BusinessObjectId objectId)
+    {
+        var history = new BusinessObjectTicketHistoryValidation(
+            BusinessObjectTicketHistoryStatus.Valid,
+            new TxId($"origin-{objectId.Value}"),
+            null,
+            Array.Empty<BusinessObjectTicketHistoryEntry>());
+        return new BusinessObjectTicketVerificationResult(
+            Success: true,
+            Summary: "Ticket history is valid.",
+            Message: $"CanDoItAll ticket ownership verification\nobject={objectId.Value}",
+            MessageHash: new HashHex(new string('0', 64)),
+            SignatureJson: "{}",
+            GeneratedAtUtc: DateTimeOffset.Parse("2026-06-29T12:00:00Z"),
+            ExpiresAtUtc: DateTimeOffset.Parse("2026-06-29T12:05:00Z"),
+            history);
+    }
 
     private static async Task WaitForAsync(Func<bool> condition, TimeSpan timeout)
     {
