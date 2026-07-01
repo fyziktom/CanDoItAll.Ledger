@@ -114,10 +114,11 @@ public sealed class EconomyDevelopmentWorkspaceSession(
         {
             BusinessObjectTransactionMode.Create => await account.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    ObjectIdFor(draft.ObjectId, "bo:ui-create", nonce),
+                    draft.ObjectId,
                     SafeText(draft.ObjectType, "purchase-order"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
+                    AddressOrDefault(draft.OwnerAddress, account.Address),
                     MainAmount: PositiveOrDefault(draft.MainAmount, 100),
                     Token: draft.TokenId is not null && draft.TokenAmount is not null && draft.TokenAmount.Value.Value > 0m
                         ? new TokenTransfer(draft.TokenId.Value, draft.TokenAmount.Value)

@@ -1,0 +1,23 @@
+Command: dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj --no-restore -v:minimal
+WorkingDirectory: repo://
+RunLabel: SB02 batch draft and adapter host positive proof
+ExitCode: 0
+
+Invariant IDs covered:
+- MM-BATCH-01
+- MM-BATCH-02
+- MM-BATCH-03
+- MM-BATCH-04
+- MM-BATCH-05
+- MM-BATCH-06
+
+Test names observed:
+- TicketWizard_MultimintStagesDistinctDraftsToSelectedSubAccount
+- TicketWizard_MultimintManualSingleRecipientRepeatsByCount
+- AdapterHost_FullShellSubmitsTicketMultimintBatchWithSingleFinalRefresh
+
+Output:
+Passed!  - Failed:     0, Passed:   237, Skipped:     0, Total:   237, Duration: 52 s - CanDoItAll.Ledger.Tests.dll (net10.0)
+
+Full transcript:
+- bundle://proof/transcripts/dotnet-test-ledger-tests.txt

@@ -6192,6 +6192,26 @@ button.cda-economy-list-item:focus-visible {
   color: var(--cda-text-muted, #607085);
 }
 
+.cda-ticket-multimint-panel {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cda-border-subtle, #d8dee9);
+  background: var(--cda-surface, #fff);
+  border-radius: 8px;
+}
+
+.cda-ticket-multimint-number,
+.cda-ticket-multimint-select {
+  width: 100%;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--cda-border-subtle, #d8dee9);
+  border-radius: 6px;
+  background: var(--cda-surface, #fff);
+  color: inherit;
+}
+
 .cda-event-picker__layout {
   align-items: start;
 }

@@ -34,6 +34,7 @@ else
                                 ValidateRequested="OpenProfileEditDialogAsync"
                                 OpenSendTransactionRequested="OpenSendTransactionDialogAsync"
                                 TransactionSubmitRequested="SubmitTransactionAsync"
+                                TransactionBatchSubmitRequested="SubmitTransactionBatchAsync"
                                 RuleTokenCreateRequested="SubmitRuleTokenCreationAsync"
                                 TransactionDetailsRequested="OpenTransactionDetailsAsync"
                                 BusinessObjectTransactionDetailsRequested="OpenTransactionDetailsByIdAsync"
@@ -164,6 +165,57 @@ else
         => await ExecuteAndRefreshAsync(
             () => Adapter.SubmitTransactionAsync(draft),
             "Transaction submitted").ConfigureAwait(false);
+
+    private async Task SubmitTransactionBatchAsync(BusinessObjectBatchTransactionRequest request)
+    {
+        if (request.Drafts.Count == 0)
+        {
+            Notifications.Warning("Batch empty", "No transactions were prepared for this batch.", position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        var results = new List<EconomyTransactionExecutionResult>(request.Drafts.Count);
+        try
+        {
+            foreach (BusinessObjectTransactionDraft draft in request.Drafts)
+            {
+                EconomyTransactionExecutionResult result = await Adapter.SubmitTransactionAsync(draft).ConfigureAwait(false);
+                results.Add(result);
+                lastResult = result;
+                await TransactionSubmitted.InvokeAsync(result).ConfigureAwait(false);
+
+                if (!result.Accepted)
+                {
+                    break;
+                }
+            }
+
+            await RefreshWorkspaceAsync(showNotification: false).ConfigureAwait(false);
+
+            int acceptedCount = results.Count(result => result.Accepted);
+            string message = $"{acceptedCount}/{request.Drafts.Count} transaction(s) accepted. {request.Summary}";
+            if (acceptedCount == request.Drafts.Count)
+            {
+                Notifications.Success(request.Label, message, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                string rejectedMessage = results.LastOrDefault(result => !result.Accepted)?.Message ?? message;
+                Notifications.Error(request.Label, $"{message} Last result: {rejectedMessage}", position: NotificationPosition.BottomCenter);
+            }
+        }
+        catch (Exception exception)
+        {
+            lastResult = new EconomyTransactionExecutionResult(
+                BusinessObjectTransactionMode.Create,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                exception.Message);
+            await TransactionSubmitted.InvokeAsync(lastResult).ConfigureAwait(false);
+            Notifications.Error(request.Label, exception.Message, position: NotificationPosition.BottomCenter);
+        }
+    }
 
     private Task OpenSendTransactionDialogAsync()
     {

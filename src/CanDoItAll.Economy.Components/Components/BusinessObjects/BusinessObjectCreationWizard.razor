@@ -161,6 +161,107 @@
                                         Click="OpenTicketEventPickerAsync"
                                         data-testid="cda-ticket-select-event" />
                             </section>
+                            <section class="cda-ticket-multimint-panel" data-testid="cda-ticket-multimint-panel">
+                                <label class="cda-economy-check-row">
+                                    <input type="checkbox"
+                                           @bind="multimintEnabled"
+                                           data-testid="cda-ticket-multimint-enabled" />
+                                    <span>Multimint tickets</span>
+                                </label>
+                                @if (multimintEnabled)
+                                {
+                                    <Grid ColumnsMd="2" Gap="LayoutGap.Small">
+                                        @if (!IsManualRecipientMode)
+                                        {
+                                            <FormField Text="Ticket count" ContainerClass="cda-economy-field">
+                                                <input type="number"
+                                                       class="cda-ticket-multimint-number"
+                                                       min="1"
+                                                       max="100"
+                                                       value="@ticketMultimintCount"
+                                                       @oninput="OnTicketMultimintCountInput"
+                                                       data-testid="cda-ticket-multimint-count" />
+                                            </FormField>
+                                        }
+                                        <FormField Text="Recipients" ContainerClass="cda-economy-field">
+                                            <select class="cda-ticket-multimint-select"
+                                                    value="@recipientMode"
+                                                    @onchange="OnRecipientModeChanged"
+                                                    aria-label="Ticket multimint recipients"
+                                                    data-testid="cda-ticket-multimint-recipient-mode">
+                                                @foreach (FilterOption option in RecipientModeOptions)
+                                                {
+                                                    <option value="@option.Value">@option.Text</option>
+                                                }
+                                            </select>
+                                        </FormField>
+                                        @if (IsSubAccountRecipientMode)
+                                        {
+                                            <FormField Text="Subaccount" ContainerClass="cda-economy-field cda-economy-field--wide">
+                                                @if (SubAccountOptions.Count == 0)
+                                                {
+                                                    <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
+                                                        No linked subaccounts are available in this workspace.
+                                                    </Alert>
+                                                }
+                                                else
+                                                {
+                                                    <select class="cda-ticket-multimint-select"
+                                                            value="@selectedSubAccountAddress"
+                                                            @onchange="OnSubAccountAddressChanged"
+                                                            aria-label="Ticket multimint subaccount"
+                                                            data-testid="cda-ticket-multimint-subaccount">
+                                                        @foreach (FilterOption option in SubAccountOptions)
+                                                        {
+                                                            <option value="@option.Value">@option.Text</option>
+                                                        }
+                                                    </select>
+                                                }
+                                            </FormField>
+                                        }
+                                        else if (IsAddressBookRecipientMode)
+                                        {
+                                            <FormField Text="Address book" ContainerClass="cda-economy-field cda-economy-field--wide">
+                                                @if (AddressBookOptions.Count == 0)
+                                                {
+                                                    <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
+                                                        No address-book entries are available in this workspace.
+                                                    </Alert>
+                                                }
+                                                else
+                                                {
+                                                    <select class="cda-ticket-multimint-select"
+                                                            value="@selectedAddressBookAddress"
+                                                            @onchange="OnAddressBookAddressChanged"
+                                                            aria-label="Ticket multimint address book"
+                                                            data-testid="cda-ticket-multimint-address-book">
+                                                        @foreach (FilterOption option in AddressBookOptions)
+                                                        {
+                                                            <option value="@option.Value">@option.Text</option>
+                                                        }
+                                                    </select>
+                                                }
+                                            </FormField>
+                                        }
+                                        else if (IsManualRecipientMode)
+                                        {
+                                            <FormField Text="Recipient addresses" ContainerClass="cda-economy-field cda-economy-field--wide">
+                                                <TextArea Value="@recipientListText"
+                                                          ValueChanged="@(value => recipientListText = value ?? string.Empty)"
+                                                          Immediate="true"
+                                                          Rows="4"
+                                                          Placeholder="One address per line. A single address repeats by ticket count."
+                                                          aria-label="Ticket multimint recipient addresses"
+                                                          data-testid="cda-ticket-multimint-recipient-list" />
+                                            </FormField>
+                                        }
+                                        <div class="cda-economy-fact cda-economy-fact--wide" data-testid="cda-ticket-multimint-summary">
+                                            <span>Batch preview</span>
+                                            <strong>@TicketMultimintSummary</strong>
+                                        </div>
+                                    </Grid>
+                                }
+                            </section>
                         }
                     </Stack>
                     <Stack GapScale="LayoutGap.Small" Class="min-w-0">
@@ -282,8 +383,16 @@
     public EventCallback<BusinessObjectTransactionDraft> StageBusinessObjectRequested { get; set; }
 
     [Parameter]
+    public EventCallback<BusinessObjectBatchTransactionRequest> StageBusinessObjectBatchRequested { get; set; }
+
+    [Parameter]
     public Func<BusinessObjectEventLookupRequest, Task<BusinessObjectEventLookupResult>>? EventBusinessObjectLookupRequested { get; set; }
 
+    private const string RecipientModeOwn = "own";
+    private const string RecipientModeSubAccount = "subaccount";
+    private const string RecipientModeAddressBook = "addressbook";
+    private const string RecipientModeManual = "manual";
+    private const int MaxTicketMultimintCount = 100;
     private int currentStep = 1;
     private string? currentModelKey;
     private string? selectedTokenKey = EconomyTokenOption.MainKey;
@@ -296,6 +405,12 @@
     private IReadOnlyList<BusinessObjectDataItem> uploadedItems = [];
     private bool uploadInProgress;
     private IBusinessObjectView? selectedTicketEvent;
+    private bool multimintEnabled;
+    private int ticketMultimintCount = 5;
+    private string recipientMode = RecipientModeOwn;
+    private string selectedSubAccountAddress = string.Empty;
+    private string selectedAddressBookAddress = string.Empty;
+    private string recipientListText = string.Empty;
 
     protected override void OnParametersSet()
     {
@@ -323,6 +438,12 @@
             StringComparer.Ordinal);
         EnsureFieldKeys();
         selectedTicketEvent = null;
+        multimintEnabled = false;
+        ticketMultimintCount = 5;
+        recipientMode = RecipientModeOwn;
+        selectedSubAccountAddress = string.Empty;
+        selectedAddressBookAddress = string.Empty;
+        recipientListText = string.Empty;
         selectedTokenKey ??= Workspace?.TokenOptions.FirstOrDefault()?.Key ?? EconomyTokenOption.MainKey;
     }
 
@@ -346,6 +467,29 @@
             .Select(family => new FilterOption(family.ObjectType, family.DisplayName))
             .ToArray();
 
+    private IReadOnlyList<FilterOption> RecipientModeOptions
+        =>
+        [
+            new(RecipientModeOwn, "Own account"),
+            new(RecipientModeSubAccount, "Subaccount"),
+            new(RecipientModeAddressBook, "Address book"),
+            new(RecipientModeManual, "Recipient list")
+        ];
+
+    private IReadOnlyList<FilterOption> SubAccountOptions
+        => Workspace?.SubAccounts
+            .OrderBy(item => item.Name, StringComparer.Ordinal)
+            .Select(item => new FilterOption(item.Address.Value, $"{item.Name} - {ShortAddress(item.Address.Value)}"))
+            .ToArray()
+            ?? [];
+
+    private IReadOnlyList<FilterOption> AddressBookOptions
+        => Workspace?.AddressBookmarks
+            .Select(item => new FilterOption(item.Address.Value, $"{item.Name} - {ShortAddress(item.Address.Value)}"))
+            .DistinctBy(item => item.Value)
+            .ToArray()
+            ?? [];
+
     private EconomyTokenOption? SelectedToken
         => Workspace?.TokenOptions.FirstOrDefault(option => option.Key == selectedTokenKey);
 
@@ -368,6 +512,38 @@
 
     private bool IsTicketSelected
         => selectedObjectType.Equals("ticket", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsSubAccountRecipientMode
+        => recipientMode.Equals(RecipientModeSubAccount, StringComparison.Ordinal);
+
+    private bool IsAddressBookRecipientMode
+        => recipientMode.Equals(RecipientModeAddressBook, StringComparison.Ordinal);
+
+    private bool IsManualRecipientMode
+        => recipientMode.Equals(RecipientModeManual, StringComparison.Ordinal);
+
+    private bool ShouldStageTicketBatch
+        => IsTicketSelected && multimintEnabled;
+
+    private int ResolvedTicketMultimintCount
+        => Math.Clamp(ticketMultimintCount, 1, MaxTicketMultimintCount);
+
+    private string TicketMultimintSummary
+    {
+        get
+        {
+            IReadOnlyList<Address> recipients = ResolveTicketMultimintRecipients();
+            if (recipients.Count == 0)
+            {
+                return "No valid recipients selected.";
+            }
+
+            Address[] distinctRecipients = recipients.Distinct().ToArray();
+            return distinctRecipients.Length == 1
+                ? $"{recipients.Count} ticket(s) to {ShortAddress(distinctRecipients[0].Value)}"
+                : $"{recipients.Count} ticket(s) to {distinctRecipients.Length} recipient(s)";
+        }
+    }
 
     private string TicketEventDisplayName
         => selectedTicketEvent is ITypedBusinessObjectView typed && !string.IsNullOrWhiteSpace(typed.Name)
@@ -416,6 +592,7 @@
         if (!next.ObjectType.Equals("ticket", StringComparison.OrdinalIgnoreCase))
         {
             selectedTicketEvent = null;
+            multimintEnabled = false;
         }
 
         if (string.IsNullOrWhiteSpace(name) || name.Equals(BusinessObjectPayloadBuilder.DefaultName(previous), StringComparison.Ordinal))
@@ -515,6 +692,60 @@
         }
 
         fieldValues[key] = value.Trim();
+    }
+
+    private void OnTicketMultimintCountInput(ChangeEventArgs args)
+    {
+        if (int.TryParse(Convert.ToString(args.Value), out int parsed))
+        {
+            ticketMultimintCount = Math.Clamp(parsed, 1, MaxTicketMultimintCount);
+        }
+    }
+
+    private void OnRecipientModeChanged(ChangeEventArgs args)
+    {
+        SelectRecipientMode(Convert.ToString(args.Value));
+    }
+
+    private void OnSubAccountAddressChanged(ChangeEventArgs args)
+    {
+        SelectSubAccountAddress(Convert.ToString(args.Value));
+    }
+
+    private void OnAddressBookAddressChanged(ChangeEventArgs args)
+    {
+        SelectAddressBookAddress(Convert.ToString(args.Value));
+    }
+
+    private void SelectRecipientMode(string? mode)
+    {
+        recipientMode = mode is RecipientModeSubAccount or RecipientModeAddressBook or RecipientModeManual
+            ? mode
+            : RecipientModeOwn;
+        EnsureRecipientDefaults();
+    }
+
+    private void SelectSubAccountAddress(string? address)
+    {
+        selectedSubAccountAddress = address ?? string.Empty;
+    }
+
+    private void SelectAddressBookAddress(string? address)
+    {
+        selectedAddressBookAddress = address ?? string.Empty;
+    }
+
+    private void EnsureRecipientDefaults()
+    {
+        if (string.IsNullOrWhiteSpace(selectedSubAccountAddress))
+        {
+            selectedSubAccountAddress = SubAccountOptions.FirstOrDefault()?.Value ?? string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(selectedAddressBookAddress))
+        {
+            selectedAddressBookAddress = AddressBookOptions.FirstOrDefault()?.Value ?? string.Empty;
+        }
     }
 
     private void EnsureFieldKeys()
@@ -638,25 +869,139 @@
         }
 
         BusinessObjectMediaPayload payload = CreatePayload();
+        if (ShouldStageTicketBatch)
+        {
+            IReadOnlyList<Address> recipients = ResolveTicketMultimintRecipients();
+            if (recipients.Count == 0)
+            {
+                Notifications.Warning("Recipients required", "Select a valid recipient target before staging the ticket batch.", position: NotificationPosition.BottomCenter);
+                return;
+            }
+
+            BusinessObjectTransactionDraft[] drafts = recipients
+                .Select((recipient, index) => CreateCreateDraft(
+                    CreateTicketBatchPayload(payload, index, recipients.Count),
+                    recipient,
+                    selectedToken))
+                .ToArray();
+
+            if (drafts.Length == 1)
+            {
+                await StageBusinessObjectRequested.InvokeAsync(drafts[0]);
+                return;
+            }
+
+            await StageBusinessObjectBatchRequested.InvokeAsync(new BusinessObjectBatchTransactionRequest(
+                "Ticket multimint",
+                drafts,
+                $"{drafts.Length} ticket BO transaction(s) prepared.",
+                recipientMode));
+            return;
+        }
+
+        BusinessObjectTransactionDraft draft = CreateCreateDraft(payload, Workspace.Address, selectedToken);
+        await StageBusinessObjectRequested.InvokeAsync(draft);
+    }
+
+    private BusinessObjectTransactionDraft CreateCreateDraft(
+        BusinessObjectMediaPayload payload,
+        Address ownerAddress,
+        EconomyTokenOption? selectedToken)
+    {
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
         Amount mainAmount = selectedToken?.IsMain == false ? Amount.Zero : Amount.FromInt64(1);
         string normalizedName = BusinessObjectCreateIdFactory.NormalizeName(payload.Name);
-        var draft = new BusinessObjectTransactionDraft(
-            BusinessObjectCreateIdFactory.CreateNewObjectId(selectedObjectType, payload.Name),
+        BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateNewObjectId(selectedObjectType, payload.Name);
+        return new BusinessObjectTransactionDraft(
+            objectId,
             selectedObjectType,
             "1.0",
-            Workspace.Address,
-            Workspace.AddressBookmarks.FirstOrDefault()?.Address ?? Workspace.Address,
-            Workspace.AddressBookmarks.LastOrDefault()?.Address ?? Workspace.Address,
+            ownerAddress,
+            ownerAddress,
+            ownerAddress,
             mainAmount,
             Amount.Zero,
             stateJson,
-            $"preview://{selectedObjectType}/{normalizedName}",
+            $"preview://{selectedObjectType}/{normalizedName}/{objectId.Value}",
             BusinessObjectTransactionMode.Create,
             TokenId: selectedToken?.IsMain == true ? null : selectedToken?.TokenId,
             TokenAmount: selectedToken?.IsMain == true || selectedToken?.TokenId is null ? null : Amount.FromInt64(1));
+    }
 
-        await StageBusinessObjectRequested.InvokeAsync(draft);
+    private BusinessObjectMediaPayload CreateTicketBatchPayload(
+        BusinessObjectMediaPayload template,
+        int index,
+        int total)
+    {
+        int number = index + 1;
+        var fields = new Dictionary<string, string>(template.Fields ?? new Dictionary<string, string>(StringComparer.Ordinal), StringComparer.Ordinal)
+        {
+            ["ticketNumber"] = BuildTicketNumber(fieldsValue: FieldValue("ticketNumber"), number, total),
+            ["batchIndex"] = number.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["batchSize"] = total.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        };
+
+        return template with
+        {
+            Name = total <= 1 ? template.Name : $"{template.Name} #{number:000}",
+            Fields = BusinessObjectPayloadBuilder.NormalizeFields(SelectedDefinition, fields)
+        };
+    }
+
+    private IReadOnlyList<Address> ResolveTicketMultimintRecipients()
+    {
+        if (Workspace is null)
+        {
+            return [];
+        }
+
+        EnsureRecipientDefaults();
+
+        if (IsManualRecipientMode)
+        {
+            Address[] manualRecipients = ParseRecipientList(recipientListText).Take(MaxTicketMultimintCount).ToArray();
+            if (manualRecipients.Length == 1)
+            {
+                return RepeatAddress(manualRecipients[0], ResolvedTicketMultimintCount);
+            }
+
+            return manualRecipients;
+        }
+
+        Address? target = recipientMode switch
+        {
+            RecipientModeSubAccount => TryParseAddress(selectedSubAccountAddress),
+            RecipientModeAddressBook => TryParseAddress(selectedAddressBookAddress),
+            _ => Workspace.Address
+        };
+
+        return target is null ? [] : RepeatAddress(target.Value, ResolvedTicketMultimintCount);
+    }
+
+    private static IReadOnlyList<Address> RepeatAddress(Address address, int count)
+        => Enumerable.Repeat(address, Math.Clamp(count, 1, MaxTicketMultimintCount)).ToArray();
+
+    private static IReadOnlyList<Address> ParseRecipientList(string value)
+        => value
+            .Replace(',', '\n')
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(TryParseAddress)
+            .Where(address => address is not null)
+            .Select(address => address!.Value)
+            .ToArray();
+
+    private static Address? TryParseAddress(string? value)
+        => Address.TryParse(value?.Trim(), out Address address) ? address : null;
+
+    private static string BuildTicketNumber(string fieldsValue, int number, int total)
+    {
+        string prefix = string.IsNullOrWhiteSpace(fieldsValue) ? "ticket" : fieldsValue.Trim();
+        if (total <= 1)
+        {
+            return prefix;
+        }
+
+        return $"{prefix}-{number:000}";
     }
 
     private IBusinessObjectView CreatePreviewBusinessObject()
@@ -710,6 +1055,9 @@
 
     private static string ShortHash(string hash)
         => hash.Length > 18 ? $"{hash[..18]}..." : hash;
+
+    private static string ShortAddress(string address)
+        => address.Length > 18 ? $"{address[..10]}...{address[^6..]}" : address;
 
     private static string ShortType(string value)
         => value.Length > 18 ? $"{value[..18]}..." : value;

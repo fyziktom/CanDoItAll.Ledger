@@ -1,3 +1,4 @@
+using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
 using CanDoItAll.Economy.BusinessObjects;
@@ -5,6 +6,8 @@ using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
@@ -13,6 +16,8 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("ticket-test"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-ticket-public"));
+    private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-ticket-public"));
+    private static readonly Address SubAccount = Address.FromPublicKey(Hex.Utf8("ticket-subaccount-public"));
     private static readonly DateTimeOffset Now = DateTimeOffset.Parse("2026-07-01T10:00:00Z");
 
     public BusinessObjectTicketMintingComponentTests()
@@ -62,7 +67,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
     public void TicketWizard_ShowsEventPickerPanelOnlyForTickets()
     {
         ITypedBusinessObjectView eventObject = CreateEvent("Ledger Summit");
-        BusinessObjectWorkspaceModel workspace = CreateWorkspace(eventObject);
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace([eventObject]);
         BusinessObjectCreationWizardModel model = new(
             "ticket",
             Step: 2,
@@ -80,6 +85,95 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
 
         Assert.Contains("No event selected", component.Find("[data-testid='cda-ticket-event-panel']").TextContent, StringComparison.Ordinal);
         Assert.Contains("Select Event", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TicketWizard_MultimintStagesDistinctDraftsToSelectedSubAccount()
+    {
+        var stagedBatches = new List<BusinessObjectBatchTransactionRequest>();
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(
+            businessObjects: [CreateEvent("Ledger Summit")],
+            subAccounts:
+            [
+                new BusinessObjectSubAccountSummary("Ticket desk", SubAccount, Amount.FromInt64(10), 1, 0, Now)
+            ],
+            bookmarks:
+            [
+                new EconomyAddressBookmark("Bob", Bob)
+            ]);
+        BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
+
+        IRenderedComponent<BusinessObjectCreationWizard> component =
+            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+                .Add(x => x.Model, model)
+                .Add(x => x.Workspace, workspace)
+                .Add(
+                    x => x.StageBusinessObjectBatchRequested,
+                    EventCallback.Factory.Create<BusinessObjectBatchTransactionRequest>(
+                        this,
+                        request =>
+                        {
+                            stagedBatches.Add(request);
+                            return Task.CompletedTask;
+                        })));
+
+        component.Find("[data-testid='cda-ticket-multimint-enabled']").Change(true);
+        component.Find("[data-testid='cda-ticket-multimint-count']").Input("5");
+        component.Find("[data-testid='cda-ticket-multimint-recipient-mode']").Change("subaccount");
+        component.Find("[data-testid='cda-ticket-multimint-subaccount']").Change(SubAccount.Value);
+        await ClickButtonAsync(component, "Next");
+        await ClickButtonAsync(component, "Stage BO Transaction");
+
+        BusinessObjectBatchTransactionRequest batch = Assert.Single(stagedBatches);
+        Assert.Equal("Ticket multimint", batch.Label);
+        Assert.Equal(5, batch.Drafts.Count);
+        Assert.All(batch.Drafts, draft =>
+        {
+            Assert.Equal(SubAccount, draft.OwnerAddress);
+            Assert.Equal(SubAccount, draft.ReceiverAddress);
+            Assert.Equal(SubAccount, draft.PaymentReceiverAddress);
+            Assert.StartsWith("bo:ticket:new-ticket-", draft.ObjectId.Value, StringComparison.Ordinal);
+        });
+        Assert.Equal(5, batch.Drafts.Select(draft => draft.ObjectId).Distinct().Count());
+        Assert.Equal(
+            ["ticket-001", "ticket-002", "ticket-003", "ticket-004", "ticket-005"],
+            batch.Drafts
+                .Select(draft => BusinessObjectPayloadBuilder.ParseMediaPayload(draft.StateJson, "ticket"))
+                .Select(payload => payload.Fields?["ticketNumber"] ?? string.Empty)
+                .ToArray());
+    }
+
+    [Fact]
+    public async Task TicketWizard_MultimintManualSingleRecipientRepeatsByCount()
+    {
+        var stagedBatches = new List<BusinessObjectBatchTransactionRequest>();
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(bookmarks: [new EconomyAddressBookmark("Bob", Bob)]);
+        BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
+
+        IRenderedComponent<BusinessObjectCreationWizard> component =
+            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+                .Add(x => x.Model, model)
+                .Add(x => x.Workspace, workspace)
+                .Add(
+                    x => x.StageBusinessObjectBatchRequested,
+                    EventCallback.Factory.Create<BusinessObjectBatchTransactionRequest>(
+                        this,
+                        request =>
+                        {
+                            stagedBatches.Add(request);
+                            return Task.CompletedTask;
+                        })));
+
+        component.Find("[data-testid='cda-ticket-multimint-enabled']").Change(true);
+        component.Find("[data-testid='cda-ticket-multimint-count']").Input("3");
+        component.Find("[data-testid='cda-ticket-multimint-recipient-mode']").Change("manual");
+        component.Find("[data-testid='cda-ticket-multimint-recipient-list']").Input(Bob.Value);
+        await ClickButtonAsync(component, "Next");
+        await ClickButtonAsync(component, "Stage BO Transaction");
+
+        BusinessObjectBatchTransactionRequest batch = Assert.Single(stagedBatches);
+        Assert.Equal(3, batch.Drafts.Count);
+        Assert.All(batch.Drafts, draft => Assert.Equal(Bob, draft.OwnerAddress));
     }
 
     private static ITypedBusinessObjectView CreateEvent(string name)
@@ -140,14 +234,38 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             BusinessObjectPayloadBuilder.CreateFacts(definition, payload.Fields));
     }
 
-    private static BusinessObjectWorkspaceModel CreateWorkspace(params IBusinessObjectView[] businessObjects)
+    private static BusinessObjectCreationWizardModel CreateTicketWizardModel(int step)
+        => new(
+            "ticket",
+            Step: step,
+            "New ticket",
+            "#ticket",
+            "Ticket, access pass, service case, or approval ticket.",
+            string.Empty,
+            [],
+            null);
+
+    private static async Task ClickButtonAsync(IRenderedComponent<BusinessObjectCreationWizard> component, string text)
     {
+        IElement button = component.FindAll("button")
+            .Single(item => item.TextContent.Contains(text, StringComparison.Ordinal));
+        await button.ClickAsync(new MouseEventArgs());
+    }
+
+    private static BusinessObjectWorkspaceModel CreateWorkspace(
+        IReadOnlyList<IBusinessObjectView>? businessObjects = null,
+        IReadOnlyList<BusinessObjectSubAccountSummary>? subAccounts = null,
+        IReadOnlyList<EconomyAddressBookmark>? bookmarks = null)
+    {
+        businessObjects ??= [];
+        subAccounts ??= [];
+        bookmarks ??= [];
         LedgerAccountBalance balance = new(
             Context,
             Alice,
             Amount.FromInt64(1000),
             new Dictionary<TokenId, Amount>(),
-            businessObjects.Length,
+            businessObjects.Count,
             Now);
         BusinessObjectTransactionDraft draft = new(
             new BusinessObjectId("bo:ticket:draft"),
@@ -173,11 +291,11 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             Context,
             Alice,
             balance,
+            [new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
             [],
-            [],
-            [],
+            bookmarks,
             businessObjects,
-            [],
+            subAccounts,
             [],
             draft,
             editor,

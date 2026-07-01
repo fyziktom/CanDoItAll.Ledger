@@ -370,7 +370,7 @@ public sealed class EconomyNodeWorkspaceSession(
                     SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
-                    account.Address,
+                    draft.OwnerAddress,
                     draft.MainAmount,
                     draft.TokenId is null || draft.TokenAmount is null
                         ? null

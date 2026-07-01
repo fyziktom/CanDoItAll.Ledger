@@ -83,6 +83,8 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
         Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(\"ui-message\", $\"Message from {normalizedAccount}\")", nodeSession, StringComparison.Ordinal);
         Assert.Contains("new CreateBusinessObjectRequest(\n                    draft.ObjectId", wasmAdapter, StringComparison.Ordinal);
         Assert.Contains("new CreateBusinessObjectRequest(\n                    draft.ObjectId", nodeSession, StringComparison.Ordinal);
+        Assert.Contains("draft.OwnerAddress,\n                    draft.MainAmount", wasmAdapter, StringComparison.Ordinal);
+        Assert.Contains("draft.OwnerAddress,\n                    draft.MainAmount", nodeSession, StringComparison.Ordinal);
     }
 
     [Fact]

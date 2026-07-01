@@ -55,6 +55,7 @@
             <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
                                           Workspace="Workspace"
                                           StageBusinessObjectRequested="StageBusinessObjectAsync"
+                                          StageBusinessObjectBatchRequested="StageBusinessObjectBatchAsync"
                                           EventBusinessObjectLookupRequested="BusinessObjectEventLookupRequested" />
         }
         else if (selectedView == "rule")
@@ -127,6 +128,9 @@
 
     [Parameter]
     public EventCallback<BusinessObjectTransactionDraft> TransactionSubmitRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectBatchTransactionRequest> TransactionBatchSubmitRequested { get; set; }
 
     [Parameter]
     public EventCallback<EconomyRuleTokenCreationRequest> RuleTokenCreateRequested { get; set; }
@@ -236,6 +240,12 @@
     private async Task StageBusinessObjectAsync(BusinessObjectTransactionDraft draft)
     {
         await TransactionSubmitRequested.InvokeAsync(draft);
+        selectedView = "gallery";
+    }
+
+    private async Task StageBusinessObjectBatchAsync(BusinessObjectBatchTransactionRequest request)
+    {
+        await TransactionBatchSubmitRequested.InvokeAsync(request);
         selectedView = "gallery";
     }
 

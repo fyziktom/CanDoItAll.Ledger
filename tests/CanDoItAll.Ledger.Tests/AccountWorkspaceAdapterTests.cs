@@ -1,4 +1,5 @@
 using System.Text;
+using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
 using CanDoItAll.Economy.BusinessObjects;
@@ -11,6 +12,8 @@ using CanDoItAll.Economy.Cryptography;
 using CanDoItAll.Economy.Ledger;
 using CanDoItAll.Economy.Sdk;
 using CanDoItAll.Economy.Storage.InMemory;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -63,6 +66,34 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         Assert.DoesNotContain("New Purchase", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("New Receipt", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("New Profile", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AdapterHost_FullShellSubmitsTicketMultimintBatchWithSingleFinalRefresh()
+    {
+        var adapter = new CapturingBatchWorkspaceAdapter();
+        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+            parameters => parameters
+                .Add(x => x.Adapter, adapter)
+                .Add(x => x.UseFullAppShell, true)
+                .Add(x => x.AutoRefreshEnabled, false)
+                .Add(x => x.InitialView, "ticket"));
+
+        component.WaitForAssertion(
+            () => Assert.NotEmpty(component.FindAll("[data-testid='bo-create-wizard']")),
+            TimeSpan.FromSeconds(2));
+
+        await ClickButtonAsync(component, "Next");
+        component.Find("[data-testid='cda-ticket-multimint-enabled']").Change(true);
+        component.Find("[data-testid='cda-ticket-multimint-count']").Input("4");
+        await ClickButtonAsync(component, "Next");
+        await ClickButtonAsync(component, "Stage BO Transaction");
+        await WaitForAsync(() => adapter.SubmittedDrafts.Count == 4, TimeSpan.FromSeconds(5));
+
+        Assert.Equal(4, adapter.SubmittedDrafts.Count);
+        Assert.Equal(2, adapter.WorkspaceLoadCount);
+        Assert.All(adapter.SubmittedDrafts, draft => Assert.Equal(adapter.Workspace.Address, draft.OwnerAddress));
+        Assert.Equal(4, adapter.SubmittedDrafts.Select(draft => draft.ObjectId).Distinct().Count());
     }
 
     [Fact]
@@ -316,6 +347,92 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                 $"{hostMode} adapter accepted transaction.");
     }
 
+    private sealed class CapturingBatchWorkspaceAdapter : IEconomyAccountWorkspaceAdapter
+    {
+        public BusinessObjectWorkspaceModel Workspace { get; } = EconomyComponentSampleData.CreateWorkspace();
+
+        public List<BusinessObjectTransactionDraft> SubmittedDrafts { get; } = [];
+
+        public int WorkspaceLoadCount { get; private set; }
+
+        public string HostMode => "WASM";
+
+        public bool UsesServerSideAccountSigning => false;
+
+        public Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default)
+        {
+            WorkspaceLoadCount++;
+            return Task.FromResult(Workspace);
+        }
+
+        public Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+            int maxTransactions = 10,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(
+                Workspace,
+                maxTransactions,
+                DateTimeOffset.Parse("2026-06-29T12:00:00Z")));
+
+        public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
+            => Task.FromResult<EconomyTransactionDetailsModel?>(EconomyComponentSampleData.CreateTransactionDetails() with { TxId = txId });
+
+        public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
+            BusinessObjectTransactionDraft draft,
+            CancellationToken cancellationToken = default)
+        {
+            SubmittedDrafts.Add(draft);
+            return Task.FromResult(new EconomyTransactionExecutionResult(
+                draft.SelectedMode,
+                Accepted: true,
+                TxId: new TxId($"tx-ticket-batch-{SubmittedDrafts.Count}"),
+                LedgerSequence: SubmittedDrafts.Count,
+                "Accepted."));
+        }
+
+        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(BusinessObjectSendRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
+
+        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(BusinessObjectPriceRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(ProfileEditRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(request.CreateNew ? BusinessObjectTransactionMode.Create : BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+            BusinessObjectTicketVerificationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(VerifiedTicketResult(request.ObjectId));
+
+        public Task<EconomyTransactionExecutionResult> UseTicketAsync(BusinessObjectTicketUseRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+            BusinessObjectEventLookupRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(BusinessObjectEventLookupResult.NotFound("Capturing adapter has no event lookup."));
+
+        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(EconomyTokenCreationRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));
+
+        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(EconomyRuleTokenCreationRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.CreateRuleToken));
+
+        public Task<MessageSecurityActionResult> SignMessageAsync(MessageSecuritySignRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
+
+        public Task<MessageSecurityActionResult> VerifyMessageAsync(MessageSecurityVerifyRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
+
+        public Task<MessageSecurityActionResult> EncryptMessageAsync(MessageSecurityEncryptRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
+
+        public Task<MessageSecurityActionResult> DecryptMessageAsync(MessageSecurityDecryptRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
+
+        private static EconomyTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
+            => new(mode, true, new TxId($"tx-capturing-{mode}"), 1, "Accepted.");
+    }
+
     private sealed class RefreshProbeWorkspaceAdapter(
         string hostMode,
         string initialTransactionId,
@@ -507,6 +624,14 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             GeneratedAtUtc: DateTimeOffset.Parse("2026-06-29T12:00:00Z"),
             ExpiresAtUtc: DateTimeOffset.Parse("2026-06-29T12:05:00Z"),
             history);
+    }
+
+    private static async Task ClickButtonAsync<TComponent>(IRenderedComponent<TComponent> component, string text)
+        where TComponent : IComponent
+    {
+        IElement button = component.FindAll("button")
+            .Single(item => item.TextContent.Contains(text, StringComparison.Ordinal));
+        await button.ClickAsync(new MouseEventArgs());
     }
 
     private static async Task WaitForAsync(Func<bool> condition, TimeSpan timeout)

@@ -41,3 +41,16 @@ public sealed record EconomyTransactionExecutionResult(
     TxId? TxId,
     long? LedgerSequence,
     string Message);
+
+public sealed record BusinessObjectBatchTransactionRequest(
+    string Label,
+    IReadOnlyList<BusinessObjectTransactionDraft> Drafts,
+    string Summary,
+    string RecipientMode);
+
+public sealed record EconomyTransactionBatchExecutionResult(
+    bool Accepted,
+    int AcceptedCount,
+    int SubmittedCount,
+    IReadOnlyList<EconomyTransactionExecutionResult> Results,
+    string Message);
