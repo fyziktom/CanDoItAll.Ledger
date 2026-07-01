@@ -428,7 +428,10 @@ public static class BusinessObjectPayloadBuilder
             Text = payload.Text ?? string.Empty,
             Tags = payload.Tags ?? string.Empty,
             DataItems = payload.DataItems ?? Array.Empty<BusinessObjectDataItem>(),
-            Fields = payload.Fields ?? new Dictionary<string, string>(StringComparer.Ordinal)
+            Fields = payload.Fields ?? new Dictionary<string, string>(StringComparer.Ordinal),
+            Commerce = payload.Commerce is { IsEmpty: false } commerce
+                ? BusinessObjectCommercePayloadBuilder.NormalizeCommerce(commerce)
+                : null
         };
 
     private static BusinessObjectMediaPayload Empty(string fallbackName)

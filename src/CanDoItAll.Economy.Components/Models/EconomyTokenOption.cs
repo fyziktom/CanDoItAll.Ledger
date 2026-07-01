@@ -59,7 +59,11 @@ public sealed record BusinessObjectPriceRequest(
     Amount PriceAmount,
     TokenId? TokenId,
     string StateJson,
-    string? ExternalRef = null);
+    string? ExternalRef = null,
+    BusinessObjectSaleMode SaleMode = BusinessObjectSaleMode.Original,
+    int? MaxClones = null,
+    bool ClearSale = false,
+    string? SharePath = null);
 
 public sealed record ProfileEditRequest(
     BusinessObjectId ObjectId,

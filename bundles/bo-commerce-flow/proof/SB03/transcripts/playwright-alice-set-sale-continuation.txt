@@ -1,0 +1,38 @@
+Command: proof capture: playwright-alice-set-sale-continuation.txt
+﻿== explicit alice unlock ==
+### Result
+{"status":"encrypted\nUnlocked browser vault\nAccount unlocked from the encrypted browser vault.","hasWorkspace":1}
+### Ran Playwright code
+```js
+await (async page => { await page.getByTestId('unlock-password').fill('commerce-proof-alice'); await page.getByTestId('unlock-account').click(); await page.getByTestId('adapter-workspace-host').waitFor({ timeout: 300000 }); return { status: await page.getByTestId('account-status').innerText(), hasWorkspace: await page.locator('[data-testid=adapter-workspace-host]').count() }; })(page);
+```
+== alice set sale no reload ==
+### Error
+TimeoutError: locator.click: Timeout 300000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: /^Gallery$/i }).first()[22m
+[2m    - locator resolved to <button type="button" class="cda-vef-nav-item is-active">…</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div class="flex-1 overflow-y-auto px-3.5 py-3.5 xl:px-4 xl:py-4">…</div> from <div data-testid="cda-bo-details-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div class="flex-1 overflow-y-auto px-3.5 py-3.5 xl:px-4 xl:py-4">…</div> from <div data-testid="cda-bo-details-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    550 × waiting for element to be visible, enabled and stable[22m
+[2m        - element is visible, enabled and stable[22m
+[2m        - scrolling into view if needed[22m
+[2m        - done scrolling[22m
+[2m        - <div class="flex-1 overflow-y-auto px-3.5 py-3.5 xl:px-4 xl:py-4">…</div> from <div data-testid="cda-bo-details-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m      - retrying click action[22m
+[2m        - waiting 500ms[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+ExitCode: 0

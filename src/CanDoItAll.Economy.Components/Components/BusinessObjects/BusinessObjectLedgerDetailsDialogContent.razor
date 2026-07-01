@@ -1,4 +1,6 @@
 @namespace CanDoItAll.Economy.Components
+@using System.Globalization
+@inject NavigationManager Navigation
 @if (Object is null)
 {
     <EmptyState Eyebrow="Business object" Title="Details are unavailable" Description="No BusinessObject is selected in the current gallery session." />
@@ -34,6 +36,13 @@ else
                             <span class="cda-economy-eyebrow">@Object.ObjectType</span>
                             <h3>@DisplayName</h3>
                             <p>@Description</p>
+                            @if (HasLongDescription)
+                            {
+                                <section class="cda-vef-bo-long-description" data-testid="cda-bo-long-description" aria-label="Business object long description">
+                                    <span>Long description</span>
+                                    <p>@LongDescription</p>
+                                </section>
+                            }
                             <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
                                 @foreach (string tag in Tags.Take(6))
                                 {
@@ -48,6 +57,26 @@ else
                             <div class="cda-economy-fact"><span>Data items</span><strong>@DataItems.Count</strong></div>
                             <div class="cda-economy-fact"><span>Created</span><strong>@Object.CreatedAt.ToString("MM.dd HH:mm")</strong></div>
                         </Grid>
+                        @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
+                        {
+                            <section class="cda-vef-sale-panel" data-testid="cda-bo-sale-panel">
+                                <div>
+                                    <span>For sale</span>
+                                    <strong>@sale.Mode / @FormatPrice(sale.PriceAmount, sale.TokenId)</strong>
+                                </div>
+                                @if (sale.MaxClones is not null)
+                                {
+                                    <div>
+                                        <span>Copies</span>
+                                        <strong>@sale.SoldCount / @sale.MaxClones</strong>
+                                    </div>
+                                }
+                                <div class="cda-vef-sale-panel__link">
+                                    <span>Buy link</span>
+                                    <CopyableMonoValue Value="@BuyLink" StartChars="32" EndChars="12" AriaLabel="Copy buy link" />
+                                </div>
+                            </section>
+                        }
                         @if (TypedFacts.Count > 0)
                         {
                             <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-vef-bo-overview-facts">
@@ -100,7 +129,7 @@ else
                                 <Button Text="Show QR Code" Icon="qr_code" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
                                 <Button Text="Upload DataItem" Icon="upload_file" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
                                 <Button Text="Send" Icon="send" ButtonStyle="ButtonStyle.Secondary" Click="SendAsync" />
-                                <Button Text="Set Price" Icon="attach_money" ButtonStyle="ButtonStyle.Secondary" Click="SetPriceAsync" />
+                                <Button Text="Set Sale" Icon="sell" ButtonStyle="ButtonStyle.Secondary" Click="SetPriceAsync" />
                                 <Button Text="Recycle" Icon="delete" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Warning" />
                             </div>
                         </div>
@@ -256,9 +285,30 @@ else
             ? media.Description
             : !string.IsNullOrWhiteSpace(Payload?.Description)
                 ? Payload!.Description
-                : !string.IsNullOrWhiteSpace(Payload?.Text)
-                    ? Payload!.Text
-                    : Object?.StateJson ?? "Ledger-owned object.";
+                : Object?.StateJson ?? "Ledger-owned object.";
+
+    private string LongDescription
+        => Object is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Text)
+            ? media.Text
+            : !string.IsNullOrWhiteSpace(Payload?.Text)
+                ? Payload!.Text
+                : string.Empty;
+
+    private bool HasLongDescription
+        => !string.IsNullOrWhiteSpace(LongDescription)
+            && !LongDescription.Equals(Description, StringComparison.Ordinal);
+
+    private BusinessObjectSaleTerms? SaleTerms
+        => Object is not null && BusinessObjectCommercePayloadBuilder.TryGetSaleTerms(Object.StateJson, out BusinessObjectSaleTerms? terms)
+            ? terms
+            : null;
+
+    private string BuyPath
+        => Object is null
+            ? "/buy-bo"
+            : $"/buy-bo/{Uri.EscapeDataString(Object.ObjectId.Value)}";
+
+    private string BuyLink => Navigation.ToAbsoluteUri(BuyPath).ToString();
 
     private string ObjectIcon
         => Object is not null && BusinessObjectFamilyCatalog.TryFindByObjectType(Object.ObjectType, out BusinessObjectFamilyDefinition definition)
@@ -303,4 +353,7 @@ else
 
     private static string FormatSize(long? size)
         => size is null ? "unknown" : $"{size.Value:N0} bytes";
+
+    private static string FormatPrice(decimal amount, string? tokenId)
+        => $"{amount.ToString("0.#############################", CultureInfo.InvariantCulture)} {(string.IsNullOrWhiteSpace(tokenId) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : tokenId)}";
 }

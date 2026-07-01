@@ -1,0 +1,8 @@
+﻿COMMAND: rg anti-stub audit for SB02 changed scope
+CWD: C:\repositories\CanDoItAll.Ledger
+START: 2026-06-30T17:13:17.7508120-04:00
+
+ASSERTION: no placeholders, VEFramework copies, or hard-coded reported Alice object/hash in SB02 changed files
+ANTI_STUB_EXIT_CODE: 1 (expected 1 for no matches)
+EXIT_CODE: 0
+ExitCode: 0

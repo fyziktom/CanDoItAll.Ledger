@@ -1,0 +1,12 @@
+Command: proof capture: playwright-open-alice.txt
+﻿### Browser `bo-commerce-sb04-localhost` opened with pid 24852.
+### Ran Playwright code
+```js
+await page.goto('http://localhost:5081/');
+```
+### Page
+- Page URL: http://localhost:5081/
+- Page Title: CanDoItAll AccountApp
+### Snapshot
+- [Snapshot](.playwright-cli\page-2026-06-30T23-54-40-755Z.yml)
+ExitCode: 0

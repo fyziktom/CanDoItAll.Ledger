@@ -1,0 +1,7 @@
+Command: proof capture: changed-file-hashes.txt
+Path                                                                                                                            Hash                                                            
+----                                                                                                                            ----                                                            
+C:\repositories\CanDoItAll.Ledger\src\CanDoItAll.Economy.Components\Services\BusinessObjectCommerceDispatcher.cs                92C31520B4A9E854D05D126CBD371FF07F2E4A602567716F86F82D4F4629BCD5
+C:\repositories\CanDoItAll.Ledger\src\CanDoItAll.Economy.Components\Components\Account\EconomyAccountWorkspaceAdapterHost.razor 68E087EBF82E928B31FD5DED74B6A2F2F3A1FC66EA4938E5F188BB22BD955E29
+C:\repositories\CanDoItAll.Ledger\tests\CanDoItAll.Ledger.Tests\BusinessObjectCommerceDispatcherTests.cs                        C83FD3E3B6E2D12D869602A6DCD306D0DAF2993C122BB9BFCBE9983DCBABF3C5
+ExitCode: 0

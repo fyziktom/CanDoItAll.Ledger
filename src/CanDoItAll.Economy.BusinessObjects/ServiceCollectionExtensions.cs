@@ -44,6 +44,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddBusinessObjectCasting(this IServiceCollection services)
     {
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectCaster, AccountSettingsBusinessObjectCaster>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectCaster, CommerceBusinessObjectCaster>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectCaster, GenericTypedBusinessObjectCaster>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectCaster, ImageBusinessObjectCaster>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectCaster, PostBusinessObjectCaster>());

@@ -1,0 +1,131 @@
+{
+  "Command": "proof capture: api-dispatch-state.json",
+  "ExitCode": 0,
+  "Payload": {
+    "bo:post:new-ledger-post":  {
+                                    "objectId":  {
+                                                     "value":  "bo:post:new-ledger-post"
+                                                 },
+                                    "version":  7,
+                                    "ownerAddress":  {
+                                                         "value":  "cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu"
+                                                     },
+                                    "operation":  1,
+                                    "dataHash":  {
+                                                     "value":  "baf5a99bc8cb78b8d30739b066bfc11420e13398fc46772162cac7e83ae52b50"
+                                                 },
+                                    "currentOutPoint":  {
+                                                            "txId":  {
+                                                                         "value":  "a2a79cc36b4a9b1491dd9d7b85b0f10ee0deb8943e2abce8d22b141fc7c9f462"
+                                                                     },
+                                                            "outputIndex":  0
+                                                        },
+                                    "createdAt":  "2026-06-30T17:22:35.552411+00:00",
+                                    "objectType":  "post",
+                                    "schemaVersion":  "1.0",
+                                    "stateJson":  "{\"name\":\"New ledger post\",\"description\":\"Ledger-owned post or short article.\",\"text\":\"testing of the right click menu in candoitall web app\",\"tags\":\"#VEFramework #Neblio #NET #Blazor #OpenSource\",\"author\":null,\"link\":null,\"imageLink\":null,\"dataItems\":[{\"name\":\"Screenshot 2026-03-20 231759.png\",\"type\":1,\"storage\":1,\"hash\":\"QmVTfnFADHE2MfkRfpX5cJQFqtWztMJ1rgUUAT4poHkXMu\",\"uri\":\"http://localhost:5081/ipfs-api/cat?arg=QmVTfnFADHE2MfkRfpX5cJQFqtWztMJ1rgUUAT4poHkXMu\",\"contentType\":\"image/png\",\"fileName\":\"Screenshot 2026-03-20 231759.png\",\"size\":287346,\"isMain\":true,\"description\":\"Uploaded through BO wizard\"}],\"family\":\"content\",\"fields\":{},\"commerce\":{\"schemaVersion\":\"1.0\",\"sale\":{\"status\":1,\"mode\":1,\"priceAmount\":7.25,\"tokenId\":null,\"sellerAddress\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"maxClones\":5,\"soldCount\":1,\"listedAtUtc\":\"2026-06-30T23:09:48.222+00:00\",\"sharePath\":\"/buy-bo/bo%3Apost%3Anew-ledger-post\"},\"payment\":null,\"purchase\":null,\"receipt\":null,\"isEmpty\":false},\"tagList\":[\"VEFramework\",\"Neblio\",\"NET\",\"Blazor\",\"OpenSource\"]}",
+                                    "externalRef":  null,
+                                    "itemType":  2
+                                },
+    "bo:payment:ca99382ba95385cbdc548158":  {
+                                                "objectId":  {
+                                                                 "value":  "bo:payment:ca99382ba95385cbdc548158"
+                                                             },
+                                                "version":  2,
+                                                "ownerAddress":  {
+                                                                     "value":  "cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu"
+                                                                 },
+                                                "operation":  1,
+                                                "dataHash":  {
+                                                                 "value":  "229568cd2c416cfcea60f1045ab422a720d357c200ec9b539727610e34593f13"
+                                                             },
+                                                "currentOutPoint":  {
+                                                                        "txId":  {
+                                                                                     "value":  "7ae01ee628befb8fd5d3fbdd6b551187c5e9bd15ca6e98270c2fab4efcecf34a"
+                                                                                 },
+                                                                        "outputIndex":  0
+                                                                    },
+                                                "createdAt":  "2026-06-30T17:22:35.552411+00:00",
+                                                "objectType":  "payment",
+                                                "schemaVersion":  "1.0",
+                                                "stateJson":  "{\"name\":\"Payment for bo:post:new-ledger-post\",\"description\":\"Buyer payment record for BusinessObject commerce.\",\"text\":\"Payment from cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU to cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu for bo:post:new-ledger-post.\",\"tags\":\"#commerce #payment\",\"author\":null,\"link\":null,\"imageLink\":null,\"dataItems\":[],\"family\":\"commerce\",\"fields\":{\"amount\":\"7.25\",\"buyerAddress\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"currency\":\"MAIN\",\"payee\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"payer\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"paymentObjectId\":\"bo:payment:ca99382ba95385cbdc548158\",\"reference\":\"bo:post:new-ledger-post\",\"saleMode\":\"Copy\",\"sellerAddress\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"status\":\"Dispatched\",\"targetObjectId\":\"bo:post:new-ledger-post\"},\"commerce\":{\"schemaVersion\":\"1.0\",\"sale\":null,\"payment\":{\"paymentObjectId\":\"bo:payment:ca99382ba95385cbdc548158\",\"buyerAddress\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"sellerAddress\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"targetObjectId\":\"bo:post:new-ledger-post\",\"targetVersion\":5,\"targetOutPoint\":\"791d7844c74cc10e1eb04cab9e5b1a6c99949596ad9c541abb08cd9c702bb911:0\",\"priceAmount\":7.25,\"tokenId\":null,\"saleMode\":1,\"status\":1,\"paymentTxId\":null,\"dispatchTxId\":\"6a9dbf491f837deffd602f1ac412aeb208ef4221bf1381f8c9c7af8c22a29823\",\"receiptObjectId\":\"bo:receipt:add182370e27a67877bb33de\",\"purchaseObjectId\":\"bo:purchase:add182370e27a67877bb33de\",\"deliveredObjectId\":\"bo:clone:baed67896a95ff5069a78f6d\",\"createdAtUtc\":\"2026-06-30T23:18:28.195+00:00\",\"updatedAtUtc\":\"2026-06-30T23:55:25.247+00:00\",\"rejectionReason\":null,\"saleMaxClones\":5},\"purchase\":null,\"receipt\":null,\"isEmpty\":false},\"tagList\":[\"commerce\",\"payment\"]}",
+                                                "externalRef":  null,
+                                                "itemType":  2
+                                            },
+    "bo:clone:baed67896a95ff5069a78f6d":  {
+                                              "objectId":  {
+                                                               "value":  "bo:clone:baed67896a95ff5069a78f6d"
+                                                           },
+                                              "version":  1,
+                                              "ownerAddress":  {
+                                                                   "value":  "cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU"
+                                                               },
+                                              "operation":  1,
+                                              "dataHash":  {
+                                                               "value":  "2f9109c552bd0679b84e94a93fbbb9eb51e370436b97ad6c0b3ff840d70ddedb"
+                                                           },
+                                              "currentOutPoint":  {
+                                                                      "txId":  {
+                                                                                   "value":  "6a9dbf491f837deffd602f1ac412aeb208ef4221bf1381f8c9c7af8c22a29823"
+                                                                               },
+                                                                      "outputIndex":  1
+                                                                  },
+                                              "createdAt":  "2026-06-30T17:22:35.552411+00:00",
+                                              "objectType":  "post",
+                                              "schemaVersion":  "1.0",
+                                              "stateJson":  "{\"name\":\"New ledger post\",\"description\":\"Ledger-owned post or short article.\",\"text\":\"testing of the right click menu in candoitall web app\",\"tags\":\"#VEFramework #Neblio #NET #Blazor #OpenSource\",\"author\":null,\"link\":null,\"imageLink\":null,\"dataItems\":[{\"name\":\"Screenshot 2026-03-20 231759.png\",\"type\":1,\"storage\":1,\"hash\":\"QmVTfnFADHE2MfkRfpX5cJQFqtWztMJ1rgUUAT4poHkXMu\",\"uri\":\"http://localhost:5081/ipfs-api/cat?arg=QmVTfnFADHE2MfkRfpX5cJQFqtWztMJ1rgUUAT4poHkXMu\",\"contentType\":\"image/png\",\"fileName\":\"Screenshot 2026-03-20 231759.png\",\"size\":287346,\"isMain\":true,\"description\":\"Uploaded through BO wizard\"}],\"family\":\"content\",\"fields\":{},\"tagList\":[\"VEFramework\",\"Neblio\",\"NET\",\"Blazor\",\"OpenSource\"]}",
+                                              "externalRef":  null,
+                                              "itemType":  2
+                                          },
+    "bo:receipt:add182370e27a67877bb33de":  {
+                                                "objectId":  {
+                                                                 "value":  "bo:receipt:add182370e27a67877bb33de"
+                                                             },
+                                                "version":  1,
+                                                "ownerAddress":  {
+                                                                     "value":  "cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu"
+                                                                 },
+                                                "operation":  1,
+                                                "dataHash":  {
+                                                                 "value":  "b223c87d6a3febf00f8550063cdaaf7e375fc95b7efb4f8bc57a064842d02438"
+                                                             },
+                                                "currentOutPoint":  {
+                                                                        "txId":  {
+                                                                                     "value":  "901704e2bd3ed9f0af40f39aff67938d3f42eb4fc1a0adf2425736ac064f7ade"
+                                                                                 },
+                                                                        "outputIndex":  0
+                                                                    },
+                                                "createdAt":  "2026-06-30T17:22:35.552411+00:00",
+                                                "objectType":  "receipt",
+                                                "schemaVersion":  "1.0",
+                                                "stateJson":  "{\"name\":\"Receipt for bo:post:new-ledger-post\",\"description\":\"Seller-side BusinessObject commerce receipt.\",\"text\":\"Receipt for dispatch of bo:clone:baed67896a95ff5069a78f6d to cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU.\",\"tags\":\"#commerce #receipt\",\"author\":null,\"link\":null,\"imageLink\":null,\"dataItems\":[],\"family\":\"commerce\",\"fields\":{\"amount\":\"7.25\",\"currency\":\"MAIN\",\"deliveredObjectId\":\"bo:clone:baed67896a95ff5069a78f6d\",\"dispatchTxId\":\"6a9dbf491f837deffd602f1ac412aeb208ef4221bf1381f8c9c7af8c22a29823\",\"issuedAt\":\"2026-06-30T23:55:25.2490000\\u002B00:00\",\"paidBy\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"paymentObjectId\":\"bo:payment:ca99382ba95385cbdc548158\",\"receiptNumber\":\"bo:receipt:add182370e27a67877bb33de\",\"receivedBy\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"status\":\"Dispatched\",\"targetObjectId\":\"bo:post:new-ledger-post\"},\"commerce\":{\"schemaVersion\":\"1.0\",\"sale\":null,\"payment\":null,\"purchase\":null,\"receipt\":{\"receiptObjectId\":\"bo:receipt:add182370e27a67877bb33de\",\"paymentObjectId\":\"bo:payment:ca99382ba95385cbdc548158\",\"buyerAddress\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"sellerAddress\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"targetObjectId\":\"bo:post:new-ledger-post\",\"deliveredObjectId\":\"bo:clone:baed67896a95ff5069a78f6d\",\"priceAmount\":7.25,\"tokenId\":null,\"saleMode\":1,\"status\":1,\"paymentTxId\":null,\"dispatchTxId\":\"6a9dbf491f837deffd602f1ac412aeb208ef4221bf1381f8c9c7af8c22a29823\",\"issuedAtUtc\":\"2026-06-30T23:55:25.249+00:00\"},\"isEmpty\":false},\"tagList\":[\"commerce\",\"receipt\"]}",
+                                                "externalRef":  null,
+                                                "itemType":  2
+                                            },
+    "bo:purchase:add182370e27a67877bb33de":  {
+                                                 "objectId":  {
+                                                                  "value":  "bo:purchase:add182370e27a67877bb33de"
+                                                              },
+                                                 "version":  1,
+                                                 "ownerAddress":  {
+                                                                      "value":  "cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU"
+                                                                  },
+                                                 "operation":  1,
+                                                 "dataHash":  {
+                                                                  "value":  "8cf21a0bba371d17a052d1f64fa601f811fca0714dcd73ae32278b7faf587f7c"
+                                                              },
+                                                 "currentOutPoint":  {
+                                                                         "txId":  {
+                                                                                      "value":  "3b92aaf476342a79b2af1244ce7e6fed68ab7b8d2697c7fd4af4153a3e48d462"
+                                                                                  },
+                                                                         "outputIndex":  0
+                                                                     },
+                                                 "createdAt":  "2026-06-30T17:22:35.552411+00:00",
+                                                 "objectType":  "purchase",
+                                                 "schemaVersion":  "1.0",
+                                                 "stateJson":  "{\"name\":\"Purchase for bo:post:new-ledger-post\",\"description\":\"Buyer-side BusinessObject purchase record.\",\"text\":\"Purchase of bo:post:new-ledger-post from cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu.\",\"tags\":\"#commerce #purchase\",\"author\":null,\"link\":null,\"imageLink\":null,\"dataItems\":[],\"family\":\"commerce\",\"fields\":{\"amount\":\"7.25\",\"buyer\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"currency\":\"MAIN\",\"orderNumber\":\"bo:purchase:add182370e27a67877bb33de\",\"paymentObjectId\":\"bo:payment:ca99382ba95385cbdc548158\",\"status\":\"Dispatched\",\"targetObjectId\":\"bo:post:new-ledger-post\",\"vendor\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\"},\"commerce\":{\"schemaVersion\":\"1.0\",\"sale\":null,\"payment\":null,\"purchase\":{\"purchaseObjectId\":\"bo:purchase:add182370e27a67877bb33de\",\"paymentObjectId\":\"bo:payment:ca99382ba95385cbdc548158\",\"buyerAddress\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"sellerAddress\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"targetObjectId\":\"bo:post:new-ledger-post\",\"deliveredObjectId\":\"bo:clone:baed67896a95ff5069a78f6d\",\"priceAmount\":7.25,\"tokenId\":null,\"saleMode\":1,\"status\":1,\"paymentTxId\":null,\"dispatchTxId\":\"6a9dbf491f837deffd602f1ac412aeb208ef4221bf1381f8c9c7af8c22a29823\",\"receiptObjectId\":\"bo:receipt:add182370e27a67877bb33de\",\"createdAtUtc\":\"2026-06-30T23:55:25.682+00:00\",\"updatedAtUtc\":null},\"receipt\":null,\"isEmpty\":false},\"tagList\":[\"commerce\",\"purchase\"]}",
+                                                 "externalRef":  null,
+                                                 "itemType":  2
+                                             }
+}
+}

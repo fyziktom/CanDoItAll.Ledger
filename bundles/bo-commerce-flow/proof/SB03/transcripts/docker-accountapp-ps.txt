@@ -1,0 +1,6 @@
+Command: proof capture: docker-accountapp-ps.txt
+﻿NAME                                                   IMAGE                              COMMAND                  SERVICE            CREATED          STATUS         PORTS
+candoitall-ledger-accountapp-demo-accountapp-alice-1   candoitall-ledger-accountapp:dev   "/docker-entrypoint.…"   accountapp-alice   19 seconds ago   Up 7 seconds   0.0.0.0:5081->80/tcp, [::]:5081->80/tcp
+candoitall-ledger-accountapp-demo-accountapp-bob-1     candoitall-ledger-accountapp:dev   "/docker-entrypoint.…"   accountapp-bob     19 seconds ago   Up 7 seconds   0.0.0.0:5082->80/tcp, [::]:5082->80/tcp
+candoitall-ledger-accountapp-demo-accountapp-lab-1     candoitall-ledger-accountapp:dev   "/docker-entrypoint.…"   accountapp-lab     19 seconds ago   Up 7 seconds   0.0.0.0:5083->80/tcp, [::]:5083->80/tcp
+ExitCode: 0

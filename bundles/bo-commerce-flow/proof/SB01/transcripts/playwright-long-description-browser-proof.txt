@@ -1,0 +1,130 @@
+﻿COMMAND: npx --yes --package @playwright/cli playwright-cli -s bo-commerce-sb01-localhost open http://localhost:5081/ --headed
+COMMAND: npx --yes --package @playwright/cli playwright-cli -s bo-commerce-sb01-localhost run-code --filename bundles\bo-commerce-flow\proof\SB01\scripts\long-description-browser-proof.playwright.js
+CWD: C:\repositories\CanDoItAll.Ledger
+START: 2026-06-30T16:48:57.0707541-04:00
+
+### Browser `bo-commerce-sb01-localhost` opened with pid 23700.
+### Ran Playwright code
+```js
+await page.goto('http://localhost:5081/');
+```
+### Page
+- Page URL: http://localhost:5081/
+- Page Title: CanDoItAll AccountApp
+### Snapshot
+- [Snapshot](.playwright-cli\page-2026-06-30T20-49-11-138Z.yml)
+
+
+OPEN_EXIT_CODE: 0
+
+### Result
+{"route":"http://localhost:5081/","viewport":{"width":1600,"height":900},"object":"bo:post:new-ledger-post","overviewContainsLongText":true,"rawStateContainsTextProperty":true,"rawStateContainsLongText":true,"screenshotDetails":"bundles/bo-commerce-flow/proof/SB01/browser/long-description-details.png","screenshotRaw":"bundles/bo-commerce-flow/proof/SB01/browser/long-description-raw.png"}
+### Ran Playwright code
+```js
+await (async page => {
+  const backup = JSON.stringify({
+    format: 'candoitall-economy-accountapp-vault-backup-v1',
+    exportedAtUtc: '2026-06-29T22:32:07.6130809+00:00',
+    record: {
+      vaultId: 'accountapp-demo-alice-source',
+      displayName: 'Alice demo account',
+      keyId: 'compose-demo-alice-b8082499ad8e49e588a7ade91533c821',
+      address: {
+        value: 'cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu'
+      },
+      algorithm: 1,
+      publicKeyHash: 'e2c690e20e607774bc888fae8af35dd9a91ae55a3f33c87372f9e707907220fa',
+      publicKeyMaterialBase64: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE3t0q1H39Qe+F9AtCLw4aMITrQPi8hPWXA0AWcGSvpZRQmfUHbPubMLjIJIwoz/a1mwAa4BkXk9ArbAQC7xY/8g==',
+      encryptedPrivateKeyBase64: '0Da3E1mGIPbnEHRXLsgJFnBOSeBvAxqfQ4k28kPdqgz1zb4L3lbLAfjVfHi1l0J2EXvxkPiSkttS26g2Byk6OT5tFYo41bMl8Qvv3xdzQyFLsYDQD8LLXPPlMI2gvbQme/6GZCOaBXMiulARGxUKECxLDEjvZtdH5/UWZchxZ6qur9Qj6D7FaM9F/RzgieqtVDDkQNOA5QT5mg==',
+      kdfSaltBase64: 'eStErXC1j/+WdpkJ4t36tw==',
+      nonceBase64: 'sRkGalmuZww82BEV',
+      kdfIterations: 150000,
+      kdfAlgorithm: 'PBKDF2-SHA256',
+      encryptionAlgorithm: 'AES-256-GCM',
+      createdAtUtc: '2026-06-29T22:32:07.6119885+00:00',
+      updatedAtUtc: '2026-06-29T22:32:07.6119885+00:00'
+    }
+  }, null, 2);
+  const expectedText = 'testing of the right click menu in candoitall web app';
+
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto('http://localhost:5081/', { waitUntil: 'networkidle' });
+
+  if (await page.locator('[data-testid="adapter-workspace-host"]').count() === 0) {
+    await page.getByTestId('backup-import-json').fill(backup);
+    await page.getByTestId('backup-import-password').fill('accountapp-demo-password');
+    await page.getByTestId('backup-new-password').fill('sb01-browser-proof-password');
+    await page.getByTestId('backup-confirm-password').fill('sb01-browser-proof-password');
+    await page.getByTestId('import-backup').click();
+  }
+
+  await page.getByTestId('adapter-workspace-host').waitFor({ timeout: 90000 });
+  await page.getByRole('button', { name: /^Gallery$/ }).click();
+  await page.getByLabel('Search gallery').fill('new-ledger-post');
+  await page.waitForFunction(() => {
+    const gallery = document.querySelector('[data-testid="ssr-bo-gallery"]');
+    return gallery && gallery.textContent?.includes('New ledger post');
+  }, undefined, { timeout: 30000 });
+
+  await page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll('.cda-vef-gallery-card'));
+    const card = cards.find(candidate => candidate.textContent && candidate.textContent.includes('New ledger post'));
+    const button = card ? card.querySelector('button[aria-label="Open BO details"]') : null;
+    if (!(button instanceof HTMLElement)) {
+      throw new Error('Could not locate New ledger post details button.');
+    }
+
+    button.click();
+  });
+
+  await page.getByTestId('cda-bo-details-layout').waitFor({ timeout: 30000 });
+  const overviewText = await page.getByTestId('cda-bo-long-description').innerText();
+  if (!overviewText.includes(expectedText)) {
+    throw new Error(`Overview long description did not include expected text. Actual: ${overviewText}`);
+  }
+
+  await page.screenshot({
+    path: 'bundles/bo-commerce-flow/proof/SB01/browser/long-description-details.png',
+    fullPage: true
+  });
+
+  await page.getByText('Ledger details', { exact: true }).click();
+  await page.locator('.cda-vef-bo-state-json').waitFor({ timeout: 30000 });
+  const rawState = await page.locator('.cda-vef-bo-state-json').innerText();
+  if (!rawState.includes('"text"') || !rawState.includes(expectedText)) {
+    throw new Error(`Raw state did not expose serialized text. Actual: ${rawState}`);
+  }
+
+  await page.screenshot({
+    path: 'bundles/bo-commerce-flow/proof/SB01/browser/long-description-raw.png',
+    fullPage: true
+  });
+
+  return {
+    route: page.url(),
+    viewport: await page.viewportSize(),
+    object: 'bo:post:new-ledger-post',
+    overviewContainsLongText: overviewText.includes(expectedText),
+    rawStateContainsTextProperty: rawState.includes('"text"'),
+    rawStateContainsLongText: rawState.includes(expectedText),
+    screenshotDetails: 'bundles/bo-commerce-flow/proof/SB01/browser/long-description-details.png',
+    screenshotRaw: 'bundles/bo-commerce-flow/proof/SB01/browser/long-description-raw.png'
+  };
+}
+)(page);
+```
+### Page
+- Page URL: http://localhost:5081/
+- Page Title: CanDoItAll AccountApp
+### Events
+- New console entries: .playwright-cli\console-2026-06-30T20-49-10-433Z.log#L1-L16
+
+
+RUN_EXIT_CODE: 0
+
+Browser 'bo-commerce-sb01-localhost' closed
+
+
+
+CLOSE_EXIT_CODE: 0
+ExitCode: 0

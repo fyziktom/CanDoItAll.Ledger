@@ -1,0 +1,8 @@
+Command: proof capture: docker-stack-after-browser-proof.txt
+﻿NAME                                                   IMAGE                                COMMAND                  SERVICE            CREATED             STATUS                  PORTS
+candoitall-ledger-accountapp-demo-accountapp-alice-1   candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-alice   About an hour ago   Up About an hour        0.0.0.0:5081->80/tcp, [::]:5081->80/tcp
+candoitall-ledger-accountapp-demo-accountapp-bob-1     candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-bob     About an hour ago   Up About an hour        0.0.0.0:5082->80/tcp, [::]:5082->80/tcp
+candoitall-ledger-accountapp-demo-accountapp-lab-1     candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-lab     About an hour ago   Up About an hour        0.0.0.0:5083->80/tcp, [::]:5083->80/tcp
+candoitall-ledger-accountapp-demo-economy-node-1       candoitall-ledger-economy-node:dev   "dotnet CanDoItAll.E…"   economy-node       6 hours ago         Up 6 hours              0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+candoitall-ledger-accountapp-demo-postgres-1           postgres:16-alpine                   "docker-entrypoint.s…"   postgres           25 hours ago        Up 14 hours (healthy)   0.0.0.0:54329->5432/tcp, [::]:54329->5432/tcp
+ExitCode: 0

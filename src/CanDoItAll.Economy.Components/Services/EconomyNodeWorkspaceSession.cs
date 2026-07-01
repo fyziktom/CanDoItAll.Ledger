@@ -465,17 +465,18 @@ public sealed class EconomyNodeWorkspaceSession(
         CancellationToken cancellationToken = default)
     {
         using NodeAccountDriver driver = await LoadDriverAsync(accountName, cancellationToken).ConfigureAwait(false);
-        string nextState = MergePriceJson(request.StateJson, request.PriceAmount, request.TokenId);
+        Amount priceAmount = PositiveOrDefault(request.PriceAmount, 1);
+        string nextState = BuildSaleStateJson(request, driver.Account.Address, priceAmount, DateTimeOffset.UtcNow);
         LedgerSubmitResult result = await driver.Account.SetBusinessObjectPriceAsync(
             new SetBusinessObjectPriceRequest(
                 request.ObjectId,
-                PositiveOrDefault(request.PriceAmount, 1),
+                priceAmount,
                 request.TokenId,
                 nextState,
                 SafeNullable(request.ExternalRef)),
             cancellationToken).ConfigureAwait(false);
 
-        return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "BO price update");
+        return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "BO sale update");
     }
 
     public async Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
@@ -893,18 +894,27 @@ public sealed class EconomyNodeWorkspaceSession(
         return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
     }
 
-    private static string MergePriceJson(string stateJson, Amount priceAmount, TokenId? tokenId)
-        => JsonSerializer.Serialize(new
+    private static string BuildSaleStateJson(
+        BusinessObjectPriceRequest request,
+        Address sellerAddress,
+        Amount priceAmount,
+        DateTimeOffset listedAtUtc)
+    {
+        if (request.ClearSale)
         {
-            previous = SafeJson(stateJson),
-            price = new
-            {
-                amount = priceAmount.Value,
-                tokenId = tokenId?.Value,
-                asset = tokenId?.Value ?? "MAIN",
-                pricedAtUtc = DateTimeOffset.UtcNow
-            }
-        });
+            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, request.ObjectId.Value);
+        }
+
+        BusinessObjectSaleTerms terms = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
+            request.SaleMode,
+            priceAmount,
+            sellerAddress,
+            listedAtUtc,
+            request.SaleMode == BusinessObjectSaleMode.Copy ? request.MaxClones : null,
+            request.TokenId,
+            request.SharePath);
+        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, request.ObjectId.Value, terms);
+    }
 
     private static SignatureAlgorithmId ReadAlgorithm(JsonElement root)
     {

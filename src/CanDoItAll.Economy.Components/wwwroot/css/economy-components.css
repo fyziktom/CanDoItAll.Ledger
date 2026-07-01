@@ -4803,6 +4803,33 @@ button.cda-economy-list-item:focus-visible {
   line-height: 1.5;
 }
 
+.cda-vef-bo-long-description {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  border: 1px solid #dfe5ee;
+  border-radius: 0.32rem;
+  background: #f8fafc;
+  padding: 0.7rem 0.75rem;
+}
+
+.cda-vef-bo-long-description span {
+  color: #64748b;
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.cda-vef-bo-long-description p {
+  margin: 0;
+  color: #253044;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 .cda-vef-bo-overview-facts {
   min-width: 0;
 }
@@ -6015,7 +6042,105 @@ button.cda-economy-list-item:focus-visible {
     justify-content: center;
   }
 
-  .cda-node-address-pager {
+.cda-node-address-pager {
     justify-content: flex-start;
   }
+}
+
+.cda-economy-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  padding: 9px 10px;
+}
+
+.cda-vef-sale-current,
+.cda-vef-sale-share,
+.cda-vef-sale-panel,
+.cda-vef-commerce-row {
+  border: 1px solid #d7e1ea;
+  border-radius: 8px;
+  background: #f8fbfd;
+}
+
+.cda-vef-sale-current,
+.cda-vef-sale-share {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+}
+
+.cda-vef-sale-current span,
+.cda-vef-sale-share span,
+.cda-vef-sale-panel span {
+  color: #5b6b7f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cda-vef-sale-badge {
+  border-color: #0f766e !important;
+  background: #e8f7f4 !important;
+  color: #115e59 !important;
+}
+
+.cda-vef-sale-panel {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.cda-vef-sale-panel > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cda-vef-sale-panel__link {
+  overflow-wrap: anywhere;
+}
+
+.cda-vef-commerce-dashboard {
+  margin-top: 16px;
+}
+
+.cda-vef-commerce-list {
+  display: grid;
+  gap: 8px;
+}
+
+.cda-vef-commerce-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cda-vef-commerce-row span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cda-vef-commerce-row strong,
+.cda-vef-commerce-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-vef-commerce-row em {
+  color: #586a7d;
+  font-style: normal;
+  font-size: 0.78rem;
 }

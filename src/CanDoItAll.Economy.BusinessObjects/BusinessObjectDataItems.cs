@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.BusinessObjects;
@@ -95,7 +96,9 @@ public sealed record BusinessObjectMediaPayload(
     string? ImageLink = null,
     IReadOnlyList<BusinessObjectDataItem>? DataItems = null,
     string? Family = null,
-    IReadOnlyDictionary<string, string>? Fields = null)
+    IReadOnlyDictionary<string, string>? Fields = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    BusinessObjectCommerceEnvelope? Commerce = null)
 {
     public IReadOnlyList<string> TagList
         => (Tags ?? string.Empty)

@@ -1,0 +1,14 @@
+COMMAND: docker compose up -d --no-deps --force-recreate accountapp-alice accountapp-bob accountapp-lab
+CWD: C:\repositories\CanDoItAll.Ledger
+START: 2026-06-30T16:25:29.7307507-04:00
+
+
+EXIT_CODE: 0
+
+COMMAND: Invoke-WebRequest -UseBasicParsing http://127.0.0.1:5081/ -TimeoutSec 30 | Select-Object -ExpandProperty StatusCode
+START: 2026-06-30T16:25:39.9563784-04:00
+
+200
+
+EXIT_CODE: 0
+ExitCode: 0

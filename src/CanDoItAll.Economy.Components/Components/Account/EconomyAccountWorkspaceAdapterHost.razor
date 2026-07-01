@@ -82,6 +82,7 @@ else
     private EconomyTransactionExecutionResult? lastResult;
     private string? loadError;
     private readonly SemaphoreSlim refreshGate = new(1, 1);
+    private readonly BusinessObjectCommerceDispatcher commerceDispatcher = new();
     private CancellationTokenSource? autoRefreshCancellation;
     private Task? autoRefreshTask;
 
@@ -105,6 +106,12 @@ else
 
     [Parameter]
     public int AutoRefreshTransactionProbeCount { get; set; } = 10;
+
+    [Parameter]
+    public bool CommerceDispatchEnabled { get; set; } = true;
+
+    [Parameter]
+    public int CommerceDispatchMaxPaymentsPerRefresh { get; set; } = 3;
 
     protected override async Task OnInitializedAsync()
     {
@@ -273,7 +280,7 @@ else
         }
 
         return DialogService.OpenAsync<BusinessObjectSetPriceDialogContent>(
-            "Set BusinessObject Price",
+            "Set BusinessObject Sale",
             new Dictionary<string, object?>
             {
                 [nameof(BusinessObjectSetPriceDialogContent.Object)] = item,
@@ -322,7 +329,7 @@ else
     private Task SubmitBusinessObjectPriceAsync(BusinessObjectPriceRequest request)
         => ExecuteAndRefreshAsync(
             () => Adapter.SetBusinessObjectPriceAsync(request),
-            "Price updated");
+            request.ClearSale ? "Sale cleared" : "Sale updated");
 
     private Task SubmitTokenCreationAsync(EconomyTokenCreationRequest request)
         => ExecuteAndRefreshAsync(
@@ -381,10 +388,41 @@ else
     private Task LoadTransactionDetailsAsync(LedgerTransactionSummary transaction)
         => Adapter.GetTransactionDetailsAsync(transaction.TxId);
 
-    private async Task LoadWorkspaceCoreAsync()
+    private async Task LoadWorkspaceCoreAsync(CancellationToken cancellationToken = default)
     {
         loadError = null;
-        BusinessObjectWorkspaceModel loaded = await Adapter.GetWorkspaceAsync();
+        BusinessObjectWorkspaceModel loaded = await Adapter.GetWorkspaceAsync(cancellationToken);
+        BusinessObjectCommerceDispatchResult dispatchResult = BusinessObjectCommerceDispatchResult.Empty;
+        if (CommerceDispatchEnabled)
+        {
+            try
+            {
+                dispatchResult = await commerceDispatcher
+                    .DispatchPendingAsync(
+                        Adapter,
+                        loaded,
+                        CommerceDispatchMaxPaymentsPerRefresh,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                Notifications.Error(
+                    "Commerce dispatch failed",
+                    exception.Message,
+                    position: NotificationPosition.BottomCenter);
+            }
+        }
+
+        if (dispatchResult.HasSubmissions)
+        {
+            Notifications.Info(
+                "Commerce dispatch",
+                dispatchResult.Summary,
+                position: NotificationPosition.BottomCenter);
+            loaded = await Adapter.GetWorkspaceAsync(cancellationToken);
+        }
+
         workspace = loaded;
         refreshSnapshot = AccountWorkspaceRefreshSnapshot.Create(
             loaded,
@@ -433,7 +471,7 @@ else
         {
             if (workspace is null)
             {
-                await LoadWorkspaceCoreAsync();
+                await LoadWorkspaceCoreAsync(cancellationToken);
                 return;
             }
 
@@ -444,7 +482,7 @@ else
                 return;
             }
 
-            await LoadWorkspaceCoreAsync();
+            await LoadWorkspaceCoreAsync(cancellationToken);
             if (workspace is not null)
             {
                 Notifications.Info(

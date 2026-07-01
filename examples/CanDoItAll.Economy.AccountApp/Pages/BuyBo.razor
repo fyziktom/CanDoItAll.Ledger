@@ -1,0 +1,328 @@
+@page "/buy-bo/{ObjectId}"
+@inject AccountAppSession Session
+@inject ILedgerReadClient LedgerReadClient
+@inject IBusinessObjectCastRegistry CastRegistry
+
+<PageTitle>Buy BusinessObject</PageTitle>
+
+<div class="account-app account-app--buy" data-testid="buy-bo-page">
+    <header class="account-app__topbar">
+        <div>
+            <span class="account-app__eyebrow">Buy BusinessObject</span>
+            <h1>@DisplayTitle</h1>
+        </div>
+        <div class="account-app__connection" data-testid="buy-bo-node-api">
+            <span class="material-icons" aria-hidden="true">hub</span>
+            <div>
+                <strong>@Session.Options.NodeBaseUri</strong>
+                <span>@Session.Options.ApiBasePath / @Session.Options.LedgerId / @(Session.Options.ScenarioId ?? "live")</span>
+            </div>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <section class="account-app__alert" data-testid="buy-bo-error">
+            <span class="material-icons" aria-hidden="true">error</span>
+            <span>@errorMessage</span>
+        </section>
+    }
+
+    @if (isLoading)
+    {
+        <section class="account-card account-card--wide" data-testid="buy-bo-loading">
+            <header>
+                <span class="material-icons" aria-hidden="true">sync</span>
+                <h2>Loading listing</h2>
+            </header>
+        </section>
+    }
+    else if (targetView is not null && saleTerms is not null)
+    {
+        <section class="buy-bo-grid">
+            <article class="account-card" data-testid="buy-bo-listing">
+                <header>
+                    <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
+                    <h2>@DisplayTitle</h2>
+                </header>
+                <div class="buy-bo-facts">
+                    <div><span>Mode</span><strong>@saleTerms.Mode</strong></div>
+                    <div><span>Price</span><strong>@FormatPrice(saleTerms.PriceAmount, saleTerms.TokenId)</strong></div>
+                    <div><span>Seller</span><strong>@saleTerms.SellerAddress</strong></div>
+                    <div><span>Object</span><strong>@targetView.ObjectId.Value</strong></div>
+                    @if (saleTerms.MaxClones is not null)
+                    {
+                        <div><span>Copies</span><strong>@saleTerms.SoldCount / @saleTerms.MaxClones</strong></div>
+                    }
+                </div>
+                @if (targetView is IMediaBusinessObjectView media)
+                {
+                    <p class="account-card__hint">@media.Description</p>
+                    @if (!string.IsNullOrWhiteSpace(media.Text))
+                    {
+                        <p>@media.Text</p>
+                    }
+                }
+            </article>
+
+            <article class="account-card" data-testid="buy-bo-account">
+                <header>
+                    <span class="material-icons" aria-hidden="true">encrypted</span>
+                    <h2>@(Session.IsUnlocked ? "Buyer account" : "Unlock buyer account")</h2>
+                </header>
+                @if (Session.IsUnlocked)
+                {
+                    <div class="buy-bo-facts">
+                        <div><span>Buyer</span><strong>@Session.Account?.Address.Value</strong></div>
+                        <div><span>Vault</span><strong>@Session.Account?.DisplayName</strong></div>
+                    </div>
+                    <button data-testid="buy-bo-submit"
+                            class="account-button account-button--primary"
+                            disabled="@(!CanSubmitPurchase)"
+                            @onclick="SubmitPurchaseAsync">
+                        <span class="material-icons" aria-hidden="true">payments</span>
+                        <span>Submit payment</span>
+                    </button>
+                }
+                else
+                {
+                    <p class="account-card__hint">@Session.StatusMessage</p>
+                    <label>
+                        <span>Vault password</span>
+                        <input data-testid="buy-unlock-password" type="password" @bind="Session.UnlockPassword" autocomplete="current-password" />
+                    </label>
+                    <button data-testid="buy-unlock-account" class="account-button" disabled="@(!Session.HasStoredVault)" @onclick="UnlockAccountAsync">
+                        <span class="material-icons" aria-hidden="true">vpn_key</span>
+                        <span>Unlock vault</span>
+                    </button>
+                }
+            </article>
+
+            @if (!Session.IsUnlocked)
+            {
+                <article class="account-card account-card--wide" data-testid="buy-import-backup">
+                    <header>
+                        <span class="material-icons" aria-hidden="true">upload_file</span>
+                        <h2>Import encrypted backup</h2>
+                    </header>
+                    <label>
+                        <span>Backup JSON</span>
+                        <textarea data-testid="buy-backup-import-json" rows="8" @bind="Session.ImportBackupJson"></textarea>
+                    </label>
+                    <div class="account-form-grid">
+                        <label>
+                            <span>Backup password</span>
+                            <input data-testid="buy-backup-import-password" type="password" @bind="Session.ImportBackupPassword" />
+                        </label>
+                        <label>
+                            <span>New vault password</span>
+                            <input data-testid="buy-backup-new-password" type="password" @bind="Session.ImportNewPassword" />
+                        </label>
+                        <label>
+                            <span>Confirm new password</span>
+                            <input data-testid="buy-backup-confirm-password" type="password" @bind="Session.ImportConfirmPassword" />
+                        </label>
+                    </div>
+                    <button data-testid="buy-import-backup-submit" class="account-button" @onclick="ImportBackupAsync">
+                        <span class="material-icons" aria-hidden="true">restore</span>
+                        <span>Import and unlock</span>
+                    </button>
+                </article>
+            }
+        </section>
+    }
+
+    @if (purchaseResult is not null)
+    {
+        <section class="account-card account-card--wide" data-testid="buy-bo-payment-result">
+            <header>
+                <span class="material-icons" aria-hidden="true">receipt_long</span>
+                <h2>@(purchaseResult.Accepted ? "Payment submitted" : "Payment rejected")</h2>
+            </header>
+            <p>@purchaseResult.Message</p>
+            @if (purchaseResult.TxId is not null)
+            {
+                <p><strong>@purchaseResult.TxId.Value</strong></p>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? ObjectId { get; set; }
+
+    private LedgerBusinessObjectHolding? targetHolding;
+    private IBusinessObjectView? targetView;
+    private BusinessObjectSaleTerms? saleTerms;
+    private EconomyTransactionExecutionResult? purchaseResult;
+    private string? errorMessage;
+    private bool isLoading = true;
+
+    private LedgerAccountContext Context
+        => new(new LedgerId(Session.Options.LedgerId), string.IsNullOrWhiteSpace(Session.Options.ScenarioId) ? null : new ScenarioId(Session.Options.ScenarioId));
+
+    private string DisplayTitle
+        => targetView is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name)
+            ? media.Name
+            : targetView?.ObjectId.Value ?? ObjectId ?? "BusinessObject listing";
+
+    private string ObjectIcon
+        => targetView is not null && BusinessObjectFamilyCatalog.TryFindByObjectType(targetView.ObjectType, out BusinessObjectFamilyDefinition definition)
+            ? definition.Icon
+            : "widgets";
+
+    private bool CanSubmitPurchase
+        => Session.IsUnlocked
+            && saleTerms is { Status: BusinessObjectSaleStatus.Listed }
+            && string.IsNullOrWhiteSpace(saleTerms.TokenId)
+            && purchaseResult?.Accepted != true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Session.InitializeAsync();
+        await LoadListingAsync();
+    }
+
+    private async Task LoadListingAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        purchaseResult = null;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(ObjectId))
+            {
+                throw new InvalidOperationException("BusinessObject id is required.");
+            }
+
+            targetHolding = await LedgerReadClient.GetBusinessObjectAsync(
+                new LedgerBusinessObjectQuery(Context, ObjectId: new BusinessObjectId(Uri.UnescapeDataString(ObjectId))),
+                CancellationToken.None);
+            if (targetHolding is null)
+            {
+                throw new InvalidOperationException("The requested BusinessObject was not found.");
+            }
+
+            targetView = await CastRegistry.CastAsync(
+                new BusinessObjectCastSource(
+                    Context,
+                    targetHolding.ObjectId,
+                    targetHolding.ObjectType,
+                    targetHolding.SchemaVersion,
+                    targetHolding.Version,
+                    targetHolding.OwnerAddress,
+                    targetHolding.Operation,
+                    targetHolding.DataHash,
+                    targetHolding.CurrentOutPoint,
+                    targetHolding.StateJson,
+                    targetHolding.ExternalRef,
+                    targetHolding.ItemType,
+                    targetHolding.CreatedAt),
+                CancellationToken.None);
+
+            if (!BusinessObjectCommercePayloadBuilder.TryGetSaleTerms(targetHolding.StateJson, out saleTerms)
+                || saleTerms is not { Status: BusinessObjectSaleStatus.Listed })
+            {
+                throw new InvalidOperationException("This BusinessObject is not currently listed for sale.");
+            }
+        }
+        catch (Exception exception)
+        {
+            errorMessage = exception.Message;
+            targetHolding = null;
+            targetView = null;
+            saleTerms = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task UnlockAccountAsync()
+    {
+        await Session.UnlockAccountAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ImportBackupAsync()
+    {
+        await Session.ImportVaultBackupAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SubmitPurchaseAsync()
+    {
+        errorMessage = null;
+        try
+        {
+            if (targetHolding is null || saleTerms is null || Session.Account is null)
+            {
+                throw new InvalidOperationException("A listed BusinessObject and unlocked buyer account are required.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(saleTerms.TokenId))
+            {
+                throw new InvalidOperationException("Token-priced BO purchases are not enabled in this AccountApp flow yet.");
+            }
+
+            if (!Address.TryParse(saleTerms.SellerAddress, out Address sellerAddress))
+            {
+                throw new InvalidOperationException("The seller address in sale terms is invalid.");
+            }
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            BusinessObjectId paymentObjectId = BusinessObjectCommercePayloadBuilder.CreatePaymentObjectId(
+                targetHolding.ObjectId,
+                Session.Account.Address,
+                now);
+            BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
+                paymentObjectId,
+                Session.Account.Address,
+                sellerAddress,
+                targetHolding.ObjectId,
+                targetHolding.Version,
+                targetHolding.CurrentOutPoint,
+                new Amount(saleTerms.PriceAmount),
+                saleTerms.Mode,
+                paymentTxId: null,
+                now,
+                tokenId: null,
+                saleTerms.MaxClones);
+            payment = payment with
+            {
+                PurchaseObjectId = BusinessObjectCommercePayloadBuilder.CreatePurchaseObjectId(paymentObjectId).Value
+            };
+
+            string paymentState = BusinessObjectPayloadBuilder.Serialize(
+                BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
+            var draft = new BusinessObjectTransactionDraft(
+                paymentObjectId,
+                "payment",
+                "1.0",
+                sellerAddress,
+                sellerAddress,
+                sellerAddress,
+                new Amount(saleTerms.PriceAmount),
+                new Amount(saleTerms.PriceAmount),
+                paymentState,
+                $"bo-commerce://payment/{paymentObjectId.Value}",
+                BusinessObjectTransactionMode.Create);
+
+            purchaseResult = await Session.WorkspaceAdapter.SubmitTransactionAsync(draft);
+            Session.ApplyTransactionResult(purchaseResult);
+            if (purchaseResult.Accepted)
+            {
+                await Session.RefreshWorkspaceAsync();
+            }
+        }
+        catch (Exception exception)
+        {
+            errorMessage = exception.Message;
+        }
+    }
+
+    private static string FormatPrice(decimal amount, string? tokenId)
+        => $"{amount:0.#############################} {(string.IsNullOrWhiteSpace(tokenId) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : tokenId)}";
+}

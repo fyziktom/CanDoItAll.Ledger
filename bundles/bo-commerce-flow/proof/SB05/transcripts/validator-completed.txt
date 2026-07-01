@@ -1,0 +1,3 @@
+Bundle is valid for stage 'completed': C:\repositories\CanDoItAll.Ledger\bundles\bo-commerce-flow
+Command: python C:\Users\dell\.codex\skills\candoitall-bundle-preparation\scripts\validate_bundle.py bundles\bo-commerce-flow --stage completed --profile initiative --repo-root .
+ExitCode: 0

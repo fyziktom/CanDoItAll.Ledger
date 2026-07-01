@@ -294,16 +294,17 @@ public sealed class WasmAccountWorkspaceAdapter(
     {
         BusinessObjectAccount account = CreateAccount();
         Amount priceAmount = PositiveOrDefault(request.PriceAmount, 1);
+        string nextState = BuildSaleStateJson(request, account.Address, priceAmount, timeProvider.UtcNow);
         LedgerTransaction unsigned = await account.BuildUnsignedSetBusinessObjectPriceTransactionAsync(
             new SetBusinessObjectPriceRequest(
                 request.ObjectId,
                 priceAmount,
                 request.TokenId,
-                MergePriceJson(request.StateJson, priceAmount, request.TokenId),
+                nextState,
                 SafeNullable(request.ExternalRef)),
             cancellationToken).ConfigureAwait(false);
 
-        return await SignAndSubmitAsync(BusinessObjectTransactionMode.UpdateObject, unsigned, "BO price update", cancellationToken)
+        return await SignAndSubmitAsync(BusinessObjectTransactionMode.UpdateObject, unsigned, "BO sale update", cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -681,18 +682,27 @@ public sealed class WasmAccountWorkspaceAdapter(
         return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
     }
 
-    private static string MergePriceJson(string stateJson, Amount priceAmount, TokenId? tokenId)
-        => JsonSerializer.Serialize(new
+    private static string BuildSaleStateJson(
+        BusinessObjectPriceRequest request,
+        Address sellerAddress,
+        Amount priceAmount,
+        DateTimeOffset listedAtUtc)
+    {
+        if (request.ClearSale)
         {
-            previous = SafeJson(stateJson),
-            price = new
-            {
-                amount = priceAmount.Value,
-                tokenId = tokenId?.Value,
-                asset = tokenId?.Value ?? "MAIN",
-                pricedAtUtc = DateTimeOffset.UtcNow
-            }
-        });
+            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, request.ObjectId.Value);
+        }
+
+        BusinessObjectSaleTerms terms = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
+            request.SaleMode,
+            priceAmount,
+            sellerAddress,
+            listedAtUtc,
+            request.SaleMode == BusinessObjectSaleMode.Copy ? request.MaxClones : null,
+            request.TokenId,
+            request.SharePath);
+        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, request.ObjectId.Value, terms);
+    }
 
     private static string ShortHash(string value)
         => value.Length > 12 ? $"{value[..12]}..." : value;

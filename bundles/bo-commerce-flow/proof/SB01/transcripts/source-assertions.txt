@@ -1,0 +1,24 @@
+COMMAND: rg -n "cda-bo-long-description|LongDescription|HasLongDescription|PayloadBuilderAndGenericCaster|DetailsDialog_RendersLongDescription" src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor src\CanDoItAll.Economy.Components\wwwroot\css\economy-components.css tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs
+CWD: C:\repositories\CanDoItAll.Ledger
+START: 2026-06-30T16:14:27.2840048-04:00
+
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:37:                            @if (HasLongDescription)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:39:                                <section class="cda-vef-bo-long-description" data-testid="cda-bo-long-description" aria-label="Business object long description">
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:41:                                    <p>@LongDescription</p>
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:268:    private string LongDescription
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:275:    private bool HasLongDescription
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:276:        => !string.IsNullOrWhiteSpace(LongDescription)
+src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor:277:            && !LongDescription.Equals(Description, StringComparison.Ordinal);
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:13:public sealed class BusinessObjectLongDescriptionComponentTests : TestContext
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:16:    private const string LongDescription = "RN-01-SB01 long body: this text must be visible separately from the short summary.";
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:18:    public BusinessObjectLongDescriptionComponentTests()
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:25:    public void DetailsDialog_RendersLongDescriptionWhenShortDescriptionExists()
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:31:        IElement body = component.Find("[data-testid='cda-bo-long-description']");
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:33:        Assert.Contains(LongDescription, body.TextContent, StringComparison.Ordinal);
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:38:    public async Task PayloadBuilderAndGenericCaster_RoundTripLongDescriptionWithShortDescription()
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:47:        Assert.Equal(LongDescription, typed.Text);
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:49:        Assert.Contains(LongDescription, typed.StateJson, StringComparison.Ordinal);
+tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs:111:            LongDescription,
+
+EXIT_CODE: 0
+ExitCode: 0

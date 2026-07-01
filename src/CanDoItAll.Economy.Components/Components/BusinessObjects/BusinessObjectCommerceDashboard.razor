@@ -1,0 +1,96 @@
+@namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
+
+<section class="cda-vef-panel cda-vef-commerce-dashboard" data-testid="cda-commerce-dashboard">
+    <div class="cda-vef-panel-header">
+        <span>Commerce Records</span>
+        <StatusBadge Text="@($"{CommerceItems.Count} item(s)")" Tone="info" />
+    </div>
+    <div class="cda-vef-panel-body">
+        @if (CommerceItems.Count == 0)
+        {
+            <p class="cda-vef-empty-line">No payment, purchase, or receipt records are visible in this account.</p>
+        }
+        else
+        {
+            <div class="cda-vef-commerce-list">
+                @foreach (ICommerceBusinessObjectView item in CommerceItems)
+                {
+                    <button type="button"
+                            class="cda-vef-commerce-row"
+                            data-testid="cda-commerce-record"
+                            @onclick="@(() => OpenDetailsAsync(item))">
+                        <span class="material-icons" aria-hidden="true">@IconFor(item)</span>
+                        <span>
+                            <strong>@DisplayName(item)</strong>
+                            <small>@SummaryFor(item)</small>
+                        </span>
+                        <em>@item.ObjectType</em>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    private IReadOnlyList<ICommerceBusinessObjectView> CommerceItems
+        => Workspace.BusinessObjects
+            .OfType<ICommerceBusinessObjectView>()
+            .Where(item => item.Commerce.Payment is not null || item.Commerce.Purchase is not null || item.Commerce.Receipt is not null)
+            .OrderByDescending(item => item.CreatedAt)
+            .ToArray();
+
+    private Task OpenDetailsAsync(ICommerceBusinessObjectView item)
+        => DialogService.OpenAsync<BusinessObjectLedgerDetailsDialogContent>(
+            $"{DisplayName(item)} - Details",
+            new Dictionary<string, object?>
+            {
+                [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = item,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc
+            },
+            new DialogOptions
+            {
+                Subtitle = item.ObjectId.Value,
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--bo-detail",
+                TestId = "cda-commerce-details-dialog"
+            });
+
+    private static string DisplayName(ICommerceBusinessObjectView item)
+        => !string.IsNullOrWhiteSpace(item.Name) ? item.Name : item.ObjectId.Value;
+
+    private static string IconFor(ICommerceBusinessObjectView item)
+        => item.ObjectType switch
+        {
+            "payment" => "payments",
+            "purchase" => "shopping_cart",
+            "receipt" => "receipt_long",
+            _ => "sell"
+        };
+
+    private static string SummaryFor(ICommerceBusinessObjectView item)
+    {
+        if (item.Commerce.Payment is { } payment)
+        {
+            return $"{payment.Status} / {payment.PriceAmount:0.#############################} {(payment.TokenId ?? BusinessObjectCommercePayloadBuilder.MainCurrencyCode)} / {payment.TargetObjectId}";
+        }
+
+        if (item.Commerce.Purchase is { } purchase)
+        {
+            return $"{purchase.Status} / {purchase.PriceAmount:0.#############################} {(purchase.TokenId ?? BusinessObjectCommercePayloadBuilder.MainCurrencyCode)} / {purchase.TargetObjectId}";
+        }
+
+        if (item.Commerce.Receipt is { } receipt)
+        {
+            return $"{receipt.Status} / {receipt.PriceAmount:0.#############################} {(receipt.TokenId ?? BusinessObjectCommercePayloadBuilder.MainCurrencyCode)} / {receipt.DeliveredObjectId}";
+        }
+
+        return item.ObjectId.Value;
+    }
+}

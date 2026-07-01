@@ -1,0 +1,2 @@
+Command: proof capture: playwright-original-sale-e2e-rerun.txt
+ExitCode: 1

@@ -625,6 +625,28 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             _ => "BO create"
         };
 
+    private static string BuildSaleStateJson(
+        BusinessObjectPriceRequest request,
+        Address sellerAddress,
+        Amount priceAmount,
+        DateTimeOffset listedAtUtc)
+    {
+        if (request.ClearSale)
+        {
+            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, request.ObjectId.Value);
+        }
+
+        BusinessObjectSaleTerms terms = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
+            request.SaleMode,
+            priceAmount,
+            sellerAddress,
+            listedAtUtc,
+            request.SaleMode == BusinessObjectSaleMode.Copy ? request.MaxClones : null,
+            request.TokenId,
+            request.SharePath);
+        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, request.ObjectId.Value, terms);
+    }
+
     public async Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(
         TxId txId,
         CancellationToken cancellationToken = default)
@@ -727,18 +749,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
         BusinessObjectAccount account = mainAccount ?? throw new InvalidOperationException("The development workspace was not initialized.");
         timeProvider.Advance(TimeSpan.FromMinutes(5));
         Amount priceAmount = PositiveOrDefault(request.PriceAmount, 1);
-        string nextState = MergeJson(
-            request.StateJson,
-            root =>
-            {
-                root["price"] = new JsonObject
-                {
-                    ["amount"] = JsonValue.Create(priceAmount.Value),
-                    ["tokenId"] = JsonValue.Create(request.TokenId?.Value),
-                    ["asset"] = JsonValue.Create(request.TokenId?.Value ?? "MAIN"),
-                    ["pricedAtUtc"] = JsonValue.Create(timeProvider.UtcNow)
-                };
-            });
+        string nextState = BuildSaleStateJson(request, account.Address, priceAmount, timeProvider.UtcNow);
 
         LedgerSubmitResult result = await account.SetBusinessObjectPriceAsync(
             new SetBusinessObjectPriceRequest(
@@ -749,7 +760,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 SafeNullable(request.ExternalRef)),
             cancellationToken).ConfigureAwait(false);
 
-        return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "BO price update");
+        return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "BO sale update");
     }
 
     public async Task<EconomyTransactionExecutionResult> UpdateProfileAsync(

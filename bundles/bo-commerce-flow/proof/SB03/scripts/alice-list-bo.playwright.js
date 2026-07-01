@@ -1,0 +1,192 @@
+async page => {
+  const objectId = 'bo:post:new-ledger-post';
+  const screenshotRoot = 'C:/repositories/CanDoItAll.Ledger/bundles/bo-commerce-flow/proof/SB03/browser';
+
+  await page.setViewportSize({ width: 1600, height: 950 });
+  page.setDefaultTimeout(300000);
+
+  if (await page.getByTestId('adapter-workspace-host').count() === 0) {
+    await page.goto('http://localhost:5081/');
+    await page.getByTestId('account-app-root').waitFor();
+    await importPastedKeyIfNeeded();
+  }
+
+  await page.getByTestId('adapter-workspace-host').waitFor();
+
+  if (await page.getByTestId('cda-bo-details-dialog').count() === 0) {
+    await openGallery();
+    await page.getByTestId('ssr-bo-gallery').waitFor();
+    await filterGallery();
+    const card = page.locator('.cda-vef-gallery-card')
+      .filter({ hasText: 'New ledger post' })
+      .first();
+    await card.locator('button[aria-label="Open BO details"]').click();
+  }
+
+  const detailsDialog = page.getByTestId('cda-bo-details-dialog');
+  await detailsDialog.waitFor();
+  await detailsDialog.getByText('Actions', { exact: true }).click().catch(() => {});
+  await detailsDialog
+    .getByRole('button', { name: /Set Sale/i })
+    .click();
+
+  const dialog = page.getByTestId('cda-bo-set-price-dialog');
+  await dialog.waitFor();
+  await page.getByTestId('bo-sale-mode').selectOption('Copy');
+  await page.getByTestId('bo-sale-price').fill('7.25');
+  await page.getByTestId('bo-sale-max-clones').fill('5');
+  await page.screenshot({
+    path: `${screenshotRoot}/alice-set-sale-dialog.png`,
+    fullPage: true
+  });
+
+  await dialog.getByRole('button', { name: /^Set Sale$/i }).click();
+  const listing = await waitForListedSale();
+
+  if (await page.getByTestId('cda-bo-details-dialog').count() > 0) {
+    await page.getByTestId('cda-bo-details-dialog')
+      .getByRole('button', { name: /^Close$/i })
+      .click();
+  }
+
+  if (await page.getByTestId('adapter-workspace-host').count() === 0) {
+    await page.goto('http://localhost:5081/');
+  }
+
+  await page.getByTestId('adapter-workspace-host').waitFor();
+  await openGallery();
+  await page.getByTestId('ssr-bo-gallery').waitFor();
+  await filterGallery();
+  await page.getByTestId('cda-bo-sale-badge').waitFor();
+  await page.screenshot({
+    path: `${screenshotRoot}/alice-sale-badge-gallery.png`,
+    fullPage: true
+  });
+
+  return {
+    objectId,
+    buyUrl: `http://localhost:5082/buy-bo/${encodeURIComponent(objectId)}`,
+    saleMode: listing.sale.mode,
+    priceAmount: listing.sale.priceAmount,
+    maxClones: listing.sale.maxClones,
+    soldCount: listing.sale.soldCount,
+    screenshots: ['alice-set-sale-dialog.png', 'alice-sale-badge-gallery.png']
+  };
+
+  async function importPastedKeyIfNeeded() {
+    if (await page.getByTestId('adapter-workspace-host').count() > 0) {
+      return;
+    }
+
+    if (await canUnlockStoredVault()) {
+      await unlockStoredVault();
+      return;
+    }
+
+    const backup = JSON.stringify({
+      format: 'candoitall-economy-accountapp-vault-backup-v1',
+      exportedAtUtc: '2026-06-29T22:32:07.6130809+00:00',
+      record: {
+        vaultId: 'accountapp-demo-alice-source',
+        displayName: 'Alice demo account',
+        keyId: 'compose-demo-alice-b8082499ad8e49e588a7ade91533c821',
+        address: { value: 'cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu' },
+        algorithm: 1,
+        publicKeyHash: 'e2c690e20e607774bc888fae8af35dd9a91ae55a3f33c87372f9e707907220fa',
+        publicKeyMaterialBase64: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE3t0q1H39Qe+F9AtCLw4aMITrQPi8hPWXA0AWcGSvpZRQmfUHbPubMLjIJIwoz/a1mwAa4BkXk9ArbAQC7xY/8g==',
+        encryptedPrivateKeyBase64: '0Da3E1mGIPbnEHRXLsgJFnBOSeBvAxqfQ4k28kPdqgz1zb4L3lbLAfjVfHi1l0J2EXvxkPiSkttS26g2Byk6OT5tFYo41bMl8Qvv3xdzQyFLsYDQD8LLXPPlMI2gvbQme/6GZCOaBXMiulARGxUKECxLDEjvZtdH5/UWZchxZ6qur9Qj6D7FaM9F/RzgieqtVDDkQNOA5QT5mg==',
+        kdfSaltBase64: 'eStErXC1j/+WdpkJ4t36tw==',
+        nonceBase64: 'sRkGalmuZww82BEV',
+        kdfIterations: 150000,
+        kdfAlgorithm: 'PBKDF2-SHA256',
+        encryptionAlgorithm: 'AES-256-GCM',
+        createdAtUtc: '2026-06-29T22:32:07.6119885+00:00',
+        updatedAtUtc: '2026-06-29T22:32:07.6119885+00:00'
+      }
+    }, null, 2);
+
+    await page.getByTestId('backup-import-json').fill(backup);
+    await page.getByTestId('backup-import-password').fill('accountapp-demo-password');
+    await page.getByTestId('backup-new-password').fill('commerce-proof-alice');
+    await page.getByTestId('backup-confirm-password').fill('commerce-proof-alice');
+    await page.getByTestId('import-backup').click();
+    await waitForWorkspaceOrUnlock();
+    if (await page.getByTestId('adapter-workspace-host').count() > 0) {
+      return;
+    }
+
+    await unlockStoredVault();
+  }
+
+  async function canUnlockStoredVault() {
+    const button = page.getByTestId('unlock-account');
+    return await button.count() > 0 && !(await button.isDisabled());
+  }
+
+  async function unlockStoredVault() {
+    await waitForWorkspaceOrUnlock();
+    if (await page.getByTestId('adapter-workspace-host').count() > 0) {
+      return;
+    }
+
+    await page.getByTestId('unlock-password').fill('commerce-proof-alice');
+    await page.getByTestId('unlock-account').click();
+    await page.getByTestId('adapter-workspace-host').waitFor();
+  }
+
+  async function waitForWorkspaceOrUnlock() {
+    await page.waitForFunction(() => {
+      const workspace = document.querySelector('[data-testid="adapter-workspace-host"]');
+      const button = document.querySelector('[data-testid="unlock-account"]');
+      return Boolean(workspace) || Boolean(button && !button.disabled);
+    });
+  }
+
+  async function filterGallery() {
+    await page.getByPlaceholder('Search BOs...').fill('new-ledger-post');
+    await page.locator('.cda-vef-gallery-card')
+      .filter({ hasText: 'New ledger post' })
+      .first()
+      .waitFor();
+  }
+
+  async function openGallery() {
+    const galleryButton = page.getByRole('button', { name: /^Gallery$/i }).first();
+    await galleryButton.waitFor();
+    await galleryButton.click();
+  }
+
+  async function waitForListedSale() {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const result = await page.evaluate(async currentObjectId => {
+        const response = await fetch('/api/v1/ledger/default/business-objects/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ objectId: currentObjectId, skip: 0, take: 1 })
+        });
+        if (!response.ok) {
+          return { error: `${response.status} ${response.statusText}` };
+        }
+
+        const holdings = await response.json();
+        const holding = holdings[0];
+        if (!holding?.stateJson) {
+          return null;
+        }
+
+        const state = JSON.parse(holding.stateJson);
+        return state.commerce?.sale
+          ? { version: holding.version, sale: state.commerce.sale, state }
+          : null;
+      }, objectId);
+
+      if (result?.sale?.status === 'Listed' || result?.sale?.status === 1) {
+        return result;
+      }
+
+      await page.waitForTimeout(1000);
+    }
+
+    throw new Error(`Timed out waiting for ${objectId} sale terms to persist.`);
+  }
+}

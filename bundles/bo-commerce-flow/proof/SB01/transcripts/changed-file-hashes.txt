@@ -1,0 +1,18 @@
+COMMAND: changed-file SHA-256 before/after
+CWD: C:\repositories\CanDoItAll.Ledger
+START: 2026-06-30T16:15:05.3660311-04:00
+
+FILE: repo://src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectLedgerDetailsDialogContent.razor
+BEFORE_SHA256: d76f1355e4374f55079263251112876299a5f7775617cd39bfc86f3957c713ac
+AFTER_SHA256: a5a978947533122ba2b763673d369ede9fb105f3e2e545f4bce6ad81b77934a1
+
+FILE: repo://src/CanDoItAll.Economy.Components/wwwroot/css/economy-components.css
+BEFORE_SHA256: 17b58da52327eed54f82e43304efeabae7c2ea6a2bb076452888458111438103
+AFTER_SHA256: 05f1d268ef34f1ce8c0232ce28eaf592e6e4d1b79f1e845577d01e6b317b2256
+
+FILE: repo://tests/CanDoItAll.Ledger.Tests/BusinessObjectLongDescriptionComponentTests.cs
+BEFORE_SHA256: absent
+AFTER_SHA256: be54d68cb9b2a953e3eda11bb1965982875a47e15d6bef63ecd641c8019776c7
+
+EXIT_CODE: 0
+ExitCode: 0

@@ -1,0 +1,63 @@
+{
+  "Command": "proof capture: api-sale-payment-state.json",
+  "ExitCode": 0,
+  "Payload": ﻿{
+    "sale":  {
+                 "value":  [
+                               {
+                                   "objectId":  {
+                                                    "value":  "bo:post:new-ledger-post"
+                                                },
+                                   "version":  5,
+                                   "ownerAddress":  {
+                                                        "value":  "cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu"
+                                                    },
+                                   "operation":  1,
+                                   "dataHash":  {
+                                                    "value":  "6d3665e3bf6e7e5494990b45e019c6a469e29e88ff2c8c2a0c0e4ed19171c07f"
+                                                },
+                                   "currentOutPoint":  {
+                                                           "txId":  {
+                                                                        "value":  "791d7844c74cc10e1eb04cab9e5b1a6c99949596ad9c541abb08cd9c702bb911"
+                                                                    },
+                                                           "outputIndex":  0
+                                                       },
+                                   "createdAt":  "2026-06-30T17:22:35.552411+00:00",
+                                   "objectType":  "post",
+                                   "schemaVersion":  "1.0",
+                                   "stateJson":  "{\"name\":\"New ledger post\",\"description\":\"Ledger-owned post or short article.\",\"text\":\"testing of the right click menu in candoitall web app\",\"tags\":\"#VEFramework #Neblio #NET #Blazor #OpenSource\",\"author\":null,\"link\":null,\"imageLink\":null,\"dataItems\":[{\"name\":\"Screenshot 2026-03-20 231759.png\",\"type\":1,\"storage\":1,\"hash\":\"QmVTfnFADHE2MfkRfpX5cJQFqtWztMJ1rgUUAT4poHkXMu\",\"uri\":\"http://localhost:5081/ipfs-api/cat?arg=QmVTfnFADHE2MfkRfpX5cJQFqtWztMJ1rgUUAT4poHkXMu\",\"contentType\":\"image/png\",\"fileName\":\"Screenshot 2026-03-20 231759.png\",\"size\":287346,\"isMain\":true,\"description\":\"Uploaded through BO wizard\"}],\"family\":\"content\",\"fields\":{},\"commerce\":{\"schemaVersion\":\"1.0\",\"sale\":{\"status\":1,\"mode\":1,\"priceAmount\":7.25,\"tokenId\":null,\"sellerAddress\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"maxClones\":5,\"soldCount\":0,\"listedAtUtc\":\"2026-06-30T23:09:48.222+00:00\",\"sharePath\":\"/buy-bo/bo%3Apost%3Anew-ledger-post\"},\"payment\":null,\"purchase\":null,\"receipt\":null,\"isEmpty\":false},\"tagList\":[\"VEFramework\",\"Neblio\",\"NET\",\"Blazor\",\"OpenSource\"]}",
+                                   "externalRef":  null,
+                                   "itemType":  2
+                               }
+                           ],
+                 "Count":  1
+             },
+    "payments":  [
+                     {
+                         "objectId":  {
+                                          "value":  "bo:payment:ca99382ba95385cbdc548158"
+                                      },
+                         "version":  1,
+                         "ownerAddress":  {
+                                              "value":  "cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu"
+                                          },
+                         "operation":  1,
+                         "dataHash":  {
+                                          "value":  "5eec0463df2ff7963a716b0dedcdc4f53c5b54063ed80d0381e190a396dfab54"
+                                      },
+                         "currentOutPoint":  {
+                                                 "txId":  {
+                                                              "value":  "4f17eec1e2b1c5fa977457268257683103c25c9c04395d849b89b828ade7f74c"
+                                                          },
+                                                 "outputIndex":  0
+                                             },
+                         "createdAt":  "2026-06-30T17:22:35.552411+00:00",
+                         "objectType":  "payment",
+                         "schemaVersion":  "1.0",
+                         "stateJson":  "{\"name\":\"Payment for bo:post:new-ledger-post\",\"description\":\"Buyer payment record for BusinessObject commerce.\",\"text\":\"Payment from cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU to cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu for bo:post:new-ledger-post.\",\"tags\":\"#commerce #payment\",\"author\":null,\"link\":null,\"imageLink\":null,\"dataItems\":[],\"family\":\"commerce\",\"fields\":{\"amount\":\"7.25\",\"buyerAddress\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"currency\":\"MAIN\",\"payee\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"payer\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"paymentObjectId\":\"bo:payment:ca99382ba95385cbdc548158\",\"reference\":\"bo:post:new-ledger-post\",\"saleMode\":\"Copy\",\"sellerAddress\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"status\":\"Pending\",\"targetObjectId\":\"bo:post:new-ledger-post\"},\"commerce\":{\"schemaVersion\":\"1.0\",\"sale\":null,\"payment\":{\"paymentObjectId\":\"bo:payment:ca99382ba95385cbdc548158\",\"buyerAddress\":\"cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU\",\"sellerAddress\":\"cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu\",\"targetObjectId\":\"bo:post:new-ledger-post\",\"targetVersion\":5,\"targetOutPoint\":\"791d7844c74cc10e1eb04cab9e5b1a6c99949596ad9c541abb08cd9c702bb911:0\",\"priceAmount\":7.25,\"tokenId\":null,\"saleMode\":1,\"status\":0,\"paymentTxId\":null,\"dispatchTxId\":null,\"receiptObjectId\":null,\"purchaseObjectId\":\"bo:purchase:add182370e27a67877bb33de\",\"deliveredObjectId\":null,\"createdAtUtc\":\"2026-06-30T23:18:28.195+00:00\",\"updatedAtUtc\":null,\"rejectionReason\":null,\"saleMaxClones\":5},\"purchase\":null,\"receipt\":null,\"isEmpty\":false},\"tagList\":[\"commerce\",\"payment\"]}",
+                         "externalRef":  null,
+                         "itemType":  2
+                     }
+                 ]
+}
+}

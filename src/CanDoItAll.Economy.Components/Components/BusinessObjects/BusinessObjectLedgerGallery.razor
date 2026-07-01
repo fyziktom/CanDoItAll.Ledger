@@ -75,6 +75,10 @@
                         <span>@item.Operation</span>
                         <span>BO</span>
                         <span>@item.ObjectType</span>
+                        @if (SaleTermsFor(item) is { Status: BusinessObjectSaleStatus.Listed } sale)
+                        {
+                            <span class="cda-vef-sale-badge" data-testid="cda-bo-sale-badge">@sale.Mode / @FormatPrice(sale.PriceAmount, sale.TokenId)</span>
+                        }
                     </div>
                     <div class="cda-vef-gallery-meta">
                         <span>@ShortObjectId(item.ObjectId)</span>
@@ -323,6 +327,14 @@
 
         return BusinessObjectPayloadBuilder.CreateFacts(definition, PayloadFor(item)?.Fields);
     }
+
+    private static BusinessObjectSaleTerms? SaleTermsFor(IBusinessObjectView item)
+        => BusinessObjectCommercePayloadBuilder.TryGetSaleTerms(item.StateJson, out BusinessObjectSaleTerms? terms)
+            ? terms
+            : null;
+
+    private static string FormatPrice(decimal amount, string? tokenId)
+        => $"{amount:0.#############################} {(string.IsNullOrWhiteSpace(tokenId) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : tokenId)}";
 
     private static string PreviewIcon(IBusinessObjectView item)
         => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out BusinessObjectFamilyDefinition definition)
