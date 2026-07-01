@@ -473,6 +473,11 @@ public sealed class BusinessObjectCommerceDispatcherTests
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
+        public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+            BusinessObjectEventLookupRequest request,
+            CancellationToken cancellationToken = default)
+            => throw new NotSupportedException();
+
         public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
             EconomyTokenCreationRequest request,
             CancellationToken cancellationToken = default)

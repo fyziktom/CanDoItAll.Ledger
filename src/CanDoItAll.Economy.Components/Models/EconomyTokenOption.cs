@@ -107,3 +107,14 @@ public sealed record BusinessObjectTicketUseRequest(
     string StateJson,
     string? ExternalRef = null,
     HashHex? VerificationHash = null);
+
+public sealed record BusinessObjectEventLookupRequest(string Query);
+
+public sealed record BusinessObjectEventLookupResult(
+    bool Found,
+    string Summary,
+    IBusinessObjectView? EventObject = null)
+{
+    public static BusinessObjectEventLookupResult NotFound(string summary)
+        => new(false, summary, null);
+}

@@ -598,6 +598,17 @@ public sealed class EconomyNodeWorkspaceSession(
         return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "Ticket use");
     }
 
+    public async Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+        string? accountName,
+        BusinessObjectEventLookupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        using NodeAccountDriver driver = await LoadDriverAsync(accountName, cancellationToken).ConfigureAwait(false);
+        return await BusinessObjectEventLookup
+            .LookupAsync(driver.LedgerDriver, castRegistry, driver.Context, request.Query, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         string? accountName,
         EconomyTokenCreationRequest request,

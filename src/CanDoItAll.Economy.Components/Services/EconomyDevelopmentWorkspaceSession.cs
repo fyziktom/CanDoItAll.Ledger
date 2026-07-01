@@ -885,6 +885,16 @@ public sealed class EconomyDevelopmentWorkspaceSession(
         return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "Ticket use");
     }
 
+    public async Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+        BusinessObjectEventLookupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+        return await BusinessObjectEventLookup
+            .LookupAsync(economyClient, castRegistry, SeedContext, request.Query, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         EconomyTokenCreationRequest request,
         CancellationToken cancellationToken = default)

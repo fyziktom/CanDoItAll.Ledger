@@ -144,6 +144,24 @@
                         <FormField Text="Short description">
                             <TextBox Value="@description" ValueChanged="@(value => description = value ?? string.Empty)" Immediate="true" aria-label="BusinessObject description" />
                         </FormField>
+                        @if (IsTicketSelected)
+                        {
+                            <section class="cda-ticket-event-panel" data-testid="cda-ticket-event-panel">
+                                <div>
+                                    <span class="material-icons" aria-hidden="true">event</span>
+                                    <div>
+                                        <strong>@(selectedTicketEvent is null ? "No event selected" : TicketEventDisplayName)</strong>
+                                        <small>@(selectedTicketEvent?.ObjectId.Value ?? "Select an event BO or load it by transaction hash.")</small>
+                                    </div>
+                                </div>
+                                <Button Text="Select Event"
+                                        Icon="travel_explore"
+                                        Size="ButtonSize.Small"
+                                        ButtonStyle="ButtonStyle.Secondary"
+                                        Click="OpenTicketEventPickerAsync"
+                                        data-testid="cda-ticket-select-event" />
+                            </section>
+                        }
                     </Stack>
                     <Stack GapScale="LayoutGap.Small" Class="min-w-0">
                         <FormField Text="Long description" ContainerClass="cda-economy-field cda-economy-field--wide">
@@ -263,6 +281,9 @@
     [Parameter]
     public EventCallback<BusinessObjectTransactionDraft> StageBusinessObjectRequested { get; set; }
 
+    [Parameter]
+    public Func<BusinessObjectEventLookupRequest, Task<BusinessObjectEventLookupResult>>? EventBusinessObjectLookupRequested { get; set; }
+
     private int currentStep = 1;
     private string? currentModelKey;
     private string? selectedTokenKey = EconomyTokenOption.MainKey;
@@ -274,6 +295,7 @@
     private Dictionary<string, string> fieldValues = new(StringComparer.Ordinal);
     private IReadOnlyList<BusinessObjectDataItem> uploadedItems = [];
     private bool uploadInProgress;
+    private IBusinessObjectView? selectedTicketEvent;
 
     protected override void OnParametersSet()
     {
@@ -300,6 +322,7 @@
             BusinessObjectPayloadBuilder.NormalizeFields(definition, null),
             StringComparer.Ordinal);
         EnsureFieldKeys();
+        selectedTicketEvent = null;
         selectedTokenKey ??= Workspace?.TokenOptions.FirstOrDefault()?.Key ?? EconomyTokenOption.MainKey;
     }
 
@@ -343,6 +366,22 @@
                 ? "IPFS required"
                 : "IPFS CID";
 
+    private bool IsTicketSelected
+        => selectedObjectType.Equals("ticket", StringComparison.OrdinalIgnoreCase);
+
+    private string TicketEventDisplayName
+        => selectedTicketEvent is ITypedBusinessObjectView typed && !string.IsNullOrWhiteSpace(typed.Name)
+            ? typed.Name
+            : selectedTicketEvent?.ObjectId.Value ?? "No event selected";
+
+    private IReadOnlyList<IBusinessObjectView> AvailableEvents
+        => Workspace?.BusinessObjects
+            .Where(item => item.ObjectType.Equals("event", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(item => item.CreatedAt)
+            .ThenByDescending(item => item.ObjectId.Value, StringComparer.Ordinal)
+            .ToArray()
+            ?? [];
+
     private IReadOnlyList<string> Tags
         => tags.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(tag => tag.TrimStart('#'))
@@ -374,6 +413,11 @@
         }
 
         selectedObjectType = next.ObjectType;
+        if (!next.ObjectType.Equals("ticket", StringComparison.OrdinalIgnoreCase))
+        {
+            selectedTicketEvent = null;
+        }
+
         if (string.IsNullOrWhiteSpace(name) || name.Equals(BusinessObjectPayloadBuilder.DefaultName(previous), StringComparison.Ordinal))
         {
             name = BusinessObjectPayloadBuilder.DefaultName(next);
@@ -385,6 +429,78 @@
         }
 
         EnsureFieldKeys();
+    }
+
+    private async Task OpenTicketEventPickerAsync()
+    {
+        object? result = await DialogService.OpenAsync<BusinessObjectEventPickerDialogContent>(
+            "Select Event",
+            new Dictionary<string, object?>
+            {
+                [nameof(BusinessObjectEventPickerDialogContent.Events)] = AvailableEvents,
+                [nameof(BusinessObjectEventPickerDialogContent.LookupRequested)] = EventBusinessObjectLookupRequested
+            },
+            new DialogOptions
+            {
+                Subtitle = "Load an event BO and prefill ticket details.",
+                Size = ModalSize.Wide,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--details cda-event-picker-dialog",
+                TestId = "cda-event-picker-dialog"
+            }).ConfigureAwait(false);
+
+        if (result is IBusinessObjectView eventObject)
+        {
+            ApplyTicketEvent(eventObject);
+        }
+    }
+
+    private void ApplyTicketEvent(IBusinessObjectView eventObject)
+    {
+        if (!eventObject.ObjectType.Equals("event", StringComparison.OrdinalIgnoreCase))
+        {
+            Notifications.Warning("Invalid event", "The selected BO is not an event.", position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        selectedTicketEvent = eventObject;
+        EnsureFieldKeys();
+        BusinessObjectTicketEventPrefill prefill = BusinessObjectTicketEventPrefill.FromEvent(eventObject);
+        foreach ((string key, string value) in prefill.Fields)
+        {
+            SetTicketField(key, value, overwrite: key is not "status");
+        }
+
+        if (!string.IsNullOrWhiteSpace(prefill.EventName))
+        {
+            if (string.IsNullOrWhiteSpace(description)
+                || description.Equals(SelectedDefinition.Description, StringComparison.Ordinal)
+                || description.Equals(BusinessObjectFamilyCatalog.FindOrDefault("ticket").Description, StringComparison.Ordinal))
+            {
+                description = $"Ticket for {prefill.EventName}";
+            }
+
+            if (string.IsNullOrWhiteSpace(name)
+                || name.Equals(BusinessObjectPayloadBuilder.DefaultName(SelectedDefinition), StringComparison.Ordinal))
+            {
+                name = $"Ticket for {prefill.EventName}";
+            }
+        }
+
+        Notifications.Success("Event selected", "Ticket fields were preloaded from the selected event BO.", position: NotificationPosition.BottomCenter);
+    }
+
+    private void SetTicketField(string key, string? value, bool overwrite)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (overwrite || string.IsNullOrWhiteSpace(FieldValue(key)))
+        {
+            fieldValues[key] = value.Trim();
+        }
     }
 
     private string FieldValue(string key)

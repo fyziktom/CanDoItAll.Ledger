@@ -6161,3 +6161,95 @@ button.cda-economy-list-item:focus-visible {
   font-style: normal;
   font-size: 0.78rem;
 }
+
+.cda-ticket-event-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cda-border-subtle, #d8dee9);
+  background: var(--cda-surface-muted, #f7f9fc);
+  border-radius: 8px;
+}
+
+.cda-ticket-event-panel > div {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.cda-ticket-event-panel strong,
+.cda-ticket-event-panel small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-ticket-event-panel small {
+  color: var(--cda-text-muted, #607085);
+}
+
+.cda-event-picker__layout {
+  align-items: start;
+}
+
+.cda-event-picker__list {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 26rem;
+  overflow: auto;
+}
+
+.cda-event-picker__event {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--cda-border-subtle, #d8dee9);
+  background: var(--cda-surface, #fff);
+  color: inherit;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cda-event-picker__event.is-selected {
+  border-color: var(--cda-accent, #2764d8);
+  background: var(--cda-accent-soft, #eef4ff);
+}
+
+.cda-event-picker__event strong,
+.cda-event-picker__event small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-event-picker__event small {
+  color: var(--cda-text-muted, #607085);
+}
+
+.cda-event-picker__selected-title {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cda-event-picker__selected-title strong,
+.cda-event-picker__selected-title small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-event-picker__selected-title small {
+  color: var(--cda-text-muted, #607085);
+}

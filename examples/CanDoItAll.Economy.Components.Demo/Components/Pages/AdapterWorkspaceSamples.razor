@@ -72,6 +72,40 @@
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
 
+        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+            ProfileEditRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(request.CreateNew
+                ? BusinessObjectTransactionMode.Create
+                : BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+            BusinessObjectTicketVerificationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(new BusinessObjectTicketVerificationResult(
+                Success: false,
+                "Sample adapter does not verify tickets.",
+                string.Empty,
+                MessageHash: null,
+                SignatureJson: null,
+                DateTimeOffset.Parse("2026-06-29T12:00:00Z"),
+                DateTimeOffset.Parse("2026-06-29T12:05:00Z"),
+                new BusinessObjectTicketHistoryValidation(
+                    BusinessObjectTicketHistoryStatus.NotTicket,
+                    OriginTxId: null,
+                    UsedTxId: null,
+                    [])));
+
+        public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+            BusinessObjectTicketUseRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+            BusinessObjectEventLookupRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(BusinessObjectEventLookupResult.NotFound("Sample adapter has no event lookup."));
+
         public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
             EconomyTokenCreationRequest request,
             CancellationToken cancellationToken = default)

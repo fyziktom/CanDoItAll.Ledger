@@ -272,6 +272,11 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
 
+        public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+            BusinessObjectEventLookupRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(BusinessObjectEventLookupResult.NotFound("Sample adapter has no event lookup."));
+
         public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
             EconomyTokenCreationRequest request,
             CancellationToken cancellationToken = default)
@@ -378,6 +383,11 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             BusinessObjectTicketUseRequest request,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+            BusinessObjectEventLookupRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(BusinessObjectEventLookupResult.NotFound("Refresh probe adapter has no event lookup."));
 
         public Task<EconomyTransactionExecutionResult> CreateTokenAsync(EconomyTokenCreationRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));

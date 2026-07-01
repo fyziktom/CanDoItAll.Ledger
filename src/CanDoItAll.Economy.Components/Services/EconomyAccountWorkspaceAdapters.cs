@@ -48,6 +48,10 @@ public interface IEconomyAccountWorkspaceAdapter
         BusinessObjectTicketUseRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+        BusinessObjectEventLookupRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         EconomyTokenCreationRequest request,
         CancellationToken cancellationToken = default);
@@ -442,6 +446,16 @@ public sealed class WasmAccountWorkspaceAdapter(
         return await SignAndSubmitAsync(BusinessObjectTransactionMode.UpdateObject, unsigned, "Ticket use", cancellationToken)
             .ConfigureAwait(false);
     }
+
+    public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+        BusinessObjectEventLookupRequest request,
+        CancellationToken cancellationToken = default)
+        => BusinessObjectEventLookup.LookupAsync(
+            ledgerReadClient,
+            castRegistry,
+            Context,
+            request.Query,
+            cancellationToken);
 
     public async Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         EconomyTokenCreationRequest request,
@@ -997,6 +1011,11 @@ public sealed class DevelopmentEconomyWorkspaceAdapter(
         CancellationToken cancellationToken = default)
         => session.UseTicketAsync(request, cancellationToken);
 
+    public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+        BusinessObjectEventLookupRequest request,
+        CancellationToken cancellationToken = default)
+        => session.LookupEventBusinessObjectAsync(request, cancellationToken);
+
     public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         EconomyTokenCreationRequest request,
         CancellationToken cancellationToken = default)
@@ -1119,6 +1138,11 @@ public sealed class NodeEconomyWorkspaceAdapter(
         BusinessObjectTicketUseRequest request,
         CancellationToken cancellationToken = default)
         => session.UseTicketAsync(options.AccountName, request, cancellationToken);
+
+    public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+        BusinessObjectEventLookupRequest request,
+        CancellationToken cancellationToken = default)
+        => session.LookupEventBusinessObjectAsync(options.AccountName, request, cancellationToken);
 
     public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
         EconomyTokenCreationRequest request,

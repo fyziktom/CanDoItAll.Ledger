@@ -42,6 +42,7 @@ else
                                 BusinessObjectSetPriceRequested="OpenBusinessObjectSetPriceDialogAsync"
                                 BusinessObjectTicketVerificationRequested="CreateTicketVerificationAsync"
                                 BusinessObjectTicketUseRequested="UseTicketAsync"
+                                BusinessObjectEventLookupRequested="LookupEventBusinessObjectAsync"
                                 MessageSignRequested="SignMessageAsync"
                                 MessageVerifyRequested="VerifyMessageAsync"
                                 MessageEncryptRequested="EncryptMessageAsync"
@@ -430,6 +431,10 @@ else
             return lastResult;
         }
     }
+
+    private Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+        BusinessObjectEventLookupRequest request)
+        => Adapter.LookupEventBusinessObjectAsync(request);
 
     private async Task ExecuteAndRefreshAsync(
         Func<Task<EconomyTransactionExecutionResult>> action,

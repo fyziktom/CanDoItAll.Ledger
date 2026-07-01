@@ -54,7 +54,8 @@
         {
             <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
                                           Workspace="Workspace"
-                                          StageBusinessObjectRequested="StageBusinessObjectAsync" />
+                                          StageBusinessObjectRequested="StageBusinessObjectAsync"
+                                          EventBusinessObjectLookupRequested="BusinessObjectEventLookupRequested" />
         }
         else if (selectedView == "rule")
         {
@@ -150,6 +151,9 @@
 
     [Parameter]
     public Func<BusinessObjectTicketUseRequest, Task<EconomyTransactionExecutionResult>>? BusinessObjectTicketUseRequested { get; set; }
+
+    [Parameter]
+    public Func<BusinessObjectEventLookupRequest, Task<BusinessObjectEventLookupResult>>? BusinessObjectEventLookupRequested { get; set; }
 
     [Parameter]
     public Func<MessageSecuritySignRequest, Task<MessageSecurityActionResult>>? MessageSignRequested { get; set; }
