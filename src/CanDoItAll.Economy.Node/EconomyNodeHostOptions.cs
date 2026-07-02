@@ -174,6 +174,8 @@ public sealed class EconomyNodeHostOptions
 
     public bool EnableHsts { get; set; }
 
+    public List<string> CorsAllowedOrigins { get; set; } = [];
+
     public EconomyNodePersistenceProvider PersistenceProvider { get; set; } = EconomyNodePersistenceProvider.InMemory;
 
     public string InMemoryDatabaseName { get; set; } = EconomyEfCoreServiceCollectionExtensions.DefaultInMemoryDatabaseName;

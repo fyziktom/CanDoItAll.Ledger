@@ -56,7 +56,7 @@ h1:focus {
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: 12px;
+    padding: 8px;
 }
 
 .account-app--buy {
@@ -68,6 +68,7 @@ h1:focus {
 .account-app__status,
 .account-app__account-bar,
 .account-app__actions,
+.account-app__workspace-frame,
 .account-card {
     border: 1px solid var(--account-border);
     border-radius: 8px;
@@ -119,6 +120,83 @@ h1:focus {
     margin-top: 14px;
     padding: 12px 14px;
     color: var(--account-primary);
+}
+
+.account-app__workspace-frame {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: minmax(18rem, 0.9fr) minmax(0, 1.3fr) auto;
+    gap: 10px;
+    align-items: center;
+    min-height: 64px;
+    padding: 8px 10px;
+    box-shadow: 0 6px 18px rgba(23, 35, 49, 0.06);
+}
+
+.account-app__identity {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+}
+
+.account-app__avatar {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: #ede9fe;
+    color: #3b2f8f;
+    font-weight: 800;
+}
+
+.account-app__identity h1 {
+    font-size: 1rem;
+    line-height: 1.15;
+}
+
+.account-app__frame-facts {
+    display: grid;
+    grid-template-columns: minmax(11rem, 1fr) minmax(10rem, 0.9fr) minmax(9rem, 0.75fr);
+    gap: 8px;
+    min-width: 0;
+}
+
+.account-app__frame-facts div {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+    border: 1px solid #e4eaf1;
+    border-radius: 6px;
+    background: #f9fbfd;
+    padding: 6px 8px;
+}
+
+.account-app__frame-facts span {
+    color: var(--account-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.account-app__frame-facts strong {
+    min-width: 0;
+    color: var(--account-primary-strong);
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-app__frame-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
 }
 
 .account-app__status strong,
@@ -257,7 +335,7 @@ h1:focus {
 [data-testid="wasm-workspace"],
 [data-testid="transaction-detail"],
 [data-testid="backup-export"] {
-    margin-top: 14px;
+    margin-top: 8px;
 }
 
 .buy-bo-grid {
@@ -374,6 +452,7 @@ h1:focus {
     }
 
     .account-app__topbar,
+    .account-app__workspace-frame,
     .account-app__account-bar,
     .account-form-grid,
     .account-form-grid--two,
@@ -384,6 +463,14 @@ h1:focus {
 
     .account-app__topbar {
         display: grid;
+    }
+
+    .account-app__frame-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .account-app__frame-actions {
+        justify-content: flex-start;
     }
 }
 

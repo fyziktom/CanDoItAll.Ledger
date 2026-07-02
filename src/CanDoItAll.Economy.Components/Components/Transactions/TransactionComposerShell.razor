@@ -1,5 +1,7 @@
 @using System.Globalization
 @namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
+@inject NotificationService Notifications
 
 <SectionCard Title="@ComposerTitle" Description="@ComposerDescription">
     <Stack GapScale="LayoutGap.Large">
@@ -159,6 +161,12 @@
     [Parameter]
     public IReadOnlyList<EconomyTokenOption> TokenOptions { get; set; } = [];
 
+    [Parameter]
+    public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string AccountScope { get; set; } = "transaction-composer";
+
     private BusinessObjectTransactionDraft ActiveDraft => localDraft ?? Draft;
 
     private string? ComposerTitle => Dense ? null : "Transaction composer";
@@ -305,7 +313,25 @@
         string value,
         Func<string?, Task> changed,
         string placeholder)
-        => RenderText(label, value, changed, placeholder);
+        => @<FormField Text="@label" ContainerClass="cda-economy-field">
+            <div class="cda-address-input-row">
+                <TextBox Value="@value"
+                         ValueChanged="@(EventCallback.Factory.Create<string?>(this, changed))"
+                         Immediate="true"
+                         Placeholder="@placeholder"
+                         aria-label="@label" />
+                <PageHeaderActionButton Icon="contacts"
+                                        Label="Choose address"
+                                        TooltipText="Choose from address directory"
+                                        Variant="Variant.Outlined"
+                                        Click="@(() => OpenAddressDirectoryAsync(changed))"
+                                        TestId="cda-transaction-address-directory" />
+                <QrScanButton Label="Scan address"
+                              TooltipText="Scan address QR"
+                              Scanned="@((QrScanResult scan) => ApplyAddressScanAsync(scan, changed))"
+                              TestId="cda-transaction-scan-address" />
+            </div>
+        </FormField>;
 
     private RenderFragment RenderAmount(
         string label,
@@ -357,4 +383,40 @@
 
     private static Amount? ParseNullableAmount(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : ParseAmount(value);
+
+    private async Task OpenAddressDirectoryAsync(Func<string?, Task> changed)
+    {
+        object? result = await DialogService.OpenAsync<AddressDirectoryDialogContent>(
+            "Select Address",
+            new Dictionary<string, object?>
+            {
+                [nameof(AddressDirectoryDialogContent.Bookmarks)] = Bookmarks,
+                [nameof(AddressDirectoryDialogContent.AccountScope)] = AccountScope,
+                [nameof(AddressDirectoryDialogContent.Mode)] = AddressDirectoryDialogMode.Select
+            },
+            new DialogOptions
+            {
+                Subtitle = ModeLabel,
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                TestId = "cda-address-directory-dialog"
+            });
+
+        if (result is AddressDirectoryEntry entry)
+        {
+            await changed(entry.Address);
+        }
+    }
+
+    private async Task ApplyAddressScanAsync(QrScanResult scan, Func<string?, Task> changed)
+    {
+        if (scan.IsValid)
+        {
+            await changed(scan.Text);
+            return;
+        }
+
+        Notifications.Warning("QR scan ignored", scan.Error ?? "Scanned address payload is invalid.", position: NotificationPosition.BottomCenter);
+    }
 }

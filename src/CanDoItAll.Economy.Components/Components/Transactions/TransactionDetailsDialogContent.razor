@@ -26,6 +26,11 @@ else
                             <HashDisplay Value="@Details.TxHash.Value.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction hash" />
                         </span>
                 }
+                    <QrCodeButton Payload="@TransactionQrPayload"
+                                  Label="Show transaction QR"
+                                  TooltipText="Show transaction hash as QR"
+                                  Variant="Variant.Outlined"
+                                  TestId="cda-tx-hash-qr-button" />
                 </div>
             </Stack>
             <div class="cda-vef-tx-badge-row" aria-label="Transaction status metadata">
@@ -239,6 +244,15 @@ else
 
     private int TotalSignatures
         => Details?.Inputs.Sum(input => input.SignatureCount) ?? 0;
+
+    private QrCodePayload TransactionQrPayload
+        => Details is null
+            ? new(string.Empty)
+            : new(
+                Details.TxHash?.Value ?? Details.TxId.Value,
+                QrPayloadKind.TransactionHash,
+                "Transaction hash",
+                Details.TxId.Value);
 
     private bool IsPermissionInput(EconomyTransactionInputDetails input)
         => IsMintTransaction

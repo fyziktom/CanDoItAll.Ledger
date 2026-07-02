@@ -3,6 +3,7 @@
 @inject DialogService DialogService
 @inject NotificationService Notifications
 @inject IServiceProvider Services
+@inject ITagOccurrenceService TagOccurrences
 
 <Stack Section="true" GapScale="LayoutGap.Small" Class="cda-venft-wizard cda-venft-wizard--compact" data-testid="bo-create-wizard">
     <section class="cda-venft-wizard-command">
@@ -133,12 +134,17 @@
                             <TextBox Value="@name" ValueChanged="@(value => name = value ?? string.Empty)" Immediate="true" aria-label="BusinessObject name" />
                         </FormField>
                         <FormField Text="Tags">
-                            <TextBox Value="@tags" ValueChanged="@(value => tags = value ?? string.Empty)" Immediate="true" aria-label="BusinessObject tags" />
+                            <TagEditor Value="@tagValues"
+                                       ValueChanged="UpdateTagsAsync"
+                                       Suggestions="@tagSuggestions"
+                                       Placeholder="Add tag"
+                                       InputTestId="bo-tag-editor-input"
+                                       TestId="bo-tag-editor" />
                         </FormField>
                         <div class="cda-venft-tag-row">
                             @foreach (string tag in Tags)
                             {
-                                <span>#@tag</span>
+                                <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="bo-tag-badge" />
                             }
                         </div>
                         <FormField Text="Short description">
@@ -241,6 +247,12 @@
                                                         }
                                                     </select>
                                                 }
+                                                <PageHeaderActionButton Icon="contacts"
+                                                                        Label="Directory"
+                                                                        TooltipText="Choose recipient from address directory"
+                                                                        Variant="Variant.Outlined"
+                                                                        Click="OpenRecipientAddressDirectoryAsync"
+                                                                        TestId="cda-ticket-multimint-address-directory" />
                                             </FormField>
                                         }
                                         else if (IsManualRecipientMode)
@@ -328,7 +340,7 @@
                             <div class="cda-vef-tags">
                                 @foreach (string tag in Tags)
                                 {
-                                    <span>#@tag</span>
+                                    <TagBadge Tag="@tag" AccountScope="@TagAccountScope" />
                                 }
                             </div>
                         </Stack>
@@ -398,7 +410,8 @@
     private string? selectedTokenKey = EconomyTokenOption.MainKey;
     private string selectedObjectType = "post";
     private string name = string.Empty;
-    private string tags = string.Empty;
+    private IReadOnlyList<string> tagValues = [];
+    private IReadOnlyList<string> tagSuggestions = [];
     private string description = string.Empty;
     private string text = string.Empty;
     private Dictionary<string, string> fieldValues = new(StringComparer.Ordinal);
@@ -412,11 +425,12 @@
     private string selectedAddressBookAddress = string.Empty;
     private string recipientListText = string.Empty;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         string modelKey = $"{Model.ObjectType}:{Model.Name}";
         if (currentModelKey == modelKey)
         {
+            await LoadTagSuggestionsAsync();
             return;
         }
 
@@ -430,7 +444,7 @@
 
         selectedObjectType = definition.ObjectType;
         name = Model.Name;
-        tags = Model.Tags;
+        tagValues = ParseTags(Model.Tags);
         description = Model.Description;
         text = Model.Text;
         fieldValues = new Dictionary<string, string>(
@@ -445,6 +459,7 @@
         selectedAddressBookAddress = string.Empty;
         recipientListText = string.Empty;
         selectedTokenKey ??= Workspace?.TokenOptions.FirstOrDefault()?.Key ?? EconomyTokenOption.MainKey;
+        await LoadTagSuggestionsAsync();
     }
 
     private IReadOnlyList<BusinessObjectDataItem> DisplayDataItems
@@ -559,9 +574,9 @@
             ?? [];
 
     private IReadOnlyList<string> Tags
-        => tags.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(tag => tag.TrimStart('#'))
-            .ToArray();
+        => tagValues;
+
+    private string TagAccountScope => Workspace?.Address.Value ?? "bo-wizard";
 
     private string NextButtonText
         => currentStep == 3 ? "Stage BO" : "Next";
@@ -733,6 +748,64 @@
     private void SelectAddressBookAddress(string? address)
     {
         selectedAddressBookAddress = address ?? string.Empty;
+    }
+
+    private Task UpdateTagsAsync(IReadOnlyList<string> value)
+    {
+        tagValues = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task LoadTagSuggestionsAsync()
+    {
+        if (Workspace is null)
+        {
+            tagSuggestions = [];
+            return;
+        }
+
+        TagSuggestionSource source = await TagOccurrences.GetSuggestionSourceAsync(Workspace.Address.Value);
+        tagSuggestions = await TagOccurrences.GetSuggestionsAsync(Workspace.Address.Value, source);
+    }
+
+    private async Task OpenRecipientAddressDirectoryAsync()
+    {
+        if (Workspace is null)
+        {
+            return;
+        }
+
+        object? result = await DialogService.OpenAsync<AddressDirectoryDialogContent>(
+            "Select Ticket Recipient",
+            new Dictionary<string, object?>
+            {
+                [nameof(AddressDirectoryDialogContent.Workspace)] = Workspace,
+                [nameof(AddressDirectoryDialogContent.Mode)] = AddressDirectoryDialogMode.Select
+            },
+            new DialogOptions
+            {
+                Subtitle = "Choose own or external recipient",
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                TestId = "cda-address-directory-dialog"
+            });
+
+        if (result is not AddressDirectoryEntry entry)
+        {
+            return;
+        }
+
+        if (entry.Kind == AddressDirectoryEntryKind.Own && Workspace.SubAccounts.Any(item => item.Address.Value == entry.Address))
+        {
+            recipientMode = RecipientModeSubAccount;
+            selectedSubAccountAddress = entry.Address;
+        }
+        else
+        {
+            recipientMode = RecipientModeAddressBook;
+            selectedAddressBookAddress = entry.Address;
+        }
     }
 
     private void EnsureRecipientDefaults()
@@ -1049,9 +1122,19 @@
             name,
             description,
             text,
-            tags,
+            string.Join(' ', Tags.Select(tag => $"#{tag}")),
             DisplayDataItems,
             fieldValues);
+
+    private static IReadOnlyList<string> ParseTags(string value)
+        => value
+            .Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(tag => AccountWorkspaceLocalServiceHelpers.NormalizeTag(tag))
+            .Where(tag => tag is not null)
+            .Cast<string>()
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(tag => tag, StringComparer.Ordinal)
+            .ToArray();
 
     private static string ShortHash(string hash)
         => hash.Length > 18 ? $"{hash[..18]}..." : hash;

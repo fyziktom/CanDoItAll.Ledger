@@ -377,6 +377,10 @@ public static partial class EconomyNodeHost
                 false,
                 "Economy:Hosting:EnableHsts",
                 "Economy:Node:EnableHsts"),
+            CorsAllowedOrigins = GetStringList(
+                configuration,
+                "Economy:Api:CorsAllowedOrigins",
+                "Economy:Node:CorsAllowedOrigins"),
             InMemoryDatabaseName = GetValue(
                 configuration,
                 EconomyEfCoreServiceCollectionExtensions.DefaultInMemoryDatabaseName,
@@ -567,6 +571,37 @@ public static partial class EconomyNodeHost
         }
 
         return string.IsNullOrWhiteSpace(fallback) ? null : fallback;
+    }
+
+    private static List<string> GetStringList(IConfiguration configuration, params string[] keys)
+    {
+        foreach (string key in keys)
+        {
+            IConfigurationSection section = configuration.GetSection(key);
+            string[] children = section
+                .GetChildren()
+                .Select(child => child.Value)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value!.Trim())
+                .ToArray();
+            if (children.Length > 0)
+            {
+                return children.ToList();
+            }
+
+            string? value = configuration[key];
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            return value
+                .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(origin => !string.IsNullOrWhiteSpace(origin))
+                .ToList();
+        }
+
+        return [];
     }
 
     private static decimal GetDecimal(IConfiguration configuration, decimal fallback, params string[] keys)

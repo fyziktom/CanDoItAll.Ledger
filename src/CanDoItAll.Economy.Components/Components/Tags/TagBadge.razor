@@ -1,0 +1,43 @@
+@namespace CanDoItAll.Economy.Components
+@inject ITagOccurrenceService Tags
+
+<Badge Text="@DisplayText"
+       Style="@ColorStyle"
+       Class="@Class"
+       data-testid="@TestId" />
+
+@code {
+    private TagColorMetadata? color;
+    private string? loadedKey;
+
+    [Parameter, EditorRequired]
+    public string Tag { get; set; } = string.Empty;
+
+    [Parameter]
+    public string AccountScope { get; set; } = "default";
+
+    [Parameter]
+    public bool PrefixHash { get; set; } = true;
+
+    [Parameter]
+    public string? TestId { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    private string DisplayText => PrefixHash ? $"#{Tag}" : Tag;
+
+    private string ColorStyle => color?.ToCssStyle() ?? string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        string key = $"{AccountScope}|{Tag}";
+        if (string.Equals(loadedKey, key, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        loadedKey = key;
+        color = await Tags.GetOrCreateColorAsync(AccountScope, Tag);
+    }
+}

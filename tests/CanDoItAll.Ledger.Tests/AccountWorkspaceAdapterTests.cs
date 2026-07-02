@@ -28,6 +28,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
+        Services.AddEconomySsrAccountWorkspaceAdapters();
     }
 
     [Fact]

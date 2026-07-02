@@ -1,7 +1,10 @@
 @namespace CanDoItAll.Economy.Components
 @using System.Globalization
+@inject DialogService DialogService
 @inject NavigationManager Navigation
 @inject NotificationService Notifications
+@inject ITagOccurrenceService TagOccurrences
+@inject IBusinessObjectVerificationService VerificationService
 @if (Object is null)
 {
     <EmptyState Eyebrow="Business object" Title="Details are unavailable" Description="No BusinessObject is selected in the current gallery session." />
@@ -47,7 +50,7 @@ else
                             <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
                                 @foreach (string tag in Tags.Take(6))
                                 {
-                                    <span>#@tag</span>
+                                    <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="cda-bo-detail-tag-badge" />
                                 }
                             </Cluster>
                         </div>
@@ -129,7 +132,12 @@ else
                             <div class="cda-vef-panel-header">Object actions</div>
                             <div class="cda-vef-panel-body">
                                 <div class="cda-vef-bo-action-list">
-                                    <Button Text="Show QR Code" Icon="qr_code" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
+                                    <QrCodeButton Payload="@ObjectOwnershipQrPayload"
+                                                  Label="Show ownership QR"
+                                                  TooltipText="Show BO ownership payload as QR"
+                                                  Variant="Variant.Outlined"
+                                                  TestId="cda-bo-ownership-qr-button" />
+                                    <Button Text="Verify ownership" Icon="fact_check" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="OpenVerificationDialogAsync" />
                                     <Button Text="Upload DataItem" Icon="upload_file" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
                                     <Button Text="Send" Icon="send" ButtonStyle="ButtonStyle.Secondary" Click="SendAsync" />
                                     <Button Text="Set Sale" Icon="sell" ButtonStyle="ButtonStyle.Secondary" Click="SetPriceAsync" />
@@ -232,9 +240,14 @@ else
                                     {
                                         <pre class="cda-vef-bo-state-json" data-testid="cda-ticket-verification-signature">@ticketVerification.SignatureJson</pre>
                                     }
-                                    <div class="cda-ticket-qr-mock" data-testid="cda-ticket-qr-mock" aria-label="Ticket verification QR">
-                                        <span>QR</span>
-                                        <strong>@Short(ticketVerification.MessageHash?.Value)</strong>
+                                    <div class="cda-ticket-qr-real" data-testid="cda-ticket-ownership-qr" aria-label="Ticket verification QR">
+                                        <QrCodeView Payload="@TicketOwnershipPayloadText"
+                                                    Caption="Ticket ownership payload"
+                                                    TestId="cda-ticket-ownership-qr-view" />
+                                        <QrCodeButton Payload="@TicketOwnershipQrPayload"
+                                                      Label="Open ticket QR"
+                                                      TooltipText="Open ticket ownership QR dialog"
+                                                      TestId="cda-ticket-ownership-qr-button" />
                                     </div>
                                 }
                             </div>
@@ -290,6 +303,7 @@ else
     private BusinessObjectTicketVerificationResult? ticketVerification;
     private bool ticketVerificationBusy;
     private bool ticketUseBusy;
+    private string? recordedTagKey;
 
     [Parameter]
     public IBusinessObjectView? Object { get; set; }
@@ -345,6 +359,32 @@ else
             ? media.Tags
             : Payload?.TagList ?? [];
 
+    private string TagAccountScope => Object?.OwnerAddress.Value ?? "bo-details";
+
+    private QrCodePayload ObjectOwnershipQrPayload
+        => Object is null
+            ? new(string.Empty)
+            : new(
+                VerificationService.CreateOwnershipPayload(Object),
+                QrPayloadKind.BusinessObjectOwnershipHash,
+                "BO ownership hash",
+                Object.ObjectId.Value);
+
+    private string TicketOwnershipPayloadText
+        => ticketVerification is null
+            ? string.Empty
+            : string.Join(
+                Environment.NewLine,
+                ticketVerification.Message,
+                ticketVerification.SignatureJson ?? string.Empty);
+
+    private QrCodePayload TicketOwnershipQrPayload
+        => new(
+            TicketOwnershipPayloadText,
+            QrPayloadKind.TicketOwnershipHash,
+            "Ticket ownership hash",
+            ticketVerification?.MessageHash?.Value);
+
     private BusinessObjectDataItem? PrimaryItem
         => DataItems
             .OrderByDescending(item => item.IsMain)
@@ -393,6 +433,23 @@ else
         => Object is null
             ? "/buy-bo"
             : BuyPathFor(Object.CurrentOutPoint);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Object is null)
+        {
+            return;
+        }
+
+        string key = $"{Object.OwnerAddress.Value}|{Object.ObjectId.Value}|{Object.Version}";
+        if (string.Equals(recordedTagKey, key, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        recordedTagKey = key;
+        await TagOccurrences.RecordBusinessObjectViewAsync(Object.OwnerAddress.Value, Object.ObjectId.Value, Tags);
+    }
 
     private string BuyLink => Navigation.ToAbsoluteUri(BuyPath).ToString();
 
@@ -448,6 +505,24 @@ else
             ticketVerificationBusy = false;
         }
     }
+
+    private Task OpenVerificationDialogAsync()
+        => Object is null
+            ? Task.CompletedTask
+            : DialogService.OpenAsync<BusinessObjectVerificationDialogContent>(
+                "BusinessObject Verification",
+                new Dictionary<string, object?>
+                {
+                    [nameof(BusinessObjectVerificationDialogContent.Object)] = Object
+                },
+                new DialogOptions
+                {
+                    Subtitle = Object.ObjectId.Value,
+                    Size = ModalSize.Wide,
+                    DenseChrome = true,
+                    Class = "cda-vef-dialog cda-vef-dialog--verification",
+                    TestId = "cda-bo-verification-dialog"
+                });
 
     private async Task UseTicketAsync()
     {

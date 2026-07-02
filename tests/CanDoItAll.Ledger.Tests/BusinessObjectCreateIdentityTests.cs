@@ -4,6 +4,7 @@ using CanDoItAll.Components.BaseLib;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
+using CanDoItAll.Economy.Components.Services;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
 using Microsoft.AspNetCore.Components;
@@ -22,6 +23,7 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
+        Services.AddEconomySsrAccountWorkspaceAdapters();
     }
 
     [Fact]

@@ -3179,6 +3179,258 @@ button.cda-economy-list-item:focus-visible {
   color: #596373;
 }
 
+.cda-address-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.38rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.cda-address-input-row .rz-textbox,
+.cda-address-input-row input {
+  min-width: 0;
+  width: 100%;
+}
+
+.cda-address-directory {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  width: 100%;
+  min-height: min(42rem, calc(100vh - 9rem));
+}
+
+.cda-address-directory__control-band {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  border: 1px solid #dfe5ee;
+  border-radius: 0.38rem;
+  background: #f7f9fc;
+  padding: 0.72rem;
+}
+
+.cda-address-directory__toolbar,
+.cda-address-directory__add {
+  display: grid;
+  gap: 0.65rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.cda-address-directory__toolbar {
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.34fr) auto;
+}
+
+.cda-address-directory__add {
+  grid-template-columns: minmax(14rem, 0.26fr) minmax(28rem, 1fr) auto;
+}
+
+.cda-address-directory__summary {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 5rem;
+  border: 1px solid #d8e0d9;
+  border-radius: 0.32rem;
+  background: #ffffff;
+  padding: 0.52rem 0.65rem;
+}
+
+.cda-address-directory__summary span {
+  color: #647067;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.cda-address-directory__summary strong {
+  color: #17211c;
+  font-size: 0.92rem;
+}
+
+.cda-address-directory__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: 0.75rem;
+  justify-content: stretch;
+  min-width: 0;
+  max-height: min(48rem, calc(100vh - 18rem));
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.cda-address-directory-card {
+  display: grid;
+  grid-template-rows: auto auto minmax(5rem, 1fr) auto;
+  gap: 0.55rem;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  border: 1px solid #dfe5ee;
+  border-radius: 0.42rem;
+  background: #ffffff;
+  padding: 0.72rem;
+}
+
+.cda-address-directory-card__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.cda-address-directory-card__header strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #303746;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-address-directory-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.38rem;
+  background: #e0f2fe;
+  color: #0c4a6e;
+  font-size: 0.78rem;
+  font-weight: 800;
+  overflow: hidden;
+}
+
+.cda-address-directory-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cda-address-directory-card__meta,
+.cda-address-directory-card__actions,
+.cda-settings-backup__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.cda-address-directory-card__tags {
+  min-width: 0;
+  max-height: 4.35rem;
+  overflow: auto;
+}
+
+.cda-address-directory-card__actions {
+  align-self: end;
+}
+
+.cda-address-directory-mini {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem;
+}
+
+.cda-settings-backup__section,
+.cda-bo-verification__section {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.cda-settings-backup textarea,
+.cda-bo-verification textarea {
+  font-family: var(--font-mono, "SFMono-Regular", Consolas, monospace);
+  font-size: 0.78rem;
+}
+
+.cda-bo-verification__steps {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cda-bo-verification-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+  min-width: 0;
+  border: 1px solid #e1e6ee;
+  border-radius: 0.35rem;
+  background: #fbfcfe;
+  padding: 0.55rem;
+}
+
+.cda-bo-verification-step strong,
+.cda-bo-verification-step span {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cda-profile-edit-picture {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid #dfe5ee;
+  border-radius: 0.38rem;
+  background: #f7f9fc;
+  padding: 0.75rem;
+}
+
+.cda-profile-edit-picture > img,
+.cda-profile-edit-picture > div:first-child {
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  border: 1px solid #d8dee7;
+  border-radius: 0.45rem;
+  background: #ffffff;
+  object-fit: cover;
+  overflow: hidden;
+}
+
+.cda-profile-edit-picture .material-icons {
+  color: #687282;
+  font-size: 2rem;
+}
+
+.cda-profile-edit-picture strong,
+.cda-profile-edit-picture span {
+  display: block;
+  min-width: 0;
+}
+
+.cda-profile-edit-picture strong {
+  color: #303746;
+  font-size: 0.95rem;
+}
+
+.cda-profile-edit-picture span {
+  color: #687282;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.cda-ticket-qr-real {
+  display: grid;
+  grid-template-columns: minmax(10rem, 12rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid #dfe5ee;
+  border-radius: 0.38rem;
+  background: #f8fafc;
+  padding: 0.65rem;
+}
+
 .cda-vef-info-button {
   display: grid;
   place-items: center;
@@ -3380,7 +3632,11 @@ button.cda-economy-list-item:focus-visible {
 }
 
 .cda-vef-dialog--security {
-  max-width: min(58rem, 100%) !important;
+  max-width: min(112rem, calc(100vw - 1rem)) !important;
+}
+
+.cda-vef-dialog--address-directory {
+  max-width: min(112rem, calc(100vw - 1rem)) !important;
 }
 
 .cda-vef-dialog--transactions {
@@ -3709,7 +3965,7 @@ button.cda-economy-list-item:focus-visible {
 
 .cda-vef-account-command {
   display: grid;
-  grid-template-columns: minmax(15rem, 0.8fr) minmax(0, 1.8fr) minmax(18rem, 0.95fr);
+  grid-template-columns: minmax(17rem, 0.76fr) minmax(0, 1.9fr) minmax(17rem, 0.72fr);
   gap: 0.75rem;
   align-items: stretch;
   padding: 0.75rem;
@@ -3764,11 +4020,23 @@ button.cda-economy-list-item:focus-visible {
   background: #f1efff;
   color: var(--cda-vef-accent-dark);
   font-size: 0.95rem;
+  overflow: hidden;
+}
+
+.cda-vef-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cda-vef-profile-avatar span {
+  display: grid;
+  place-items: center;
 }
 
 .cda-vef-account-metrics {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
   gap: 0.42rem;
   min-width: 0;
 }
@@ -3783,6 +4051,8 @@ button.cda-economy-list-item:focus-visible {
 }
 
 .cda-vef-account-metrics .cda-economy-fact strong {
+  display: flex;
+  align-items: center;
   font-size: 0.84rem;
   white-space: nowrap;
   overflow: hidden;
@@ -3791,7 +4061,7 @@ button.cda-economy-list-item:focus-visible {
 
 .cda-vef-account-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.42rem;
   align-content: center;
 }
@@ -3799,6 +4069,15 @@ button.cda-economy-list-item:focus-visible {
 .cda-vef-account-actions .cda-button {
   justify-content: center;
   min-width: 0;
+}
+
+.cda-vef-account-actions .cda-button .rz-button-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .cda-vef-account-work-grid {
@@ -4364,6 +4643,46 @@ button.cda-economy-list-item:focus-visible {
   align-items: flex-end;
   overflow-y: visible;
   padding-top: 0.25rem;
+}
+
+.cda-message-security,
+.cda-message-security-tabs,
+.cda-message-security-grid {
+  min-width: 0;
+}
+
+.cda-message-security-grid {
+  align-items: start;
+}
+
+.cda-message-security-section {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.cda-message-security-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.cda-ownership-verification-grid {
+  grid-template-columns: minmax(28rem, 0.9fr) minmax(0, 1.1fr);
+}
+
+.cda-ownership-facts {
+  min-width: 0;
+}
+
+.cda-ownership-bo-card {
+  max-width: 28rem;
+}
+
+.cda-ownership-bo-card .cda-vef-gallery-preview {
+  min-height: 8rem;
 }
 
 .cda-vef-tx-detail-tabs .cad-tabs__panel,

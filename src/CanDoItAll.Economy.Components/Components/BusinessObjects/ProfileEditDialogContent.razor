@@ -3,6 +3,23 @@
 
 <SectionCard Title="@DialogTitle" Description="@ProfileDescription">
     <Stack GapScale="LayoutGap.Medium">
+        <section class="cda-profile-edit-picture" data-testid="cda-profile-picture-preview">
+            @if (ProfileImageUri is not null)
+            {
+                <img src="@ProfileImageUri" alt="@displayName" />
+            }
+            else
+            {
+                <div>
+                    <span class="material-icons" aria-hidden="true">account_circle</span>
+                </div>
+            }
+            <div>
+                <strong>Profile picture</strong>
+                <span>@(ProfileImageUri is null ? "Paste an image link to load a profile picture preview." : "Loaded from the image link field.")</span>
+            </div>
+        </section>
+
         <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
             <FormField Text="Display name" ContainerClass="cda-economy-field cda-economy-field--wide">
                 <TextBox Value="@displayName" ValueChanged="@(value => displayName = value ?? string.Empty)" Immediate="true" aria-label="Profile display name" />
@@ -49,8 +66,17 @@
         </Grid>
 
         <Cluster Gap="LayoutGap.Small">
-            <Button Text="@SaveButtonText" Icon="save" Click="SubmitAsync" />
-            <Button Text="Cancel" Icon="close" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="CancelAsync" />
+            <PageHeaderActionButton Icon="save"
+                                    Label="@SaveButtonText"
+                                    TooltipText="@SaveButtonText"
+                                    ButtonStyle="ButtonStyle.Secondary"
+                                    Click="SubmitAsync" />
+            <PageHeaderActionButton Icon="close"
+                                    Label="Cancel"
+                                    TooltipText="Cancel profile edit"
+                                    Variant="Variant.Outlined"
+                                    ButtonStyle="ButtonStyle.Secondary"
+                                    Click="CancelAsync" />
         </Cluster>
     </Stack>
 </SectionCard>
@@ -87,6 +113,11 @@
     private string ProfileDescription => ProfileObject?.ObjectId.Value ?? "New profile BusinessObject";
 
     private string SaveButtonText => IsNewProfile ? "Create Profile" : "Save Profile";
+
+    private Uri? ProfileImageUri
+        => Uri.TryCreate(imageLink, UriKind.Absolute, out Uri? uri)
+            ? uri
+            : null;
 
     protected override void OnParametersSet()
     {

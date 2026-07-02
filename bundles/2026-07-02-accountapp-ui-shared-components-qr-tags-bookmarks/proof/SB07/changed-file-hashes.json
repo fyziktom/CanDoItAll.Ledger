@@ -1,0 +1,996 @@
+﻿{
+    "generated":  "2026-07-02T10:56:05.6231138-04:00",
+    "repositories":  [
+                         [
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj",
+                                 "status":  " M",
+                                 "beforeSha256":  "b21861bfcc060778fdfc735b2d174f99d5773b431ad9dc564130d4c49945f9c6",
+                                 "afterSha256":  "6eb0e5ba9d1e9fd5c44126b18b86625bd1fb3c28ccfcce13b1aea10e7c95175a"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "examples/CanDoItAll.Economy.AccountApp/Layout/MainLayout.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "99cb96a55bec7f2d8aaa7d3b8e480ebc743f1b08aca47f32d51a0ac6efe04c6f",
+                                 "afterSha256":  "301d6d23e2ec79b659963821abde037c00ff0983338120174bb798d667feb040"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "examples/CanDoItAll.Economy.AccountApp/Pages/Home.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "d89bc57b2984fce3b4a8957d09fbb1bb4f3b0d3581665500136c5d7286ece7da",
+                                 "afterSha256":  "46dd1098ec651a9f0dab666365dd8988af6970eaff457599ee44c4df09f17194"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "examples/CanDoItAll.Economy.AccountApp/Program.cs",
+                                 "status":  " M",
+                                 "beforeSha256":  "3da38da1cb9ead58602ac1540dee2dd4e27623a7e12f679e2703471f45fff8e3",
+                                 "afterSha256":  "6a9ecc60d455e7b810e74a182c4ef06f72d02add0dd5eef3b920488f4c6a8b29"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "examples/CanDoItAll.Economy.AccountApp/Services/AccountAppOptions.cs",
+                                 "status":  " M",
+                                 "beforeSha256":  "7c63a85442c1ea86638fdc051d0d9d1946bb2c79a120644b64bd92f598ec18aa",
+                                 "afterSha256":  "b649dbfcf5c07dcbb140ca0273c82e58e309262e591e1d7b9bb25cad0eac730a"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "examples/CanDoItAll.Economy.AccountApp/wwwroot/appsettings.json",
+                                 "status":  " M",
+                                 "beforeSha256":  "50aa2c5beffc3d494fc28989d54de2178a90d48dd509f13b8f7167a03824f382",
+                                 "afterSha256":  "c3d424b5ae37a1bf9a94e7861dfc0c062e0705976bd40d1186d0f6ab185fede3"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "examples/CanDoItAll.Economy.AccountApp/wwwroot/css/app.css",
+                                 "status":  " M",
+                                 "beforeSha256":  "322f0cda45f5dc1e476d92b4246e7a65f356c3a4f0cb74ac3efa72b5a1afbdcf",
+                                 "afterSha256":  "05973f1be03a6909a7a6eb4aeaeaad5c937efe66a4e27d99988db4d6a6b8cac9"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "examples/CanDoItAll.Economy.Components.Demo/CanDoItAll.Economy.Components.Demo.csproj",
+                                 "status":  " M",
+                                 "beforeSha256":  "27030f669a923e63a80e679be42c09bad03ddd2ef048fb311995c6e89986c365",
+                                 "afterSha256":  "265b02ce6c1c2fd192a28db90984e83a4d4171336f25d2d58aaa222ea7139bd6"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.BusinessObjects/ServiceCollectionExtensions.cs",
+                                 "status":  " M",
+                                 "beforeSha256":  "a18d70fcb1d7a6b3c271fc907c2b0003de0635f1b3e66757ee8b0afcd2e2e804",
+                                 "afterSha256":  "26ee93f155b8c50546acfd7c64618d9321d7636246d4698fd6f6bc6f30a2e334"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj",
+                                 "status":  " M",
+                                 "beforeSha256":  "684fd3eca9bfb4219039d02fb6f4fef69d7153f1886f65acf11e58d6ba7495fa",
+                                 "afterSha256":  "601b382e205580705ecfef5446f976743a397c814288210968ad8d7ab8e10861"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Account/AccountSettingsDialogContent.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "75510251938d96a5b901707a15487bc14145b5732f37d048be968a0677ac28c6",
+                                 "afterSha256":  "613c4bc05c0216599de6a8a283a62100d3ce3fd9d4eb214ce941f48f9fca3268"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Account/AddressBookPicker.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "dffacd8812749f16b62200c7bd82f638db2eb0a5e65c5849ef942d171b7af185",
+                                 "afterSha256":  "481a0a089398ee3a5a3ccc7e7f285f934680d5133aecbf7cce8eb62bfac847d1"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Account/AddressBookmarkManager.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "c70a96aea8cd975ecc887285b77e2d84c41e07d8d98aaf7f6a5a819100d02eb1",
+                                 "afterSha256":  "afce9af87487e02bee9a3845f0306c368018e52684a0ec8a5ccb536a17a8ab0e"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Account/EconomyAccountWorkspace.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "b37091c29b949faef7d879085be8a3d32a7a548015d62458b87a58a518290937",
+                                 "afterSha256":  "3a86808634d3fb142ad17f74ae0f4c700992e85076edbeb17e2d1c0148846260"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Account/EconomyAccountWorkspaceAdapterHost.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "0c04d13238f5c93a55bfd034bcc80ffa4bbb8755ee01c5ef3d3c4e05064454c9",
+                                 "afterSha256":  "7a0bc728a250d464cb3bad65e2a952ec64d713066a61df400dd5de5773ee5ca3"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "781054bcc36c49191c274cb4e797a18bdd1ed278f15981a010a4907e29bde7f6",
+                                 "afterSha256":  "1512fe552020fd5cda397f3cbf0b0a57368cf69bdfc10a684b71fc3488ade26c"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectLedgerDetailsDialogContent.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "901105a16fc1f944e55d2b984e9b9492e50676e21971d50bd7307d71c487a611",
+                                 "afterSha256":  "87e96ad9844f127de2718ea60c8787d0f284bcfd8570b4917078683eda65d5c6"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectSendDialogContent.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "6458505cf0a4de58058d0222d26cebf1b46e315cf644306b7a2ee4393c6fb922",
+                                 "afterSha256":  "dcb7810165ef61944802980ccfac92977521450ec805bbd95b39f1aa1ed4601e"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Transactions/TransactionComposerDialogContent.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "10c1cdc7152d412a84d3af24790b4305b5980eb03aea17e6b1115af5cffca3ac",
+                                 "afterSha256":  "b3d72afd941659d1d3ae530ba03675e69ecb687f42fbda8274c6090d8d0923bc"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Transactions/TransactionComposerShell.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "6761f9a30f2998f63020ecd8490203dfd3a7ba612c09005b738a3066ee414b61",
+                                 "afterSha256":  "d169ae95099622c127db79402db6e2f3e6dd6c4a2628d69a57eb3047d32d85ff"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Transactions/TransactionDetailsDialogContent.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "c688c79164507ecde7a15d5253abf6de4e399625972288d07f4b45a08e4bbf52",
+                                 "afterSha256":  "70a6be1826d2b41485b23996127273fdc7b28281af2d4d624a8bc43a3dbfe575"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Transactions/TransactionWorkbenchDialog.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "4297f0b31e8f137589016ff9f8bc170a62403432bc2f6fcfdd9b925071ff1eca",
+                                 "afterSha256":  "cc663a72c65f3f0fbbdca6c350ffd2f788f26c6ccd2500078734a0b0495e08c6"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Services/EconomyAccountWorkspaceAdapters.cs",
+                                 "status":  " M",
+                                 "beforeSha256":  "520188d036f637f2842a7ef5ae0df5828560ecdc1c994aceb10e73bc3138b9c8",
+                                 "afterSha256":  "4557a9d970692cd7b76d0f1c339be92aa98827f4ae31517a28b32685f1e70afd"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/_Imports.razor",
+                                 "status":  " M",
+                                 "beforeSha256":  "5ef71d0f996ee2535929c9eade7d146d3fb21867ba081f5c0340a221a501b42f",
+                                 "afterSha256":  "12939ab4daf09686e69306ab6bf001d45c5e50cf608591e71c8e8490213ee191"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/wwwroot/css/economy-components.css",
+                                 "status":  " M",
+                                 "beforeSha256":  "5022749ce813b23ab861305b6b280ff6286a38141a74e9e31eeb243743a2763e",
+                                 "afterSha256":  "7fb32720d1745e2098335452d5f75f2a3f0824a93790c8b34d9816694465a20b"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Node/EconomyNodeHost.cs",
+                                 "status":  " M",
+                                 "beforeSha256":  "d5bdd5a3f69c9324687a15a6894ce7c3d4b2914e70f0f5bb348b88e6288dc100",
+                                 "afterSha256":  "2485bc27b750d3f2945be6242e4d8d3aec69258ce42e12380d4cf00d1a83f5c0"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Node/EconomyNodeHostOptions.cs",
+                                 "status":  " M",
+                                 "beforeSha256":  "dcfa56e51015375e2a9f17c2e2c76288773495298e5e297b8e6c29b3fc41887d",
+                                 "afterSha256":  "40e51db53a8e3624165e4817e4c517b7854df5259c039db570231461d762c4c4"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Node/EconomyNodePipeline.cs",
+                                 "status":  " M",
+                                 "beforeSha256":  "5e511bc211accb22fe22520d478082ae3ca5c706b92284180c684591b6ae1193",
+                                 "afterSha256":  "2d8554ce6abda5645d960b56834a9aec9326f29cba38dbb3b1aaecee597ce6ed"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Node/EconomyNodeServiceRegistration.cs",
+                                 "status":  " M",
+                                 "beforeSha256":  "6aaaa2610865a41be4aca6bf812567982d390fbef44bbe166c5bb36bebdf1fb8",
+                                 "afterSha256":  "be961f5281bc6bd37dce2a9581d3867a0ffa7560107c95f6e8d37eb313ff8b2c"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "e83d8d9c2f8313121baa154b6233dda84c61a59459fe75e05afced9db467c43a"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/analysis/01-current-state.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "26457a2834785565df934eb2836f41b5205c225343345f4d6700788ae0724b0f"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/analysis/02-assumptions-and-risks.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "baf40cb686fb994895693905af58047132679c87ad2407fe98b6151fc3b68037"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/architecture/01-target-solution.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "3b5fc5651c51ce92fa7bd7323f405f9a452b5d0dbd862f0ffc555baea7e7f7da"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/inputs/00-original-request.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "dcd8cc24ba6b9e37f0224bd1e8497b8f0643ae5e82d0c39df24466b340451690"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/inputs/01-source-artifacts.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "9496598033646749482a2b4e717d82380326941755392ab531d525ddf4bf1741"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/inputs/02-structured-input.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "5d32f47802bf01453d47b585d16ca89523c55389c0be2d0f659c2faa7b1c9308"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/inventories/01-scope-inventory.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "600e7418932012373cac7c3e279a87e2d903f64d497df21e04678055212ac2db"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/plan/01-phase-plan.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "700048d7c1cd5cd37726a4890c7eadccc868583a4b873fb3a39bf738d7200153"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/plan/accountapp-ui-shared-components-plan.xlsx",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "74f74edb7ce6a2005ddad330e824fcd79314f95d6358d300be09cb0a4c7a450c"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/plan/accountapp-ui-shared-components-plan.xlsx.inspect.ndjson",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "49b49200202f1832c5f4d3a3518bd7fe3a28f092df6a5faa3177ee4842b3de44"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/00-evidence-manifest.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "08de7690f90e8a4ba9bfbcf0ed0a46f9352314964dd5e66c97390d0ae276c8d3"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB01/manifest.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "581c062a43eff4aa499116b0ab44ce626692020c20f50ad0d45c8de4bad95611"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB01/screenshots/qr-dialog-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "6ae17ae7cbf3be55ecc0df9cf4b57ffa42a4414ff296e7257ee2f9c0132b2768"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB01/semantic-invariants.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "8a5c67c92b4774b29646538113bc2aa716e0e35f81b0af240560386d66607e3c"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB01/transcripts/components-qrcode-build.txt",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "851c2659ff64edf7e8cbdb4521cbcead58d568e10e47080d139fa99ba3b51530"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB01/transcripts/components-qrcode-tests.txt",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "50c9f8d25cdf51bc7d066a855047e7ad1ecae2bf78331c6ced32212feb1adb17"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB02/manifest.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "e20b4e102228f3423b96843d300b79407272ef480256b6a8620b2580dccdb4ac"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB02/screenshots/accountapp-home-after-unlock-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "469bcb710675f05dc4a517b6757faa0bf650728293f5d5414617ff0772f5552c"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB02/screenshots/accountapp-toolbar-tooltips-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "1d5e03e1309f842a1f35b5d3ea9c02e97e99fe54fbcbbafb4f08b238c91a7fe8"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB02/semantic-invariants.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "04cf917b8af4690cb4f1b3d1b095e2dccb61b969c272ed76ed1d9569028ae9f3"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB03/manifest.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "5d2fb42e27cd33856222ddd09997c5d9b02d50bb8cb76f1b3b4eaa72a6997aee"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB03/screenshots/tag-badges-after-reload-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "494b2826c96a24125372c99764add4e59a5c35445bcf90142c33e6d09f8339c0"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB03/screenshots/tag-editor-suggestions-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "af7a78c3e3a32437a734804a83fd1bf30aa99d77039b420c4b56cb22f6a9ba30"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB03/semantic-invariants.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "d976a37de3efd5262be2b1d09de51a37150e6d67b74cc0e1ea5f3c18e0a0e3aa"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB03/transcripts/account-workspace-local-services-tests.txt",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "9dc360b06f96a36c7e3c9f909ebcb70aa71c34e0b63d6eb4aaf025a791a16810"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB04/manifest.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "0f4ddeb216175094c2221ae8b2ffc7d6a60222b3d4d119278aade60bdde395b4"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB04/screenshots/address-manager-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "39252f6424e118e0bb39e6ae980cd982d2008aae03c2887a0ffbea7001dad414"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB04/screenshots/address-select-send-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "a96958daf0d6329c85d2e7635b7ac1908bfeef08c5a0634b6f4b74f33dcd310e"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB04/semantic-invariants.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "d5e964df52093397f82a44dccc5987678f406ee4813a26836ad929343321d869"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB05/manifest.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "dccd4a9f9d7abf63e905d2d4cbaf222513e84eae304f272a8be4b711cb7996da"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB05/screenshots/settings-backup-export-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "95002ad9f2b06ef135b54f75909723b255a41d3e210c210ee6500216796f8c01"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB05/screenshots/settings-backup-import-preview-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "6089a6d5e199b7e63cd211382ff7380e8a0027476fb2165359f3965ca52c71af"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB05/semantic-invariants.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "4bdd2051718381f412b765da815f78f2fb0d5547ec8c2d6024281ff849cd3b29"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/manifest.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "dd142b781af54b3f86e255f7a401d8b706b6c3d7ed90c69dbcf6dbf739cee45e"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/screenshots/address-qr-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "6ae17ae7cbf3be55ecc0df9cf4b57ffa42a4414ff296e7257ee2f9c0132b2768"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/screenshots/ownership-qr-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "6ee164e8d3a2b56ad27646f2fa0722e9e94db73de188c19eb0755178f46b139e"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/screenshots/ownership-verification-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "55997d70e9e8b79383bf365f044c5734c9201b2e6d2c47ce797df240fb307f92"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/screenshots/scan-manual-entry-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "60d0958b9fd87526c93d883a2b609c6fae3506fa3fbf1ab8f17ce6f28ff8fa5a"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/screenshots/ticket-ownership-signed-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "7eab629995dc4c1b5bbe829a689dc0f30cb41bcc49149f9450158378232a7bad"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/screenshots/ticket-used-confirm-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "de73461f4de48c4b357915939c9f3b007a96fc07d3556188835a967c160d3faa"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/screenshots/tx-hash-qr-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "5ddc99e7b4181c4bbbe9aa3ce412e0689414637d522662367538beb6f40592de"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB06/semantic-invariants.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "5398baee1f9226cb532f92c503eae9a97ba08eb81bd7545539174448f3a5116e"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/changed-file-hashes.json",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "653a22c52066b6868b46bdee3bb28633f28ee01f9f932997cba11690cb5b0563"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/manifest.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "79856043e543c0e124278cffe64a2283f52fcd4a6ca9d7566bd21192ff1ae94a"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/red-team-verifier.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "0e28ef9ee766a9e76b3d43a299fc7669534d972f0f4a4d3675a8afef683a620b"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/screenshots/accountapp-final-home-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "9f4564afd50cb8208a4e8d6899b91b6fc7cd5768255261155034a0eef29e83d2"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/screenshots/dialogs-final-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "501b5c60d451518f21499afd0a938ab37ca89eeb18560fcab7b9fdeda3151ab1"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/screenshots/verification-final-large.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "55997d70e9e8b79383bf365f044c5734c9201b2e6d2c47ce797df240fb307f92"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/semantic-invariants.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "7facca348fdea875d6402872b6c7bf3631256609310c80210db8946889b27405"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/transcripts/accountapp-server.log",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "db7d51f66dff106f38f3a8d0db33b5c403480f1b60dbf753821754f12c0553d9"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/transcripts/bundle-validator-completed.txt",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "cfd4fbeb1fb8a9decac311b19abee9b98cab19ca3ef69b22948bfcab3139aa75"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/transcripts/ledger-solution-build.txt",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "1f13d476be295b50998d5ceb5c9b6ace0a362978ae8ad7174934248ad97871a4"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/transcripts/node-server.log",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "0520adb16890bd3908500bb3c2ef1f5d49f91d74828f06320dbe4435a3e6671a"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/transcripts/source-assertions.txt",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "6f169416b0a9c3e6278bd451b044cd219778c5665787a2e6506e8f2449b8bc80"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/transcripts/workbook-regeneration.txt",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "9061f8b911e45c4abf9bdf0464b734b636ed9cf6341a289a404212aca3c05a36"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/address-manager-design.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "861e6fe39795ee24cb221b68e00255e11bc385ae656c961a422c217325391ab7"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/qr-decision.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "20923c79bf08e2856a99f60c3251983ed9a9f45a9db8389f99d166099d13ee36"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/readiness-summary.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "1409f61467bc5eb2282c558c7d5d4ccbdc3093d6266a5871eaf4f40d5be408e5"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/requirement-matrix.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "8af0366d3a4b06d467a431a25e6b310217a88d6138db83cdff9cdba45360afc2"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/risk-register.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "07e1b8c8260f80d0079f5ae5b0117fe63a3f4961d2cba6ddd0cb9921be2f6aac"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/shared-component-reuse.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "78aaff8e6c99853712238ff64551412951bd3c25dd85ce0cb4d939ae5a672e94"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/source-references.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "03473f0de56d44e5bada6459e525c060ee8dec42c5133068f1f6ee29f171adcc"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/subbundle-plan.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "4dfc5b95c1c7fa6ec064d93d87a537dc05aac2072ddbf8851433b061a6857d52"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/tag-occurrence-design.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "761837536436d9298587b925e1110d048e514d09456925527e5c5c8340504281"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/workbook-previews/visual-qa-checklist.png",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "90663009d3a468e539a69df0df34761fa7e00dddcf89cfef57e070483c22e286"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/requirements/01-normalized-requirements.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "18158132ff020b82fbc780684dbb9a5dd07583685f87f60c5a260c2898dc89d0"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/reviews/00-bundle-self-review.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "eb4174edd427aa063fd0bab362e01d4e5a64aa223b2619d7de3b3ab6149e5194"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/reviews/01-execution-report.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "dc521876a452dcebdb210297ce27db7b5b3864fe6255edd449172a1189bcee24"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/scripts/validate_bundle.py",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "f2bed6abd6f796bb5dde1ce5ceeab6e5f0327e5a5a2cb3e73bc01a9e24898c41"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/shared-prompts/implementation-prompt.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "f20c892f99ca0510cd7142308fb264c0938916804e5c078072721c9d72feda87"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/shared-prompts/qa-prompt.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "f81d74b55e2b095eaf533b6e575f723e4410044d93ea7a5c25f61c0a36a30ce2"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/subbundles/01-sb01-shared-component-boundary-and-qr-foundation/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "2f714cf5ee1a89aebba803b85eda11441827561356c14b977f795ab144fb93a4"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/subbundles/02-sb02-desktop-account-shell-and-top-toolbar-polish/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "d5761095ee8eb362d66afacacaf31ca4786b30bcad4fd73a3b6db902b164de52"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/subbundles/03-sb03-tag-occurrence-service-and-shared-tag-rendering/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "f2a3e38a3ca571f335d2bac60bb1ac8d8273aa30cee2f5089aaa053ce17767f9"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/subbundles/04-sb04-generic-address-manager-dialog-bookmarks-and-subaccounts/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "d7530b7be8703deb00d5e2af22e7cc24a57a4dd953a636f2796361a797f7b7b1"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/subbundles/05-sb05-browser-settings-backup-import-export/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "a16a49afa893f3a0924b0f9082e1c05590e0d19edca8d02c8dc3e40137eb1b51"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/subbundles/06-sb06-verification-driver-qr-scan-and-ticket-ownership-flows/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "7c3f399a2fb94cefb6c6d51a2ea58ba43d14c1eaa8208426606950e89fbdc905"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/subbundles/07-sb07-large-screen-browser-visual-validation-and-closure/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "bc976cac9a0ebb27087c562e837aca2b2a07aa1a02ce3aa396253e9103384f86"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/templates/subbundle-readme-template.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "4073027abb6f921d7954377bb2d6a6ec46df639321178ae5b741d6e4255e5b60"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/traceability/01-requirement-traceability.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "37f631149e29b482d921b7c2baca2ad7b77d41b2bf7d79c53692976865b4b016"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/workbook/build-planning-workbook.mjs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "10f3847c045a5682b36e161cec73a6274d7675508117d67ae7b6dbed46d7e451"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Account/AddressDirectoryDialogContent.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "ad2bdc7bd711282bc01287044a39157e52d23e91f42e7265c7f7bda86194ff59"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Account/SettingsBackupDialogContent.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "863b408157651cfd0ffe9f84b98a1508da00eda1af06566061ee32e1e2fd7586"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectVerificationDialogContent.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "3ced8a34a11ffe955f3da60e67136390c0beaeb936922f04bd1dbeded6650d6f"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Components/Tags/TagBadge.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "1e53330b14683ff338bc2975eed7097a5848a281a4f7895111cabdedc1524e9d"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "src/CanDoItAll.Economy.Components/Services/AccountWorkspaceLocalServices.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "8d5f67e91d94e67bb241730ca8772bb87fcf7a438285d51e7923a032d84cbcf0"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Ledger",
+                                 "path":  "tests/CanDoItAll.Ledger.Tests/AccountWorkspaceLocalServicesTests.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "dcd0210585f0b0bcd1a202140ede5ae851f106c95712633938f547775efa00fa"
+                             }
+                         ],
+                         [
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "CanDoItAll.Components.slnx",
+                                 "status":  " M",
+                                 "beforeSha256":  "172fa4d4e477f6625257cf3404552be00ec57274f87af98ac72db9ad76617d4d",
+                                 "afterSha256":  "4aee51deff04222180ac45ef8af26e118d6c9acac603168da7de715f34482fa0"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/CanDoItAll.Components.QRCode.csproj",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "e15fa57b17edcb85d1eceeed3fbca5ec8bb656fb846ecf778ff8174d16909816"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Components/QrCodeButton.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "ca7ef061267ddafd6e2c63f04d29aa47fa687aad9ab69b1d66d3abccea1f242b"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Components/QrCodeDialogContent.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "a5d0ec34a8595d01b37ee171297dc4af7f5fedbbc553996070414f54d9aede7a"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Components/QrCodeDialogContent.razor.css",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "5493a5c4e3da2270fceef8b9d55ad923e3c0aba03512cd5993e30d673959f777"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Components/QrCodeView.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "b18f491c4e5fbe907a854bb4ffb09a7411641923392204ebca7ea04581c000e7"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Components/QrCodeView.razor.css",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "f31c939b0463968e4dff2ea34bc00be27716f76b7499256fb64189dfa83cccbf"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Components/QrScanButton.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "e59312712f61ab06c1005245a378a312b251d5b58fdd3e55717e27f520974779"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Components/QrScanDialogContent.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "2136517ef6583713bd275d4e37c6ab4424d59a971c91fd51fb74f7c4507c0163"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Components/QrScanDialogContent.razor.css",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "c09be4e69160e9e31da2c1486ae984b3a374ea3dc5310eeec63f58abb9026ce9"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/IQrCodeRenderer.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "c79ef33a648533b081989fce27c172c1ab40c342c1cc8d02e1fa43ba499c6046"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Infrastructure/ServiceCollectionExtensions.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "58b3613d95f5f1c864eda4ac9257e50534a680a93b30a31cd36d868addb271d4"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Models/QrCodePayload.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "2f4dcdc5accb3183ba05e936d729d3fe53801b48d8f8c8fbaf18343164e6f0d9"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Models/QrCodeRenderOptions.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "9989d1f4a6cc3f6188a6d110bb2c12e260f8832051feb9a4486a0daf5e55350e"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Models/QrErrorCorrectionLevel.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "becac3055548fa786234cbe1d22ada1179dc0b7285ee4cfab937aac493aa596d"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Models/QrPayloadKind.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "87f77e3999a2d534fd2c0644482038304e3e7daa60820111e1c409af4d5c1bc8"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/Models/QrScanResult.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "afc9229fda969f91578e217c699812a260e9cb0fc609662880de94f5d0fc6d32"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/NetCodecreteQrCodeRenderer.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "e193b80473451025e9b29e0faaf48aaf07cb553241069b8c0ca2c21a0412fe7a"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/QRCodeNamespaceMarker.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "d8e1aafce68d138c0786dddc62ab6cd382b9d36fb8fe372fed7fa7f136d7add2"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/QrPayloadClassifier.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "50295213d3cae563c68d423999c7281803bed0c5165a1e6a1a79ddfe7c7be9d1"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/README.md",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "8989ee8fcdda423cd662618f5ae5266eb8f4f24bb33a092266f17bd1f349a49d"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "src/CanDoItAll.Components.QRCode/_Imports.razor",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "a909f2e10f75f0fc4b1969ff2ac50e4197d4e1f5a50634578dc03c8622884981"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "tests/CanDoItAll.Components.QRCode.Tests/CanDoItAll.Components.QRCode.Tests.csproj",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "dfb915ec86ae67fe03706628c3b62acae476af1d1372d32b2ebf544f415731b7"
+                             },
+                             {
+                                 "repository":  "CanDoItAll.Components",
+                                 "path":  "tests/CanDoItAll.Components.QRCode.Tests/QrCodeRendererTests.cs",
+                                 "status":  "??",
+                                 "beforeSha256":  null,
+                                 "afterSha256":  "683ba640e9dfd0d1bad77ee9377109f064de8f5688f664610274d0ff268a4e1f"
+                             }
+                         ]
+                     ]
+}

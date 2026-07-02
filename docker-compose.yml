@@ -39,7 +39,7 @@ services:
       Economy__Persistence__Provider: PostgreSql
       Economy__PostgreSql__ConnectionString: Host=postgres;Port=5432;Database=candoitall_economy;Username=candoitall;Password=candoitall-dev
       Economy__PostgreSql__EnableRetryOnFailure: "true"
-      Economy__Treasury__AdminMainAmount: "79228162514264337593543950335"
+      Economy__Treasury__AdminMainAmount: "1000000000000"
       Economy__Api__EnableRateLimiting: "false"
       Economy__Api__AllowLedgerReset: "true"
       Economy__Auth__Ui__Mode: Disabled

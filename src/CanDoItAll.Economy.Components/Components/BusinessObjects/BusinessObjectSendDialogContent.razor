@@ -11,11 +11,23 @@
 
         <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
             <FormField Text="Receiver address" ContainerClass="cda-economy-field cda-economy-field--wide">
-                <TextBox Value="@receiverAddress"
-                         ValueChanged="@(value => receiverAddress = value ?? string.Empty)"
-                         Immediate="true"
-                         Placeholder="cdia1..."
-                         aria-label="Receiver address" />
+                <div class="cda-address-input-row">
+                    <TextBox Value="@receiverAddress"
+                             ValueChanged="@(value => receiverAddress = value ?? string.Empty)"
+                             Immediate="true"
+                             Placeholder="cdia1..."
+                             aria-label="Receiver address" />
+                    <PageHeaderActionButton Icon="contacts"
+                                            Label="Choose receiver"
+                                            TooltipText="Choose receiver from address directory"
+                                            Variant="Variant.Outlined"
+                                            Click="OpenAddressDirectoryAsync"
+                                            TestId="cda-bo-send-address-directory" />
+                    <QrScanButton Label="Scan receiver"
+                                  TooltipText="Scan receiver address QR"
+                                  Scanned="ApplyScanAsync"
+                                  TestId="cda-bo-send-scan-receiver" />
+                </div>
             </FormField>
 
             <FormField Text="Bookmarked address" ContainerClass="cda-economy-field">
@@ -81,6 +93,46 @@
         {
             receiverAddress = address;
         }
+    }
+
+    private async Task OpenAddressDirectoryAsync()
+    {
+        object? result = await DialogService.OpenAsync<AddressDirectoryDialogContent>(
+            "Select Receiver",
+            new Dictionary<string, object?>
+            {
+                [nameof(AddressDirectoryDialogContent.Bookmarks)] = Bookmarks,
+                [nameof(AddressDirectoryDialogContent.AccountScope)] = "bo-send",
+                [nameof(AddressDirectoryDialogContent.Mode)] = AddressDirectoryDialogMode.Select
+            },
+            new DialogOptions
+            {
+                Subtitle = Object?.ObjectId.Value,
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                TestId = "cda-address-directory-dialog"
+            });
+
+        if (result is AddressDirectoryEntry entry)
+        {
+            receiverAddress = entry.Address;
+            selectedBookmark = entry.Address;
+        }
+    }
+
+    private Task ApplyScanAsync(QrScanResult scan)
+    {
+        if (scan.IsValid)
+        {
+            receiverAddress = scan.Text;
+        }
+        else
+        {
+            Notifications.Warning("QR scan ignored", scan.Error ?? "Scanned receiver payload is invalid.", position: NotificationPosition.BottomCenter);
+        }
+
+        return Task.CompletedTask;
     }
 
     private async Task SubmitAsync()

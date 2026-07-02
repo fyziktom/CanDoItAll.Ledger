@@ -31,6 +31,8 @@ using Microsoft.Extensions.Primitives;
 namespace CanDoItAll.Economy.Node;
 public static partial class EconomyNodeHost
 {
+    private const string EconomyNodeCorsPolicyName = "CanDoItAll.Economy.Node.Cors";
+
     public static IServiceCollection AddEconomyNode(
         this IServiceCollection services,
         IConfiguration configuration,
@@ -52,6 +54,7 @@ public static partial class EconomyNodeHost
         services.AddCascadingAuthenticationState();
         services.AddScoped<AuthenticationStateProvider, EconomyNodeAuthenticationStateProvider>();
         services.AddAntiforgery(antiforgery => antiforgery.HeaderName = "X-CSRF-TOKEN");
+        AddCors(services, options);
         services.AddCanDoItAllBaseLib();
         services.AddCanDoItAllCharts();
         services.AddCanDoItAllMermaid();
@@ -89,6 +92,30 @@ public static partial class EconomyNodeHost
         services.AddScoped<EconomyNodeHealthService>();
         services.AddScoped<EconomyNodeUiService>();
         return services;
+    }
+
+    private static void AddCors(IServiceCollection services, EconomyNodeHostOptions options)
+    {
+        string[] allowedOrigins = options.CorsAllowedOrigins
+            .Where(origin => !string.IsNullOrWhiteSpace(origin))
+            .Select(origin => origin.Trim().TrimEnd('/'))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (allowedOrigins.Length == 0)
+        {
+            return;
+        }
+
+        services.AddCors(cors =>
+        {
+            cors.AddPolicy(EconomyNodeCorsPolicyName, policy =>
+            {
+                policy
+                    .WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
     }
 
     private static void AddPersistence(IServiceCollection services, EconomyNodeHostOptions options)

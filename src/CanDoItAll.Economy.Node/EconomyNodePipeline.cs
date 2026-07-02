@@ -55,6 +55,11 @@ public static partial class EconomyNodeHost
             app.UseHttpsRedirection();
         }
 
+        if (options.CorsAllowedOrigins.Count > 0)
+        {
+            app.UseCors(EconomyNodeCorsPolicyName);
+        }
+
         if (options.UsesAspNetAuthentication)
         {
             app.UseAuthentication();

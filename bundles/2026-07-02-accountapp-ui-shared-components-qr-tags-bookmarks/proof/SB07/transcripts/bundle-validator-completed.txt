@@ -1,0 +1,2 @@
+﻿PASS completed: bundle validation succeeded for C:\repositories\CanDoItAll.Ledger\bundles\2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks
+ExitCode: 0

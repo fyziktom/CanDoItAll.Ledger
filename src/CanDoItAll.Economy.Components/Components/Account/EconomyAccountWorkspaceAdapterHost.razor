@@ -230,6 +230,8 @@ else
             {
                 [nameof(TransactionComposerDialogContent.Draft)] = workspace.TransactionDraft,
                 [nameof(TransactionComposerDialogContent.TokenOptions)] = workspace.TokenOptions,
+                [nameof(TransactionComposerDialogContent.Bookmarks)] = workspace.AddressBookmarks,
+                [nameof(TransactionComposerDialogContent.AccountScope)] = workspace.Address.Value,
                 [nameof(TransactionComposerDialogContent.SubmitRequested)] =
                     EventCallback.Factory.Create<BusinessObjectTransactionDraft>(this, SubmitTransactionAsync),
                 [nameof(TransactionComposerDialogContent.AssembleRequested)] =

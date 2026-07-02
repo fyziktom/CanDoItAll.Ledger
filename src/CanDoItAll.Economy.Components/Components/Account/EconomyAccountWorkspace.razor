@@ -4,11 +4,32 @@
 <section class="cda-vef-home cda-vef-account-overview" data-testid="ssr-vef-home">
     <section class="cda-vef-panel cda-vef-account-command">
         <div class="cda-vef-account-identity">
-            <div class="cda-vef-profile-avatar">BO</div>
+            <div class="cda-vef-profile-avatar">
+                @if (!string.IsNullOrWhiteSpace(ProfileImageLink))
+                {
+                    <img src="@ProfileImageLink" alt="@Workspace.AccountName" />
+                }
+                else
+                {
+                    <span>@ProfileInitials</span>
+                }
+            </div>
             <div>
                 <span class="cda-vef-account-state">@(Workspace.Context.ScenarioId?.Value ?? "live")</span>
                 <h2>@Workspace.AccountName</h2>
-                <p><CopyableMonoValue Value="@Workspace.Address.Value" StartChars="10" EndChars="5" AriaLabel="Copy account address" /></p>
+                <p>
+                    <CopyableMonoValue Value="@Workspace.Address.Value" StartChars="10" EndChars="5" AriaLabel="Copy account address" />
+                    <QrCodeButton Payload="@AccountAddressQrPayload"
+                                  Label="Show account address QR"
+                                  TooltipText="Show account address as QR code"
+                                  TestId="cda-account-address-qr-button" />
+                    <PageHeaderActionButton Icon="badge"
+                                            Label="Profile"
+                                            TooltipText="Open account profile"
+                                            Variant="Variant.Outlined"
+                                            Click="ValidateRequested"
+                                            TestId="cda-account-profile-button" />
+                </p>
             </div>
         </div>
 
@@ -18,16 +39,20 @@
             <div class="cda-economy-fact"><span>BOs</span><strong>@Workspace.BusinessObjects.Count</strong></div>
             <div class="cda-economy-fact"><span>UTXOs</span><strong>@Workspace.Balance.UtxoCount</strong></div>
             <div class="cda-economy-fact"><span>Txs</span><strong>@Workspace.Transactions.Count</strong></div>
+            <div class="cda-economy-fact"><span>Ledger</span><strong><CopyableMonoValue Value="@Workspace.Context.LedgerId.Value" StartChars="8" EndChars="4" AriaLabel="Copy ledger id" /></strong></div>
+            <div class="cda-economy-fact"><span>Scenario</span><strong><CopyableMonoValue Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" Truncate="false" AriaLabel="Copy scenario id" /></strong></div>
             <div class="cda-economy-fact"><span>Node</span><strong>@(Workspace.NodeBaseUri?.ToString() ?? "local")</strong></div>
         </div>
 
         <div class="cda-vef-account-actions">
-            <Button Text="Send" Icon="send" Size="ButtonSize.Small" Click="AddTransactionRequested" />
-            <Button Text="Token" Icon="add_circle" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="CreateTokenRequested" />
-            <Button Text="Security" Icon="security" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenMessageSecurityDialogAsync" />
-            <Button Text="Settings" Icon="tune" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenSettingsDialogAsync" />
-            <Button Text="Refresh" Icon="refresh" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="RefreshRequested" />
-            <Button Text="Subaccount" Icon="add" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="CreateSubAccountRequested" />
+            <PageHeaderActionButton Icon="send" Label="Send" TooltipText="Send transaction" ButtonStyle="ButtonStyle.Secondary" Click="AddTransactionRequested" TestId="cda-action-send" />
+            <PageHeaderActionButton Icon="add_circle" Label="Token" TooltipText="Create token" Variant="Variant.Outlined" Click="CreateTokenRequested" TestId="cda-action-token" />
+            <PageHeaderActionButton Icon="contacts" Label="Addresses" TooltipText="Manage address directory" Variant="Variant.Outlined" Click="OpenAddressDirectoryAsync" TestId="cda-action-address-directory" />
+            <PageHeaderActionButton Icon="security" Label="Security" TooltipText="Open message security" Variant="Variant.Outlined" Click="OpenMessageSecurityDialogAsync" TestId="cda-action-security" />
+            <PageHeaderActionButton Icon="tune" Label="Settings" TooltipText="Open account settings" Variant="Variant.Outlined" Click="OpenSettingsDialogAsync" TestId="cda-action-settings" />
+            <PageHeaderActionButton Icon="archive" Label="Backup" TooltipText="Import or export browser-local settings" Variant="Variant.Outlined" Click="OpenSettingsBackupDialogAsync" TestId="cda-action-settings-backup" />
+            <PageHeaderActionButton Icon="refresh" Label="Refresh" TooltipText="Refresh workspace" Variant="Variant.Outlined" Click="RefreshRequested" TestId="cda-action-refresh" />
+            <PageHeaderActionButton Icon="add" Label="Subaccount" TooltipText="Create subaccount" Variant="Variant.Outlined" Click="CreateSubAccountRequested" TestId="cda-action-subaccount" />
         </div>
     </section>
 
@@ -35,7 +60,10 @@
         <section class="cda-vef-panel cda-vef-account-panel--dense">
             <div class="cda-vef-panel-header">
                 <span>Balances</span>
-                <Button Icon="qr_code" Size="ButtonSize.Small" Variant="Variant.Outlined" aria-label="Show QR Code" />
+                <QrCodeButton Payload="@AccountAddressQrPayload"
+                              Label="Show account address QR"
+                              TooltipText="Show account address as QR code"
+                              TestId="cda-balance-address-qr-button" />
             </div>
             <div class="cda-vef-panel-body">
                 <div class="cda-economy-ledger-table-wrap cda-vef-compact-table-wrap">
@@ -118,7 +146,12 @@
         <section class="cda-vef-panel cda-vef-account-panel--dense cda-vef-recent-transactions" data-testid="cda-recent-transactions">
             <div class="cda-vef-panel-header">
                 <span>Recent Transactions</span>
-                <Button Text="Show All Transactions" Icon="open_in_full" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenAllTransactionsAsync" />
+                <PageHeaderActionButton Icon="open_in_full"
+                                        Label="Show all transactions"
+                                        TooltipText="Show all transactions"
+                                        Variant="Variant.Outlined"
+                                        Click="OpenAllTransactionsAsync"
+                                        TestId="cda-show-all-transactions" />
             </div>
             <div class="cda-vef-panel-body cda-vef-transaction-rail">
                 @if (Workspace.Transactions.Count == 0)
@@ -136,7 +169,12 @@
                                 <CopyableMonoValue Value="@FormatRoute(transaction)" StartChars="18" EndChars="10" AriaLabel="Copy transaction route" />
                                 <small>@transaction.Kind / @transaction.Status / @transaction.Timestamp.ToString("HH:mm")</small>
                             </div>
-                            <Button Icon="info" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="@(() => TransactionDetailsRequested.InvokeAsync(transaction))" aria-label="Open transaction details" />
+                            <PageHeaderActionButton Icon="info"
+                                                    Label="Transaction details"
+                                                    TooltipText="Open transaction details"
+                                                    Variant="Variant.Outlined"
+                                                    Click="@(() => TransactionDetailsRequested.InvokeAsync(transaction))"
+                                                    TestId="cda-transaction-details-button" />
                         </article>
                     }
                 }
@@ -151,25 +189,6 @@
         <TokenAllocationDonut TokenOptions="Workspace.TokenOptions" />
         <TransactionKindStackedChart Transactions="Workspace.Transactions" />
     </Grid>
-
-    <section class="cda-vef-account-bottom-strip">
-        <div class="cda-vef-address-block">
-            <span>Address</span>
-            <strong><CopyableMonoValue Value="@Workspace.Address.Value" StartChars="12" EndChars="8" AriaLabel="Copy account address" /></strong>
-        </div>
-        <div class="cda-vef-address-block">
-            <span>Ledger</span>
-            <strong><CopyableMonoValue Value="@Workspace.Context.LedgerId.Value" Truncate="false" AriaLabel="Copy ledger id" /></strong>
-        </div>
-        <div class="cda-vef-address-block">
-            <span>Scenario</span>
-            <strong><CopyableMonoValue Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" Truncate="false" AriaLabel="Copy scenario id" /></strong>
-        </div>
-        <div class="cda-vef-bottom-actions">
-            <Button Text="Backup" Icon="download" Size="ButtonSize.Small" Variant="Variant.Outlined" />
-            <Button Text="Profile" Icon="badge" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="ValidateRequested" />
-        </div>
-    </section>
 </section>
 
 @code {
@@ -195,7 +214,22 @@
     public EventCallback<LedgerTransactionSummary> TransactionDetailsRequested { get; set; }
 
     [Parameter]
+    public EventCallback<TxId> BusinessObjectTransactionDetailsRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<IBusinessObjectView> BusinessObjectSendRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<IBusinessObjectView> BusinessObjectSetPriceRequested { get; set; }
+
+    [Parameter]
     public EventCallback<BusinessObjectTransactionDraft> TransactionSubmitRequested { get; set; }
+
+    [Parameter]
+    public Func<BusinessObjectTicketVerificationRequest, Task<BusinessObjectTicketVerificationResult>>? BusinessObjectTicketVerificationRequested { get; set; }
+
+    [Parameter]
+    public Func<BusinessObjectTicketUseRequest, Task<EconomyTransactionExecutionResult>>? BusinessObjectTicketUseRequested { get; set; }
 
     [Parameter]
     public Func<MessageSecuritySignRequest, Task<MessageSecurityActionResult>>? MessageSignRequested { get; set; }
@@ -238,6 +272,40 @@
             .Take(5)
             .ToArray();
 
+    private QrCodePayload AccountAddressQrPayload
+        => new(
+            Workspace.Address.Value,
+            QrPayloadKind.Address,
+            "Account address",
+            $"Address for {Workspace.AccountName}");
+
+    private string? ProfileImageLink
+    {
+        get
+        {
+            IBusinessObjectView? profile = Workspace.BusinessObjects.FirstOrDefault(item =>
+                item.ObjectType.Equals("profile", StringComparison.OrdinalIgnoreCase));
+            if (profile is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.ImageLink))
+            {
+                return media.ImageLink;
+            }
+
+            return BusinessObjectPayloadBuilder.TryParseMediaPayload(profile?.StateJson, out BusinessObjectMediaPayload? payload)
+                ? payload?.ImageLink
+                : null;
+        }
+    }
+
+    private string ProfileInitials
+    {
+        get
+        {
+            string[] parts = Workspace.AccountName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            string initials = string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+            return string.IsNullOrWhiteSpace(initials) ? "BO" : initials;
+        }
+    }
+
     private Task OpenSettingsDialogAsync()
         => DialogService.OpenAsync<AccountSettingsDialogContent>(
             "Account Settings",
@@ -254,6 +322,39 @@
                 TestId = "cda-account-settings-dialog"
             });
 
+    private Task OpenSettingsBackupDialogAsync()
+        => DialogService.OpenAsync<SettingsBackupDialogContent>(
+            "Browser Settings Backup",
+            new Dictionary<string, object?>
+            {
+                [nameof(SettingsBackupDialogContent.AccountScope)] = Workspace.Address.Value
+            },
+            new DialogOptions
+            {
+                Subtitle = $"{Workspace.AccountName} - local browser settings",
+                Size = ModalSize.Wide,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--settings-backup",
+                TestId = "cda-settings-backup-dialog"
+            });
+
+    private Task OpenAddressDirectoryAsync()
+        => DialogService.OpenAsync<AddressDirectoryDialogContent>(
+            "Address Directory",
+            new Dictionary<string, object?>
+            {
+                [nameof(AddressDirectoryDialogContent.Workspace)] = Workspace,
+                [nameof(AddressDirectoryDialogContent.Mode)] = AddressDirectoryDialogMode.Manage
+            },
+            new DialogOptions
+            {
+                Subtitle = "Own and external address management",
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                TestId = "cda-address-directory-dialog"
+            });
+
     private Task OpenMessageSecurityDialogAsync()
         => DialogService.OpenAsync<MessageSecurityPanel>(
             "Message Security",
@@ -263,12 +364,17 @@
                 [nameof(MessageSecurityPanel.SignRequested)] = MessageSignRequested,
                 [nameof(MessageSecurityPanel.VerifyRequested)] = MessageVerifyRequested,
                 [nameof(MessageSecurityPanel.EncryptRequested)] = MessageEncryptRequested,
-                [nameof(MessageSecurityPanel.DecryptRequested)] = MessageDecryptRequested
+                [nameof(MessageSecurityPanel.DecryptRequested)] = MessageDecryptRequested,
+                [nameof(MessageSecurityPanel.SendRequested)] = BusinessObjectSendRequested,
+                [nameof(MessageSecurityPanel.SetPriceRequested)] = BusinessObjectSetPriceRequested,
+                [nameof(MessageSecurityPanel.TransactionDetailsRequested)] = BusinessObjectTransactionDetailsRequested,
+                [nameof(MessageSecurityPanel.TicketVerificationRequested)] = BusinessObjectTicketVerificationRequested,
+                [nameof(MessageSecurityPanel.TicketUseRequested)] = BusinessObjectTicketUseRequested
             },
             new DialogOptions
             {
                 Subtitle = $"Signing and encryption tools for {Workspace.AccountName}",
-                Size = ModalSize.Wide,
+                Size = ModalSize.Full,
                 DenseChrome = true,
                 Class = "cda-vef-dialog cda-vef-dialog--security",
                 TestId = "cda-message-security-dialog"

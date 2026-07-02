@@ -1,4 +1,6 @@
 @namespace CanDoItAll.Economy.Components
+@inject ITagOccurrenceService TagOccurrences
+@inject NotificationService Notifications
 
 <SectionCard Title="Account Settings" Description="Current ledger session and UI account context.">
     <Grid ColumnsMd="2" Gap="LayoutGap.Medium">
@@ -9,10 +11,38 @@
         <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
         <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
         <div class="cda-economy-fact cda-economy-fact--wide"><span>Connection</span><strong>@Workspace.ConnectionLabel</strong></div>
+        <FormField Text="Frequent tag source" ContainerClass="cda-economy-field">
+            <select class="cda-economy-input"
+                    value="@suggestionSource"
+                    @onchange="OnSuggestionSourceChanged"
+                    aria-label="Frequent tag source">
+                <option value="@TagSuggestionSource.Unique">Unique BO occurrence</option>
+                <option value="@TagSuggestionSource.General">General view occurrence</option>
+            </select>
+        </FormField>
     </Grid>
 </SectionCard>
 
 @code {
+    private TagSuggestionSource suggestionSource = TagSuggestionSource.Unique;
+
     [Parameter, EditorRequired]
     public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        suggestionSource = await TagOccurrences.GetSuggestionSourceAsync(Workspace.Address.Value);
+    }
+
+    private async Task OnSuggestionSourceChanged(ChangeEventArgs args)
+    {
+        if (!Enum.TryParse(Convert.ToString(args.Value), out TagSuggestionSource parsed))
+        {
+            return;
+        }
+
+        suggestionSource = parsed;
+        await TagOccurrences.SetSuggestionSourceAsync(Workspace.Address.Value, suggestionSource);
+        Notifications.Success("Tag suggestion source updated", suggestionSource.ToString(), position: NotificationPosition.BottomCenter);
+    }
 }

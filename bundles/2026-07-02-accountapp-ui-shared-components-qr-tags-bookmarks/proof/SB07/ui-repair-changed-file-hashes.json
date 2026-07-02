@@ -1,0 +1,107 @@
+﻿{
+    "generated":  "2026-07-02T13:46:30.1722349-04:00",
+    "files":  [
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "src/CanDoItAll.Economy.Components/Components/Account/AddressDirectoryDialogContent.razor",
+                      "status":  "??",
+                      "sha256":  "a140cb455af9ef1717e6473934509ec4367cec122dd0cce28ccc9380af7e8ba6"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "src/CanDoItAll.Economy.Components/Components/Account/EconomyAccountWorkspace.razor",
+                      "status":  " M",
+                      "sha256":  "852be1d347993b80c53472038421f9a0ca2cadda3eeea1a1e7bb1e7f8e645697"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "src/CanDoItAll.Economy.Components/Components/Account/MessageSecurityPanel.razor",
+                      "status":  " M",
+                      "sha256":  "295e6fe6f34ecf169acb67cf13a943d04bd63b2ca8d4f3faddad1dc943dc6b34"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "src/CanDoItAll.Economy.Components/Components/BusinessObjects/ProfileEditDialogContent.razor",
+                      "status":  " M",
+                      "sha256":  "246008c349f0a740f0096511c5348ad9092b148b19ca7bb3dc69cf0e72e17e46"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor",
+                      "status":  " M",
+                      "sha256":  "d271dc1d2d2d0446751bb7bc7fc0ce52178a6df0371e059b9b9ecf02bbc3f4e8"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "src/CanDoItAll.Economy.Components/Components/VenftSsrEconomyApp.razor",
+                      "status":  " M",
+                      "sha256":  "fe0f335729fb4f0c452e750b9979f9bcc6c01c835ebf58d7ad274799c94dd564"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "src/CanDoItAll.Economy.Components/Services/AccountWorkspaceLocalServices.cs",
+                      "status":  "??",
+                      "sha256":  "20f5e204717eec0d6b7126ac9058d82c32a38587a2a568ee7d0cfba4e141c2ef"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "src/CanDoItAll.Economy.Components/wwwroot/css/economy-components.css",
+                      "status":  " M",
+                      "sha256":  "2ed11b3b18e06081613ab28b10f6c93d3c8aa7615cf90b8371a81880f1596e72"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "tests/CanDoItAll.Ledger.Tests/AccountWorkspaceAdapterTests.cs",
+                      "status":  " M",
+                      "sha256":  "45fa59c8a3de876f3e684fac77ccd0ddc0b31c1a2e1a0bee2dd35e814b5e5475"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "tests/CanDoItAll.Ledger.Tests/BusinessObjectCommerceUiComponentTests.cs",
+                      "status":  " M",
+                      "sha256":  "3da4010031043bde66684a3be2ecb0e114b5deaa114dce91875912764a5d923a"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "tests/CanDoItAll.Ledger.Tests/BusinessObjectCreateIdentityTests.cs",
+                      "status":  " M",
+                      "sha256":  "933566ee878dc18eaa62d6891c671dec190b1448756ec1e7c33eb9547ec0fb52"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "tests/CanDoItAll.Ledger.Tests/BusinessObjectLongDescriptionComponentTests.cs",
+                      "status":  " M",
+                      "sha256":  "fc0bdca7c05367e65cb24109e5d529d806685f96eabea4cc9d375983464a9db3"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "tests/CanDoItAll.Ledger.Tests/BusinessObjectTicketMintingComponentTests.cs",
+                      "status":  " M",
+                      "sha256":  "62ba27c7f7fda621c549fd0baa988cf1f29b0b8536791e5c8726aa4fa70e59e1"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/manifest.md",
+                      "status":  "",
+                      "sha256":  "b63d3c59a42cafbf527bc978f24d80368fd2b3a879109f124ac2a45528ce111d"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/semantic-invariants.md",
+                      "status":  "",
+                      "sha256":  "cb1da6fc3a0c0c6ad8e8819fc247c256a39582621fc8cab2431f46d91dfe3faa"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/scripts/visual-validation-ui-repair.cjs",
+                      "status":  "",
+                      "sha256":  "3f5cd5cb203daf0e3949867033666436533ad5172139f72ae80b78d317c022fb"
+                  },
+                  {
+                      "repository":  "CanDoItAll.Ledger",
+                      "path":  "bundles/2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks/proof/SB07/ui-repair-visual-validation.json",
+                      "status":  "",
+                      "sha256":  "575c235fdb45713a1420d53fe4f0b7a240f585e3c7e2ddb2ae26260b68e11f1f"
+                  }
+              ]
+}

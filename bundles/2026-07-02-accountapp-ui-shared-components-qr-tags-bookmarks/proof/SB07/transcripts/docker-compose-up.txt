@@ -1,0 +1,5 @@
+﻿Command: docker compose up -d --force-recreate --no-build postgres economy-node accountapp-alice accountapp-bob accountapp-lab
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+Start: 2026-07-02T11:39:09.0724144-04:00
+End: 2026-07-02T11:40:16.6418029-04:00
+ExitCode: 0

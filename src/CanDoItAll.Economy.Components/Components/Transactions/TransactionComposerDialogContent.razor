@@ -3,6 +3,8 @@
 
 <TransactionComposerShell Draft="Draft"
                           TokenOptions="TokenOptions"
+                          Bookmarks="Bookmarks"
+                          AccountScope="@AccountScope"
                           DraftChanged="DraftChanged"
                           SubmitRequested="SubmitAsync"
                           AssembleRequested="AssembleRequested"
@@ -15,6 +17,12 @@
 
     [Parameter]
     public IReadOnlyList<EconomyTokenOption> TokenOptions { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string AccountScope { get; set; } = "transaction-composer";
 
     [Parameter]
     public EventCallback<BusinessObjectTransactionDraft> DraftChanged { get; set; }

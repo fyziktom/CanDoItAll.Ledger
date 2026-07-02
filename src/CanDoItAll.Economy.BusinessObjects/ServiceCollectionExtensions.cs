@@ -60,12 +60,12 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-#if BUSINESS_OBJECT_IPFS
     public static IServiceCollection AddBusinessObjectIpfsStorage(
         this IServiceCollection services,
         Uri apiBaseUri,
         Uri gatewayBaseUri)
     {
+#if BUSINESS_OBJECT_IPFS
         services.TryAddScoped(_ => new BusinessObjectIpfsStorageOptions(gatewayBaseUri, apiBaseUri));
         services.TryAddScoped(provider =>
         {
@@ -74,7 +74,11 @@ public static class ServiceCollectionExtensions
         });
         services.TryAddScoped<IBusinessObjectDataStorageDriver, IpfsBusinessObjectDataStorageDriver>();
         services.TryAddScoped<IBusinessObjectDataItemUploadService, BusinessObjectDataItemUploadService>();
+#else
+        services.TryAddScoped<IBusinessObjectDataItemUploadService>(_ =>
+            throw new InvalidOperationException(
+                "Business object IPFS storage is not enabled for this build. Set EnableBusinessObjectIpfsStorage=true for server-side hosts that need it."));
+#endif
         return services;
     }
-#endif
 }

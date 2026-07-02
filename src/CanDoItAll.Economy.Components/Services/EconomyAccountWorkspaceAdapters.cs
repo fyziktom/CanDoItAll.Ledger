@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using CanDoItAll.Components.QRCode;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
@@ -1183,8 +1184,13 @@ public static class EconomyAccountWorkspaceAdapterServiceCollectionExtensions
         services.TryAddScoped<ITransactionHasher, TransactionHasher>();
         services.TryAddScoped<ISignaturePayloadBuilder, SignaturePayloadBuilder>();
         services.TryAddScoped<ITimeProvider, ComponentSystemClock>();
+        services.AddCanDoItAllQrCode();
         services.AddBusinessObjectBrowserAccountSigning();
         services.AddBusinessObjectCasting();
+        services.TryAddScoped<ITagOccurrenceService, TagOccurrenceService>();
+        services.TryAddScoped<IAddressDirectoryService, AddressDirectoryService>();
+        services.TryAddScoped<IAccountAppSettingsBackupService, AccountAppSettingsBackupService>();
+        services.TryAddScoped<IBusinessObjectVerificationService, BusinessObjectVerificationService>();
         services.TryAddScoped<IAccountWorkspaceCache, InMemoryAccountWorkspaceCache>();
         services.TryAddScoped<BusinessObjectTransactionBuilder>();
         services.TryAddScoped<WasmAccountWorkspaceAdapter>();
@@ -1195,6 +1201,11 @@ public static class EconomyAccountWorkspaceAdapterServiceCollectionExtensions
     public static IServiceCollection AddEconomySsrAccountWorkspaceAdapters(this IServiceCollection services)
     {
         services.TryAddScoped<IAccountWorkspaceCache, InMemoryAccountWorkspaceCache>();
+        services.AddCanDoItAllQrCode();
+        services.TryAddScoped<ITagOccurrenceService, TagOccurrenceService>();
+        services.TryAddScoped<IAddressDirectoryService, AddressDirectoryService>();
+        services.TryAddScoped<IAccountAppSettingsBackupService, AccountAppSettingsBackupService>();
+        services.TryAddScoped<IBusinessObjectVerificationService, BusinessObjectVerificationService>();
         services.TryAddScoped<DevelopmentEconomyWorkspaceAdapter>();
         services.TryAddScoped<NodeEconomyWorkspaceAdapter>();
         return services;

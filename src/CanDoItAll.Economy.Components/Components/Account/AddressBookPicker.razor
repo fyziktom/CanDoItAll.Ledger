@@ -1,12 +1,26 @@
 @namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
 
-<section class="cda-sdk-panel" data-testid="cda-address-book-picker">
-    <EntityPicker Title="Address book"
-                  Description="Reusable receiver/source picker for account and transaction flows."
-                  Items="PickerItems"
-                  SelectedId="@SelectedAddress"
-                  SelectedIdChanged="SelectedAddressChanged"
-                  EmptyText="No saved address bookmarks." />
+<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-address-book-picker">
+    <header class="cda-sdk-panel__header">
+        <div>
+            <span>Address book</span>
+            <h2>@SelectedLabel</h2>
+        </div>
+        <PageHeaderActionButton Icon="contacts"
+                                Label="Choose address"
+                                TooltipText="Choose from address directory"
+                                Variant="Variant.Outlined"
+                                Click="OpenAsync"
+                                TestId="cda-address-book-picker-open" />
+    </header>
+    <div class="cda-sdk-list cda-address-directory-mini">
+        <CopyableMonoValue Value="@(SelectedAddress ?? Bookmarks.FirstOrDefault()?.Address.Value ?? string.Empty)"
+                           StartChars="10"
+                           EndChars="6"
+                           AriaLabel="Copy selected address" />
+        <Button Text="Select" Icon="check" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenAsync" />
+    </div>
 </section>
 
 @code {
@@ -19,14 +33,37 @@
     [Parameter]
     public EventCallback<string> SelectedAddressChanged { get; set; }
 
-    private IReadOnlyList<EntityPickerItem> PickerItems
-        => Bookmarks
-            .Select(item => new EntityPickerItem
+    [Parameter]
+    public BusinessObjectWorkspaceModel? Workspace { get; set; }
+
+    private string SelectedLabel
+        => Bookmarks.FirstOrDefault(item => item.Address.Value == SelectedAddress)?.Name
+            ?? "Choose receiver";
+
+    private async Task OpenAsync()
+    {
+        object? result = await DialogService.OpenAsync<AddressDirectoryDialogContent>(
+            "Select Address",
+            new Dictionary<string, object?>
             {
-                Id = item.Address.Value,
-                Label = item.Name,
-                Description = item.Address.Value,
-                Icon = "account_balance_wallet"
-            })
-            .ToArray();
+                [nameof(AddressDirectoryDialogContent.Workspace)] = Workspace,
+                [nameof(AddressDirectoryDialogContent.Bookmarks)] = Bookmarks,
+                [nameof(AddressDirectoryDialogContent.AccountScope)] = Workspace?.Address.Value ?? "bookmarks",
+                [nameof(AddressDirectoryDialogContent.Mode)] = AddressDirectoryDialogMode.Select
+            },
+            new DialogOptions
+            {
+                Subtitle = "Select an own or external receiver address.",
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                TestId = "cda-address-directory-dialog"
+            });
+
+        if (result is AddressDirectoryEntry entry)
+        {
+            SelectedAddress = entry.Address;
+            await SelectedAddressChanged.InvokeAsync(entry.Address);
+        }
+    }
 }

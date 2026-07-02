@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using CanDoItAll.Components.BaseLib;
+using CanDoItAll.Components.QRCode;
 using CanDoItAll.Economy.AccountApp;
 using CanDoItAll.Economy.AccountApp.Services;
 using CanDoItAll.Economy.BusinessObjects;
@@ -16,6 +17,7 @@ var accountAppOptions = builder.Configuration.GetSection("AccountApp").Get<Accou
 builder.Services.AddSingleton(accountAppOptions);
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddCanDoItAllBaseLib();
+builder.Services.AddCanDoItAllQrCode();
 builder.Services.AddCanDoItAllBrowserCrypto();
 builder.Services.AddEconomySdkWithBrowserNodeDriver(
     accountAppOptions.NodeBaseUri,

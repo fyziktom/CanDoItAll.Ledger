@@ -6,9 +6,11 @@
     <ComponentsRepoRoot Condition="'$(ComponentsRepoRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\CanDoItAll.Components</ComponentsRepoRoot>
     <ComponentsWebGlLibProject>$(ComponentsRepoRoot)\src\CanDoItAll.Components.WebGlLib\CanDoItAll.Components.WebGlLib.csproj</ComponentsWebGlLibProject>
     <ComponentsWebGlRunLibProject>$(ComponentsRepoRoot)\src\CanDoItAll.Components.WebGlRunLib\CanDoItAll.Components.WebGlRunLib.csproj</ComponentsWebGlRunLibProject>
+    <ComponentsQrCodeProject>$(ComponentsRepoRoot)\src\CanDoItAll.Components.QRCode\CanDoItAll.Components.QRCode.csproj</ComponentsQrCodeProject>
     <UseComponentsWebGlPackages Condition="'$(UseComponentsWebGlPackages)' == ''">false</UseComponentsWebGlPackages>
     <ComponentsWebGlLibPackageVersion Condition="'$(ComponentsWebGlLibPackageVersion)' == ''">$(CanDoItAllComponentsPackageVersion)</ComponentsWebGlLibPackageVersion>
     <ComponentsWebGlRunLibPackageVersion Condition="'$(ComponentsWebGlRunLibPackageVersion)' == ''">$(CanDoItAllComponentsPackageVersion)</ComponentsWebGlRunLibPackageVersion>
+    <ComponentsQrCodePackageVersion Condition="'$(ComponentsQrCodePackageVersion)' == ''">$(CanDoItAllComponentsPackageVersion)</ComponentsQrCodePackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,9 +28,11 @@
     <ProjectReference Include="..\CanDoItAll.Economy.Storage.InMemory\CanDoItAll.Economy.Storage.InMemory.csproj" />
     <ProjectReference Condition="'$(UseComponentsWebGlPackages)' != 'true' and Exists('$(ComponentsWebGlLibProject)')" Include="$(ComponentsWebGlLibProject)" />
     <ProjectReference Condition="'$(UseComponentsWebGlPackages)' != 'true' and Exists('$(ComponentsWebGlRunLibProject)')" Include="$(ComponentsWebGlRunLibProject)" />
+    <ProjectReference Condition="Exists('$(ComponentsQrCodeProject)')" Include="$(ComponentsQrCodeProject)" />
     <PackageReference Include="CanDoItAll.Components.BaseLib" Version="$(CanDoItAllComponentsPackageVersion)" />
     <PackageReference Include="CanDoItAll.Components.Charts" Version="$(CanDoItAllComponentsPackageVersion)" />
     <PackageReference Include="CanDoItAll.Components.Mermaid" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Condition="!Exists('$(ComponentsQrCodeProject)')" Include="CanDoItAll.Components.QRCode" Version="$(ComponentsQrCodePackageVersion)" />
     <PackageReference Condition="'$(UseComponentsWebGlPackages)' == 'true'" Include="CanDoItAll.Components.WebGlLib" Version="$(ComponentsWebGlLibPackageVersion)" />
     <PackageReference Condition="'$(UseComponentsWebGlPackages)' == 'true'" Include="CanDoItAll.Components.WebGlRunLib" Version="$(ComponentsWebGlRunLibPackageVersion)" />
   </ItemGroup>

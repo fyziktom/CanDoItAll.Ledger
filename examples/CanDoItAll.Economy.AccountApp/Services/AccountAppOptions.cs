@@ -6,9 +6,9 @@ public sealed record AccountAppOptions
 
     public string ApiBasePath { get; init; } = "api/v1";
 
-    public string LedgerId { get; init; } = "account-app-ledger";
+    public string LedgerId { get; init; } = "default";
 
-    public string? ScenarioId { get; init; } = "browser-demo";
+    public string? ScenarioId { get; init; }
 
     public string VaultId { get; init; } = "account-app-default";
 

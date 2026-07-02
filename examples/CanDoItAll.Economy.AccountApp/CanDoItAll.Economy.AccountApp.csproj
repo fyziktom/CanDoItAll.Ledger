@@ -8,6 +8,9 @@
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     <UseComponentsBaseLibPackage Condition="'$(UseComponentsBaseLibPackage)' == ''">false</UseComponentsBaseLibPackage>
+    <ComponentsRepoRoot Condition="'$(ComponentsRepoRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\CanDoItAll.Components</ComponentsRepoRoot>
+    <ComponentsQrCodeProject>$(ComponentsRepoRoot)\src\CanDoItAll.Components.QRCode\CanDoItAll.Components.QRCode.csproj</ComponentsQrCodeProject>
+    <ComponentsQrCodePackageVersion Condition="'$(ComponentsQrCodePackageVersion)' == ''">$(CanDoItAllComponentsPackageVersion)</ComponentsQrCodePackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +26,9 @@
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Cryptography.Browser\CanDoItAll.Economy.Cryptography.Browser.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=false" />
     <ProjectReference Condition="'$(UseComponentsBaseLibPackage)' != 'true'" Include="..\..\..\CanDoItAll.Components\src\CanDoItAll.Components.BaseLib\CanDoItAll.Components.BaseLib.csproj" />
+    <ProjectReference Condition="Exists('$(ComponentsQrCodeProject)')" Include="$(ComponentsQrCodeProject)" />
     <PackageReference Condition="'$(UseComponentsBaseLibPackage)' == 'true'" Include="CanDoItAll.Components.BaseLib" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Condition="!Exists('$(ComponentsQrCodeProject)')" Include="CanDoItAll.Components.QRCode" Version="$(ComponentsQrCodePackageVersion)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -4,6 +4,7 @@ using CanDoItAll.Components.BaseLib;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
+using CanDoItAll.Economy.Components.Services;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
 using CanDoItAll.Economy.Ledger;
@@ -24,6 +25,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
+        Services.AddEconomySsrAccountWorkspaceAdapters();
     }
 
     [Fact]

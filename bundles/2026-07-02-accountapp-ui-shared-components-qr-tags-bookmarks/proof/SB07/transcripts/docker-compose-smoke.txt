@@ -1,0 +1,10 @@
+﻿Docker smoke checks
+Start: 2026-07-02T11:40:44.6757507-04:00
+PASS http://localhost:8080/api/v1/health -> 200 OK
+PASS http://localhost:8080/api/v1/health/readiness -> 200 OK
+PASS http://localhost:8080/api/v1/ledger/default/state -> 200 OK
+PASS http://localhost:5081/ -> 200 OK
+PASS http://localhost:5082/ -> 200 OK
+PASS http://localhost:5083/ -> 200 OK
+End: 2026-07-02T11:41:11.7275647-04:00
+Final result: PASS

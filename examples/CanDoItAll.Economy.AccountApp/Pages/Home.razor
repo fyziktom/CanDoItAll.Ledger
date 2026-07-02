@@ -1,30 +1,95 @@
 @page "/"
 @inject AccountAppSession Session
+@inject DialogService DialogService
+@inject NotificationService Notifications
 
 <PageTitle>CanDoItAll AccountApp</PageTitle>
 
 <div class="account-app @(Session.IsUnlocked ? "account-app--unlocked" : "account-app--locked")" data-testid="account-app-root">
-    <header class="account-app__topbar">
-        <div>
-            <span class="account-app__eyebrow">AccountApp WASM PWA</span>
-            <h1>Browser account workspace</h1>
-        </div>
-        <div class="account-app__connection" data-testid="node-api-connection">
-            <span class="material-icons" aria-hidden="true">hub</span>
-            <div>
-                <strong>@Session.Options.NodeBaseUri</strong>
-                <span>@Session.Options.ApiBasePath / @Session.Options.LedgerId / @(Session.Options.ScenarioId ?? "live")</span>
+    @if (Session.IsUnlocked)
+    {
+        <header class="account-app__workspace-frame" data-testid="unlocked-account">
+            <div class="account-app__identity">
+                <div class="account-app__avatar" aria-hidden="true">@AccountInitials</div>
+                <div>
+                    <span class="account-app__eyebrow">AccountApp WASM PWA</span>
+                    <h1>@(Session.Account?.DisplayName ?? "Browser account workspace")</h1>
+                    <CopyableMonoValue Value="@(Session.Account?.Address.Value ?? string.Empty)"
+                                       StartChars="12"
+                                       EndChars="6"
+                                       AriaLabel="Copy account address" />
+                </div>
             </div>
-        </div>
-    </header>
 
-    <section class="account-app__status" data-testid="account-status">
-        <span class="material-icons" aria-hidden="true">encrypted</span>
-        <div>
-            <strong>@(Session.IsUnlocked ? "Unlocked browser vault" : "Locked browser vault")</strong>
-            <span>@Session.StatusMessage</span>
-        </div>
-    </section>
+            <div class="account-app__frame-facts">
+                <div>
+                    <span>Node</span>
+                    <strong>@Session.Options.NodeBaseUri</strong>
+                </div>
+                <div>
+                    <span>Ledger</span>
+                    <strong>@Session.Options.LedgerId / @(Session.Options.ScenarioId ?? "live")</strong>
+                </div>
+                <div>
+                    <span>Signing</span>
+                    <strong>Browser WebCrypto</strong>
+                </div>
+            </div>
+
+            <Toolbar Class="account-app__frame-actions" data-testid="account-actions">
+                <PageHeaderActionButton Icon="refresh"
+                                        Label="Refresh API data"
+                                        TooltipText="Refresh API data"
+                                        Click="RefreshWorkspaceAsync"
+                                        TestId="refresh-workspace" />
+                <PageHeaderActionButton Icon="info"
+                                        Label="Load latest detail"
+                                        TooltipText="Load latest transaction detail"
+                                        Click="LoadTransactionDetailsAsync"
+                                        TestId="load-transaction-detail" />
+                <PageHeaderActionButton Icon="send"
+                                        Label="Sign and broadcast"
+                                        TooltipText="Sign and broadcast a smoke payment"
+                                        ButtonStyle="ButtonStyle.Secondary"
+                                        Click="SubmitSignedPaymentAsync"
+                                        TestId="submit-signed-payment" />
+                <PageHeaderActionButton Icon="download"
+                                        Label="Export encrypted backup"
+                                        TooltipText="Export encrypted account vault backup"
+                                        Click="ExportBackupAsync"
+                                        TestId="export-backup" />
+                <PageHeaderActionButton Icon="archive"
+                                        Label="Settings backup"
+                                        TooltipText="Import or export browser-local settings"
+                                        Click="OpenSettingsBackupAsync"
+                                        TestId="settings-backup" />
+            </Toolbar>
+        </header>
+    }
+    else
+    {
+        <header class="account-app__topbar">
+            <div>
+                <span class="account-app__eyebrow">AccountApp WASM PWA</span>
+                <h1>Browser account workspace</h1>
+            </div>
+            <div class="account-app__connection" data-testid="node-api-connection">
+                <span class="material-icons" aria-hidden="true">hub</span>
+                <div>
+                    <strong>@Session.Options.NodeBaseUri</strong>
+                    <span>@Session.Options.ApiBasePath / @Session.Options.LedgerId / @(Session.Options.ScenarioId ?? "live")</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="account-app__status" data-testid="account-status">
+            <span class="material-icons" aria-hidden="true">encrypted</span>
+            <div>
+                <strong>Locked browser vault</strong>
+                <span>@Session.StatusMessage</span>
+            </div>
+        </section>
+    }
 
     @if (Session.ErrorMessage is not null)
     {
@@ -141,40 +206,6 @@
     }
     else
     {
-        <section class="account-app__account-bar" data-testid="unlocked-account">
-            <div>
-                <span>Account</span>
-                <strong>@Session.Account?.DisplayName</strong>
-            </div>
-            <div>
-                <span>Address</span>
-                <strong>@Session.Account?.Address.Value</strong>
-            </div>
-            <div>
-                <span>Signing</span>
-                <strong>Browser WebCrypto</strong>
-            </div>
-        </section>
-
-        <section class="account-app__actions" data-testid="account-actions">
-            <button data-testid="refresh-workspace" class="account-button" @onclick="RefreshWorkspaceAsync">
-                <span class="material-icons" aria-hidden="true">refresh</span>
-                <span>Refresh API data</span>
-            </button>
-            <button data-testid="load-transaction-detail" class="account-button" @onclick="LoadTransactionDetailsAsync">
-                <span class="material-icons" aria-hidden="true">info</span>
-                <span>Load latest detail</span>
-            </button>
-            <button data-testid="submit-signed-payment" class="account-button account-button--primary" @onclick="SubmitSignedPaymentAsync">
-                <span class="material-icons" aria-hidden="true">send</span>
-                <span>Sign and broadcast</span>
-            </button>
-            <button data-testid="export-backup" class="account-button" @onclick="ExportBackupAsync">
-                <span class="material-icons" aria-hidden="true">download</span>
-                <span>Export encrypted backup</span>
-            </button>
-        </section>
-
         @if (!string.IsNullOrWhiteSpace(Session.BackupJson))
         {
             <section class="account-card account-card--wide" data-testid="backup-export">
@@ -211,29 +242,58 @@
     protected override async Task OnInitializedAsync()
         => await Session.InitializeAsync();
 
+    private string AccountInitials
+    {
+        get
+        {
+            string name = Session.Account?.DisplayName ?? Session.AccountName;
+            string initials = string.Concat(name
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Take(2)
+                .Select(part => char.ToUpperInvariant(part[0])));
+            return string.IsNullOrWhiteSpace(initials) ? "AA" : initials;
+        }
+    }
+
     private async Task CreateAccountAsync()
-        => await InvokeSessionAsync(Session.CreateAccountAsync);
+        => await InvokeSessionAsync(Session.CreateAccountAsync, "Account created");
 
     private async Task UnlockAccountAsync()
-        => await InvokeSessionAsync(Session.UnlockAccountAsync);
+        => await InvokeSessionAsync(Session.UnlockAccountAsync, "Vault unlocked");
 
     private async Task ImportBackupAsync()
-        => await InvokeSessionAsync(Session.ImportVaultBackupAsync);
+        => await InvokeSessionAsync(Session.ImportVaultBackupAsync, "Backup imported");
 
     private async Task ImportPastedKeyAsync()
-        => await InvokeSessionAsync(Session.ImportPastedKeyPairAsync);
+        => await InvokeSessionAsync(Session.ImportPastedKeyPairAsync, "Key pair imported");
 
     private async Task RefreshWorkspaceAsync()
-        => await InvokeSessionAsync(Session.RefreshWorkspaceAsync);
+        => await InvokeSessionAsync(Session.RefreshWorkspaceAsync, "Workspace refreshed");
 
     private async Task LoadTransactionDetailsAsync()
-        => await InvokeSessionAsync(Session.LoadLatestTransactionDetailsAsync);
+        => await InvokeSessionAsync(Session.LoadLatestTransactionDetailsAsync, "Transaction detail loaded");
 
     private async Task SubmitSignedPaymentAsync()
-        => await InvokeSessionAsync(Session.SubmitSignedPaymentSmokeAsync);
+        => await InvokeSessionAsync(Session.SubmitSignedPaymentSmokeAsync, "Signed payment submitted");
 
     private async Task ExportBackupAsync()
-        => await InvokeSessionAsync(Session.ExportVaultBackupAsync);
+        => await InvokeSessionAsync(Session.ExportVaultBackupAsync, "Encrypted backup exported");
+
+    private Task OpenSettingsBackupAsync()
+        => DialogService.OpenAsync<SettingsBackupDialogContent>(
+            "Browser Settings Backup",
+            new Dictionary<string, object?>
+            {
+                [nameof(SettingsBackupDialogContent.AccountScope)] = Session.Account?.Address.Value ?? "default"
+            },
+            new DialogOptions
+            {
+                Subtitle = "Import/export browser-local preferences and UI metadata.",
+                Size = ModalSize.Wide,
+                DenseChrome = true,
+                Class = "cda-vef-dialog cda-vef-dialog--settings-backup",
+                TestId = "cda-settings-backup-dialog"
+            });
 
     private void OnWorkspaceLoaded(BusinessObjectWorkspaceModel workspace)
         => Session.ApplyWorkspace(workspace);
@@ -241,9 +301,18 @@
     private void OnTransactionSubmitted(EconomyTransactionExecutionResult result)
         => Session.ApplyTransactionResult(result);
 
-    private async Task InvokeSessionAsync(Func<CancellationToken, Task> action)
+    private async Task InvokeSessionAsync(Func<CancellationToken, Task> action, string successTitle)
     {
         await action(CancellationToken.None);
+        if (Session.ErrorMessage is null)
+        {
+            Notifications.Success(successTitle, Session.StatusMessage, position: NotificationPosition.BottomCenter);
+        }
+        else
+        {
+            Notifications.Error("Account action failed", Session.ErrorMessage, position: NotificationPosition.BottomCenter);
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 }

@@ -1,0 +1,13 @@
+{
+  "url": "http://localhost:5081/",
+  "title": "CanDoItAll AccountApp",
+  "unlockedVisible": true,
+  "setupCardsVisibleAfterImport": false,
+  "workspaceVisible": true,
+  "accountTextVisible": true,
+  "oldImportCardVisible": false,
+  "apiErrors": [],
+  "consoleMessages": [],
+  "screenshot": "C:\\repositories\\CanDoItAll.Ledger\\bundles\\2026-07-02-accountapp-ui-shared-components-qr-tags-bookmarks\\proof\\SB07\\screenshots\\docker-accountapp-alice-imported-large.png",
+  "passed": true
+}
