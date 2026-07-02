@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
 using Xunit;
@@ -53,6 +54,58 @@ public sealed class BrowserCryptoVaultTests
 
         Assert.NotEqual(plaintext, ciphertextWithTag);
         Assert.Equal(plaintext, decrypted);
+    }
+
+    [Fact]
+    public async Task Dotnet_driver_derives_ecdh_p256_shared_key_compatible_with_message_cipher()
+    {
+        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        EcdsaP256KeyPair alice = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
+        EcdsaP256KeyPair bob = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
+
+        byte[] aliceSharedKey = await driver.DeriveEcdhP256Sha256KeyAsync(
+            alice.PrivateKeyMaterial,
+            bob.PublicKeyMaterial,
+            EcdhP256MessageCipher.SharedSecretLabelBytes,
+            CancellationToken.None);
+        byte[] bobSharedKey = await driver.DeriveEcdhP256Sha256KeyAsync(
+            bob.PrivateKeyMaterial,
+            alice.PublicKeyMaterial,
+            EcdhP256MessageCipher.SharedSecretLabelBytes,
+            CancellationToken.None);
+
+        Assert.Equal(32, aliceSharedKey.Length);
+        Assert.Equal(aliceSharedKey, bobSharedKey);
+        Assert.Equal(
+            EcdhP256MessageCipher.DeriveSharedSecretHash(alice.PrivateKeyMaterial, bob.PublicKeyMaterial),
+            Hex.Sha256Hex(aliceSharedKey));
+    }
+
+    [Fact]
+    public async Task Account_message_security_driver_path_encrypts_and_decrypts()
+    {
+        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        EcdsaP256KeyPair aliceKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
+        EcdsaP256KeyPair bobKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
+        var alice = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "alice", aliceKey.PublicKeyMaterial, aliceKey.PrivateKeyMaterial);
+        var bob = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "bob", bobKey.PublicKeyMaterial, bobKey.PrivateKeyMaterial);
+
+        EconomyEncryptedMessage encrypted = await AccountMessageSecurity.EncryptMessageAsync(
+            alice,
+            "private browser-compatible hello",
+            bob.Address,
+            bob.PublicKeyMaterial.ToArray(),
+            driver,
+            CancellationToken.None);
+        string decrypted = await AccountMessageSecurity.DecryptMessageAsync(
+            bob,
+            encrypted,
+            encrypted.SenderPublicKeyMaterial,
+            driver,
+            CancellationToken.None);
+
+        Assert.NotEqual("private browser-compatible hello", Encoding.UTF8.GetString(encrypted.CipherText));
+        Assert.Equal("private browser-compatible hello", decrypted);
     }
 
     [Fact]

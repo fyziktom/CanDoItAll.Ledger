@@ -77,6 +77,41 @@ export async function aesGcmDecrypt(keyBase64, nonceBase64, ciphertextWithTagBas
   return bytesToBase64(new Uint8Array(decrypted));
 }
 
+export async function deriveEcdhP256Sha256Key(privateKeyMaterialBase64, otherPublicKeyMaterialBase64, secretAppendBase64) {
+  ensureWebCrypto();
+  const privateKey = await globalThis.crypto.subtle.importKey(
+    "pkcs8",
+    base64ToBytes(privateKeyMaterialBase64),
+    {
+      name: "ECDH",
+      namedCurve: "P-256"
+    },
+    false,
+    ["deriveBits"]);
+  const publicKey = await globalThis.crypto.subtle.importKey(
+    "spki",
+    base64ToBytes(otherPublicKeyMaterialBase64),
+    {
+      name: "ECDH",
+      namedCurve: "P-256"
+    },
+    false,
+    []);
+  const sharedSecret = new Uint8Array(await globalThis.crypto.subtle.deriveBits(
+    {
+      name: "ECDH",
+      public: publicKey
+    },
+    privateKey,
+    256));
+  const secretAppend = base64ToBytes(secretAppendBase64);
+  const keyMaterial = new Uint8Array(sharedSecret.length + secretAppend.length);
+  keyMaterial.set(sharedSecret, 0);
+  keyMaterial.set(secretAppend, sharedSecret.length);
+  const keyHash = await globalThis.crypto.subtle.digest("SHA-256", keyMaterial);
+  return bytesToBase64(new Uint8Array(keyHash));
+}
+
 export async function createEcdsaP256KeyPair() {
   ensureWebCrypto();
   const keyPair = await globalThis.crypto.subtle.generateKey(

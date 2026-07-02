@@ -76,6 +76,26 @@ public interface IEconomyAccountWorkspaceAdapter
     Task<MessageSecurityActionResult> DecryptMessageAsync(
         MessageSecurityDecryptRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<EconomyTransactionExecutionResult> SendSecureMessageAsync(
+        SecureMessageComposeRequest request,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult(new EconomyTransactionExecutionResult(
+            BusinessObjectTransactionMode.Create,
+            Accepted: false,
+            TxId: null,
+            LedgerSequence: null,
+            "This workspace adapter does not expose secure messaging."));
+
+    Task<SecureMessageOpenResult> OpenSecureMessageAsync(
+        SecureMessageOpenRequest request,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult(SecureMessageOpenResult.Fail("This workspace adapter does not expose secure message decryption."));
+
+    Task<SecureMessageAttachmentOpenResult> OpenSecureMessageAttachmentAsync(
+        SecureMessageAttachmentOpenRequest request,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult(SecureMessageAttachmentOpenResult.Fail("This workspace adapter does not expose secure attachment decryption."));
 }
 
 public sealed record WasmAccountWorkspaceOptions
@@ -103,9 +123,12 @@ public sealed class WasmAccountWorkspaceAdapter(
     IAccountTransactionSigner transactionSigner,
     IEconomyCryptoDriver cryptoDriver,
     IAccountWorkspaceCache workspaceCache,
+    IAddressDirectoryService addressDirectoryService,
     IBusinessObjectCastRegistry castRegistry,
     ITimeProvider timeProvider,
-    WasmAccountWorkspaceOptions? options = null) : IEconomyAccountWorkspaceAdapter
+    WasmAccountWorkspaceOptions? options = null,
+    IBusinessObjectDataItemUploadService? messageUploadService = null,
+    IBusinessObjectDataStorageDriver? messageStorageDriver = null) : IEconomyAccountWorkspaceAdapter
 {
     private static readonly JsonSerializerOptions MessageJsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -578,24 +601,249 @@ public sealed class WasmAccountWorkspaceAdapter(
         }
     }
 
-    public Task<MessageSecurityActionResult> EncryptMessageAsync(
+    public async Task<MessageSecurityActionResult> EncryptMessageAsync(
         MessageSecurityEncryptRequest request,
         CancellationToken cancellationToken = default)
     {
-        _ = request;
-        _ = cancellationToken;
-        return Task.FromResult(MessageSecurityActionResult.Fail(
-            "Browser-only account encryption needs receiver public-key discovery before it can encrypt messages."));
+        if (string.IsNullOrWhiteSpace(request.Message))
+        {
+            return MessageSecurityActionResult.Fail("Message cannot be empty.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ReceiverAccountAlias))
+        {
+            return MessageSecurityActionResult.Fail("Receiver address or contact name is required.");
+        }
+
+        try
+        {
+            IAccountKeySource source = RequiredKeySource;
+            Address receiverAddress = await ResolveMessageReceiverAddressAsync(
+                source.Address,
+                request.ReceiverAccountAlias,
+                cancellationToken).ConfigureAwait(false);
+            var discovery = new LedgerTransactionPublicKeyDiscovery(ledgerReadClient);
+            LedgerPublicKeyDiscoveryResult? receiverKey = await discovery
+                .FindPublicKeyAsync(Context, receiverAddress, cancellationToken)
+                .ConfigureAwait(false);
+            if (receiverKey is null)
+            {
+                return MessageSecurityActionResult.Fail(
+                    $"Cannot encrypt for {receiverAddress.Value}: no signed transaction input from that address exposes its public key yet.");
+            }
+
+            EconomyEncryptedMessage encrypted = await AccountMessageSecurity
+                .EncryptMessageAsync(
+                    source,
+                    request.Message,
+                    receiverAddress,
+                    receiverKey.PublicKeyMaterial,
+                    cryptoDriver,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            HashHex sharedSecretHash = await AccountMessageSecurity
+                .DeriveSharedSecretHashAsync(source, receiverKey.PublicKeyMaterial, cryptoDriver, cancellationToken)
+                .ConfigureAwait(false);
+
+            return MessageSecurityActionResult.Ok(
+                $"Encrypted for {receiverAddress.Value}. Receiver public key found in {ShortHash(receiverKey.TxId.Value)}. Shared-secret hash {ShortHash(sharedSecretHash.Value)}.",
+                JsonSerializer.Serialize(encrypted, MessageJsonOptions));
+        }
+        catch (Exception exception)
+        {
+            return MessageSecurityActionResult.Fail(exception.Message);
+        }
     }
 
-    public Task<MessageSecurityActionResult> DecryptMessageAsync(
+    public async Task<MessageSecurityActionResult> DecryptMessageAsync(
         MessageSecurityDecryptRequest request,
         CancellationToken cancellationToken = default)
     {
-        _ = request;
-        _ = cancellationToken;
-        return Task.FromResult(MessageSecurityActionResult.Fail(
-            "Browser-only account encryption is not available until ECDH is implemented through the browser crypto bridge."));
+        if (string.IsNullOrWhiteSpace(request.EncryptedMessageJson))
+        {
+            return MessageSecurityActionResult.Fail("Encrypted message JSON is required.");
+        }
+
+        try
+        {
+            EconomyEncryptedMessage? encrypted = JsonSerializer.Deserialize<EconomyEncryptedMessage>(
+                request.EncryptedMessageJson,
+                MessageJsonOptions);
+            if (encrypted is null)
+            {
+                return MessageSecurityActionResult.Fail("Encrypted message JSON could not be parsed.");
+            }
+
+            IAccountKeySource source = RequiredKeySource;
+            byte[] senderPublicKey = encrypted.SenderPublicKeyMaterial;
+            if (senderPublicKey.Length == 0)
+            {
+                var discovery = new LedgerTransactionPublicKeyDiscovery(ledgerReadClient);
+                LedgerPublicKeyDiscoveryResult? senderKey = await discovery
+                    .FindPublicKeyAsync(Context, encrypted.SenderAddress, cancellationToken)
+                    .ConfigureAwait(false);
+                if (senderKey is null)
+                {
+                    return MessageSecurityActionResult.Fail(
+                        $"Cannot decrypt message from {encrypted.SenderAddress.Value}: sender public key was not found.");
+                }
+
+                senderPublicKey = senderKey.PublicKeyMaterial;
+            }
+
+            string plainText = await AccountMessageSecurity
+                .DecryptMessageAsync(source, encrypted, senderPublicKey, cryptoDriver, cancellationToken)
+                .ConfigureAwait(false);
+
+            return MessageSecurityActionResult.Ok(
+                $"Decrypted message from {encrypted.SenderAddress.Value}.",
+                JsonSerializer.Serialize(new
+                {
+                    encrypted.Algorithm,
+                    encrypted.SenderAddress,
+                    encrypted.ReceiverAddress,
+                    plainText
+                }, MessageJsonOptions),
+                plainText);
+        }
+        catch (Exception exception)
+        {
+            return MessageSecurityActionResult.Fail(exception.Message);
+        }
+    }
+
+    public async Task<EconomyTransactionExecutionResult> SendSecureMessageAsync(
+        SecureMessageComposeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Body))
+        {
+            return new EconomyTransactionExecutionResult(
+                BusinessObjectTransactionMode.Create,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                "Message body cannot be empty.");
+        }
+
+        try
+        {
+            IAccountKeySource source = RequiredKeySource;
+            Address receiverAddress = await ResolveMessageReceiverAddressAsync(
+                source.Address,
+                request.Receiver,
+                cancellationToken).ConfigureAwait(false);
+            var discovery = new LedgerTransactionPublicKeyDiscovery(ledgerReadClient);
+            LedgerPublicKeyDiscoveryResult? receiverKey = await discovery
+                .FindPublicKeyAsync(Context, receiverAddress, cancellationToken)
+                .ConfigureAwait(false);
+            if (receiverKey is null)
+            {
+                return new EconomyTransactionExecutionResult(
+                    BusinessObjectTransactionMode.Create,
+                    Accepted: false,
+                    TxId: null,
+                    LedgerSequence: null,
+                    $"Cannot send secure message: no signed transaction input from {receiverAddress.Value} exposes its public key yet.");
+            }
+
+            using var attachmentStreams = new AttachmentStreamScope(request.Attachments);
+            SecureLedgerMessageBuildResult secureMessage = await SecureLedgerMessages
+                .CreateAsync(
+                    source,
+                    receiverAddress,
+                    receiverKey.PublicKeyMaterial,
+                    request.Subject,
+                    request.Body,
+                    attachmentStreams.Sources,
+                    cryptoDriver,
+                    messageUploadService,
+                    timeProvider.UtcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateNewObjectId(
+                "secure-message",
+                string.IsNullOrWhiteSpace(request.Subject) ? "message" : request.Subject);
+            BusinessObjectAccount account = CreateAccount();
+            LedgerTransaction unsigned = await account.BuildUnsignedCreateBusinessObjectTransactionAsync(
+                new CreateBusinessObjectRequest(
+                    objectId,
+                    SecureLedgerMessages.ObjectType,
+                    secureMessage.StateJson,
+                    SecureLedgerMessages.SchemaVersion,
+                    OwnerAddress: receiverAddress,
+                    MainAmount: Amount.FromInt64(1),
+                    ExternalRef: $"secure-message://{objectId.Value}"),
+                cancellationToken).ConfigureAwait(false);
+
+            return await SignAndSubmitAsync(
+                BusinessObjectTransactionMode.Create,
+                unsigned,
+                request.Attachments.Count == 0 ? "Secure message" : $"Secure message with {request.Attachments.Count} attachment(s)",
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            return new EconomyTransactionExecutionResult(
+                BusinessObjectTransactionMode.Create,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                exception.Message);
+        }
+    }
+
+    public async Task<SecureMessageOpenResult> OpenSecureMessageAsync(
+        SecureMessageOpenRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            SecureLedgerMessageContent content = await SecureLedgerMessages
+                .DecryptContentAsync(RequiredKeySource, request.Payload, cryptoDriver, cancellationToken)
+                .ConfigureAwait(false);
+            return SecureMessageOpenResult.Ok($"Decrypted {request.TxId.Value}.", content);
+        }
+        catch (Exception exception)
+        {
+            return SecureMessageOpenResult.Fail(exception.Message);
+        }
+    }
+
+    public async Task<SecureMessageAttachmentOpenResult> OpenSecureMessageAttachmentAsync(
+        SecureMessageAttachmentOpenRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (messageStorageDriver is null)
+        {
+            return SecureMessageAttachmentOpenResult.Fail("Encrypted attachment storage reader is not configured.");
+        }
+
+        try
+        {
+            SecureLedgerMessageContentAttachment? descriptor = request.Content.Attachments
+                .FirstOrDefault(item => item.AttachmentId.Equals(request.AttachmentId, StringComparison.Ordinal));
+            if (descriptor is null)
+            {
+                return SecureMessageAttachmentOpenResult.Fail("Attachment metadata was not found in the decrypted message content.");
+            }
+
+            SecureLedgerMessageAttachmentPlaintext attachment = await SecureLedgerMessages
+                .DecryptAttachmentAsync(
+                    RequiredKeySource,
+                    request.Payload,
+                    request.AttachmentId,
+                    descriptor,
+                    cryptoDriver,
+                    messageStorageDriver,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return SecureMessageAttachmentOpenResult.Ok($"Decrypted {attachment.FileName}.", attachment);
+        }
+        catch (Exception exception)
+        {
+            return SecureMessageAttachmentOpenResult.Fail(exception.Message);
+        }
     }
 
     private LedgerAccountContext Context
@@ -814,6 +1062,64 @@ public sealed class WasmAccountWorkspaceAdapter(
         return new HashHex(Convert.ToHexString(hash).ToLowerInvariant());
     }
 
+    private async Task<Address> ResolveMessageReceiverAddressAsync(
+        Address accountAddress,
+        string receiver,
+        CancellationToken cancellationToken)
+    {
+        string value = receiver.Trim();
+        if (Address.TryParse(value, out Address parsed))
+        {
+            return parsed;
+        }
+
+        IReadOnlyList<EconomyAddressBookmark> bookmarks = [];
+        try
+        {
+            IReadOnlyList<LedgerTransactionSummary> transactions = await ledgerReadClient
+                .QueryTransactionsAsync(
+                    new LedgerTransactionQuery(
+                        Context,
+                        Address: accountAddress,
+                        IncludeData: false,
+                        Skip: 0,
+                        Take: 100),
+                    cancellationToken)
+                .ConfigureAwait(false);
+            bookmarks = CreateAddressBookmarks(accountAddress, transactions);
+        }
+        catch (NotSupportedException)
+        {
+            // Saved directory entries are still usable without transaction query support.
+        }
+
+        AddressDirectorySeed seed = AddressDirectorySeed.FromBookmarks(accountAddress.Value, bookmarks);
+        IReadOnlyList<AddressDirectoryEntry> entries = await addressDirectoryService
+            .GetEntriesAsync(seed, cancellationToken)
+            .ConfigureAwait(false);
+
+        AddressDirectoryEntry? exact = entries.FirstOrDefault(entry =>
+            entry.Address.Equals(value, StringComparison.OrdinalIgnoreCase)
+            || entry.DisplayName.Equals(value, StringComparison.OrdinalIgnoreCase)
+            || entry.TagsOrEmpty.Any(tag => tag.Equals(value, StringComparison.OrdinalIgnoreCase)));
+        if (exact is not null && Address.TryParse(exact.Address, out Address exactAddress))
+        {
+            return exactAddress;
+        }
+
+        AddressDirectoryEntry[] partial = entries
+            .Where(entry => entry.DisplayName.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .Take(2)
+            .ToArray();
+        if (partial.Length == 1 && Address.TryParse(partial[0].Address, out Address partialAddress))
+        {
+            return partialAddress;
+        }
+
+        throw new InvalidOperationException(
+            $"Receiver '{receiver}' is not a valid address and was not found as a unique saved contact for {accountAddress.Value}.");
+    }
+
     private static BusinessObjectId UniqueObjectId(BusinessObjectId objectId)
         => new($"{objectId.Value}:{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}");
 
@@ -938,6 +1244,38 @@ public sealed class WasmAccountWorkspaceAdapter(
 
     private static Amount PositiveOrDefault(Amount amount, long fallback)
         => amount.Value > 0m ? amount : Amount.FromInt64(fallback);
+
+    private sealed class AttachmentStreamScope : IDisposable
+    {
+        private readonly List<MemoryStream> streams = [];
+
+        public AttachmentStreamScope(IReadOnlyList<SecureMessageAttachmentDraft> drafts)
+        {
+            Sources = drafts.Select(CreateSource).ToArray();
+        }
+
+        public IReadOnlyList<SecureLedgerMessageAttachmentSource> Sources { get; }
+
+        public void Dispose()
+        {
+            foreach (MemoryStream stream in streams)
+            {
+                stream.Dispose();
+            }
+        }
+
+        private SecureLedgerMessageAttachmentSource CreateSource(SecureMessageAttachmentDraft draft)
+        {
+            var stream = new MemoryStream(draft.Data, writable: false);
+            streams.Add(stream);
+            return new SecureLedgerMessageAttachmentSource(
+                stream,
+                draft.FileName,
+                draft.ContentType,
+                draft.Size,
+                draft.Description);
+        }
+    }
 }
 
 public sealed class DevelopmentEconomyWorkspaceAdapter(

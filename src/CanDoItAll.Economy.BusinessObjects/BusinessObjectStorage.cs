@@ -48,9 +48,35 @@ public static class BusinessObjectStorageUri
             throw new ArgumentException("Hash or URI is required.", nameof(hashOrUri));
         }
 
-        if (!Uri.TryCreate(hashOrUri, UriKind.Absolute, out Uri? uri))
+        string trimmed = hashOrUri.Trim();
+        if (trimmed.StartsWith("ipfs://", StringComparison.OrdinalIgnoreCase))
         {
-            return hashOrUri.Trim();
+            string value = trimmed["ipfs://".Length..];
+            int end = value.IndexOfAny(['/', '?', '#']);
+            string hash = end >= 0 ? value[..end] : value;
+            if (!string.IsNullOrWhiteSpace(hash))
+            {
+                return hash;
+            }
+        }
+
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out Uri? uri))
+        {
+            return trimmed;
+        }
+
+        if (!string.IsNullOrWhiteSpace(uri.Query))
+        {
+            foreach (string pair in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] parts = pair.Split('=', 2);
+                if (parts.Length == 2
+                    && string.Equals(Uri.UnescapeDataString(parts[0]), "arg", StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(parts[1]))
+                {
+                    return Uri.UnescapeDataString(parts[1]);
+                }
+            }
         }
 
         string[] segments = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
@@ -60,7 +86,7 @@ public static class BusinessObjectStorageUri
             return segments[ipfsIndex + 1];
         }
 
-        return segments.LastOrDefault() ?? hashOrUri;
+        return segments.LastOrDefault() ?? trimmed;
     }
 
     public static Uri ToGatewayUri(Uri gatewayBaseUri, string hash)

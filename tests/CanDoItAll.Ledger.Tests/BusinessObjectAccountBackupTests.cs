@@ -88,7 +88,9 @@ public sealed class BusinessObjectAccountBackupTests
 
     [Theory]
     [InlineData("QmDemoHash", "QmDemoHash")]
+    [InlineData("ipfs://QmDemoHash", "QmDemoHash")]
     [InlineData("http://127.0.0.1:8080/ipfs/QmDemoHash", "QmDemoHash")]
+    [InlineData("http://127.0.0.1:5001/api/v0/cat?arg=QmDemoHash", "QmDemoHash")]
     [InlineData("https://example.test/gateway/ipfs/QmDemoHash?download=true", "QmDemoHash")]
     public void StorageUri_ExtractsIpfsHash(string input, string expected)
     {

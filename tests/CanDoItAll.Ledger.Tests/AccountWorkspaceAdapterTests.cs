@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using AngleSharp.Dom;
 using Bunit;
@@ -108,6 +109,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             rig.TransactionSigner,
             rig.CryptoDriver,
             new InMemoryAccountWorkspaceCache(),
+            new AddressDirectoryService(new InMemoryAccountWorkspaceCache()),
             rig.CastRegistry,
             rig.TimeProvider,
             new WasmAccountWorkspaceOptions
@@ -136,6 +138,81 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         Assert.NotNull(result.TxId);
         LedgerAccountBalance balance = await rig.Gateway.GetBalanceAsync(new LedgerAddressQuery(Context, rig.UnlockedKey.Address), CancellationToken.None);
         Assert.Equal("95", balance.MainBalance.ToString());
+    }
+
+    [Fact]
+    public async Task WasmWorkspaceAdapter_SendsAndOpensSecureMessagesBetweenAccounts()
+    {
+        SecureMessagingAdapterRig rig = await SecureMessagingAdapterRig.CreateAsync();
+        byte[] attachmentBytes = Encoding.UTF8.GetBytes("private attachment bytes");
+        WasmAccountWorkspaceAdapter aliceAdapter = await rig.CreateAdapterAsync(rig.Alice, "Alice browser");
+        WasmAccountWorkspaceAdapter bobAdapter = await rig.CreateAdapterAsync(rig.Bob, "Bob browser");
+
+        await PrimePublicKeyDiscoveryAsync(aliceAdapter, rig.Alice.Address);
+        await PrimePublicKeyDiscoveryAsync(bobAdapter, rig.Bob.Address);
+
+        EconomyTransactionExecutionResult aliceToBob = await aliceAdapter.SendSecureMessageAsync(
+            new SecureMessageComposeRequest(
+                "alice",
+                rig.Bob.Address.Value,
+                "Hello Bob",
+                "message from Alice",
+                []),
+            CancellationToken.None);
+        EconomyTransactionExecutionResult bobToAlice = await bobAdapter.SendSecureMessageAsync(
+            new SecureMessageComposeRequest(
+                "bob",
+                rig.Alice.Address.Value,
+                "Hello Alice",
+                "message from Bob",
+                [new SecureMessageAttachmentDraft("proof.txt", "text/plain", attachmentBytes)]),
+            CancellationToken.None);
+
+        Assert.True(aliceToBob.Accepted, aliceToBob.Message);
+        Assert.True(bobToAlice.Accepted, bobToAlice.Message);
+        Assert.DoesNotContain(attachmentBytes, rig.Storage.StoredPayloads, ByteArrayComparer.Instance);
+
+        BusinessObjectWorkspaceModel bobWorkspace = await bobAdapter.GetWorkspaceAsync(CancellationToken.None);
+        (LedgerTransactionSummary aliceTx, SecureLedgerMessagePayload alicePayload) = FindSecureMessage(
+            bobWorkspace,
+            rig.Alice.Address,
+            rig.Bob.Address);
+        SecureMessageOpenResult bobOpen = await bobAdapter.OpenSecureMessageAsync(
+            new SecureMessageOpenRequest("bob", aliceTx.TxId, alicePayload),
+            CancellationToken.None);
+
+        Assert.True(bobOpen.Success, bobOpen.Summary);
+        Assert.Equal("Hello Bob", bobOpen.Content?.Subject);
+        Assert.Equal("message from Alice", bobOpen.Content?.Body);
+
+        BusinessObjectWorkspaceModel aliceWorkspace = await aliceAdapter.GetWorkspaceAsync(CancellationToken.None);
+        (LedgerTransactionSummary bobTx, SecureLedgerMessagePayload bobPayload) = FindSecureMessage(
+            aliceWorkspace,
+            rig.Bob.Address,
+            rig.Alice.Address);
+        Assert.DoesNotContain("Hello Alice", bobTx.Data?.InlineJson ?? string.Empty, StringComparison.Ordinal);
+        Assert.DoesNotContain("private attachment bytes", bobTx.Data?.InlineJson ?? string.Empty, StringComparison.Ordinal);
+
+        SecureMessageOpenResult aliceOpen = await aliceAdapter.OpenSecureMessageAsync(
+            new SecureMessageOpenRequest("alice", bobTx.TxId, bobPayload),
+            CancellationToken.None);
+        SecureMessageOpenResult bobSentOpen = await bobAdapter.OpenSecureMessageAsync(
+            new SecureMessageOpenRequest("bob", bobTx.TxId, bobPayload),
+            CancellationToken.None);
+
+        Assert.True(aliceOpen.Success, aliceOpen.Summary);
+        Assert.True(bobSentOpen.Success, bobSentOpen.Summary);
+        Assert.Equal("Hello Alice", aliceOpen.Content?.Subject);
+        Assert.Equal("message from Bob", aliceOpen.Content?.Body);
+        SecureLedgerMessageContentAttachment descriptor = Assert.Single(aliceOpen.Content!.Attachments);
+
+        SecureMessageAttachmentOpenResult attachment = await aliceAdapter.OpenSecureMessageAttachmentAsync(
+            new SecureMessageAttachmentOpenRequest("alice", bobPayload, aliceOpen.Content, descriptor.AttachmentId),
+            CancellationToken.None);
+
+        Assert.True(attachment.Success, attachment.Summary);
+        Assert.Equal("proof.txt", attachment.Attachment?.FileName);
+        Assert.Equal(attachmentBytes, attachment.Attachment?.Data);
     }
 
     [Fact]
@@ -190,6 +267,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             rig.TransactionSigner,
             rig.CryptoDriver,
             new InMemoryAccountWorkspaceCache(),
+            new AddressDirectoryService(new InMemoryAccountWorkspaceCache()),
             rig.CastRegistry,
             rig.TimeProvider,
             new WasmAccountWorkspaceOptions
@@ -649,6 +727,219 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         }
 
         Assert.True(condition(), "Condition did not become true before the timeout.");
+    }
+
+    private static async Task PrimePublicKeyDiscoveryAsync(WasmAccountWorkspaceAdapter adapter, Address address)
+    {
+        BusinessObjectWorkspaceModel workspace = await adapter.GetWorkspaceAsync(CancellationToken.None);
+        EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(
+            workspace.TransactionDraft with
+            {
+                SelectedMode = BusinessObjectTransactionMode.MainPayment,
+                PaymentReceiverAddress = address,
+                PaymentAmount = Amount.FromInt64(1)
+            },
+            CancellationToken.None);
+
+        Assert.True(result.Accepted, result.Message);
+    }
+
+    private static (LedgerTransactionSummary Transaction, SecureLedgerMessagePayload Payload) FindSecureMessage(
+        BusinessObjectWorkspaceModel workspace,
+        Address sender,
+        Address receiver)
+    {
+        foreach (LedgerTransactionSummary transaction in workspace.Transactions)
+        {
+            if (SecureLedgerMessages.TryParseTransactionData(transaction.Data, out SecureLedgerMessagePayload payload)
+                && payload.SenderAddress == sender
+                && payload.ReceiverAddress == receiver)
+            {
+                return (transaction, payload);
+            }
+        }
+
+        throw new InvalidOperationException($"Secure message {sender.Value} -> {receiver.Value} was not found.");
+    }
+
+    private sealed class SecureMessagingAdapterRig
+    {
+        private SecureMessagingAdapterRig(
+            InProcessLedgerGateway gateway,
+            BusinessObjectTransactionBuilder transactionBuilder,
+            IAccountTransactionSigner transactionSigner,
+            IEconomyCryptoDriver cryptoDriver,
+            IBusinessObjectCastRegistry castRegistry,
+            ManualTimeProvider timeProvider,
+            MemoryBusinessObjectDataStorageDriver storage,
+            AccountVaultUnlockedKey alice,
+            AccountVaultUnlockedKey bob)
+        {
+            Gateway = gateway;
+            TransactionBuilder = transactionBuilder;
+            TransactionSigner = transactionSigner;
+            CryptoDriver = cryptoDriver;
+            CastRegistry = castRegistry;
+            TimeProvider = timeProvider;
+            Storage = storage;
+            Alice = alice;
+            Bob = bob;
+        }
+
+        public InProcessLedgerGateway Gateway { get; }
+
+        public BusinessObjectTransactionBuilder TransactionBuilder { get; }
+
+        public IAccountTransactionSigner TransactionSigner { get; }
+
+        public IEconomyCryptoDriver CryptoDriver { get; }
+
+        public IBusinessObjectCastRegistry CastRegistry { get; }
+
+        public ManualTimeProvider TimeProvider { get; }
+
+        public MemoryBusinessObjectDataStorageDriver Storage { get; }
+
+        public AccountVaultUnlockedKey Alice { get; }
+
+        public AccountVaultUnlockedKey Bob { get; }
+
+        public async Task<WasmAccountWorkspaceAdapter> CreateAdapterAsync(
+            AccountVaultUnlockedKey key,
+            string accountName)
+        {
+            var cache = new InMemoryAccountWorkspaceCache();
+            var adapter = new WasmAccountWorkspaceAdapter(
+                Gateway,
+                Gateway,
+                TransactionBuilder,
+                TransactionSigner,
+                CryptoDriver,
+                cache,
+                new AddressDirectoryService(cache),
+                CastRegistry,
+                TimeProvider,
+                new WasmAccountWorkspaceOptions
+                {
+                    LedgerId = Context.LedgerId.Value,
+                    ScenarioId = Context.ScenarioId?.Value,
+                    AccountName = accountName,
+                    ConnectionLabel = "Browser API"
+                },
+                new BusinessObjectDataItemUploadService(Storage),
+                Storage);
+            await adapter.UseUnlockedAccountAsync(key, CancellationToken.None);
+            return adapter;
+        }
+
+        public static async Task<SecureMessagingAdapterRig> CreateAsync()
+        {
+            ITransactionHasher hasher = new TransactionHasher(new DefaultTransactionCanonicalizer());
+            var payloadBuilder = new SignaturePayloadBuilder(hasher);
+            var timeProvider = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-02T12:00:00Z"));
+            var store = new InMemoryLedgerStore(hasher);
+            var gateway = new InProcessLedgerGateway(
+                new LedgerExecutor(store, hasher, payloadBuilder, new TestAdminSigner(), timeProvider, SignatureProviderRegistry.CreateDefault()),
+                hasher,
+                timeProvider);
+            var cryptoDriver = new DotNetEconomyCryptoDriver();
+            var vaultService = new AccountVaultService(cryptoDriver, new InMemoryAccountVaultStore());
+            AccountVaultCreationResult alice = await vaultService.CreateAsync(
+                new AccountVaultCreateRequest("alice-vault", "passphrase", "Alice account", "alice-key"),
+                CancellationToken.None);
+            AccountVaultCreationResult bob = await vaultService.CreateAsync(
+                new AccountVaultCreateRequest("bob-vault", "passphrase", "Bob account", "bob-key"),
+                CancellationToken.None);
+
+            LedgerSubmitResult genesis = await gateway.SubmitTransactionAsync(
+                new LedgerTransaction(
+                    Context.LedgerId,
+                    Context.ScenarioId,
+                    Version: 1,
+                    TransactionKind.Genesis,
+                    SigningMode.Independent,
+                    timeProvider.UtcNow,
+                    [],
+                    [
+                        new TransactionOutput(0, alice.UnlockedKey.Address, Amount.FromInt64(100)),
+                        new TransactionOutput(1, bob.UnlockedKey.Address, Amount.FromInt64(100))
+                    ],
+                    Data: null),
+                CancellationToken.None);
+            Assert.True(genesis.Accepted, string.Join(Environment.NewLine, genesis.Errors.Select(error => $"{error.Code}: {error.Message}")));
+
+            IAccountInputSigner inputSigner = new CryptoDriverAccountInputSigner(cryptoDriver);
+            var transactionSigner = new AccountTransactionSigner(hasher, payloadBuilder, inputSigner);
+            var transactionBuilder = new BusinessObjectTransactionBuilder(gateway, hasher, payloadBuilder, inputSigner, timeProvider);
+            IBusinessObjectCastRegistry castRegistry = new BusinessObjectCastRegistry(new IBusinessObjectCaster[]
+            {
+                new AccountSettingsBusinessObjectCaster(timeProvider),
+                new ImageBusinessObjectCaster(timeProvider),
+                new PostBusinessObjectCaster(timeProvider),
+                new GenericBusinessObjectCaster(timeProvider)
+            });
+
+            return new SecureMessagingAdapterRig(
+                gateway,
+                transactionBuilder,
+                transactionSigner,
+                cryptoDriver,
+                castRegistry,
+                timeProvider,
+                new MemoryBusinessObjectDataStorageDriver(),
+                alice.UnlockedKey,
+                bob.UnlockedKey);
+        }
+    }
+
+    private sealed class MemoryBusinessObjectDataStorageDriver : IBusinessObjectDataStorageDriver
+    {
+        private readonly Dictionary<string, byte[]> payloads = new(StringComparer.Ordinal);
+
+        public BusinessObjectDataStorageKind Storage => BusinessObjectDataStorageKind.Ipfs;
+
+        public IReadOnlyCollection<byte[]> StoredPayloads => payloads.Values;
+
+        public async Task<BusinessObjectStorageWriteResult> SaveAsync(
+            BusinessObjectStorageWriteRequest request,
+            CancellationToken cancellationToken)
+        {
+            using var memory = new MemoryStream();
+            await request.Data.CopyToAsync(memory, cancellationToken);
+            byte[] bytes = memory.ToArray();
+            string hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+            payloads[hash] = bytes;
+            return new BusinessObjectStorageWriteResult(
+                BusinessObjectDataStorageKind.Ipfs,
+                hash,
+                new Uri($"ipfs://{hash}"),
+                request.FileName,
+                request.ContentType,
+                bytes.LongLength);
+        }
+
+        public Task<BusinessObjectStorageReadResult> ReadAsync(
+            string hashOrUri,
+            CancellationToken cancellationToken)
+        {
+            string hash = BusinessObjectStorageUri.GetHash(hashOrUri);
+            byte[] bytes = payloads[hash];
+            return Task.FromResult(new BusinessObjectStorageReadResult(
+                new MemoryStream(bytes, writable: false),
+                hash,
+                "application/octet-stream"));
+        }
+    }
+
+    private sealed class ByteArrayComparer : IEqualityComparer<byte[]>
+    {
+        public static ByteArrayComparer Instance { get; } = new();
+
+        public bool Equals(byte[]? x, byte[]? y)
+            => x is not null && y is not null && x.SequenceEqual(y);
+
+        public int GetHashCode(byte[] obj)
+            => obj.Aggregate(17, (current, value) => (current * 31) + value);
     }
 
     private sealed class WasmAdapterRig

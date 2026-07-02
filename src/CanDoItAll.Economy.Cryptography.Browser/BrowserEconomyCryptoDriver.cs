@@ -93,6 +93,22 @@ public sealed class BrowserEconomyCryptoDriver : IEconomyCryptoDriver, IAsyncDis
         return FromBase64(result);
     }
 
+    public async ValueTask<byte[]> DeriveEcdhP256Sha256KeyAsync(
+        ReadOnlyMemory<byte> privateKeyMaterial,
+        ReadOnlyMemory<byte> otherPublicKeyMaterial,
+        ReadOnlyMemory<byte> secretAppend,
+        CancellationToken cancellationToken = default)
+    {
+        IJSObjectReference crypto = await GetModuleAsync(cancellationToken).ConfigureAwait(false);
+        string result = await crypto.InvokeAsync<string>(
+            "deriveEcdhP256Sha256Key",
+            cancellationToken,
+            ToBase64(privateKeyMaterial),
+            ToBase64(otherPublicKeyMaterial),
+            ToBase64(secretAppend)).ConfigureAwait(false);
+        return FromBase64(result);
+    }
+
     public async ValueTask<EcdsaP256KeyPair> CreateEcdsaP256KeyPairAsync(CancellationToken cancellationToken = default)
     {
         IJSObjectReference crypto = await GetModuleAsync(cancellationToken).ConfigureAwait(false);

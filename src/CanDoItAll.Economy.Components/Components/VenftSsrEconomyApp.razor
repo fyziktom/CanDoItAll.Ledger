@@ -50,6 +50,13 @@
                                          TicketVerificationRequested="BusinessObjectTicketVerificationRequested"
                                          TicketUseRequested="BusinessObjectTicketUseRequested" />
         }
+        else if (selectedView == "messaging")
+        {
+            <SecureMessagingWorkspace Workspace="Workspace"
+                                      SendRequested="SecureMessageSendRequested"
+                                      OpenRequested="SecureMessageOpenRequested"
+                                      AttachmentOpenRequested="SecureMessageAttachmentOpenRequested" />
+        }
         else if (IsCreationView)
         {
             <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
@@ -100,7 +107,8 @@
     private static readonly IReadOnlyList<VenftNavItem> NavItems = new[]
         {
             new VenftNavItem("home", "Home", "home"),
-            new VenftNavItem("gallery", "Gallery", "photo_library")
+            new VenftNavItem("gallery", "Gallery", "photo_library"),
+            new VenftNavItem("messaging", "Messaging", "mail")
         }
         .Concat(BusinessObjectFamilyCatalog.UserMintableFamilies.Select(family => new VenftNavItem(family.ObjectType, $"New {family.DisplayName}", family.Icon)))
         .Concat(
@@ -176,6 +184,15 @@
     [Parameter]
     public Func<MessageSecurityDecryptRequest, Task<MessageSecurityActionResult>>? MessageDecryptRequested { get; set; }
 
+    [Parameter]
+    public Func<SecureMessageComposeRequest, Task<EconomyTransactionExecutionResult>>? SecureMessageSendRequested { get; set; }
+
+    [Parameter]
+    public Func<SecureMessageOpenRequest, Task<SecureMessageOpenResult>>? SecureMessageOpenRequested { get; set; }
+
+    [Parameter]
+    public Func<SecureMessageAttachmentOpenRequest, Task<SecureMessageAttachmentOpenResult>>? SecureMessageAttachmentOpenRequested { get; set; }
+
     protected override void OnParametersSet()
     {
         string? normalizedInitialView = NormalizeView(InitialView);
@@ -195,6 +212,7 @@
                 {
                     "rule" => "Add New Rule",
                     "intro" => "Introduction",
+                    "messaging" => "Messaging",
                     _ => "VENFT"
                 };
 
@@ -207,7 +225,7 @@
                 definition.ObjectType,
                 Step: 1,
                 BusinessObjectPayloadBuilder.DefaultName(definition),
-                "#VEFramework #Neblio #NET #Blazor #OpenSource",
+                "#VEFramework #NET #Blazor #OpenSource",
                 definition.Description,
                 Workspace.TransactionDraft.StateJson,
                 [],
@@ -227,7 +245,7 @@
         }
 
         string normalized = view.Trim();
-        return normalized is "home" or "gallery" or "rule" or "intro"
+        return normalized is "home" or "gallery" or "messaging" or "rule" or "intro"
             || (BusinessObjectFamilyCatalog.TryFindByObjectType(normalized, out BusinessObjectFamilyDefinition definition)
                 && definition.IsUserMintable)
             ? normalized

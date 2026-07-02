@@ -47,7 +47,10 @@ else
                                 MessageSignRequested="SignMessageAsync"
                                 MessageVerifyRequested="VerifyMessageAsync"
                                 MessageEncryptRequested="EncryptMessageAsync"
-                                MessageDecryptRequested="DecryptMessageAsync" />
+                                MessageDecryptRequested="DecryptMessageAsync"
+                                SecureMessageSendRequested="SendSecureMessageAsync"
+                                SecureMessageOpenRequested="OpenSecureMessageAsync"
+                                SecureMessageAttachmentOpenRequested="OpenSecureMessageAttachmentAsync" />
         }
         else
         {
@@ -447,6 +450,25 @@ else
 
     private Task<MessageSecurityActionResult> DecryptMessageAsync(MessageSecurityDecryptRequest request)
         => Adapter.DecryptMessageAsync(request);
+
+    private async Task<EconomyTransactionExecutionResult> SendSecureMessageAsync(SecureMessageComposeRequest request)
+    {
+        EconomyTransactionExecutionResult result = await Adapter.SendSecureMessageAsync(request).ConfigureAwait(false);
+        lastResult = result;
+        await TransactionSubmitted.InvokeAsync(result);
+        if (result.Accepted)
+        {
+            await RefreshWorkspaceAsync(showNotification: false);
+        }
+
+        return result;
+    }
+
+    private Task<SecureMessageOpenResult> OpenSecureMessageAsync(SecureMessageOpenRequest request)
+        => Adapter.OpenSecureMessageAsync(request);
+
+    private Task<SecureMessageAttachmentOpenResult> OpenSecureMessageAttachmentAsync(SecureMessageAttachmentOpenRequest request)
+        => Adapter.OpenSecureMessageAttachmentAsync(request);
 
     private Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
         BusinessObjectTicketVerificationRequest request)

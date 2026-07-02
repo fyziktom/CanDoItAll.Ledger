@@ -1,0 +1,14 @@
+[
+    {
+        "path":  "repo://src/CanDoItAll.Economy.Components/Components/VenftSsrEconomyApp.razor",
+        "beforeHeadSha256":  "caeecd7e9a3083c4fd1f6f9c0c4e61ed84323de00a42be1bf0439c7f458abf44",
+        "afterWorktreeSha256":  "5557030a5cc119034086aeac8bfd25e60aebf0128f3c770e1250cbf2f66ac969",
+        "note":  "before hash computed from HEAD text content; after hash from worktree file bytes"
+    },
+    {
+        "path":  "repo://src/CanDoItAll.Economy.Components/Components/VenftBusinessObjectApp.razor",
+        "beforeHeadSha256":  "cfe5703e1b8c56ec0cd0380a9868407831a8f40b6f8005bd1a411e747c9d70d9",
+        "afterWorktreeSha256":  "497c737e6de84e57bb29b7221a3fb1c0635d0db81cb1afb7a1102a6733769796",
+        "note":  "before hash computed from HEAD text content; after hash from worktree file bytes"
+    }
+]

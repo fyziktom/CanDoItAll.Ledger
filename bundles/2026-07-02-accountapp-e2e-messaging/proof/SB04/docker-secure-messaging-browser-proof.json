@@ -1,0 +1,32 @@
+{
+  "aliceUrl": "http://localhost:5081/",
+  "bobUrl": "http://localhost:5082/",
+  "suffix": "mr40osnu",
+  "checks": {
+    "addresses": {
+      "alice": "cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu",
+      "bob": "cdia1NTXHdDX3kHtpHwtEFyCFuHPNkqBiV8k4uU"
+    },
+    "aliceLayout": {
+      "viewportWidth": 1760,
+      "documentScrollWidth": 1760,
+      "horizontalOverflow": false,
+      "workspaceWidth": 1499.203125,
+      "gridWidth": 1499.203125
+    },
+    "bobLayout": {
+      "viewportWidth": 1760,
+      "documentScrollWidth": 1760,
+      "horizontalOverflow": false,
+      "workspaceWidth": 1499.203125,
+      "gridWidth": 1499.203125
+    }
+  },
+  "screenshots": [
+    "C:\\repositories\\CanDoItAll.Ledger\\bundles\\2026-07-02-accountapp-e2e-messaging\\proof\\SB04\\screenshots\\docker-secure-mail-alice-decrypted-attachment.png",
+    "C:\\repositories\\CanDoItAll.Ledger\\bundles\\2026-07-02-accountapp-e2e-messaging\\proof\\SB04\\screenshots\\docker-secure-mail-bob-decrypted-reply.png"
+  ],
+  "consoleMessages": [],
+  "apiErrors": [],
+  "passed": true
+}

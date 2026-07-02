@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using CanDoItAll.Components.BaseLib;
 using CanDoItAll.Components.QRCode;
 using CanDoItAll.Economy.AccountApp;
@@ -24,12 +25,17 @@ builder.Services.AddEconomySdkWithBrowserNodeDriver(
     options => options.ApiBasePath = accountAppOptions.ApiBasePath);
 if (accountAppOptions.EnableIpfsUploads && accountAppOptions.IpfsApiBaseUri is not null)
 {
-    builder.Services.AddScoped<IBusinessObjectDataItemUploadService>(_ =>
+    builder.Services.AddScoped(_ => new HttpIpfsBusinessObjectDataItemUploadOptions(
+        accountAppOptions.IpfsApiBaseUri,
+        accountAppOptions.IpfsGatewayBaseUri));
+    builder.Services.AddScoped<IBusinessObjectDataStorageDriver>(provider =>
+        new HttpIpfsBusinessObjectDataStorageDriver(
+            new HttpClient { BaseAddress = accountAppOptions.IpfsApiBaseUri },
+            provider.GetRequiredService<HttpIpfsBusinessObjectDataItemUploadOptions>()));
+    builder.Services.AddScoped<IBusinessObjectDataItemUploadService>(provider =>
         new HttpIpfsBusinessObjectDataItemUploadService(
             new HttpClient { BaseAddress = accountAppOptions.IpfsApiBaseUri },
-            new HttpIpfsBusinessObjectDataItemUploadOptions(
-                accountAppOptions.IpfsApiBaseUri,
-                accountAppOptions.IpfsGatewayBaseUri)));
+            provider.GetRequiredService<HttpIpfsBusinessObjectDataItemUploadOptions>()));
 }
 
 builder.Services.AddScoped<IAccountWorkspaceCache, BrowserLocalStorageAccountWorkspaceCache>();

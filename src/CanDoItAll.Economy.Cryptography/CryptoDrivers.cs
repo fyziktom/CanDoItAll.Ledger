@@ -30,6 +30,12 @@ public interface IEconomyCryptoDriver
         ReadOnlyMemory<byte> associatedData,
         CancellationToken cancellationToken = default);
 
+    ValueTask<byte[]> DeriveEcdhP256Sha256KeyAsync(
+        ReadOnlyMemory<byte> privateKeyMaterial,
+        ReadOnlyMemory<byte> otherPublicKeyMaterial,
+        ReadOnlyMemory<byte> secretAppend,
+        CancellationToken cancellationToken = default);
+
     ValueTask<EcdsaP256KeyPair> CreateEcdsaP256KeyPairAsync(CancellationToken cancellationToken = default);
 
     ValueTask<byte[]> SignEcdsaP256Sha256Async(
@@ -143,6 +149,33 @@ public sealed class DotNetEconomyCryptoDriver : IEconomyCryptoDriver
         using var aes = new AesGcm(key.ToArray(), AesGcmTagSize);
         aes.Decrypt(nonce.Span, ciphertext, tag, plaintext, associatedData.Span);
         return ValueTask.FromResult(plaintext);
+    }
+
+    public ValueTask<byte[]> DeriveEcdhP256Sha256KeyAsync(
+        ReadOnlyMemory<byte> privateKeyMaterial,
+        ReadOnlyMemory<byte> otherPublicKeyMaterial,
+        ReadOnlyMemory<byte> secretAppend,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (privateKeyMaterial.IsEmpty)
+        {
+            throw new ArgumentException("ECDH private key material is required.", nameof(privateKeyMaterial));
+        }
+
+        if (otherPublicKeyMaterial.IsEmpty)
+        {
+            throw new ArgumentException("ECDH public key material is required.", nameof(otherPublicKeyMaterial));
+        }
+
+        using ECDiffieHellman privateKey = EcdsaP256KeyMaterial.CreateAgreementPrivateKey(privateKeyMaterial.Span);
+        using ECDiffieHellman publicKey = EcdsaP256KeyMaterial.CreateAgreementPublicKey(otherPublicKeyMaterial.Span);
+        byte[] key = privateKey.DeriveKeyFromHash(
+            publicKey.PublicKey,
+            HashAlgorithmName.SHA256,
+            secretPrepend: null,
+            secretAppend: secretAppend.ToArray());
+        return ValueTask.FromResult(key);
     }
 
     public ValueTask<EcdsaP256KeyPair> CreateEcdsaP256KeyPairAsync(CancellationToken cancellationToken = default)

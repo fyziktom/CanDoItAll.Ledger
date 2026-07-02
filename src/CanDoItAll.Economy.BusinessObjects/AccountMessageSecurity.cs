@@ -80,6 +80,18 @@ public static class AccountMessageSecurity
         return EcdhP256MessageCipher.DeriveSharedSecretHash(privateKeyMaterial.Span, otherPublicKeyMaterial);
     }
 
+    public static async Task<HashHex> DeriveSharedSecretHashAsync(
+        IAccountKeySource keySource,
+        byte[] otherPublicKeyMaterial,
+        IEconomyCryptoDriver cryptoDriver,
+        CancellationToken cancellationToken)
+    {
+        ReadOnlyMemory<byte> privateKeyMaterial = await keySource.GetPrivateKeyMaterialAsync(cancellationToken).ConfigureAwait(false);
+        return await EcdhP256MessageCipher
+            .DeriveSharedSecretHashAsync(cryptoDriver, privateKeyMaterial, otherPublicKeyMaterial, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public static async Task<EconomyEncryptedMessage> EncryptMessageAsync(
         IAccountKeySource senderKeySource,
         string message,
@@ -102,6 +114,33 @@ public static class AccountMessageSecurity
             message);
     }
 
+    public static async Task<EconomyEncryptedMessage> EncryptMessageAsync(
+        IAccountKeySource senderKeySource,
+        string message,
+        Address receiverAddress,
+        byte[] receiverPublicKeyMaterial,
+        IEconomyCryptoDriver cryptoDriver,
+        CancellationToken cancellationToken)
+    {
+        if (!receiverAddress.MatchesPublicKey(receiverPublicKeyMaterial))
+        {
+            throw new InvalidOperationException("Receiver public key does not match the receiver address.");
+        }
+
+        ReadOnlyMemory<byte> privateKeyMaterial = await senderKeySource.GetPrivateKeyMaterialAsync(cancellationToken).ConfigureAwait(false);
+        return await EcdhP256MessageCipher
+            .EncryptAsync(
+                cryptoDriver,
+                senderKeySource.Address,
+                privateKeyMaterial,
+                senderKeySource.PublicKeyMaterial,
+                receiverAddress,
+                receiverPublicKeyMaterial,
+                message,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public static async Task<string> DecryptMessageAsync(
         IAccountKeySource receiverKeySource,
         EconomyEncryptedMessage encryptedMessage,
@@ -121,6 +160,26 @@ public static class AccountMessageSecurity
             receiverKeySource.PublicKeyMaterial.Span,
             encryptedMessage,
             senderPublicKeyMaterial);
+    }
+
+    public static async Task<string> DecryptMessageAsync(
+        IAccountKeySource receiverKeySource,
+        EconomyEncryptedMessage encryptedMessage,
+        byte[] senderPublicKeyMaterial,
+        IEconomyCryptoDriver cryptoDriver,
+        CancellationToken cancellationToken)
+    {
+        ReadOnlyMemory<byte> privateKeyMaterial = await receiverKeySource.GetPrivateKeyMaterialAsync(cancellationToken).ConfigureAwait(false);
+        return await EcdhP256MessageCipher
+            .DecryptAsync(
+                cryptoDriver,
+                receiverKeySource.Address,
+                privateKeyMaterial,
+                receiverKeySource.PublicKeyMaterial,
+                encryptedMessage,
+                senderPublicKeyMaterial,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static HashHex CreateMessagePayloadHash(string message)
