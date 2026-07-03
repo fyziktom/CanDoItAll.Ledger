@@ -98,7 +98,9 @@ public sealed class InProcessLedgerGateway(
         {
             IReadOnlyList<LedgerTransactionSummary> result = transactions
                 .Where(x => x.Context == query.Context && (x.InputAddresses.Contains(query.Address) || x.OutputAddresses.Contains(query.Address)))
-                .OrderByDescending(x => x.Timestamp)
+                .OrderByDescending(x => x.LedgerSequence ?? long.MinValue)
+                .ThenByDescending(x => x.Timestamp)
+                .ThenByDescending(x => x.TxId.Value, StringComparer.Ordinal)
                 .Select(x => includeData ? x : x with { Data = null })
                 .ToArray();
 
@@ -178,7 +180,8 @@ public sealed class InProcessLedgerGateway(
                 .Where(x => query.Address is null || x.InputAddresses.Contains(query.Address.Value) || x.OutputAddresses.Contains(query.Address.Value))
                 .Where(x => query.BusinessObjectId is null || x.Outputs.Any(output => output.BusinessObject?.ObjectId == query.BusinessObjectId.Value))
                 .Where(x => query.Kind is null || x.Kind == query.Kind.Value)
-                .OrderByDescending(x => x.Timestamp)
+                .OrderByDescending(x => x.LedgerSequence ?? long.MinValue)
+                .ThenByDescending(x => x.Timestamp)
                 .ThenByDescending(x => x.TxId.Value, StringComparer.Ordinal)
                 .Skip(Math.Max(0, query.Skip))
                 .Take(NormalizeTake(query.Take))
@@ -241,7 +244,8 @@ public sealed class InProcessLedgerGateway(
             transaction.Outputs.Select(x => x.Address).Distinct().ToArray(),
             transaction.Inputs.Select(input => ToInputSummary(transaction, input)).ToArray(),
             transaction.Outputs.Select(ToOutputSummary).ToArray(),
-            transaction.Data));
+            transaction.Data,
+            ledgerSequence));
 
         ledgerStates[StateKey(new LedgerAccountContext(transaction.LedgerId, transaction.ScenarioId))] = new LedgerState(
             transaction.LedgerId,
@@ -372,44 +376,9 @@ public sealed class InProcessLedgerGateway(
     }
 
     private static BusinessObjectPayloadEnvelope? TryReadPayloadEnvelope(string? inlineJson)
-    {
-        if (string.IsNullOrWhiteSpace(inlineJson))
-        {
-            return null;
-        }
-
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(inlineJson);
-            JsonElement root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object
-                || !root.TryGetProperty("objectType", out JsonElement objectType)
-                || !root.TryGetProperty("schemaVersion", out JsonElement schemaVersion)
-                || !root.TryGetProperty("stateJson", out JsonElement stateJson)
-                || objectType.ValueKind != JsonValueKind.String
-                || schemaVersion.ValueKind != JsonValueKind.String
-                || stateJson.ValueKind != JsonValueKind.String)
-            {
-                return null;
-            }
-
-            string? objectTypeValue = objectType.GetString();
-            string? schemaVersionValue = schemaVersion.GetString();
-            string? stateJsonValue = stateJson.GetString();
-            if (string.IsNullOrWhiteSpace(objectTypeValue)
-                || string.IsNullOrWhiteSpace(schemaVersionValue)
-                || stateJsonValue is null)
-            {
-                return null;
-            }
-
-            return new BusinessObjectPayloadEnvelope(objectTypeValue, schemaVersionValue, stateJsonValue);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
+        => BusinessObjectPayloadEnvelopeReader.TryRead(inlineJson, out BusinessObjectPayloadEnvelope envelope)
+            ? envelope
+            : null;
 
     private sealed record ProjectedBusinessObjectHolding(
         LedgerAccountContext Context,

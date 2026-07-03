@@ -1,0 +1,6 @@
+Command: dotnet test tests/CanDoItAll.Ledger.Tests/CanDoItAll.Ledger.Tests.csproj --filter "FullyQualifiedName~SecureLedgerMessageTests|FullyQualifiedName~AccountWorkspaceAdapterTests.WasmWorkspaceAdapter_SendsAndOpensSecureMessagesBetweenAccounts" -v minimal --no-restore
+Output:
+Invariant: SB03-ENCRYPTED-ATTACHMENT-LOCATOR
+Attachment locator privacy and decrypt-path tests passed.
+Result summary: Passed, Failed 0.
+ExitCode: 0

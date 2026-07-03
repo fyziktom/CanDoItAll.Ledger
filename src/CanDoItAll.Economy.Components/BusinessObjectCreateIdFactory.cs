@@ -29,6 +29,18 @@ public static class BusinessObjectCreateIdFactory
         return new BusinessObjectId(value);
     }
 
+    public static BusinessObjectId CreateOpaqueObjectId(string objectType)
+    {
+        string typeSegment = TrimSegment(NormalizeName(objectType), MaxObjectTypeSegmentLength, "business-object");
+        string value = $"bo:{typeSegment}:{CreateNonce()}";
+        if (!LedgerValueValidation.IsValidIdentifier(value, LedgerValidationLimits.MaxBusinessObjectIdLength))
+        {
+            throw new InvalidOperationException($"Generated BusinessObject id is not valid: {value}.");
+        }
+
+        return new BusinessObjectId(value);
+    }
+
     public static string NormalizeName(string value)
     {
         if (string.IsNullOrWhiteSpace(value))

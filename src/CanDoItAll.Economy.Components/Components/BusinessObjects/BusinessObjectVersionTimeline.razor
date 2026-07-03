@@ -30,9 +30,9 @@
                     Icon = "inventory_2",
                     Tone = "success"
                 },
-                .. Transactions
+                .. LedgerTransactionOrdering.NewestFirst(Transactions
                     .Where(item => item.Outputs.Any(output => output.BusinessObject?.ObjectId == Object.ObjectId))
-                    .OrderByDescending(item => item.Timestamp)
+                )
                     .Select(item => new TimelineItem
                     {
                         Label = item.TxId.Value,

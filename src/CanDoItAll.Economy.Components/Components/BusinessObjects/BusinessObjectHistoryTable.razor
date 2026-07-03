@@ -45,9 +45,8 @@
     private IReadOnlyList<LedgerTransactionSummary> Rows
         => Object is null
             ? []
-            : Transactions
-                .Where(item => item.Outputs.Any(output => output.BusinessObject?.ObjectId == Object.ObjectId)
-                    || item.TxId.Equals(Object.CurrentOutPoint.TxId))
-                .OrderByDescending(item => item.Timestamp)
+            : LedgerTransactionOrdering
+                .NewestFirst(Transactions.Where(item => item.Outputs.Any(output => output.BusinessObject?.ObjectId == Object.ObjectId)
+                    || item.TxId.Equals(Object.CurrentOutPoint.TxId)))
                 .ToArray();
 }

@@ -213,11 +213,11 @@
     public Func<SecureMessageAttachmentOpenRequest, Task<SecureMessageAttachmentOpenResult>>? AttachmentOpenRequested { get; set; }
 
     private IReadOnlyList<SecureMailboxItem> Messages
-        => Workspace.Transactions
+        => LedgerTransactionOrdering
+            .NewestFirst(Workspace.Transactions)
             .Select(CreateMailboxItem)
             .Where(item => item is not null)
             .Cast<SecureMailboxItem>()
-            .OrderByDescending(item => item.Transaction.Timestamp)
             .ToArray();
 
     private bool CanSend

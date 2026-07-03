@@ -1,4 +1,7 @@
 @namespace CanDoItAll.Economy.Components
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@using System.Text.Json.Serialization
 
 @if (Details is null)
 {
@@ -194,6 +197,18 @@ else
                     }
                 </div>
             </TabsItem>
+
+            <TabsItem Text="Raw tx" Icon="code" BadgeText="JSON">
+                <section class="cda-vef-panel" data-testid="tx-raw-json-panel">
+                    <div class="cda-vef-panel-header">
+                        <span>Structured raw transaction</span>
+                        <StatusBadge Text="JSON" Tone="neutral" />
+                    </div>
+                    <div class="cda-vef-panel-body">
+                        <pre class="cda-sdk-code" data-testid="tx-raw-json">@RawTransactionJson</pre>
+                    </div>
+                </section>
+            </TabsItem>
         </Tabs>
     </Stack>
 }
@@ -201,6 +216,12 @@ else
 @code {
     [Parameter]
     public EconomyTransactionDetailsModel? Details { get; set; }
+
+    private static readonly JsonSerializerOptions RawJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true
+    };
 
     private string StatusIcon
         => Details?.Status == TransactionStatus.Confirmed ? "verified" : "pending";
@@ -253,6 +274,182 @@ else
                 QrPayloadKind.TransactionHash,
                 "Transaction hash",
                 Details.TxId.Value);
+
+    private string RawTransactionJson
+        => Details is null
+            ? "{}"
+            : JsonSerializer.Serialize(CreateRawTransaction(Details), RawJsonOptions);
+
+    private static object CreateRawTransaction(EconomyTransactionDetailsModel details)
+        => new
+        {
+            txid = details.TxId.Value,
+            hash = details.TxHash?.Value,
+            ledgerSequence = details.LedgerSequence,
+            ledgerEntryHash = details.LedgerEntryHash?.Value,
+            kind = details.Kind.ToString(),
+            status = details.Status.ToString(),
+            signingMode = details.SigningMode.ToString(),
+            time = details.Timestamp,
+            data = CreateRawData(details.Data),
+            vin = details.Inputs
+                .OrderBy(input => input.InputIndex)
+                .Select(CreateRawInput)
+                .ToArray(),
+            vout = details.Outputs
+                .OrderBy(output => output.OutputIndex)
+                .Select(CreateRawOutput)
+                .ToArray()
+        };
+
+    private static object? CreateRawData(TransactionData? data)
+        => data is null
+            ? null
+            : new
+            {
+                itemType = data.ItemType.ToString(),
+                contentType = data.ContentType,
+                dataHash = data.DataHash?.Value,
+                inlineJson = ParseInlineJson(data.InlineJson),
+                externalRef = data.ExternalRef
+            };
+
+    private static object CreateRawInput(EconomyTransactionInputDetails input)
+        => new
+        {
+            n = input.InputIndex,
+            txid = input.PreviousOutPoint.TxId.Value,
+            vout = input.PreviousOutPoint.OutputIndex,
+            previousOutPoint = input.PreviousOutPoint.ToString(),
+            address = input.Address.Value,
+            outPointKey = input.OutPointKey?.Value.Value,
+            amount = input.MainAmount?.Value,
+            token = CreateRawToken(input.Token),
+            businessObject = CreateRawBusinessObject(input.BusinessObject),
+            signaturePayloadHash = input.SignaturePayloadHash?.Value,
+            signatures = input.SignatureBundle.Signatures
+                .Select(CreateRawSignature)
+                .ToArray()
+        };
+
+    private static object CreateRawOutput(EconomyTransactionOutputDetails output)
+        => new
+        {
+            n = output.OutputIndex,
+            value = output.MainAmount.Value,
+            address = output.Address.Value,
+            token = CreateRawToken(output.Token),
+            businessObject = CreateRawBusinessObject(output.BusinessObject),
+            metadataHash = output.MetadataHash?.Value
+        };
+
+    private static object? CreateRawToken(TokenTransfer? token)
+        => token is null
+            ? null
+            : new
+            {
+                tokenId = token.TokenId.Value,
+                amount = token.Amount.Value
+            };
+
+    private static object? CreateRawBusinessObject(BusinessObjectRef? businessObject)
+        => businessObject is null
+            ? null
+            : new
+            {
+                objectId = businessObject.ObjectId.Value,
+                version = businessObject.Version,
+                operation = businessObject.Operation.ToString(),
+                dataHash = businessObject.DataHash.Value
+            };
+
+    private static object CreateRawSignature(SignatureEnvelope signature)
+        => new
+        {
+            algorithm = signature.Algorithm.ToString(),
+            keyId = signature.KeyId,
+            publicKeyHash = signature.PublicKeyHash.Value,
+            payloadHash = signature.PayloadHash.Value,
+            signature = ToHex(signature.SignatureBytes),
+            publicKey = signature.PublicKeyMaterial is null ? null : ToHex(signature.PublicKeyMaterial)
+        };
+
+    private static object? ParseInlineJson(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        try
+        {
+            JsonNode? node = JsonNode.Parse(value);
+            if (node is JsonObject obj)
+            {
+                ExpandNestedJsonState(obj);
+            }
+
+            return node;
+        }
+        catch (JsonException)
+        {
+            return value;
+        }
+    }
+
+    private static void ExpandNestedJsonState(JsonNode node)
+    {
+        if (node is JsonObject obj)
+        {
+            if (obj.TryGetPropertyValue("stateJson", out JsonNode? stateNode)
+                && stateNode is JsonValue stateValue
+                && stateValue.TryGetValue(out string? stateText)
+                && TryParseJsonNode(stateText, out JsonNode? parsedState))
+            {
+                obj["stateJson"] = parsedState;
+            }
+
+            foreach (KeyValuePair<string, JsonNode?> property in obj.ToArray())
+            {
+                if (property.Value is not null)
+                {
+                    ExpandNestedJsonState(property.Value);
+                }
+            }
+        }
+        else if (node is JsonArray array)
+        {
+            foreach (JsonNode? item in array)
+            {
+                if (item is not null)
+                {
+                    ExpandNestedJsonState(item);
+                }
+            }
+        }
+    }
+
+    private static bool TryParseJsonNode(string? value, out JsonNode? node)
+    {
+        node = null;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        try
+        {
+            node = JsonNode.Parse(value);
+            return node is not null;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static string ToHex(byte[] bytes)
+        => Convert.ToHexString(bytes).ToLowerInvariant();
 
     private bool IsPermissionInput(EconomyTransactionInputDetails input)
         => IsMintTransaction

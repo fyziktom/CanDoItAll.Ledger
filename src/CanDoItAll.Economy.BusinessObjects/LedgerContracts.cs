@@ -132,7 +132,8 @@ public sealed record LedgerTransactionSummary(
     IReadOnlyList<Address> OutputAddresses,
     IReadOnlyList<LedgerTransactionInputSummary> Inputs,
     IReadOnlyList<LedgerTransactionOutputSummary> Outputs,
-    TransactionData? Data = null);
+    TransactionData? Data = null,
+    long? LedgerSequence = null);
 
 public interface ILedgerGateway
 {

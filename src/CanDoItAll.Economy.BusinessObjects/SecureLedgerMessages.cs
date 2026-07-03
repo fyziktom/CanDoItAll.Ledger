@@ -23,7 +23,11 @@ public sealed record SecureLedgerMessageContentAttachment(
     string FileName,
     string ContentType,
     long Size,
-    string? Description = null);
+    string? Description = null,
+    BusinessObjectDataItem? EncryptedDataItem = null,
+    byte[]? Nonce = null,
+    byte[]? AuthenticationTag = null,
+    HashHex? CipherTextHash = null);
 
 public sealed record SecureLedgerMessagePayload(
     string Format,
@@ -89,7 +93,7 @@ public static class SecureLedgerMessages
             throw new InvalidOperationException("Encrypted attachments require an IPFS upload service.");
         }
 
-        var contentAttachments = attachments
+        var attachmentDescriptors = attachments
             .Select((attachment, index) => new SecureLedgerMessageContentAttachment(
                 CreateAttachmentId(index),
                 SafeFileName(attachment.FileName),
@@ -97,10 +101,19 @@ public static class SecureLedgerMessages
                 attachment.Size,
                 attachment.Description))
             .ToArray();
+        IReadOnlyList<SecureLedgerMessageContentAttachment> encryptedAttachmentDescriptors = await EncryptAttachmentsAsync(
+            senderKeySource,
+            receiverAddress,
+            receiverPublicKeyMaterial,
+            attachments,
+            attachmentDescriptors,
+            cryptoDriver,
+            uploadService,
+            cancellationToken).ConfigureAwait(false);
         var plainContent = new SecureLedgerMessageContent(
             string.IsNullOrWhiteSpace(subject) ? "(no subject)" : subject.Trim(),
             body,
-            contentAttachments);
+            encryptedAttachmentDescriptors);
         string contentJson = JsonSerializer.Serialize(plainContent, JsonOptions);
 
         EconomyEncryptedMessage encryptedContent = await AccountMessageSecurity
@@ -112,15 +125,6 @@ public static class SecureLedgerMessages
                 cryptoDriver,
                 cancellationToken)
             .ConfigureAwait(false);
-        IReadOnlyList<SecureLedgerMessageAttachment> encryptedAttachments = await EncryptAttachmentsAsync(
-            senderKeySource,
-            receiverPublicKeyMaterial,
-            encryptedContent,
-            attachments,
-            contentAttachments,
-            cryptoDriver,
-            uploadService,
-            cancellationToken).ConfigureAwait(false);
 
         var payload = new SecureLedgerMessagePayload(
             Format,
@@ -129,7 +133,7 @@ public static class SecureLedgerMessages
             senderKeySource.Address,
             receiverAddress,
             encryptedContent,
-            encryptedAttachments);
+            []);
         string stateJson = JsonSerializer.Serialize(payload, JsonOptions);
         return new SecureLedgerMessageBuildResult(payload, plainContent, stateJson);
     }
@@ -205,17 +209,38 @@ public static class SecureLedgerMessages
         IBusinessObjectDataStorageDriver storageDriver,
         CancellationToken cancellationToken = default)
     {
-        SecureLedgerMessageAttachment attachment = payload.Attachments
-            .FirstOrDefault(item => item.AttachmentId.Equals(attachmentId, StringComparison.Ordinal))
-            ?? throw new InvalidOperationException("Attachment was not found in the encrypted message payload.");
+        if (!descriptor.AttachmentId.Equals(attachmentId, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Attachment descriptor does not match the requested attachment id.");
+        }
+
+        BusinessObjectDataItem? encryptedDataItem = descriptor.EncryptedDataItem;
+        byte[]? nonce = descriptor.Nonce;
+        byte[]? authenticationTag = descriptor.AuthenticationTag;
+        HashHex? cipherTextHash = descriptor.CipherTextHash;
+        if (encryptedDataItem is null || nonce is null || authenticationTag is null || cipherTextHash is null)
+        {
+            SecureLedgerMessageAttachment legacyAttachment = payload.Attachments
+                .FirstOrDefault(item => item.AttachmentId.Equals(attachmentId, StringComparison.Ordinal))
+                ?? throw new InvalidOperationException("Attachment was not found in the encrypted message payload.");
+            encryptedDataItem = legacyAttachment.EncryptedDataItem;
+            nonce = legacyAttachment.Nonce;
+            authenticationTag = legacyAttachment.AuthenticationTag;
+            cipherTextHash = legacyAttachment.CipherTextHash;
+        }
+
         BusinessObjectStorageReadResult stored = await ReadStorageAsync(
             storageDriver,
-            attachment.EncryptedDataItem,
+            encryptedDataItem,
             cancellationToken).ConfigureAwait(false);
         await using Stream storedStream = stored.Data;
         using var memory = new MemoryStream();
         await storedStream.CopyToAsync(memory, cancellationToken).ConfigureAwait(false);
         byte[] cipherText = memory.ToArray();
+        if (Hex.Sha256Hex(cipherText) != cipherTextHash)
+        {
+            throw new InvalidOperationException("Encrypted attachment hash does not match the message descriptor.");
+        }
 
         ReadOnlyMemory<byte> privateKey = await participantKeySource
             .GetPrivateKeyMaterialAsync(cancellationToken)
@@ -232,30 +257,30 @@ public static class SecureLedgerMessages
         byte[] key = await cryptoDriver
             .DeriveEcdhP256Sha256KeyAsync(privateKey, peerPublicKey, EcdhP256MessageCipher.SharedSecretLabelBytes, cancellationToken)
             .ConfigureAwait(false);
-        byte[] cipherTextWithTag = new byte[cipherText.Length + attachment.AuthenticationTag.Length];
+        byte[] cipherTextWithTag = new byte[cipherText.Length + authenticationTag.Length];
         Buffer.BlockCopy(cipherText, 0, cipherTextWithTag, 0, cipherText.Length);
-        Buffer.BlockCopy(attachment.AuthenticationTag, 0, cipherTextWithTag, cipherText.Length, attachment.AuthenticationTag.Length);
+        Buffer.BlockCopy(authenticationTag, 0, cipherTextWithTag, cipherText.Length, authenticationTag.Length);
         byte[] plain = await cryptoDriver
             .AesGcmDecryptAsync(
                 key,
-                attachment.Nonce,
+                nonce,
                 cipherTextWithTag,
-                CreateAttachmentAssociatedData(payload, attachment.AttachmentId),
+                CreateAttachmentAssociatedData(payload, attachmentId),
                 cancellationToken)
             .ConfigureAwait(false);
 
         return new SecureLedgerMessageAttachmentPlaintext(
-            attachment.AttachmentId,
+            attachmentId,
             descriptor.FileName,
             descriptor.ContentType,
             plain,
             descriptor.Description);
     }
 
-    private static async Task<IReadOnlyList<SecureLedgerMessageAttachment>> EncryptAttachmentsAsync(
+    private static async Task<IReadOnlyList<SecureLedgerMessageContentAttachment>> EncryptAttachmentsAsync(
         IAccountKeySource senderKeySource,
+        Address receiverAddress,
         byte[] receiverPublicKeyMaterial,
-        EconomyEncryptedMessage encryptedContent,
         IReadOnlyList<SecureLedgerMessageAttachmentSource> attachments,
         IReadOnlyList<SecureLedgerMessageContentAttachment> descriptors,
         IEconomyCryptoDriver cryptoDriver,
@@ -271,15 +296,9 @@ public static class SecureLedgerMessages
         byte[] key = await cryptoDriver
             .DeriveEcdhP256Sha256KeyAsync(privateKey, receiverPublicKeyMaterial, EcdhP256MessageCipher.SharedSecretLabelBytes, cancellationToken)
             .ConfigureAwait(false);
-        var result = new List<SecureLedgerMessageAttachment>(attachments.Count);
-        var payloadShell = new SecureLedgerMessagePayload(
-            Format,
-            SchemaVersion,
-            DateTimeOffset.UnixEpoch,
-            encryptedContent.SenderAddress,
-            encryptedContent.ReceiverAddress,
-            encryptedContent,
-            []);
+        var result = new List<SecureLedgerMessageContentAttachment>(attachments.Count);
+        HashHex senderPublicKeyHash = Address.CalculatePublicKeyHash(senderKeySource.PublicKeyMaterial.ToArray());
+        HashHex receiverPublicKeyHash = Address.CalculatePublicKeyHash(receiverPublicKeyMaterial);
 
         for (int index = 0; index < attachments.Count; index++)
         {
@@ -293,7 +312,12 @@ public static class SecureLedgerMessages
                     key,
                     nonce,
                     plainMemory.ToArray(),
-                    CreateAttachmentAssociatedData(payloadShell, descriptor.AttachmentId),
+                    CreateAttachmentAssociatedData(
+                        senderKeySource.Address,
+                        receiverAddress,
+                        senderPublicKeyHash,
+                        receiverPublicKeyHash,
+                        descriptor.AttachmentId),
                     cancellationToken)
                 .ConfigureAwait(false);
             byte[] cipherText = cipherTextWithTag[..^TagSize];
@@ -308,12 +332,13 @@ public static class SecureLedgerMessages
                     IsMain: false,
                     Description: "Encrypted secure-message attachment"),
                 cancellationToken).ConfigureAwait(false);
-            result.Add(new SecureLedgerMessageAttachment(
-                descriptor.AttachmentId,
-                encryptedDataItem,
-                nonce,
-                tag,
-                Hex.Sha256Hex(cipherText)));
+            result.Add(descriptor with
+            {
+                EncryptedDataItem = encryptedDataItem,
+                Nonce = nonce,
+                AuthenticationTag = tag,
+                CipherTextHash = Hex.Sha256Hex(cipherText)
+            });
         }
 
         return result;
@@ -330,13 +355,26 @@ public static class SecureLedgerMessages
     private static byte[] CreateAttachmentAssociatedData(
         SecureLedgerMessagePayload payload,
         string attachmentId)
+        => CreateAttachmentAssociatedData(
+            payload.SenderAddress,
+            payload.ReceiverAddress,
+            payload.Content.SenderPublicKeyHash,
+            payload.Content.ReceiverPublicKeyHash,
+            attachmentId);
+
+    private static byte[] CreateAttachmentAssociatedData(
+        Address senderAddress,
+        Address receiverAddress,
+        HashHex senderPublicKeyHash,
+        HashHex receiverPublicKeyHash,
+        string attachmentId)
     {
         string value = string.Join('|',
             Encoding.UTF8.GetString(AttachmentAadLabel),
-            payload.SenderAddress.Value,
-            payload.ReceiverAddress.Value,
-            payload.Content.SenderPublicKeyHash.Value,
-            payload.Content.ReceiverPublicKeyHash.Value,
+            senderAddress.Value,
+            receiverAddress.Value,
+            senderPublicKeyHash.Value,
+            receiverPublicKeyHash.Value,
             attachmentId);
         return Encoding.UTF8.GetBytes(value);
     }
@@ -345,22 +383,7 @@ public static class SecureLedgerMessages
         string inlineJson,
         out BusinessObjectPayloadEnvelope envelope)
     {
-        envelope = default!;
-        try
-        {
-            BusinessObjectPayloadEnvelope? parsed = JsonSerializer.Deserialize<BusinessObjectPayloadEnvelope>(inlineJson, JsonOptions);
-            if (parsed is null)
-            {
-                return false;
-            }
-
-            envelope = parsed;
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
+        return BusinessObjectPayloadEnvelopeReader.TryRead(inlineJson, out envelope);
     }
 
     private static string CreateAttachmentId(int index)

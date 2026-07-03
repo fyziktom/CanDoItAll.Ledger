@@ -11,7 +11,9 @@ public sealed record EconomyTransactionDetailsModel(
     DateTimeOffset Timestamp,
     TransactionData? Data,
     IReadOnlyList<EconomyTransactionInputDetails> Inputs,
-    IReadOnlyList<EconomyTransactionOutputDetails> Outputs);
+    IReadOnlyList<EconomyTransactionOutputDetails> Outputs,
+    long? LedgerSequence = null,
+    HashHex? LedgerEntryHash = null);
 
 public sealed record EconomyTransactionInputDetails(
     int InputIndex,

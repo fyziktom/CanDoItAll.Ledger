@@ -20,8 +20,8 @@
     private IReadOnlyList<TimelineItem> Items
         => Details is not null
             ? BuildDetailsTimeline()
-            : Transactions
-                .OrderByDescending(item => item.Timestamp)
+            : LedgerTransactionOrdering
+                .NewestFirst(Transactions)
                 .Select(item => new TimelineItem
                 {
                     Label = item.TxId.Value,

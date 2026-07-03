@@ -18,7 +18,7 @@
     else
     {
         <div class="cda-sdk-list">
-            @foreach (LedgerTransactionSummary item in Transactions.OrderByDescending(item => item.Timestamp))
+            @foreach (LedgerTransactionSummary item in LedgerTransactionOrdering.NewestFirst(Transactions))
             {
                 <article class="cda-sdk-list__row">
                     <span class="material-icons" aria-hidden="true">@IconFor(item.Kind)</span>

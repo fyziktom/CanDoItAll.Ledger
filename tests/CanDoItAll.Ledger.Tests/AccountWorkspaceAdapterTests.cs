@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
@@ -190,8 +191,11 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             aliceWorkspace,
             rig.Bob.Address,
             rig.Alice.Address);
-        Assert.DoesNotContain("Hello Alice", bobTx.Data?.InlineJson ?? string.Empty, StringComparison.Ordinal);
-        Assert.DoesNotContain("private attachment bytes", bobTx.Data?.InlineJson ?? string.Empty, StringComparison.Ordinal);
+        AssertSecureMessagePublicSurfaceDoesNotLeak(
+            bobTx,
+            ["Hello Alice", "hello-alice", "message from Bob", "proof.txt", "text/plain", "application/octet-stream", "private attachment bytes", "ipfs://"],
+            rig.Storage.StoredHashes);
+        Assert.Empty(bobPayload.Attachments);
 
         SecureMessageOpenResult aliceOpen = await aliceAdapter.OpenSecureMessageAsync(
             new SecureMessageOpenRequest("alice", bobTx.TxId, bobPayload),
@@ -205,6 +209,10 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         Assert.Equal("Hello Alice", aliceOpen.Content?.Subject);
         Assert.Equal("message from Bob", aliceOpen.Content?.Body);
         SecureLedgerMessageContentAttachment descriptor = Assert.Single(aliceOpen.Content!.Attachments);
+        Assert.NotNull(descriptor.EncryptedDataItem);
+        Assert.NotNull(descriptor.Nonce);
+        Assert.NotNull(descriptor.AuthenticationTag);
+        Assert.NotNull(descriptor.CipherTextHash);
 
         SecureMessageAttachmentOpenResult attachment = await aliceAdapter.OpenSecureMessageAttachmentAsync(
             new SecureMessageAttachmentOpenRequest("alice", bobPayload, aliceOpen.Content, descriptor.AttachmentId),
@@ -762,6 +770,27 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         throw new InvalidOperationException($"Secure message {sender.Value} -> {receiver.Value} was not found.");
     }
 
+    private static void AssertSecureMessagePublicSurfaceDoesNotLeak(
+        LedgerTransactionSummary transaction,
+        IReadOnlyList<string> forbiddenValues,
+        IReadOnlyCollection<string> storedHashes)
+    {
+        string publicJson = JsonSerializer.Serialize(new
+        {
+            transaction.Data,
+            transaction.Outputs
+        });
+        foreach (string forbidden in forbiddenValues.Where(value => !string.IsNullOrWhiteSpace(value)))
+        {
+            Assert.DoesNotContain(forbidden, publicJson, StringComparison.OrdinalIgnoreCase);
+        }
+
+        foreach (string hash in storedHashes)
+        {
+            Assert.DoesNotContain(hash, publicJson, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private sealed class SecureMessagingAdapterRig
     {
         private SecureMessagingAdapterRig(
@@ -899,6 +928,8 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         public BusinessObjectDataStorageKind Storage => BusinessObjectDataStorageKind.Ipfs;
 
         public IReadOnlyCollection<byte[]> StoredPayloads => payloads.Values;
+
+        public IReadOnlyCollection<string> StoredHashes => payloads.Keys;
 
         public async Task<BusinessObjectStorageWriteResult> SaveAsync(
             BusinessObjectStorageWriteRequest request,

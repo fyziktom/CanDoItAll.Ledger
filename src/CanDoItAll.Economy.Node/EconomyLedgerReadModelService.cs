@@ -248,7 +248,8 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
                     outputs ?? Array.Empty<Address>(),
                     inputDetails ?? Array.Empty<LedgerTransactionInputSummary>(),
                     outputDetails ?? Array.Empty<LedgerTransactionOutputSummary>(),
-                    includeData ? EconomyNodeRecordMapper.ToTransactionData(row) : null);
+                    includeData ? EconomyNodeRecordMapper.ToTransactionData(row) : null,
+                    row.LedgerSequence);
             })
             .ToArray();
     }
@@ -297,7 +298,8 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
             outputs.Select(x => new Address(x.Address)).Distinct().ToArray(),
             inputs.Select(EconomyNodeRecordMapper.ToLedgerTransactionInputSummary).ToArray(),
             outputs.Select(EconomyNodeRecordMapper.ToLedgerTransactionOutputSummary).ToArray(),
-            includeData ? EconomyNodeRecordMapper.ToTransactionData(row) : null);
+            includeData ? EconomyNodeRecordMapper.ToTransactionData(row) : null,
+            row.LedgerSequence);
     }
 
     public async Task<LedgerBusinessObjectHolding?> GetBusinessObjectHoldingAsync(
@@ -485,7 +487,8 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
                     outputs ?? Array.Empty<Address>(),
                     inputDetails ?? Array.Empty<LedgerTransactionInputSummary>(),
                     outputDetails ?? Array.Empty<LedgerTransactionOutputSummary>(),
-                    query.IncludeData ? EconomyNodeRecordMapper.ToTransactionData(row) : null);
+                    query.IncludeData ? EconomyNodeRecordMapper.ToTransactionData(row) : null,
+                    row.LedgerSequence);
             })
             .ToArray();
     }
@@ -871,29 +874,9 @@ internal static class EconomyNodeRecordMapper
     }
 
     private static BusinessObjectPayloadEnvelope? TryReadPayloadEnvelope(string? inlineJson)
-    {
-        if (string.IsNullOrWhiteSpace(inlineJson))
-        {
-            return null;
-        }
-
-        try
-        {
-            BusinessObjectPayloadEnvelope? envelope = JsonSerializer.Deserialize<BusinessObjectPayloadEnvelope>(inlineJson, JsonOptions);
-            if (string.IsNullOrWhiteSpace(envelope?.ObjectType)
-                || string.IsNullOrWhiteSpace(envelope.SchemaVersion)
-                || envelope.StateJson is null)
-            {
-                return null;
-            }
-
-            return envelope;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
+        => BusinessObjectPayloadEnvelopeReader.TryRead(inlineJson, out BusinessObjectPayloadEnvelope envelope)
+            ? envelope
+            : null;
 
     private static IReadOnlyDictionary<string, string> FormatTokenBalances(IReadOnlyDictionary<string, decimal> tokenBalances)
         => tokenBalances.ToDictionary(

@@ -42,8 +42,12 @@ public sealed class SecureLedgerMessageTests
         Assert.DoesNotContain("Secret project", built.StateJson, StringComparison.Ordinal);
         Assert.DoesNotContain("hello bob", built.StateJson, StringComparison.Ordinal);
         Assert.DoesNotContain("plan.txt", built.StateJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("text/plain", built.StateJson, StringComparison.Ordinal);
         Assert.DoesNotContain("attachment plaintext", built.StateJson, StringComparison.Ordinal);
-        Assert.Single(built.Payload.Attachments);
+        string storedHash = Assert.Single(storage.StoredHashes);
+        Assert.DoesNotContain(storedHash, built.StateJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("ipfs://", built.StateJson, StringComparison.Ordinal);
+        Assert.Empty(built.Payload.Attachments);
         Assert.DoesNotContain(attachmentBytes, storage.StoredPayloads, ByteArrayComparer.Instance);
 
         SecureLedgerMessageContent bobContent = await SecureLedgerMessages.DecryptContentAsync(
@@ -64,6 +68,10 @@ public sealed class SecureLedgerMessageTests
         Assert.Equal(bobContent.Attachments.Select(item => item.AttachmentId), aliceContent.Attachments.Select(item => item.AttachmentId));
         Assert.Single(bobContent.Attachments);
         Assert.Equal("plan.txt", bobContent.Attachments[0].FileName);
+        Assert.NotNull(bobContent.Attachments[0].EncryptedDataItem);
+        Assert.NotNull(bobContent.Attachments[0].Nonce);
+        Assert.NotNull(bobContent.Attachments[0].AuthenticationTag);
+        Assert.NotNull(bobContent.Attachments[0].CipherTextHash);
 
         SecureLedgerMessageAttachmentPlaintext bobAttachment = await SecureLedgerMessages.DecryptAttachmentAsync(
             bob,
@@ -93,6 +101,8 @@ public sealed class SecureLedgerMessageTests
         public BusinessObjectDataStorageKind Storage => BusinessObjectDataStorageKind.Ipfs;
 
         public IReadOnlyCollection<byte[]> StoredPayloads => payloads.Values;
+
+        public IReadOnlyCollection<string> StoredHashes => payloads.Keys;
 
         public async Task<BusinessObjectStorageWriteResult> SaveAsync(
             BusinessObjectStorageWriteRequest request,

@@ -52,6 +52,21 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
     }
 
     [Fact]
+    public void Factory_CreatesOpaqueIdsWithoutDisplayNameSegment()
+    {
+        BusinessObjectId first = BusinessObjectCreateIdFactory.CreateOpaqueObjectId("secure-message");
+        BusinessObjectId second = BusinessObjectCreateIdFactory.CreateOpaqueObjectId("secure-message");
+
+        Assert.NotEqual(first, second);
+        Assert.StartsWith("bo:secure-message:", first.Value, StringComparison.Ordinal);
+        Assert.StartsWith("bo:secure-message:", second.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("hello", first.Value, StringComparison.OrdinalIgnoreCase);
+        Assert.True(LedgerValueValidation.IsValidIdentifier(first.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
+        Assert.True(LedgerValueValidation.IsValidIdentifier(second.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
+    }
+
+
+    [Fact]
     public void ProductionCreateDrafts_DoNotUseNameOnlyOrTimestampOnlyObjectIds()
     {
         string root = FindRepositoryRoot();
@@ -82,6 +97,7 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
 
         Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(selectedObjectType, payload.Name)", wizard, StringComparison.Ordinal);
         Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(\"account-app\", \"account app message\")", wasmAdapter, StringComparison.Ordinal);
+        Assert.Contains("BusinessObjectCreateIdFactory.CreateOpaqueObjectId(\"secure-message\")", wasmAdapter, StringComparison.Ordinal);
         Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(\"ui-message\", $\"Message from {normalizedAccount}\")", nodeSession, StringComparison.Ordinal);
         Assert.Contains("new CreateBusinessObjectRequest(\n                    draft.ObjectId", wasmAdapter, StringComparison.Ordinal);
         Assert.Contains("new CreateBusinessObjectRequest(\n                    draft.ObjectId", nodeSession, StringComparison.Ordinal);

@@ -593,8 +593,8 @@ public sealed class BusinessObjectCommerceDispatcher
         BusinessObjectWorkspaceModel workspace,
         BusinessObjectId deliveredObjectId,
         Address buyerAddress)
-        => workspace.Transactions
-            .OrderByDescending(transaction => transaction.Timestamp)
+        => LedgerTransactionOrdering
+            .NewestFirst(workspace.Transactions)
             .FirstOrDefault(transaction => transaction.Outputs.Any(output =>
                 output.Address == buyerAddress
                 && output.BusinessObject?.ObjectId == deliveredObjectId));

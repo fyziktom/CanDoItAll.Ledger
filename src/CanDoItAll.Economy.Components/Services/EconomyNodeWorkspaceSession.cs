@@ -220,7 +220,9 @@ public sealed class EconomyNodeWorkspaceSession(
             details.Timestamp,
             CreateTransactionData(details),
             inputs,
-            outputs);
+            outputs,
+            details.LedgerSequence,
+            ToHash(details.LedgerEntryHash));
     }
 
     public async Task<MessageSecurityActionResult> SignMessageAsync(

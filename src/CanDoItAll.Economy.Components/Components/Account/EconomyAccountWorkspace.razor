@@ -267,8 +267,8 @@
             .ToArray();
 
     private IReadOnlyList<LedgerTransactionSummary> RecentTransactions
-        => Workspace.Transactions
-            .OrderByDescending(transaction => transaction.Timestamp)
+        => LedgerTransactionOrdering
+            .NewestFirst(Workspace.Transactions)
             .Take(5)
             .ToArray();
 

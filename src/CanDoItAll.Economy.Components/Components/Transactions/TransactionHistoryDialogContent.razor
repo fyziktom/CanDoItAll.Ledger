@@ -105,15 +105,14 @@
         => FilterOptions(Transactions.Select(transaction => transaction.Status.ToString()));
 
     private IReadOnlyList<LedgerTransactionSummary> FilteredTransactions
-        => Transactions
-            .Where(MatchesFilters)
-            .OrderByDescending(transaction => transaction.Timestamp)
+        => LedgerTransactionOrdering
+            .NewestFirst(Transactions.Where(MatchesFilters))
             .ToArray();
 
     private string NewestLabel
-        => Transactions.Count == 0
+        => LedgerTransactionOrdering.Newest(Transactions) is not { } newest
             ? "none"
-            : Transactions.Max(transaction => transaction.Timestamp).ToString("MM.dd.yyyy HH:mm");
+            : newest.Timestamp.ToString("MM.dd.yyyy HH:mm");
 
     private Task OpenDetailsAsync(LedgerTransactionSummary transaction)
         => TransactionDetailsRequested.InvokeAsync(transaction);

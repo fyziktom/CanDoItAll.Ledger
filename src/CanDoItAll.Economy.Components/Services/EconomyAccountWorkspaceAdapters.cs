@@ -761,9 +761,7 @@ public sealed class WasmAccountWorkspaceAdapter(
                     timeProvider.UtcNow,
                     cancellationToken)
                 .ConfigureAwait(false);
-            BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateNewObjectId(
-                "secure-message",
-                string.IsNullOrWhiteSpace(request.Subject) ? "message" : request.Subject);
+            BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateOpaqueObjectId("secure-message");
             BusinessObjectAccount account = CreateAccount();
             LedgerTransaction unsigned = await account.BuildUnsignedCreateBusinessObjectTransactionAsync(
                 new CreateBusinessObjectRequest(
@@ -1026,7 +1024,8 @@ public sealed class WasmAccountWorkspaceAdapter(
                     output.Token,
                     output.BusinessObject,
                     output.MetadataHash))
-                .ToArray());
+                .ToArray(),
+            summary.LedgerSequence);
 
     private async Task<EconomyTransactionExecutionResult> SignAndSubmitAsync(
         BusinessObjectTransactionMode mode,

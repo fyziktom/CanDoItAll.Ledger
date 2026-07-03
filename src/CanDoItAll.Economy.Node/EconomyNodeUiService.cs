@@ -412,7 +412,9 @@ public sealed class EconomyNodeUiService(
             details.ConfirmedAt ?? details.Timestamp,
             CreateTransactionData(details),
             inputs,
-            outputs);
+            outputs,
+            details.LedgerSequence,
+            ToHash(details.LedgerEntryHash));
     }
 
     private static TransactionData? CreateTransactionData(TransactionDetails details)

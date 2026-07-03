@@ -1,0 +1,6 @@
+Command: dotnet test tests/CanDoItAll.Ledger.Tests/CanDoItAll.Ledger.Tests.csproj --filter "FullyQualifiedName~BusinessObjectPayloadEnvelopeReaderTests|FullyQualifiedName~TransactionUiComponentTests" -v minimal --no-restore
+Output:
+Invariant: SB04-ENVELOPE-COMPATIBILITY
+Envelope compatibility and raw transaction display tests passed.
+Result summary: Passed, Failed 0.
+ExitCode: 0

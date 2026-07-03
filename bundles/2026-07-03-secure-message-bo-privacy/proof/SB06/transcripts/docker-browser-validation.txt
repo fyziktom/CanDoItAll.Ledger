@@ -1,0 +1,11 @@
+Command: docker compose build economy-node accountapp-alice accountapp-bob accountapp-lab; docker compose up -d economy-node accountapp-alice accountapp-bob accountapp-lab; docker compose --profile seed up --build demo-seeder; Playwright browser/API validation for Alice/Bob messaging
+Output:
+Invariant: SB06-DOCKER-WASM-E2E
+Docker build succeeded for economy-node, accountapp-alice, accountapp-bob, and accountapp-lab.
+Docker services started and node health returned status ok.
+Seeder exited 0 and funded/imported Alice/Bob demo accounts.
+Browser/API proof sent Alice-to-Bob no-attachment message and Bob-to-Alice attachment message.
+New secure-message txids: badec665e697216837f16e745a77a17e1edc16ad5339b9e99bfa6aa93f924358, a2b66529019de1bb6fba76e88ce884314348f386d63cdc6dc40943206e6b1093.
+Raw transaction scan found empty public attachment arrays, object-valued nested data, no escaped nested-state string, and no forbidden plaintext values.
+Screenshots: repo://output/playwright/alice-opened-secure-message-docker-privacy.png, repo://output/playwright/bob-opened-no-attachment-secure-message-docker-privacy.png, repo://output/playwright/alice-raw-tx-detail-secure-message-privacy.png
+ExitCode: 0

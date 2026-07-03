@@ -28,7 +28,10 @@ public sealed class LedgerTransactionPublicKeyDiscovery(ILedgerReadClient ledger
                 cancellationToken)
             .ConfigureAwait(false);
 
-        foreach (LedgerTransactionSummary transaction in transactions.OrderByDescending(item => item.Timestamp))
+        foreach (LedgerTransactionSummary transaction in transactions
+            .OrderByDescending(item => item.LedgerSequence ?? long.MinValue)
+            .ThenByDescending(item => item.Timestamp)
+            .ThenByDescending(item => item.TxId.Value, StringComparer.Ordinal))
         {
             foreach (LedgerTransactionInputSummary input in transaction.Inputs.OrderBy(item => item.InputIndex))
             {
