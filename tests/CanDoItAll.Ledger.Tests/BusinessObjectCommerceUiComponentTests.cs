@@ -184,6 +184,44 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     }
 
     [Fact]
+    public void Gallery_HidesSecureMessageBusinessObjectsFromCards()
+    {
+        ITypedBusinessObjectView post = CreatePost(
+            new BusinessObjectId("bo:post:visible-message-boundary-post"),
+            "Visible non-message post",
+            ListedAtUtc);
+        ITypedBusinessObjectView message = CreatePost(
+            new BusinessObjectId("bo:secure-message:hidden-gallery-message"),
+            "Hidden secure message",
+            ListedAtUtc.AddMinutes(5),
+            SecureLedgerMessages.ObjectType);
+        ITypedBusinessObjectView wrappedMessage = CreatePost(
+            new BusinessObjectId("bo:secure-message:hidden-wrapped-gallery-message"),
+            "Hidden wrapped secure message",
+            ListedAtUtc.AddMinutes(6),
+            "business-object");
+
+        IRenderedComponent<BusinessObjectLedgerGallery> component =
+            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+                .Add(
+                    x => x.Workspace,
+                    CreateWorkspace(
+                        [post, message, wrappedMessage],
+                        [
+                            CreateObjectTransaction(post, ListedAtUtc.AddMinutes(1)),
+                            CreateObjectTransaction(message, ListedAtUtc.AddMinutes(2)),
+                            CreateObjectTransaction(wrappedMessage, ListedAtUtc.AddMinutes(3))
+                        ])));
+
+        IElement card = Assert.Single(component.FindAll(".cda-vef-gallery-card"));
+
+        Assert.Contains("Visible non-message post", card.TextContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("Hidden secure message", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Hidden wrapped secure message", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain(SecureLedgerMessages.ObjectType, component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SetSaleDialog_HidesMaxCopiesUntilCopyModeIsSelected()
     {
         ITypedBusinessObjectView originalSalePost = CreateListedPost(BusinessObjectSaleMode.Original);
@@ -280,7 +318,8 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     private static ITypedBusinessObjectView CreatePost(
         BusinessObjectId objectId,
         string name,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        string objectType = "post")
     {
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");
         BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
@@ -291,7 +330,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             "#commerce",
             []);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
-        return CreateTypedView(objectId, "post", stateJson, createdAt);
+        return CreateTypedView(objectId, objectType, stateJson, createdAt);
     }
 
     private static async Task<ICommerceBusinessObjectView> CreatePaymentViewAsync()

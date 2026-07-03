@@ -249,13 +249,80 @@
             return false;
         }
 
-        return !IsCommerceObjectType(item.ObjectType);
+        return !IsHiddenGalleryObject(item);
     }
 
-    private static bool IsCommerceObjectType(string objectType)
+    private static bool IsHiddenGalleryObject(IBusinessObjectView item)
+        => IsHiddenGalleryObjectType(item.ObjectType)
+            || IsSecureMessageObjectId(item.ObjectId)
+            || StateDeclaresSecureMessage(item.StateJson);
+
+    private static bool IsHiddenGalleryObjectType(string objectType)
         => string.Equals(objectType, "payment", StringComparison.OrdinalIgnoreCase)
             || string.Equals(objectType, "purchase", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(objectType, "receipt", StringComparison.OrdinalIgnoreCase);
+            || string.Equals(objectType, "receipt", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(objectType, SecureLedgerMessages.ObjectType, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsSecureMessageObjectId(BusinessObjectId objectId)
+        => objectId.Value.StartsWith($"bo:{SecureLedgerMessages.ObjectType}:", StringComparison.OrdinalIgnoreCase);
+
+    private static bool StateDeclaresSecureMessage(string? stateJson)
+    {
+        if (string.IsNullOrWhiteSpace(stateJson))
+        {
+            return false;
+        }
+
+        try
+        {
+            using System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(stateJson);
+            return ElementDeclaresSecureMessage(document.RootElement);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static bool ElementDeclaresSecureMessage(System.Text.Json.JsonElement element)
+    {
+        if (element.ValueKind != System.Text.Json.JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        if (ElementStringEquals(element, "objectType", SecureLedgerMessages.ObjectType)
+            || ElementStringEquals(element, "format", SecureLedgerMessages.Format))
+        {
+            return true;
+        }
+
+        if (!element.TryGetProperty("stateJson", out System.Text.Json.JsonElement nested))
+        {
+            return false;
+        }
+
+        if (nested.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            return ElementDeclaresSecureMessage(nested);
+        }
+
+        if (nested.ValueKind == System.Text.Json.JsonValueKind.String
+            && nested.GetString() is { Length: > 0 } nestedJson)
+        {
+            return StateDeclaresSecureMessage(nestedJson);
+        }
+
+        return false;
+    }
+
+    private static bool ElementStringEquals(
+        System.Text.Json.JsonElement element,
+        string propertyName,
+        string expected)
+        => element.TryGetProperty(propertyName, out System.Text.Json.JsonElement property)
+            && property.ValueKind == System.Text.Json.JsonValueKind.String
+            && string.Equals(property.GetString(), expected, StringComparison.OrdinalIgnoreCase);
 
     private static IReadOnlyList<FilterOption> FilterOptions(IEnumerable<string> values)
         => new[] { new FilterOption(AllFilter, "All") }
