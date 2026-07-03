@@ -21,7 +21,7 @@
         </div>
         @if (!string.IsNullOrWhiteSpace(Data.InlineJson))
         {
-            <pre class="cda-sdk-code">@Data.InlineJson</pre>
+            <pre class="cda-sdk-code" data-testid="tx-payload-inline-json">@TransactionRawJsonFormatter.FormatInlineJson(Data.InlineJson)</pre>
         }
     }
 </section>

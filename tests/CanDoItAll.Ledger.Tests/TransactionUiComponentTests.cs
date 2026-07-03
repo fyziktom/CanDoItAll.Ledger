@@ -104,7 +104,24 @@ public sealed class TransactionUiComponentTests : TestContext
         Assert.Contains("\"objectType\": \"secure-message\"", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"stateJson\": {", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"format\": \"candoitall-secure-message-v1\"", rawJson, StringComparison.Ordinal);
+        Assert.Contains("\"headersJson\": {", rawJson, StringComparison.Ordinal);
+        Assert.Contains("\"priority\": \"high\"", rawJson, StringComparison.Ordinal);
         Assert.DoesNotContain("\\u0022", rawJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PayloadViewer_formats_inline_json_without_escaped_nested_strings()
+    {
+        IRenderedComponent<TxDataPayloadViewer> component = RenderComponent<TxDataPayloadViewer>(parameters => parameters
+            .Add(x => x.Data, CreateMessageData()));
+
+        string payloadJson = component.Find("[data-testid='tx-payload-inline-json']").TextContent;
+
+        Assert.Contains("\"objectType\": \"secure-message\"", payloadJson, StringComparison.Ordinal);
+        Assert.Contains("\"stateJson\": {", payloadJson, StringComparison.Ordinal);
+        Assert.Contains("\"headersJson\": {", payloadJson, StringComparison.Ordinal);
+        Assert.Contains("\"priority\": \"high\"", payloadJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("\\u0022", payloadJson, StringComparison.Ordinal);
     }
 
     private static LedgerTransactionSummary CreateSummary(
@@ -129,7 +146,7 @@ public sealed class TransactionUiComponentTests : TestContext
         => new(
             "application/json",
             new HashHex("9999999999999999999999999999999999999999999999999999999999999999"),
-            "{\"objectType\":\"secure-message\",\"schemaVersion\":\"1.0\",\"stateJson\":\"{\\\"format\\\":\\\"candoitall-secure-message-v1\\\",\\\"cipherText\\\":\\\"abc123\\\"}\"}",
+            "{\"objectType\":\"secure-message\",\"schemaVersion\":\"1.0\",\"stateJson\":\"{\\\"format\\\":\\\"candoitall-secure-message-v1\\\",\\\"headersJson\\\":\\\"{\\\\\\\"priority\\\\\\\":\\\\\\\"high\\\\\\\"}\\\",\\\"cipherText\\\":\\\"abc123\\\"}\"}",
             null,
             TransactionDataItemType.BusinessObject);
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
@@ -478,6 +479,35 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal(1, tokenType.SourceUtxoCount);
         Assert.Equal(2, tokenType.UniqueUtxoCount);
         Assert.Equal(3, tokenType.TotalUtxoCount);
+    }
+
+    [Fact]
+    public async Task Account_CreateBusinessObjectWritesStructuredStateJsonForEveryObjectType()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T01:32:00Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        LedgerSubmitResult mint = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.FromInt64(10)));
+        Assert.True(mint.Accepted);
+
+        LedgerTransaction create = await alice.BuildCreateBusinessObjectTransactionAsync(
+            new CreateBusinessObjectRequest(
+                new BusinessObjectId("gallery-post-structured"),
+                "gallery-post",
+                "{\"title\":\"Structured post\",\"meta\":{\"tags\":[\"ui\",\"raw\"]}}",
+                MainAmount: Amount.FromInt64(1)),
+            CancellationToken.None);
+
+        string inlineJson = Assert.IsType<string>(create.Data?.InlineJson);
+        using JsonDocument document = JsonDocument.Parse(inlineJson);
+
+        Assert.Equal(JsonValueKind.Object, document.RootElement.GetProperty("stateJson").ValueKind);
+        Assert.DoesNotContain("\\u0022", inlineJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("\\\"", inlineJson, StringComparison.Ordinal);
+        Assert.True(BusinessObjectPayloadEnvelopeReader.TryRead(inlineJson, out BusinessObjectPayloadEnvelope envelope));
+        Assert.Equal("gallery-post", envelope.ObjectType);
+        Assert.Equal("{\"title\":\"Structured post\",\"meta\":{\"tags\":[\"ui\",\"raw\"]}}", envelope.StateJson);
     }
 
     [Fact]

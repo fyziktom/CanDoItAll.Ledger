@@ -27,17 +27,9 @@ internal static class BusinessObjectPayload
 
     public static TransactionData CreateData(CreateBusinessObjectRequest request)
     {
-        string envelope = ShouldWriteStructuredState(request.ObjectType)
-            ? CreateStructuredEnvelope(request)
-            : JsonSerializer.Serialize(
-                new BusinessObjectPayloadEnvelope(request.ObjectType, request.SchemaVersion, request.StateJson),
-                SerializerOptions);
-
+        string envelope = CreateStructuredEnvelope(request);
         return CreateData(envelope, request.ItemType, request.ContentType, request.ExternalRef);
     }
-
-    private static bool ShouldWriteStructuredState(string objectType)
-        => string.Equals(objectType, SecureLedgerMessages.ObjectType, StringComparison.OrdinalIgnoreCase);
 
     private static string CreateStructuredEnvelope(CreateBusinessObjectRequest request)
     {
