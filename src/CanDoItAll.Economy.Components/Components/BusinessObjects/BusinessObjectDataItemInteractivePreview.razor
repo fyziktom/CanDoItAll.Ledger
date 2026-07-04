@@ -8,18 +8,30 @@
             <span>@Item.Type / @Item.Storage</span>
         </div>
 
-        @if (Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null)
+        @if (PreviewUri is not null)
         {
             <div class="cda-vef-bo-preview-tools" aria-label="Image view controls">
-                <button type="button" title="Zoom out" aria-label="Zoom out" @onclick="ZoomOut">
-                    <span class="material-icons" aria-hidden="true">zoom_out</span>
-                </button>
-                <button type="button" title="Reset view" aria-label="Reset view" @onclick="ResetView">
-                    <span class="material-icons" aria-hidden="true">center_focus_strong</span>
-                </button>
-                <button type="button" title="Zoom in" aria-label="Zoom in" @onclick="ZoomIn">
-                    <span class="material-icons" aria-hidden="true">zoom_in</span>
-                </button>
+                @if (Item.Type == BusinessObjectDataItemType.Image)
+                {
+                    <button type="button" title="Zoom out" aria-label="Zoom out" @onclick="ZoomOut">
+                        <span class="material-icons" aria-hidden="true">zoom_out</span>
+                    </button>
+                    <button type="button" title="Reset view" aria-label="Reset view" @onclick="ResetView">
+                        <span class="material-icons" aria-hidden="true">center_focus_strong</span>
+                    </button>
+                    <button type="button" title="Zoom in" aria-label="Zoom in" @onclick="ZoomIn">
+                        <span class="material-icons" aria-hidden="true">zoom_in</span>
+                    </button>
+                }
+                <a href="@PreviewUri"
+                   download="@DownloadFileName"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   title="Download"
+                   aria-label="Download data item"
+                   data-testid="cda-bo-dataitem-download">
+                    <span class="material-icons" aria-hidden="true">download</span>
+                </a>
             </div>
         }
     </div>
@@ -96,6 +108,11 @@
             ?? (Item.Storage == BusinessObjectDataItemStorage.Ipfs && !string.IsNullOrWhiteSpace(Item.Hash)
                 ? $"https://ipfs.io/ipfs/{Item.Hash}"
                 : null);
+
+    private string DownloadFileName
+        => string.IsNullOrWhiteSpace(Item.FileName)
+            ? Item.Name
+            : Item.FileName;
 
     private string? MermaidSource
         => Item.Type == BusinessObjectDataItemType.Mermaid && Item.Storage == BusinessObjectDataItemStorage.Inline

@@ -161,6 +161,9 @@ public sealed class EfLedgerProjectionRebuilderTests
         Assert.Equal("{\"status\":\"approved\"}", currentBusinessObject.CurrentState);
         Assert.Equal(updateData.DataHash!.Value.Value, currentBusinessObject.CurrentHash);
         Assert.Equal(2, actual.BusinessObjectVersions.Count);
+        BusinessObjectVersionSnapshot createdBusinessObject = actual.BusinessObjectVersions.Single(x => x.Version == 1);
+        Assert.Equal("{\"status\":\"draft\"}", createdBusinessObject.State);
+        Assert.Equal(createData.DataHash!.Value.Value, createdBusinessObject.DataHash);
 
         var projectionVerifier = new EfLedgerProjectionVerifier(factory);
         EfLedgerProjectionVerificationReport cleanProjection = await projectionVerifier.VerifyAsync(LedgerId, null, CancellationToken.None);
@@ -301,17 +304,21 @@ public sealed class EfLedgerProjectionRebuilderTests
 
     private static TransactionData CreateBusinessObjectEnvelopeData(string objectType, string schemaVersion, string stateJson)
     {
+        using JsonDocument document = JsonDocument.Parse(stateJson);
         string inlineJson = JsonSerializer.Serialize(
-            new
-            {
+            new BusinessObjectStructuredEnvelopeData(
                 objectType,
                 schemaVersion,
-                stateJson
-            },
+                document.RootElement.Clone()),
             JsonOptions);
 
         return CreateBusinessObjectStateData(inlineJson);
     }
+
+    private sealed record BusinessObjectStructuredEnvelopeData(
+        string ObjectType,
+        string SchemaVersion,
+        JsonElement StateJson);
 
     private static TransactionData CreateBusinessObjectStateData(string stateJson)
         => new(

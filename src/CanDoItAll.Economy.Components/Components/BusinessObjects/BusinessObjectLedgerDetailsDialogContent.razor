@@ -176,6 +176,14 @@ else
                                                             Target="_blank"
                                                             Rel="noopener noreferrer"
                                                             Disabled="@(item.Uri is null)" />
+                                                    <Button Text="Download"
+                                                            Icon="download"
+                                                            Size="ButtonSize.Small"
+                                                            Variant="Variant.Outlined"
+                                                            Href="@item.Uri?.ToString()"
+                                                            Target="_blank"
+                                                            Rel="noopener noreferrer"
+                                                            Disabled="@(item.Uri is null)" />
                                                 </Cluster>
                                             </article>
                                         }

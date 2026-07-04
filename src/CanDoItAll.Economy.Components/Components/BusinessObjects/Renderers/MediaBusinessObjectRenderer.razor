@@ -95,6 +95,14 @@ else
                                     Target="_blank"
                                     Rel="noopener noreferrer"
                                     Disabled="@(itemUri is null)" />
+                            <Button Text="Download"
+                                    Icon="download"
+                                    Size="ButtonSize.Small"
+                                    Variant="Variant.Outlined"
+                                    Href="@itemUri"
+                                    Target="_blank"
+                                    Rel="noopener noreferrer"
+                                    Disabled="@(itemUri is null)" />
                         </Cluster>
                     </Stack>
                 }

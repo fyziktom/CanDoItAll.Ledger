@@ -124,6 +124,68 @@ public sealed class BusinessObjectDataItemTests
         Assert.Contains("OpenSource", postView.Tags);
     }
 
+    [Fact]
+    public void PayloadBuilder_ParsesObjectValuedEnvelopeStateJsonWithDataItems()
+    {
+        string payloadJson = CreatePayload("Structured image", "Image #Structured");
+        using JsonDocument payload = JsonDocument.Parse(payloadJson);
+        string envelopeJson = JsonSerializer.Serialize(
+            new
+            {
+                objectType = "image",
+                schemaVersion = "1.0",
+                stateJson = payload.RootElement.Clone()
+            },
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.True(BusinessObjectPayloadBuilder.TryParseMediaPayload(envelopeJson, out BusinessObjectMediaPayload? parsed));
+
+        BusinessObjectDataItem item = Assert.Single(parsed!.DataItems!);
+        Assert.Equal("Structured image", parsed.Name);
+        Assert.Equal(BusinessObjectDataItemType.Image, item.Type);
+        Assert.Equal("QmDemoImage", item.Hash);
+        Assert.True(item.IsMain);
+    }
+
+    [Fact]
+    public void PayloadBuilder_NormalizesExactlyOneMainDataItem()
+    {
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("image");
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            "Image set",
+            "Multiple upload batch",
+            string.Empty,
+            "#images",
+            [
+                new BusinessObjectDataItem(
+                    "first",
+                    BusinessObjectDataItemType.Image,
+                    BusinessObjectDataItemStorage.Ipfs,
+                    "QmFirst",
+                    new Uri("http://127.0.0.1:8080/ipfs/QmFirst"),
+                    "image/png",
+                    "first.png",
+                    10,
+                    true),
+                new BusinessObjectDataItem(
+                    "second",
+                    BusinessObjectDataItemType.Image,
+                    BusinessObjectDataItemStorage.Ipfs,
+                    "QmSecond",
+                    new Uri("http://127.0.0.1:8080/ipfs/QmSecond"),
+                    "image/png",
+                    "second.png",
+                    12,
+                    true)
+            ]);
+
+        Assert.Equal(2, payload.DataItems!.Count);
+        Assert.Single(payload.DataItems, item => item.IsMain);
+        Assert.True(payload.DataItems[0].IsMain);
+        Assert.False(payload.DataItems[1].IsMain);
+    }
+
     [Theory]
     [InlineData("photo.png", BusinessObjectDataItemType.Image)]
     [InlineData("video.mp4", BusinessObjectDataItemType.AVMedia)]

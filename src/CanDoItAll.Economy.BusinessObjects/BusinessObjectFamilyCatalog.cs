@@ -330,7 +330,7 @@ public static class BusinessObjectPayloadBuilder
             NormalizeText(description, definition.Description),
             text ?? string.Empty,
             tags ?? string.Empty,
-            DataItems: dataItems,
+            DataItems: NormalizeDataItems(dataItems),
             Family: definition.Family,
             Fields: NormalizeFields(definition, fields));
 
@@ -463,7 +463,7 @@ public static class BusinessObjectPayloadBuilder
             Description = payload.Description ?? string.Empty,
             Text = payload.Text ?? string.Empty,
             Tags = payload.Tags ?? string.Empty,
-            DataItems = payload.DataItems ?? Array.Empty<BusinessObjectDataItem>(),
+            DataItems = NormalizeDataItems(payload.DataItems ?? Array.Empty<BusinessObjectDataItem>()),
             Fields = payload.Fields ?? new Dictionary<string, string>(StringComparer.Ordinal),
             Commerce = payload.Commerce is { IsEmpty: false } commerce
                 ? BusinessObjectCommercePayloadBuilder.NormalizeCommerce(commerce)
@@ -475,16 +475,46 @@ public static class BusinessObjectPayloadBuilder
 
     private static string UnwrapStateJson(string stateJson)
     {
-        using JsonDocument document = JsonDocument.Parse(stateJson);
-        if (document.RootElement.ValueKind == JsonValueKind.Object
-            && document.RootElement.TryGetProperty("stateJson", out JsonElement inner)
-            && inner.ValueKind == JsonValueKind.String
-            && !string.IsNullOrWhiteSpace(inner.GetString()))
+        if (BusinessObjectPayloadEnvelopeReader.TryRead(stateJson, out BusinessObjectPayloadEnvelope envelope))
         {
-            return inner.GetString()!;
+            return envelope.StateJson;
         }
 
         return stateJson;
+    }
+
+    private static IReadOnlyList<BusinessObjectDataItem> NormalizeDataItems(IReadOnlyList<BusinessObjectDataItem>? dataItems)
+    {
+        if (dataItems is null || dataItems.Count == 0)
+        {
+            return Array.Empty<BusinessObjectDataItem>();
+        }
+
+        int mainIndex = -1;
+        for (int index = 0; index < dataItems.Count; index++)
+        {
+            if (dataItems[index].IsMain)
+            {
+                mainIndex = index;
+                break;
+            }
+        }
+
+        if (mainIndex < 0)
+        {
+            mainIndex = 0;
+        }
+
+        BusinessObjectDataItem[] normalized = new BusinessObjectDataItem[dataItems.Count];
+        for (int index = 0; index < dataItems.Count; index++)
+        {
+            bool isMain = index == mainIndex;
+            normalized[index] = dataItems[index].IsMain == isMain
+                ? dataItems[index]
+                : dataItems[index] with { IsMain = isMain };
+        }
+
+        return normalized;
     }
 
     private static string NormalizeText(string? value, string fallback)

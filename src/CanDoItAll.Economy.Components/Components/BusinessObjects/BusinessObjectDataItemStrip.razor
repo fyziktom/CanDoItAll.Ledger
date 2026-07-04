@@ -23,6 +23,14 @@
                     <strong>@item.Name</strong>
                     <em>@(item.Size?.ToString("N0") ?? "unknown") bytes</em>
                     <HashDisplay Value="@item.Hash" />
+                    <Button Text="Download"
+                            Icon="download"
+                            Size="ButtonSize.Small"
+                            Variant="Variant.Outlined"
+                            Href="@item.Uri?.ToString()"
+                            Target="_blank"
+                            Rel="noopener noreferrer"
+                            Disabled="@(item.Uri is null)" />
                 </article>
             }
         </div>

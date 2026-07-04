@@ -6,8 +6,6 @@ namespace CanDoItAll.Economy.Persistence.EFCore;
 
 internal static class EfBusinessObjectProjectionMapper
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
     public static string BusinessObjectKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectId objectId)
         => $"{ledgerId.Value}|{scenarioId?.Value ?? string.Empty}|{objectId.Value}";
 
@@ -20,7 +18,7 @@ internal static class EfBusinessObjectProjectionMapper
         UnspentOutputRecord output,
         BusinessObjectRecord? previous)
     {
-        BusinessObjectPayloadEnvelope? envelope = TryReadPayloadEnvelope(inlineJson);
+        BusinessObjectPayloadEnvelope? envelope = ReadPayloadEnvelope(inlineJson);
         bool payloadMatchesOutput = !string.IsNullOrWhiteSpace(dataHash)
             && string.Equals(output.BusinessObjectDataHash, dataHash, StringComparison.Ordinal);
         bool shouldUseEnvelope = envelope is not null
@@ -131,7 +129,7 @@ internal static class EfBusinessObjectProjectionMapper
             ? throw new InvalidOperationException("BusinessObject projection output is missing an object id.")
             : output.BusinessObjectId;
 
-    private static BusinessObjectPayloadEnvelope? TryReadPayloadEnvelope(string? inlineJson)
+    private static BusinessObjectPayloadEnvelope? ReadPayloadEnvelope(string? inlineJson)
     {
         if (string.IsNullOrWhiteSpace(inlineJson))
         {
@@ -140,20 +138,71 @@ internal static class EfBusinessObjectProjectionMapper
 
         try
         {
-            BusinessObjectPayloadEnvelope? envelope = JsonSerializer.Deserialize<BusinessObjectPayloadEnvelope>(inlineJson, JsonOptions);
-            if (string.IsNullOrWhiteSpace(envelope?.ObjectType)
-                || string.IsNullOrWhiteSpace(envelope.SchemaVersion)
-                || envelope.StateJson is null)
+            using JsonDocument document = JsonDocument.Parse(inlineJson);
+            JsonElement root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !TryReadString(root, "objectType", out string? objectType)
+                || !TryReadString(root, "schemaVersion", out string? schemaVersion)
+                || !TryReadStateJson(root, out string? stateJson))
             {
                 return null;
             }
 
-            return envelope;
+            return new BusinessObjectPayloadEnvelope(objectType, schemaVersion, stateJson);
         }
         catch (JsonException)
         {
             return null;
         }
+    }
+
+    private static bool TryReadString(JsonElement root, string propertyName, out string value)
+    {
+        value = string.Empty;
+        if (!root.TryGetProperty(propertyName, out JsonElement property)
+            || property.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        string? text = property.GetString();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        value = text;
+        return true;
+    }
+
+    private static bool TryReadStateJson(JsonElement root, out string stateJson)
+    {
+        stateJson = string.Empty;
+        if (!root.TryGetProperty("stateJson", out JsonElement state)
+            && !root.TryGetProperty("state", out state))
+        {
+            return false;
+        }
+
+        if (state.ValueKind == JsonValueKind.String)
+        {
+            string? text = state.GetString();
+            if (text is null)
+            {
+                return false;
+            }
+
+            stateJson = text;
+            return true;
+        }
+
+        if (state.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return false;
+        }
+
+        stateJson = state.GetRawText();
+        return true;
     }
 
     private sealed record BusinessObjectPayloadEnvelope(

@@ -31,16 +31,13 @@
                                     @onclick="@(() => OpenMessageAsync(item))"
                                     data-testid="secure-message-row"
                                     data-txid="@item.Transaction.TxId.Value">
-                                <span class="material-icons" aria-hidden="true">@DirectionIcon(item)</span>
+                                <span class="material-icons" aria-hidden="true">@MessageStateIcon(item)</span>
                                 <span>
                                     <strong>@PeerLabel(item)</strong>
-                                    <small>@item.DirectionLabel / @item.Transaction.Timestamp.ToString("MM.dd HH:mm")</small>
+                                    <small>@MessageStateLabel(item) / @item.Transaction.Timestamp.ToString("MM.dd HH:mm")</small>
                                     <em>Encrypted message</em>
                                 </span>
-                                @if (item.Payload.Attachments.Count > 0)
-                                {
-                                    <StatusBadge Text="@($"{item.Payload.Attachments.Count} file")" Tone="neutral" />
-                                }
+                                <StatusBadge Text="@MessageStateLabel(item)" Tone="@MessageStateTone(item)" />
                             </button>
                         }
                     </div>
@@ -75,7 +72,7 @@
                 {
                     <Stack GapScale="LayoutGap.Medium">
                         <div class="cda-secure-mail__subject">
-                            <span>@selectedItem.DirectionLabel</span>
+                            <span>@MessageStateLabel(selectedItem)</span>
                             <h3>@openResult.Content.Subject</h3>
                             <CopyableMonoValue Value="@PeerAddress(selectedItem).Value" StartChars="12" EndChars="8" AriaLabel="Copy message peer address" />
                         </div>
@@ -87,7 +84,7 @@
                                 @foreach (SecureLedgerMessageContentAttachment attachment in openResult.Content.Attachments)
                                 {
                                     <article class="cda-secure-mail__attachment">
-                                        <span class="material-icons" aria-hidden="true">attach_file</span>
+                                        <span class="material-icons" aria-hidden="true">@AttachmentIcon(attachment.ContentType, attachment.FileName)</span>
                                         <div>
                                             <strong>@attachment.FileName</strong>
                                             <small>@attachment.ContentType / @FormatSize(attachment.Size)</small>
@@ -106,12 +103,66 @@
 
                         @if (attachmentResult?.Success == true && attachmentResult.Attachment is not null)
                         {
+                            SecureLedgerMessageAttachmentPlaintext decryptedAttachment = attachmentResult.Attachment;
+                            string attachmentDataUri = AttachmentDataUri(decryptedAttachment);
                             <div class="cda-secure-mail__decrypted-attachment" data-testid="secure-message-decrypted-attachment">
-                                <strong>@attachmentResult.Attachment.FileName</strong>
-                                <small>@FormatSize(attachmentResult.Attachment.Data.LongLength)</small>
-                                <TextArea Value="@AttachmentPreview(attachmentResult.Attachment)"
-                                          ReadOnly="true"
-                                          Rows="8" />
+                                <div class="cda-secure-mail__decrypted-attachment-header">
+                                    <span class="material-icons" aria-hidden="true">@AttachmentIcon(decryptedAttachment.ContentType, decryptedAttachment.FileName)</span>
+                                    <div>
+                                        <strong>@decryptedAttachment.FileName</strong>
+                                        <small>@decryptedAttachment.ContentType / @FormatSize(decryptedAttachment.Data.LongLength)</small>
+                                    </div>
+                                    <a class="cda-secure-mail__download"
+                                       href="@attachmentDataUri"
+                                       download="@decryptedAttachment.FileName"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       data-testid="secure-message-download-attachment"
+                                       title="Download decrypted attachment">
+                                        <span class="material-icons" aria-hidden="true">download</span>
+                                        <span>Download</span>
+                                    </a>
+                                </div>
+
+                                @if (IsImageAttachment(decryptedAttachment))
+                                {
+                                    <img class="cda-secure-mail__decrypted-media"
+                                         src="@attachmentDataUri"
+                                         alt="@decryptedAttachment.FileName"
+                                         data-testid="secure-message-decrypted-image" />
+                                }
+                                else if (IsVideoAttachment(decryptedAttachment))
+                                {
+                                    <video class="cda-secure-mail__decrypted-media"
+                                           src="@attachmentDataUri"
+                                           controls
+                                           preload="metadata"
+                                           data-testid="secure-message-decrypted-video"></video>
+                                }
+                                else if (IsAudioAttachment(decryptedAttachment))
+                                {
+                                    <audio class="cda-secure-mail__decrypted-audio"
+                                           src="@attachmentDataUri"
+                                           controls
+                                           preload="metadata"
+                                           data-testid="secure-message-decrypted-audio"></audio>
+                                }
+                                else if (IsTextAttachment(decryptedAttachment))
+                                {
+                                    <div data-testid="secure-message-decrypted-text">
+                                        <TextArea Value="@AttachmentTextPreview(decryptedAttachment)"
+                                                  ReadOnly="true"
+                                                  Rows="8" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="cda-secure-mail__preview-unavailable" data-testid="secure-message-decrypted-file">
+                                        <span class="material-icons" aria-hidden="true">download_for_offline</span>
+                                        <strong>Preview unavailable</strong>
+                                        <small>Use download to open this file with a local application.</small>
+                                    </div>
+                                }
                             </div>
                         }
                     </Stack>
@@ -357,7 +408,10 @@
             return null;
         }
 
-        return new SecureMailboxItem(transaction, payload, incoming ? "Incoming" : "Sent");
+        return new SecureMailboxItem(
+            transaction,
+            payload,
+            incoming ? SecureMailboxDirection.Incoming : SecureMailboxDirection.Sent);
     }
 
     private string CurrentAccountAlias
@@ -370,11 +424,48 @@
             ? "cda-secure-mail__item is-active"
             : "cda-secure-mail__item";
 
-    private string DirectionIcon(SecureMailboxItem item)
-        => item.DirectionLabel == "Incoming" ? "move_to_inbox" : "outbox";
+    private string MessageStateIcon(SecureMailboxItem item)
+        => MessageStateLabel(item) switch
+        {
+            "Replied" => "reply",
+            "Received" => "move_to_inbox",
+            _ => "outbox"
+        };
 
     private Address PeerAddress(SecureMailboxItem item)
-        => item.DirectionLabel == "Incoming" ? item.Payload.SenderAddress : item.Payload.ReceiverAddress;
+        => item.Direction == SecureMailboxDirection.Incoming ? item.Payload.SenderAddress : item.Payload.ReceiverAddress;
+
+    private string MessageStateLabel(SecureMailboxItem item)
+    {
+        if (IsReplied(item))
+        {
+            return "Replied";
+        }
+
+        return item.Direction == SecureMailboxDirection.Incoming ? "Received" : "Sent";
+    }
+
+    private string MessageStateTone(SecureMailboxItem item)
+        => MessageStateLabel(item) switch
+        {
+            "Replied" => "success",
+            "Received" => "info",
+            _ => "neutral"
+        };
+
+    private bool IsReplied(SecureMailboxItem item)
+    {
+        if (item.Direction != SecureMailboxDirection.Sent)
+        {
+            return false;
+        }
+
+        Address peer = PeerAddress(item);
+        return Messages.Any(candidate =>
+            candidate.Direction == SecureMailboxDirection.Incoming
+            && PeerAddress(candidate) == peer
+            && candidate.Transaction.Timestamp > item.Transaction.Timestamp);
+    }
 
     private string PeerLabel(SecureMailboxItem item)
     {
@@ -400,21 +491,80 @@
         return kb < 1024 ? $"{kb:0.#} KB" : $"{kb / 1024d:0.#} MB";
     }
 
-    private static string AttachmentPreview(SecureLedgerMessageAttachmentPlaintext attachment)
-    {
-        if (attachment.ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
+    private static bool IsImageAttachment(SecureLedgerMessageAttachmentPlaintext attachment)
+        => attachment.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".webp", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsVideoAttachment(SecureLedgerMessageAttachmentPlaintext attachment)
+        => attachment.ContentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".mov", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsAudioAttachment(SecureLedgerMessageAttachmentPlaintext attachment)
+        => attachment.ContentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsTextAttachment(SecureLedgerMessageAttachmentPlaintext attachment)
+        => attachment.ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
+            || attachment.ContentType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
+            || attachment.ContentType.EndsWith("+json", StringComparison.OrdinalIgnoreCase)
             || attachment.FileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
             || attachment.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
-            || attachment.FileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            || attachment.FileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
+
+    private static string AttachmentDataUri(SecureLedgerMessageAttachmentPlaintext attachment)
+        => $"data:{AttachmentContentType(attachment)};base64,{Convert.ToBase64String(attachment.Data)}";
+
+    private static string AttachmentContentType(SecureLedgerMessageAttachmentPlaintext attachment)
+        => string.IsNullOrWhiteSpace(attachment.ContentType)
+            ? "application/octet-stream"
+            : attachment.ContentType;
+
+    private static string AttachmentTextPreview(SecureLedgerMessageAttachmentPlaintext attachment)
+        => System.Text.Encoding.UTF8.GetString(attachment.Data);
+
+    private static string AttachmentIcon(string contentType, string fileName)
+    {
+        if (contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
         {
-            return System.Text.Encoding.UTF8.GetString(attachment.Data);
+            return "image";
         }
 
-        return Convert.ToBase64String(attachment.Data);
+        if (contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "movie";
+        }
+
+        if (contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "graphic_eq";
+        }
+
+        if (contentType.Contains("pdf", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return "picture_as_pdf";
+        }
+
+        return "attach_file";
+    }
+
+    private enum SecureMailboxDirection
+    {
+        Incoming,
+        Sent
     }
 
     private sealed record SecureMailboxItem(
         LedgerTransactionSummary Transaction,
         SecureLedgerMessagePayload Payload,
-        string DirectionLabel);
+        SecureMailboxDirection Direction);
 }

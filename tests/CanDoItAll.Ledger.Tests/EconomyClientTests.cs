@@ -1,4 +1,3 @@
-using System.Text.Json;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
@@ -99,12 +98,12 @@ public sealed class EconomyClientTests
         LedgerTransactionSummary? createDetails = await client.GetTransactionAsync(Context, createTxId, includeData: true, CancellationToken.None);
         Assert.NotNull(createDetails);
         Assert.NotNull(createDetails.Data?.InlineJson);
-        using (JsonDocument createEnvelope = JsonDocument.Parse(createDetails.Data.InlineJson))
-        {
-            Assert.Equal("settings", createEnvelope.RootElement.GetProperty("objectType").GetString());
-            Assert.Equal("1.0", createEnvelope.RootElement.GetProperty("schemaVersion").GetString());
-            Assert.Equal("{\"theme\":\"sdk\"}", createEnvelope.RootElement.GetProperty("stateJson").GetString());
-        }
+        Assert.True(BusinessObjectPayloadEnvelopeReader.TryRead(
+            createDetails.Data.InlineJson,
+            out BusinessObjectPayloadEnvelope createEnvelope));
+        Assert.Equal("settings", createEnvelope.ObjectType);
+        Assert.Equal("1.0", createEnvelope.SchemaVersion);
+        Assert.Equal("{\"theme\":\"sdk\"}", createEnvelope.StateJson);
 
         LedgerBusinessObjectHolding? currentSettings = await client.GetBusinessObjectAsync(
             new LedgerBusinessObjectQuery(Context, ObjectId: new BusinessObjectId("settings")),
