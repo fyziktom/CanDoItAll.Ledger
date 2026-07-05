@@ -1,0 +1,73 @@
+Command: node_repl Playwright Docker AccountApp validation
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+StartTimeUtc: 2026-07-04T23:45:44.160Z
+ExitCode: 1
+Error:
+locator.click: Timeout 90000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: /^Gallery$/ })[22m
+[2m    - locator resolved to <button type="button" class="cda-vef-nav-item">…</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <label class="cda-form-field__label" id="cda-form-field-595e3739849e4390a0ea74e639a5f1b6">Ownership payload</label> from <div data-testid="cda-message-security-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+[2m    - element is visible, enabled and stable[22m
+[2m    - scrolling into view if needed[22m
+[2m    - done scrolling[22m
+[2m    - <label class="cda-form-field__label" id="cda-form-field-595e3739849e4390a0ea74e639a5f1b6">Ownership payload</label> from <div data-testid="cda-message-security-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m  2 × retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m      - waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div role="tablist" class="cad-tabs__list" aria-orientation="horizontal" aria-label="Message security sections">…</div> from <div data-testid="cda-message-security-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m  41 × retrying click action[22m
+[2m       - waiting 500ms[22m
+[2m       - waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <label class="cda-form-field__label" id="cda-form-field-595e3739849e4390a0ea74e639a5f1b6">Ownership payload</label> from <div data-testid="cda-message-security-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+[2m       - waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <label class="cda-form-field__label" id="cda-form-field-595e3739849e4390a0ea74e639a5f1b6">Ownership payload</label> from <div data-testid="cda-message-security-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+[2m       - waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <div role="tablist" class="cad-tabs__list" aria-orientation="horizontal" aria-label="Message security sections">…</div> from <div data-testid="cda-message-security-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+[2m       - waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <div role="tablist" class="cad-tabs__list" aria-orientation="horizontal" aria-label="Message security sections">…</div> from <div data-testid="cda-message-security-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m  - retrying click action[22m
+[2m    - waiting 500ms[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+[2m    - element is visible, enabled and stable[22m
+[2m    - scrolling into view if needed[22m
+[2m    - done scrolling[22m
+[2m    - <label class="cda-form-field__label" id="cda-form-field-595e3739849e4390a0ea74e639a5f1b6">Ownership payload</label> from <div data-testid="cda-message-security-dialog" class="rz-stack flex min-w-0 fixed inset-0 z-[70] p-3 sm:p-4 lg:p-5">…</div> subtree intercepts pointer events[22m
+[2m  - retrying click action[22m
+[2m    - waiting 500ms[22m
+
+    at C:\repositories\CanDoItAll.Ledger\.node_repl_cell_4.mjs:82:58
+Log:
+2026-07-04T23:44:02.561Z Navigate to rebuilt Docker AccountApp at http://localhost:5081/?view=gallery
+2026-07-04T23:44:06.290Z Import seeded Alice AccountApp backup
+2026-07-04T23:44:09.687Z Unlocked AccountApp full shell loaded
+2026-07-04T23:44:13.107Z Home security ownership verifier test ids are present

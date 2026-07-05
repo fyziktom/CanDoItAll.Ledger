@@ -1,0 +1,20 @@
+Command: node_repl Playwright Docker AccountApp validation
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+StartTimeUtc: 2026-07-04T23:47:15.731Z
+ExitCode: 0
+Assertions:
+- Imported seeded Alice AccountApp backup into rebuilt Docker AccountApp.
+- Home Security Ownership tab exposes the ownership payload input and verify action on the Home page.
+- BO details Actions exposes owner QR and enabled Edit but no Verify ownership scanner.
+- Edit opens BusinessObjectCreationWizard in edit mode, shows update source, and exposes Stage BO Update.
+- Stage BO Update was clicked.
+Screenshots:
+- C:\repositories\CanDoItAll.Ledger\bundles\2026-07-04-bo-ownership-home-edit-actions\proof\SB03\browser\docker-home-security.png
+- C:\repositories\CanDoItAll.Ledger\bundles\2026-07-04-bo-ownership-home-edit-actions\proof\SB03\browser\docker-bo-edit-dialog.png
+Log:
+2026-07-04T23:46:55.212Z Navigate to rebuilt Docker AccountApp at http://localhost:5081/?view=gallery
+2026-07-04T23:46:59.644Z Import seeded Alice AccountApp backup
+2026-07-04T23:47:04.198Z Unlocked AccountApp full shell loaded
+2026-07-04T23:47:09.436Z Home security ownership verifier test ids are present
+2026-07-04T23:47:12.287Z BO details Actions has owner QR and enabled Edit, with no Verify ownership scanner
+2026-07-04T23:47:15.731Z Clicked Stage BO Update from edit wizard

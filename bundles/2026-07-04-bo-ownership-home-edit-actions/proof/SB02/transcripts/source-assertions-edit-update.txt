@@ -1,0 +1,11 @@
+Invariant: SB02-EDIT-UPDATE
+Command: PowerShell source assertions for BO details Edit action, shared wizard reuse, and UpdateObject staging
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+StartTimeUtc: 2026-07-04T23:12:39.1791227Z
+ExitCode: 0
+Assertions:
+- BO details exposes Edit and opens BusinessObjectCreationWizard with ForEdit model.
+- BO details has no Verify ownership scanner button or verifier-dialog launcher.
+- Wizard edit mode stages BusinessObjectTransactionMode.UpdateObject with editSource.ObjectId.
+- Gallery, commerce, Home security, Home, and full-shell callbacks forward edit drafts to existing submit flow.
+- Adapter layer already dispatches UpdateObject drafts to BuildUnsignedUpdateBusinessObjectTransactionAsync.

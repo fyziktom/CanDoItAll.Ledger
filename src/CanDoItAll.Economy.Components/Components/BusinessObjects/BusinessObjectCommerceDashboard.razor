@@ -37,6 +37,9 @@
     [Parameter, EditorRequired]
     public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> EditRequested { get; set; }
+
     private IReadOnlyList<ICommerceBusinessObjectView> CommerceItems
         => Workspace.BusinessObjects
             .OfType<ICommerceBusinessObjectView>()
@@ -50,7 +53,9 @@
             new Dictionary<string, object?>
             {
                 [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = item,
-                [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc
+                [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.Workspace)] = Workspace,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.EditRequested)] = EditRequested
             },
             new DialogOptions
             {

@@ -137,7 +137,12 @@ else
                                                   TooltipText="Show BO ownership payload as QR"
                                                   Variant="Variant.Outlined"
                                                   TestId="cda-bo-ownership-qr-button" />
-                                    <Button Text="Verify ownership" Icon="fact_check" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="OpenVerificationDialogAsync" />
+                                    <Button Text="Edit"
+                                            Icon="edit"
+                                            ButtonStyle="ButtonStyle.Secondary"
+                                            Disabled="@(!CanEdit)"
+                                            Click="OpenEditDialogAsync"
+                                            data-testid="cda-bo-edit-button" />
                                     <Button Text="Upload DataItem" Icon="upload_file" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
                                     <Button Text="Send" Icon="send" ButtonStyle="ButtonStyle.Secondary" Click="SendAsync" />
                                     <Button Text="Set Sale" Icon="sell" ButtonStyle="ButtonStyle.Secondary" Click="SetPriceAsync" />
@@ -320,6 +325,9 @@ else
     public DateTimeOffset? ViewedAtUtc { get; set; }
 
     [Parameter]
+    public BusinessObjectWorkspaceModel? Workspace { get; set; }
+
+    [Parameter]
     public bool ShowActions { get; set; } = true;
 
     [Parameter]
@@ -327,6 +335,9 @@ else
 
     [Parameter]
     public EventCallback<IBusinessObjectView> SetPriceRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> EditRequested { get; set; }
 
     [Parameter]
     public EventCallback<TxId> TransactionDetailsRequested { get; set; }
@@ -434,6 +445,9 @@ else
     private bool IsTicket
         => Object is not null && BusinessObjectTicketVerification.IsTicketObject(Object.ObjectType);
 
+    private bool CanEdit
+        => Object is not null && Workspace is not null && EditRequested.HasDelegate;
+
     private bool TicketUsed
         => Object is not null && BusinessObjectTicketVerification.StateHasUsedFlag(Object.StateJson);
 
@@ -480,6 +494,40 @@ else
     private Task SetPriceAsync()
         => Object is null ? Task.CompletedTask : SetPriceRequested.InvokeAsync(Object);
 
+    private Task OpenEditDialogAsync()
+    {
+        if (Object is null || Workspace is null)
+        {
+            Notifications.Warning("Edit unavailable", "BusinessObject editing needs a loaded workspace.", position: NotificationPosition.BottomCenter);
+            return Task.CompletedTask;
+        }
+
+        return DialogService.OpenAsync<BusinessObjectCreationWizard>(
+            $"{DisplayName} - Edit",
+            new Dictionary<string, object?>
+            {
+                [nameof(BusinessObjectCreationWizard.Model)] = BusinessObjectCreationWizardModel.ForEdit(Object),
+                [nameof(BusinessObjectCreationWizard.Workspace)] = Workspace,
+                [nameof(BusinessObjectCreationWizard.StageBusinessObjectRequested)] =
+                    EventCallback.Factory.Create<BusinessObjectTransactionDraft>(this, StageEditAsync)
+            },
+            new DialogOptions
+            {
+                Subtitle = $"{Object.ObjectType} - {Object.ObjectId.Value}",
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--bo-edit",
+                TestId = "cda-bo-edit-dialog"
+            });
+    }
+
+    private async Task StageEditAsync(BusinessObjectTransactionDraft draft)
+    {
+        await EditRequested.InvokeAsync(draft);
+        await DialogService.CloseAsync(draft);
+    }
+
     private Task OpenTransactionAsync()
         => Object is null ? Task.CompletedTask : TransactionDetailsRequested.InvokeAsync(Object.CurrentOutPoint.TxId);
 
@@ -513,24 +561,6 @@ else
             ticketVerificationBusy = false;
         }
     }
-
-    private Task OpenVerificationDialogAsync()
-        => Object is null
-            ? Task.CompletedTask
-            : DialogService.OpenAsync<BusinessObjectVerificationDialogContent>(
-                "BusinessObject Verification",
-                new Dictionary<string, object?>
-                {
-                    [nameof(BusinessObjectVerificationDialogContent.Object)] = Object
-                },
-                new DialogOptions
-                {
-                    Subtitle = Object.ObjectId.Value,
-                    Size = ModalSize.Wide,
-                    DenseChrome = true,
-                    Class = "cda-vef-dialog cda-vef-dialog--verification",
-                    TestId = "cda-bo-verification-dialog"
-                });
 
     private async Task UseTicketAsync()
     {

@@ -182,7 +182,8 @@
         </section>
     </Grid>
 
-    <BusinessObjectCommerceDashboard Workspace="Workspace" />
+    <BusinessObjectCommerceDashboard Workspace="Workspace"
+                                     EditRequested="TransactionSubmitRequested" />
 
     <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-vef-account-analytics-grid" data-testid="cda-vef-account-analytics">
         <AccountBalanceTrendChart Workspace="Workspace" />
@@ -367,6 +368,7 @@
                 [nameof(MessageSecurityPanel.DecryptRequested)] = MessageDecryptRequested,
                 [nameof(MessageSecurityPanel.SendRequested)] = BusinessObjectSendRequested,
                 [nameof(MessageSecurityPanel.SetPriceRequested)] = BusinessObjectSetPriceRequested,
+                [nameof(MessageSecurityPanel.EditRequested)] = TransactionSubmitRequested,
                 [nameof(MessageSecurityPanel.TransactionDetailsRequested)] = BusinessObjectTransactionDetailsRequested,
                 [nameof(MessageSecurityPanel.TicketVerificationRequested)] = BusinessObjectTicketVerificationRequested,
                 [nameof(MessageSecurityPanel.TicketUseRequested)] = BusinessObjectTicketUseRequested

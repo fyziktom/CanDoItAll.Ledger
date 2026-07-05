@@ -1,0 +1,6 @@
+Invariant: SB02-EDIT-UPDATE
+Command: git show HEAD source check for pre-change BO Edit action and wizard UpdateObject staging
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+StartTimeUtc: 2026-07-04T23:10:31.4238629Z
+ExitCode: 1
+SB02-EDIT-UPDATE failing-first: pre-change BO details had no Edit action and the mint wizard had no UpdateObject staging branch.

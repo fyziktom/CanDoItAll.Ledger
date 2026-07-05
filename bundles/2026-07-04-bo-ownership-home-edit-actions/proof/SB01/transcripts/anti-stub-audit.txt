@@ -1,0 +1,6 @@
+Invariant: SB01-HOME-ONLY
+Command: Select-String -Pattern 'TODO|HACK|NotImplemented|throw new NotImplementedException|placeholder|template-only|stubbed|fake implementation' scoped to SB01 changed source/test files
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+StartTimeUtc: 2026-07-04T22:57:00.6314068Z
+ExitCode: 0
+Result: no placeholder, TODO, NotImplemented, or stub markers found in SB01 touched files.

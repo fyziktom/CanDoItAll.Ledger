@@ -361,7 +361,14 @@
                                 }
                             </Grid>
                         }
-                        @if (Workspace is not null)
+                        @if (IsEditMode && Model.EditSource is not null)
+                        {
+                            <div class="cda-economy-fact cda-economy-fact--wide" data-testid="bo-edit-source">
+                                <span>Update source</span>
+                                <strong>@ShortObjectId(Model.EditSource.ObjectId)</strong>
+                            </div>
+                        }
+                        else if (Workspace is not null)
                         {
                             <AvailableTokenSelector Options="Workspace.TokenOptions"
                                                     SelectedKey="@selectedTokenKey"
@@ -374,7 +381,7 @@
                             </div>
                         }
                         <Cluster Gap="LayoutGap.Small">
-                            <Button Text="Stage BO Transaction" Icon="receipt_long" ButtonStyle="ButtonStyle.Secondary" Disabled="@(!CanStageSelectedAsset)" Click="StageBusinessObjectAsync" />
+                            <Button Text="@StageButtonText" Icon="receipt_long" ButtonStyle="ButtonStyle.Secondary" Disabled="@(!CanStageSelectedAsset)" Click="StageBusinessObjectAsync" />
                             <Button Text="Preview Details" Icon="info" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="OpenFinishDetailsAsync" />
                         </Cluster>
                     </Stack>
@@ -425,9 +432,11 @@
     private string selectedAddressBookAddress = string.Empty;
     private string recipientListText = string.Empty;
 
+    private bool IsEditMode => Model.EditSource is not null;
+
     protected override async Task OnParametersSetAsync()
     {
-        string modelKey = $"{Model.ObjectType}:{Model.Name}";
+        string modelKey = $"{Model.ObjectType}:{Model.Name}:{Model.EditSource?.ObjectId.Value}:{Model.EditSource?.EffectiveTimeUtc:o}";
         if (currentModelKey == modelKey)
         {
             await LoadTagSuggestionsAsync();
@@ -437,10 +446,16 @@
         currentModelKey = modelKey;
         currentStep = Math.Clamp(Model.Step, 1, 3);
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(Model.ObjectType);
-        if (!definition.IsUserMintable)
+        if (!definition.IsUserMintable && !IsEditMode)
         {
             definition = BusinessObjectFamilyCatalog.UserMintableFamilies.First();
         }
+
+        BusinessObjectMediaPayload? editPayload = Model.EditSource is null
+            ? null
+            : BusinessObjectPayloadBuilder.TryParseMediaPayload(Model.EditSource.StateJson, out BusinessObjectMediaPayload? parsedPayload)
+                ? parsedPayload
+                : null;
 
         selectedObjectType = definition.ObjectType;
         name = Model.Name;
@@ -448,8 +463,9 @@
         description = Model.Description;
         text = Model.Text;
         fieldValues = new Dictionary<string, string>(
-            BusinessObjectPayloadBuilder.NormalizeFields(definition, null),
+            BusinessObjectPayloadBuilder.NormalizeFields(definition, editPayload?.Fields),
             StringComparer.Ordinal);
+        uploadedItems = [];
         EnsureFieldKeys();
         selectedTicketEvent = null;
         multimintEnabled = false;
@@ -478,9 +494,22 @@
         => BusinessObjectPayloadBuilder.CreateFacts(SelectedDefinition, fieldValues);
 
     private IReadOnlyList<FilterOption> ObjectTypeOptions
-        => BusinessObjectFamilyCatalog.UserMintableFamilies
-            .Select(family => new FilterOption(family.ObjectType, family.DisplayName))
-            .ToArray();
+    {
+        get
+        {
+            FilterOption[] options = BusinessObjectFamilyCatalog.UserMintableFamilies
+                .Select(family => new FilterOption(family.ObjectType, family.DisplayName))
+                .ToArray();
+            if (!IsEditMode || options.Any(option => option.Value.Equals(selectedObjectType, StringComparison.OrdinalIgnoreCase)))
+            {
+                return options;
+            }
+
+            return new[] { new FilterOption(SelectedDefinition.ObjectType, SelectedDefinition.DisplayName) }
+                .Concat(options)
+                .ToArray();
+        }
+    }
 
     private IReadOnlyList<FilterOption> RecipientModeOptions
         =>
@@ -509,7 +538,7 @@
         => Workspace?.TokenOptions.FirstOrDefault(option => option.Key == selectedTokenKey);
 
     private bool CanStageSelectedAsset
-        => SelectedToken is null || SelectedToken.IsMain || SelectedToken.HasReusableSource;
+        => IsEditMode || SelectedToken is null || SelectedToken.IsMain || SelectedToken.HasReusableSource;
 
     private string CreationAssetHint
         => SelectedToken is null || SelectedToken.IsMain
@@ -538,7 +567,7 @@
         => recipientMode.Equals(RecipientModeManual, StringComparison.Ordinal);
 
     private bool ShouldStageTicketBatch
-        => IsTicketSelected && multimintEnabled;
+        => !IsEditMode && IsTicketSelected && multimintEnabled;
 
     private int ResolvedTicketMultimintCount
         => Math.Clamp(ticketMultimintCount, 1, MaxTicketMultimintCount);
@@ -579,10 +608,13 @@
     private string TagAccountScope => Workspace?.Address.Value ?? "bo-wizard";
 
     private string NextButtonText
-        => currentStep == 3 ? "Stage BO" : "Next";
+        => currentStep == 3 ? (IsEditMode ? "Stage update" : "Stage BO") : "Next";
 
     private string NextButtonIcon
         => currentStep == 3 ? "receipt_long" : "arrow_forward";
+
+    private string StageButtonText
+        => IsEditMode ? "Stage BO Update" : "Stage BO Transaction";
 
     private void SetStepIndex(int stepIndex)
     {
@@ -934,14 +966,20 @@
             return;
         }
 
-        EconomyTokenOption? selectedToken = SelectedToken;
-        if (selectedToken is not null && !selectedToken.IsMain && !selectedToken.HasReusableSource)
+        EconomyTokenOption? selectedToken = IsEditMode ? null : SelectedToken;
+        if (!IsEditMode && selectedToken is not null && !selectedToken.IsMain && !selectedToken.HasReusableSource)
         {
             Notifications.Warning("Reusable source required", CreationAssetHint, position: NotificationPosition.BottomCenter);
             return;
         }
 
         BusinessObjectMediaPayload payload = CreatePayload();
+        if (IsEditMode)
+        {
+            await StageBusinessObjectRequested.InvokeAsync(CreateUpdateDraft(payload));
+            return;
+        }
+
         if (ShouldStageTicketBatch)
         {
             IReadOnlyList<Address> recipients = ResolveTicketMultimintRecipients();
@@ -999,6 +1037,27 @@
             BusinessObjectTransactionMode.Create,
             TokenId: selectedToken?.IsMain == true ? null : selectedToken?.TokenId,
             TokenAmount: selectedToken?.IsMain == true || selectedToken?.TokenId is null ? null : Amount.FromInt64(1));
+    }
+
+    private BusinessObjectTransactionDraft CreateUpdateDraft(BusinessObjectMediaPayload payload)
+    {
+        BusinessObjectEditorModel editSource = Model.EditSource
+            ?? throw new InvalidOperationException("Edit source is required to stage a BO update.");
+        string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
+        string objectRef = Uri.EscapeDataString(editSource.ObjectId.Value);
+        return new BusinessObjectTransactionDraft(
+            editSource.ObjectId,
+            selectedObjectType,
+            string.IsNullOrWhiteSpace(editSource.SchemaVersion) ? "1.0" : editSource.SchemaVersion,
+            editSource.OwnerAddress,
+            editSource.OwnerAddress,
+            editSource.OwnerAddress,
+            Amount.Zero,
+            Amount.Zero,
+            stateJson,
+            $"bo-edit://{objectRef}/{DateTimeOffset.UtcNow:yyyyMMddHHmmss}",
+            BusinessObjectTransactionMode.UpdateObject,
+            SourceObjectId: editSource.ObjectId);
     }
 
     private BusinessObjectMediaPayload CreateTicketBatchPayload(
@@ -1080,19 +1139,20 @@
     private IBusinessObjectView CreatePreviewBusinessObject()
     {
         DateTimeOffset viewedAt = Workspace?.ViewedAtUtc ?? DateTimeOffset.UtcNow;
-        Address owner = Workspace?.Address ?? new Address("preview");
+        BusinessObjectEditorModel? editSource = Model.EditSource;
+        Address owner = editSource?.OwnerAddress ?? Workspace?.Address ?? new Address("preview");
         BusinessObjectMediaPayload payload = CreatePayload();
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
         IReadOnlyDictionary<string, string> fields = BusinessObjectPayloadBuilder.NormalizeFields(SelectedDefinition, payload.Fields);
 
         return new GenericTypedBusinessObjectView(
             Workspace?.Context ?? new LedgerAccountContext(new LedgerId("preview"), null),
-            new BusinessObjectId($"bo:preview:{selectedObjectType}:{BusinessObjectCreateIdFactory.NormalizeName(payload.Name)}"),
+            editSource?.ObjectId ?? new BusinessObjectId($"bo:preview:{selectedObjectType}:{BusinessObjectCreateIdFactory.NormalizeName(payload.Name)}"),
             selectedObjectType,
-            "1.0",
+            editSource?.SchemaVersion ?? "1.0",
             1,
             owner,
-            BusinessObjectOperation.Create,
+            IsEditMode ? BusinessObjectOperation.Update : BusinessObjectOperation.Create,
             new HashHex(new string('0', 64)),
             new OutPoint(new TxId("preview"), 0),
             stateJson,
@@ -1144,6 +1204,9 @@
 
     private static string ShortType(string value)
         => value.Length > 18 ? $"{value[..18]}..." : value;
+
+    private static string ShortObjectId(BusinessObjectId objectId)
+        => objectId.Value.Length > 24 ? $"{objectId.Value[..14]}...{objectId.Value[^6..]}" : objectId.Value;
 
     private sealed record FilterOption(string Value, string Text);
 }

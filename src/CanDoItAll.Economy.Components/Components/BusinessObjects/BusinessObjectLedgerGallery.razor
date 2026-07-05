@@ -124,6 +124,9 @@
     public EventCallback<IBusinessObjectView> SetPriceRequested { get; set; }
 
     [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> EditRequested { get; set; }
+
+    [Parameter]
     public EventCallback<TxId> TransactionDetailsRequested { get; set; }
 
     [Parameter]
@@ -174,8 +177,10 @@
             {
                 [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = item,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.Workspace)] = Workspace,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.SendRequested)] = SendRequested,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.SetPriceRequested)] = SetPriceRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.EditRequested)] = EditRequested,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.TicketVerificationRequested)] = TicketVerificationRequested,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.TicketUseRequested)] = TicketUseRequested
