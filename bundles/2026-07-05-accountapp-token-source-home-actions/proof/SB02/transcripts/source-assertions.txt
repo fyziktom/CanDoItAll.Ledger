@@ -1,0 +1,19 @@
+﻿Command: PowerShell source assertions for INV-SB02-HOME-ACTION-LABELS
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+Start: 2026-07-05T09:07:33.1285719-04:00
+Invariant: INV-SB02-HOME-ACTION-LABELS
+
+
+Name                                                          Passed
+----                                                          ------
+home action buttons use visible Text parameters                 True
+home action group keeps all expected test ids                   True
+large-screen action grid gives labels full row                  True
+metric copy controls hidden in compact metrics                  True
+top frame still uses icon-only PageHeaderActionButton wrapper   True
+component test asserts visible action labels                    True
+browser proof asserts labels fit without clipping               True
+
+
+
+ExitCode: 0

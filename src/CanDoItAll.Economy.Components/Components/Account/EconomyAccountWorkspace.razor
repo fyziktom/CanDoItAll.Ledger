@@ -45,18 +45,18 @@
         </div>
 
         <div class="cda-vef-account-actions">
-            <PageHeaderActionButton Icon="send" Label="Send" TooltipText="Send transaction" ButtonStyle="ButtonStyle.Secondary" Click="AddTransactionRequested" TestId="cda-action-send" />
-            <PageHeaderActionButton Icon="add_circle" Label="Token" TooltipText="Create token" Variant="Variant.Outlined" Click="CreateTokenRequested" TestId="cda-action-token" />
-            <PageHeaderActionButton Icon="contacts" Label="Addresses" TooltipText="Manage address directory" Variant="Variant.Outlined" Click="OpenAddressDirectoryAsync" TestId="cda-action-address-directory" />
-            <PageHeaderActionButton Icon="security" Label="Security" TooltipText="Open message security" Variant="Variant.Outlined" Click="OpenMessageSecurityDialogAsync" TestId="cda-action-security" />
-            <PageHeaderActionButton Icon="tune" Label="Settings" TooltipText="Open account settings" Variant="Variant.Outlined" Click="OpenSettingsDialogAsync" TestId="cda-action-settings" />
-            <PageHeaderActionButton Icon="archive" Label="Backup" TooltipText="Import or export browser-local settings" Variant="Variant.Outlined" Click="OpenSettingsBackupDialogAsync" TestId="cda-action-settings-backup" />
-            <PageHeaderActionButton Icon="refresh" Label="Refresh" TooltipText="Refresh workspace" Variant="Variant.Outlined" Click="RefreshRequested" TestId="cda-action-refresh" />
-            <PageHeaderActionButton Icon="add" Label="Subaccount" TooltipText="Create subaccount" Variant="Variant.Outlined" Click="CreateSubAccountRequested" TestId="cda-action-subaccount" />
+            <Button Icon="send" Text="Send" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="AddTransactionRequested" title="Send transaction" aria-label="Send transaction" data-testid="cda-action-send" />
+            <Button Icon="add_circle" Text="Token" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateTokenRequested" title="Create token" aria-label="Create token" data-testid="cda-action-token" />
+            <Button Icon="contacts" Text="Addresses" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenAddressDirectoryAsync" title="Manage address directory" aria-label="Manage address directory" data-testid="cda-action-address-directory" />
+            <Button Icon="security" Text="Security" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenMessageSecurityDialogAsync" title="Open message security" aria-label="Open message security" data-testid="cda-action-security" />
+            <Button Icon="tune" Text="Settings" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsDialogAsync" title="Open account settings" aria-label="Open account settings" data-testid="cda-action-settings" />
+            <Button Icon="archive" Text="Backup" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsBackupDialogAsync" title="Import or export browser-local settings" aria-label="Import or export browser-local settings" data-testid="cda-action-settings-backup" />
+            <Button Icon="refresh" Text="Refresh" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="RefreshRequested" title="Refresh workspace" aria-label="Refresh workspace" data-testid="cda-action-refresh" />
+            <Button Icon="add" Text="Subaccount" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateSubAccountRequested" title="Create subaccount" aria-label="Create subaccount" data-testid="cda-action-subaccount" />
         </div>
     </section>
 
-    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-vef-account-work-grid">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-account-work-grid">
         <section class="cda-vef-panel cda-vef-account-panel--dense">
             <div class="cda-vef-panel-header">
                 <span>Balances</span>
@@ -97,49 +97,28 @@
                                     <td>balance</td>
                                 </tr>
                             }
+                            @if (TokenSourceOutputs.Count > 0)
+                            {
+                                <tr class="cda-vef-balance-section-row">
+                                    <td colspan="3">Source UTXOs</td>
+                                </tr>
+                                @foreach (LedgerSpendableOutput output in TokenSourceOutputs)
+                                {
+                                    <tr class="cda-vef-balance-source-row">
+                                        <td>
+                                            <div class="cda-vef-balance-source-cell">
+                                                <strong>@output.Token!.TokenId.Value</strong>
+                                                <CopyableMonoValue Value="@output.OutPoint.ToString()" StartChars="8" EndChars="6" AriaLabel="Copy token source outpoint" />
+                                            </div>
+                                        </td>
+                                        <td>@output.Token.Amount</td>
+                                        <td><span class="cda-vef-source-pill cda-vef-source-pill--source">Source</span></td>
+                                    </tr>
+                                }
+                            }
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </section>
-
-        <section class="cda-vef-panel cda-vef-account-panel--dense">
-            <div class="cda-vef-panel-header">Token Sources</div>
-            <div class="cda-vef-panel-body cda-vef-source-list">
-                @if (TokenSourceOutputs.Count == 0)
-                {
-                    <p class="cda-vef-empty-line">No token UTXOs are currently spendable.</p>
-                }
-                else
-                {
-                    @foreach (LedgerSpendableOutput output in TokenSourceOutputs)
-                    {
-                        <article class="cda-vef-source-item">
-                            <div>
-                                <strong>@output.Token!.TokenId.Value</strong>
-                                <CopyableMonoValue Value="@output.OutPoint.ToString()" StartChars="8" EndChars="6" AriaLabel="Copy token source outpoint" />
-                            </div>
-                            <span class="@TokenShapeClass(output)">@TokenShape(output)</span>
-                            <strong>@output.Token.Amount</strong>
-                        </article>
-                    }
-                }
-
-                @if (Workspace.PermissionSourcesOrEmpty.Count > 0)
-                {
-                    <div class="cda-vef-source-divider">Permission grants</div>
-                    @foreach (LedgerPermissionSource permission in Workspace.PermissionSourcesOrEmpty.Take(3))
-                    {
-                        <article class="cda-vef-source-item">
-                            <div>
-                                <strong>@permission.Grant.Action</strong>
-                                <span>@permission.Grant.Namespace</span>
-                            </div>
-                            <span class="cda-vef-source-pill cda-vef-source-pill--permission">permission</span>
-                            <strong>@permission.Amount</strong>
-                        </article>
-                    }
-                }
             </div>
         </section>
 
@@ -261,7 +240,7 @@
 
     private IReadOnlyList<LedgerSpendableOutput> TokenSourceOutputs
         => Workspace.SpendableOutputsOrEmpty
-            .Where(output => output.Token is not null)
+            .Where(IsTokenSourceOutput)
             .OrderBy(output => output.Token!.TokenId.Value, StringComparer.Ordinal)
             .ThenByDescending(output => output.Token!.Amount.Value)
             .Take(5)
@@ -418,12 +397,8 @@
     private static string HistoryIcon(LedgerTransactionSummary transaction)
         => transaction.Kind == TransactionKind.Mint ? "south" : "north";
 
-    private static string TokenShape(LedgerSpendableOutput output)
-        => output.Token?.Amount.Value > 1m ? "Source" : "Unique";
-
-    private static string TokenShapeClass(LedgerSpendableOutput output)
-        => output.Token?.Amount.Value > 1m
-            ? "cda-vef-source-pill cda-vef-source-pill--source"
-            : "cda-vef-source-pill cda-vef-source-pill--unique";
-
+    private static bool IsTokenSourceOutput(LedgerSpendableOutput output)
+        => output.BusinessObject is null
+            && output.Token is not null
+            && output.Token.Amount.Value > 1m;
 }

@@ -1,0 +1,10 @@
+# Requirement Traceability
+
+| Requirement | Raw input | Bundle files | Source references | Proof target |
+| --- | --- | --- | --- | --- |
+| R01 real token source predicate | N001 | `requirements/01-normalized-requirements.md`, `subbundles/01-token-source-and-balance-card-behavior/README.md` | `repo://src/CanDoItAll.Economy.Components/Components/Account/EconomyAccountWorkspace.razor`, `repo://src/CanDoItAll.Economy.BusinessObjects/BusinessObjectAccount.cs` | `bundle://proof/SB01/transcripts/passing-component-tests.txt`, `bundle://proof/SB01/transcripts/source-assertions.txt` |
+| R02 one Balances card | N002 | `architecture/01-target-solution.md`, `subbundles/01-token-source-and-balance-card-behavior/README.md` | `repo://src/CanDoItAll.Economy.Components/Components/Account/EconomyAccountWorkspace.razor`, `repo://src/CanDoItAll.Economy.Components/wwwroot/css/economy-components.css` | `bundle://proof/SB01/transcripts/source-assertions.txt`, `bundle://proof/SB02/browser/accountapp-home-large.png` |
+| R03 unique/BO token exclusion | N001, N002 | `requirements/01-normalized-requirements.md`, `proof/SB01/semantic-invariants.md` | `repo://src/CanDoItAll.Economy.Components/Components/Account/EconomyAccountWorkspace.razor` | negative component assertion and SB01 semantic gate |
+| R04 home action labels | N003 | `subbundles/02-home-action-labels-and-browser-validation/README.md` | `repo://src/CanDoItAll.Economy.Components/Components/Account/EconomyAccountWorkspace.razor`, `repo://src/CanDoItAll.Economy.Components/wwwroot/css/economy-components.css` | `bundle://proof/SB02/transcripts/passing-component-tests.txt`, `bundle://proof/SB02/transcripts/playwright-large-home.txt` |
+| R05 top frame icon-only | N003 | `subbundles/02-home-action-labels-and-browser-validation/README.md` | `repo://examples/CanDoItAll.Economy.AccountApp/Pages/Home.razor` | `bundle://proof/SB02/transcripts/source-assertions.txt`, `bundle://proof/SB02/transcripts/playwright-large-home.txt` |
+| R06 large-screen visual proof | N003 | `reviews/01-execution-report.md`, `shared-prompts/qa-prompt.md` | AccountApp route `/` | `bundle://proof/SB02/browser/accountapp-home-large.png` |

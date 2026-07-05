@@ -1,0 +1,206 @@
+{
+  "Command": "NODE_PATH=%TEMP%\\cda-playwright-proof\\node_modules node bundles\\2026-07-05-accountapp-token-source-home-actions\\proof\\SB02\\scripts\\accountapp-home-large-proof.js",
+  "ExitCode": 0,
+  "appOrigin": "http://127.0.0.1:5046",
+  "apiOrigin": "http://127.0.0.1:5299",
+  "viewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "assertions": [
+    "Balances card is rendered",
+    "Standalone Token Sources card is absent",
+    "Balance card contains source UTXO section",
+    "Compact metrics hide copy-control text",
+    "Exactly one token source row is rendered (1)",
+    "Real token source outpoint is visible",
+    "Real token source amount is visible",
+    "Unique one-token UTXO is hidden from source rows",
+    "BO-backed permission source is hidden from source rows",
+    "BO-backed rule token is hidden from source rows",
+    "cda-action-send renders visible label 'Send'",
+    "cda-action-send label fits without clipping",
+    "cda-action-token renders visible label 'Token'",
+    "cda-action-token label fits without clipping",
+    "cda-action-address-directory renders visible label 'Addresses'",
+    "cda-action-address-directory label fits without clipping",
+    "cda-action-security renders visible label 'Security'",
+    "cda-action-security label fits without clipping",
+    "cda-action-settings renders visible label 'Settings'",
+    "cda-action-settings label fits without clipping",
+    "cda-action-settings-backup renders visible label 'Backup'",
+    "cda-action-settings-backup label fits without clipping",
+    "cda-action-refresh renders visible label 'Refresh'",
+    "cda-action-refresh label fits without clipping",
+    "cda-action-subaccount renders visible label 'Subaccount'",
+    "cda-action-subaccount label fits without clipping",
+    "Top-bar refresh remains icon-sized (36px)",
+    "Home action button has room for label (158.265625px)"
+  ],
+  "screenshot": "bundles/2026-07-05-accountapp-token-source-home-actions/proof/SB02/browser/accountapp-home-large.png",
+  "apiRequests": [
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/spendable-outputs",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/spendable-outputs",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/spendable-outputs",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/spendable-outputs",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/transactions?includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/business-objects",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/transactions?includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/spendable-outputs",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/spendable-outputs",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/spendable-outputs",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/spendable-outputs",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/transactions?includeData=true",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/business-objects",
+      "body": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/default/accounts/cdia1NMnKmdp1G2YWRc9cwfGigeJKh7wTNc3Mbj/transactions?includeData=true",
+      "body": ""
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "warning",
+      "text": "Service Worker registration blocked by Playwright"
+    },
+    {
+      "type": "info",
+      "text": "Debugging hotkey: Shift+Alt+D (when application has focus)"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "warning",
+      "text": "Service Worker registration blocked by Playwright"
+    },
+    {
+      "type": "info",
+      "text": "Debugging hotkey: Shift+Alt+D (when application has focus)"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+    }
+  ],
+  "appOutputTail": [
+    "info: Microsoft.Hosting.Lifetime[14]",
+    "      Now listening on: http://127.0.0.1:5046",
+    "info: Microsoft.Hosting.Lifetime[0]",
+    "      Application started. Press Ctrl+C to shut down.",
+    "info: Microsoft.Hosting.Lifetime[0]",
+    "      Hosting environment: Development",
+    "info: Microsoft.Hosting.Lifetime[0]",
+    "      Content root path: C:\\repositories\\CanDoItAll.Ledger\\examples\\CanDoItAll.Economy.AccountApp",
+    ""
+  ]
+}

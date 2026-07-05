@@ -1,0 +1,18 @@
+﻿Command: PowerShell source assertions for INV-SB01-TOKEN-SOURCE
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+Start: 2026-07-05T09:07:31.8731270-04:00
+Invariant: INV-SB01-TOKEN-SOURCE
+
+
+Name                                                     Passed
+----                                                     ------
+component filters BO-backed token outputs                  True
+component filters unique token outputs                     True
+balances card contains source rows                         True
+standalone Token Sources header removed                    True
+compact source CSS exists                                  True
+negative component test excludes unique and BO outpoints   True
+
+
+
+ExitCode: 0

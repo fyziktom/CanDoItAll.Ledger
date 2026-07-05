@@ -1,0 +1,11 @@
+﻿Command: dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj --filter FullyQualifiedName~BusinessObjectOwnershipPlacementComponentTests --no-restore --no-build
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+Start: 2026-07-05T09:08:36.9840614-04:00
+Invariant: INV-SB02-HOME-ACTION-LABELS
+
+Test run for C:\repositories\CanDoItAll.Ledger\tests\CanDoItAll.Ledger.Tests\bin\Debug\net10.0\CanDoItAll.Ledger.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     4, Skipped:     0, Total:     4, Duration: 2 s - CanDoItAll.Ledger.Tests.dll (net10.0)
+
+ExitCode: 0

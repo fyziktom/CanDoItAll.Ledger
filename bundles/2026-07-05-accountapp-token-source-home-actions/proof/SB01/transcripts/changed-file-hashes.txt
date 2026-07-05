@@ -1,0 +1,8 @@
+﻿Command: Get-FileHash for SB01 changed files
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+Start: 2026-07-05T09:07:31.7640831-04:00
+Invariant: INV-SB01-TOKEN-SOURCE
+B8B9F9F49584FC238C113D8A2310B4225AC1A87C5ACE8198430E7550366C8CFA  repo://src/CanDoItAll.Economy.Components/Components/Account/EconomyAccountWorkspace.razor
+A84827DEC9BF0052FFD917B2FF7E58171F534DBC2771E5832562D1376E313191  repo://src/CanDoItAll.Economy.Components/wwwroot/css/economy-components.css
+F6290EF81523510800C3F12C57D0A2038D572709B0FF77D933538D541ADBCCA2  repo://tests/CanDoItAll.Ledger.Tests/BusinessObjectOwnershipPlacementComponentTests.cs
+ExitCode: 0

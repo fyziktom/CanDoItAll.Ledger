@@ -1,0 +1,7 @@
+﻿Command: python C:\Users\dell\.codex\skills\candoitall-bundle-preparation\scripts\validate_bundle.py bundles\2026-07-05-accountapp-token-source-home-actions --profile feedback --stage completed --repo-root .
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+Start: 2026-07-05T09:13:47.0763833-04:00
+
+Bundle is valid for stage 'completed': C:\repositories\CanDoItAll.Ledger\bundles\2026-07-05-accountapp-token-source-home-actions
+
+ExitCode: 0

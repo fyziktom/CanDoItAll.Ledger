@@ -57,11 +57,56 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
         Assert.Contains("Verify ownership", security.Markup, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void HomeBalances_ShowOnlyRealTokenSourcesInsideBalancesCard()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+
+        IRenderedComponent<EconomyAccountWorkspace> home =
+            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+                .Add(x => x.Workspace, workspace));
+
+        Assert.Contains("Balances", home.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain(">Token Sources<", home.Markup, StringComparison.Ordinal);
+        Assert.Contains("tx-token-source", home.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("tx-permission-source", home.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("tx-rule-permission-source", home.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("tx-rule-cashpool", home.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HomeActionGroup_RendersVisibleShortLabels()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+
+        IRenderedComponent<EconomyAccountWorkspace> home =
+            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+                .Add(x => x.Workspace, workspace));
+
+        AssertActionLabel(home, "cda-action-send", "Send");
+        AssertActionLabel(home, "cda-action-token", "Token");
+        AssertActionLabel(home, "cda-action-address-directory", "Addresses");
+        AssertActionLabel(home, "cda-action-security", "Security");
+        AssertActionLabel(home, "cda-action-settings", "Settings");
+        AssertActionLabel(home, "cda-action-settings-backup", "Backup");
+        AssertActionLabel(home, "cda-action-refresh", "Refresh");
+        AssertActionLabel(home, "cda-action-subaccount", "Subaccount");
+    }
+
     private static void ClickTab<TComponent>(IRenderedComponent<TComponent> component, string text)
         where TComponent : IComponent
     {
         component.FindAll("[role='tab']")
             .Single(item => item.TextContent.Contains(text, StringComparison.Ordinal))
             .Click();
+    }
+
+    private static void AssertActionLabel(
+        IRenderedComponent<EconomyAccountWorkspace> home,
+        string testId,
+        string expectedLabel)
+    {
+        string label = home.Find($"[data-testid='{testId}'] .rz-button-text").TextContent.Trim();
+        Assert.Equal(expectedLabel, label);
     }
 }
