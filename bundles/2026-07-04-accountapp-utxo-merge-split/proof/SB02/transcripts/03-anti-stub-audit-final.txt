@@ -1,0 +1,4 @@
+Command: rg -n "TODO|NotImplemented|throw new NotImplementedException|stub|fixture|template" <changed production files>
+ExitCode: 0
+
+No anti-stub markers found in changed production files.

@@ -10,7 +10,9 @@
                 data-testid="cda-transaction-workbench-dialog">
     <TransactionComposerShell Draft="Draft"
                               TokenOptions="TokenOptions"
+                              SpendableOutputs="SpendableOutputs"
                               Bookmarks="Bookmarks"
+                              AccountScope="@AccountScope"
                               DraftChanged="DraftChanged"
                               SubmitRequested="SubmitRequested"
                               Dense="true" />
@@ -24,6 +26,9 @@
     public IReadOnlyList<EconomyTokenOption> TokenOptions { get; set; } = [];
 
     [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> SpendableOutputs { get; set; } = [];
+
+    [Parameter]
     public EventCallback<BusinessObjectTransactionDraft> DraftChanged { get; set; }
 
     [Parameter]
@@ -31,6 +36,9 @@
 
     [Parameter]
     public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string AccountScope { get; set; } = "transaction-workbench";
 
     private RenderFragment RenderContext => builder =>
     {

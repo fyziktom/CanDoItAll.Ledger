@@ -933,6 +933,18 @@ public sealed class WasmAccountWorkspaceAdapter(
                     draft.MainAmount),
                 cancellationToken),
 
+            BusinessObjectTransactionMode.UtxoMerge => account.BuildUnsignedUtxoMergeTransactionAsync(
+                new UtxoMergeRequest(
+                    draft.SelectedUtxosOrEmpty,
+                    ResolveOptionalAddress(draft.PaymentReceiverAddress)),
+                cancellationToken),
+
+            BusinessObjectTransactionMode.UtxoSplit => account.BuildUnsignedUtxoSplitTransactionAsync(
+                new UtxoSplitRequest(
+                    draft.SelectedUtxosOrEmpty,
+                    draft.UtxoSplitOutputsOrEmpty),
+                cancellationToken),
+
             _ => throw new InvalidOperationException($"Unsupported transaction mode: {draft.SelectedMode}.")
         };
 
@@ -1228,9 +1240,14 @@ public sealed class WasmAccountWorkspaceAdapter(
             BusinessObjectTransactionMode.CloneObject => "BusinessObject clone",
             BusinessObjectTransactionMode.MergeObjects => "BusinessObject merge",
             BusinessObjectTransactionMode.SplitBusinessObjectPayment => "BusinessObject split payment",
+            BusinessObjectTransactionMode.UtxoMerge => "UTXO merge",
+            BusinessObjectTransactionMode.UtxoSplit => "UTXO split",
             BusinessObjectTransactionMode.CreateRuleToken => "Rule BO create",
             _ => "Transaction"
         };
+
+    private static Address? ResolveOptionalAddress(Address address)
+        => Address.TryParse(address.Value, out Address parsed) ? parsed : null;
 
     private static string SafeText(string? value, string fallback)
         => string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();

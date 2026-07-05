@@ -1,6 +1,6 @@
 @namespace CanDoItAll.Economy.Components
 
-<article class="cda-sdk-mini-card" data-testid="cda-tx-input-card">
+<article class="cda-sdk-mini-card cda-vef-tx-io-card cda-vef-tx-input-card" data-testid="cda-tx-input-card">
     <div class="cda-sdk-mini-card__top">
         <strong>Input #@Input.InputIndex</strong>
         <Cluster Gap="LayoutGap.XSmall">
@@ -12,11 +12,14 @@
         </Cluster>
     </div>
     <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight cda-vef-input-fact-grid">
-        <div><span>Previous</span><strong><CopyableMonoValue Value="@Input.PreviousOutPoint.ToString()" StartChars="10" EndChars="6" AriaLabel="Copy previous outpoint" /></strong></div>
+        <div><span>Previous</span><strong><span class="cda-vef-outpoint-value" title="@Input.PreviousOutPoint.ToString()">@ShortOutPoint(Input.PreviousOutPoint.ToString())</span></strong></div>
         <div><span>Main</span><strong>@(Input.MainAmount?.ToString() ?? "unknown")</strong></div>
         <div><span>Token</span><strong>@FormatToken(Input.Token)</strong></div>
     </div>
-    <CopyableMonoValue Value="@Input.Address.Value" />
+    <div class="cda-vef-io-address-line">
+        <span>Source address</span>
+        <CopyableMonoValue Value="@Input.Address.Value" />
+    </div>
     @if (Input.BusinessObject is not null)
     {
         <small class="cda-sdk-muted">BO <CopyableMonoValue Value="@Input.BusinessObject.ObjectId.Value" Truncate="false" AriaLabel="Copy business object id" /> v@(Input.BusinessObject.Version)</small>
@@ -42,4 +45,7 @@
 
     private static string FormatToken(TokenTransfer? token)
         => token is null ? "none" : $"{token.Amount} {token.TokenId.Value}";
+
+    private static string ShortOutPoint(string value)
+        => value.Length <= 19 ? value : $"{value[..10]}...{value[^6..]}";
 }

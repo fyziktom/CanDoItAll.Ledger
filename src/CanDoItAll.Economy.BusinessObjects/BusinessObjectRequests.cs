@@ -32,6 +32,18 @@ public sealed record TokenTransferRequest(
     Address ReceiverAddress,
     Amount? MainAmount = null);
 
+public sealed record UtxoMergeRequest(
+    IReadOnlyList<OutPoint> SourceOutPoints,
+    Address? ReceiverAddress = null);
+
+public sealed record UtxoSplitOutput(
+    Address ReceiverAddress,
+    Amount Amount);
+
+public sealed record UtxoSplitRequest(
+    IReadOnlyList<OutPoint> SourceOutPoints,
+    IReadOnlyList<UtxoSplitOutput> Outputs);
+
 public sealed record TokenMintRequest(
     TokenId TokenId,
     Amount TokenAmount,

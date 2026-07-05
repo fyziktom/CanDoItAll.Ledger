@@ -425,6 +425,18 @@ public sealed class EconomyNodeWorkspaceSession(
                     draft.MainAmount),
                 cancellationToken).ConfigureAwait(false),
 
+            BusinessObjectTransactionMode.UtxoMerge => await account.MergeUtxosAsync(
+                new UtxoMergeRequest(
+                    draft.SelectedUtxosOrEmpty,
+                    ResolveOptionalAddress(draft.PaymentReceiverAddress)),
+                cancellationToken).ConfigureAwait(false),
+
+            BusinessObjectTransactionMode.UtxoSplit => await account.SplitUtxosAsync(
+                new UtxoSplitRequest(
+                    draft.SelectedUtxosOrEmpty,
+                    draft.UtxoSplitOutputsOrEmpty),
+                cancellationToken).ConfigureAwait(false),
+
             _ => throw new InvalidOperationException($"Unsupported real-node transaction mode: {draft.SelectedMode}.")
         };
 
@@ -986,9 +998,14 @@ public sealed class EconomyNodeWorkspaceSession(
             BusinessObjectTransactionMode.CloneObject => "BO clone",
             BusinessObjectTransactionMode.MainPayment => "Main payment",
             BusinessObjectTransactionMode.TokenTransfer => "Token transfer",
+            BusinessObjectTransactionMode.UtxoMerge => "UTXO merge",
+            BusinessObjectTransactionMode.UtxoSplit => "UTXO split",
             BusinessObjectTransactionMode.CreateRuleToken => "Rule BO create",
             _ => "BO create"
         };
+
+    private static Address? ResolveOptionalAddress(Address address)
+        => Address.TryParse(address.Value, out Address parsed) ? parsed : null;
 
     private static string NormalizeTokenSegment(string value, string fallback)
     {

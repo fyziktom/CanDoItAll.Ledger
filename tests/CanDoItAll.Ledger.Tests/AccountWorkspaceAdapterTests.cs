@@ -142,6 +142,71 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
     }
 
     [Fact]
+    public async Task WasmWorkspaceAdapter_SubmitsExplicitUtxoSplitAndMergeWithoutNodeSession()
+    {
+        WasmAdapterRig rig = await WasmAdapterRig.CreateAsync();
+        var adapter = new WasmAccountWorkspaceAdapter(
+            rig.Gateway,
+            rig.Gateway,
+            rig.TransactionBuilder,
+            rig.TransactionSigner,
+            rig.CryptoDriver,
+            new InMemoryAccountWorkspaceCache(),
+            new AddressDirectoryService(new InMemoryAccountWorkspaceCache()),
+            rig.CastRegistry,
+            rig.TimeProvider,
+            new WasmAccountWorkspaceOptions
+            {
+                LedgerId = Context.LedgerId.Value,
+                ScenarioId = Context.ScenarioId?.Value,
+                AccountName = "Browser account",
+                ConnectionLabel = "Browser API"
+            });
+        await adapter.UseUnlockedAccountAsync(rig.UnlockedKey, CancellationToken.None);
+
+        BusinessObjectWorkspaceModel initial = await adapter.GetWorkspaceAsync(CancellationToken.None);
+        LedgerSpendableOutput source = Assert.Single(initial.SpendableOutputsOrEmpty, output => output.BusinessObject is null && output.Token is null);
+        EconomyTransactionExecutionResult split = await adapter.SubmitTransactionAsync(
+            initial.TransactionDraft with
+            {
+                SelectedMode = BusinessObjectTransactionMode.UtxoSplit,
+                SelectedUtxos = [source.OutPoint],
+                UtxoSplitOutputs =
+                [
+                    new UtxoSplitOutput(rig.UnlockedKey.Address, Amount.FromInt64(40)),
+                    new UtxoSplitOutput(rig.UnlockedKey.Address, Amount.FromInt64(60))
+                ]
+            },
+            CancellationToken.None);
+        Assert.True(split.Accepted, split.Message);
+
+        BusinessObjectWorkspaceModel afterSplit = await adapter.GetWorkspaceAsync(CancellationToken.None);
+        LedgerSpendableOutput[] mergeInputs = afterSplit.SpendableOutputsOrEmpty
+            .Where(output => output.BusinessObject is null && output.Token is null)
+            .OrderBy(output => output.MainAmount.Value)
+            .ToArray();
+        Assert.Equal(2, mergeInputs.Length);
+
+        EconomyTransactionExecutionResult merge = await adapter.SubmitTransactionAsync(
+            afterSplit.TransactionDraft with
+            {
+                SelectedMode = BusinessObjectTransactionMode.UtxoMerge,
+                PaymentReceiverAddress = Receiver,
+                SelectedUtxos = mergeInputs.Select(output => output.OutPoint).ToArray()
+            },
+            CancellationToken.None);
+
+        Assert.True(merge.Accepted, merge.Message);
+        Assert.NotNull(merge.TxId);
+        EconomyTransactionDetailsModel? details = await adapter.GetTransactionDetailsAsync(merge.TxId!.Value, CancellationToken.None);
+        Assert.NotNull(details);
+        Assert.Equal(2, details!.Inputs.Count);
+        EconomyTransactionOutputDetails output = Assert.Single(details.Outputs);
+        Assert.Equal(Receiver, output.Address);
+        Assert.Equal("100", output.MainAmount.ToString());
+    }
+
+    [Fact]
     public async Task WasmWorkspaceAdapter_SendsAndOpensSecureMessagesBetweenAccounts()
     {
         SecureMessagingAdapterRig rig = await SecureMessagingAdapterRig.CreateAsync();

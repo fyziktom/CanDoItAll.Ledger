@@ -77,6 +77,9 @@ else
                 <section data-testid="adapter-transaction-composer">
                     <TransactionComposerShell Draft="workspace.TransactionDraft"
                                               TokenOptions="workspace.TokenOptions"
+                                              SpendableOutputs="workspace.SpendableOutputsOrEmpty"
+                                              Bookmarks="workspace.AddressBookmarks"
+                                              AccountScope="@workspace.Address.Value"
                                               SubmitRequested="SubmitTransactionAsync" />
                 </section>
             </Grid>
@@ -233,6 +236,7 @@ else
             {
                 [nameof(TransactionComposerDialogContent.Draft)] = workspace.TransactionDraft,
                 [nameof(TransactionComposerDialogContent.TokenOptions)] = workspace.TokenOptions,
+                [nameof(TransactionComposerDialogContent.SpendableOutputs)] = workspace.SpendableOutputsOrEmpty,
                 [nameof(TransactionComposerDialogContent.Bookmarks)] = workspace.AddressBookmarks,
                 [nameof(TransactionComposerDialogContent.AccountScope)] = workspace.Address.Value,
                 [nameof(TransactionComposerDialogContent.SubmitRequested)] =

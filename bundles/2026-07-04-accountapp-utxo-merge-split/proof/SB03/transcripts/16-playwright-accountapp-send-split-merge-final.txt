@@ -1,0 +1,24 @@
+Command: node bundles/2026-07-04-accountapp-utxo-merge-split/proof/SB03/accountapp-utxo-playwright.js
+ExitCode: 0
+
+{
+  "status": "passed",
+  "send": {
+    "txid": "2e960d76bee085b18a7450fd99e6f63458e00148a554f4316c5f1bb6c9bd3d4f",
+    "inputs": 1,
+    "outputs": 2
+  },
+  "split": {
+    "txid": "f6783209dc6789805bd5feb0d22bddcdfa84b9c82ba8e1153a63641c2481f9b8",
+    "inputs": 1,
+    "outputs": 6
+  },
+  "merge": {
+    "txid": "0bc89af693783810fd931c6e069430dbe080ee1de2d75f31b3689e8cc9de4ca9",
+    "inputs": 3,
+    "outputs": 1
+  },
+  "screenshots": 6
+}
+
+Invariant coverage: UTXO-BROWSER-001 UTXO-BROWSER-002

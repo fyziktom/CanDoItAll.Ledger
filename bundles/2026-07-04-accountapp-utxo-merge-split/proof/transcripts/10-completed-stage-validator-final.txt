@@ -1,0 +1,4 @@
+Command: python C:/Users/dell/.codex/skills/candoitall-bundle-preparation/scripts/validate_bundle.py bundles/2026-07-04-accountapp-utxo-merge-split --stage completed --profile feedback --repo-root .
+ExitCode: 0
+
+Bundle is valid for stage 'completed': C:\repositories\CanDoItAll.Ledger\bundles\2026-07-04-accountapp-utxo-merge-split

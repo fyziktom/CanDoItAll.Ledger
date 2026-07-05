@@ -1,3 +1,4 @@
+using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.Components.Models;
@@ -13,7 +14,9 @@ public enum BusinessObjectTransactionMode
     SplitBusinessObjectPayment = 6,
     MainPayment = 7,
     TokenTransfer = 8,
-    CreateRuleToken = 9
+    CreateRuleToken = 9,
+    UtxoMerge = 10,
+    UtxoSplit = 11
 }
 
 public sealed record BusinessObjectTransactionDraft(
@@ -33,7 +36,14 @@ public sealed record BusinessObjectTransactionDraft(
     BusinessObjectId? TargetObjectId = null,
     TokenId? TokenId = null,
     Amount? TokenAmount = null,
-    Amount? SecondaryPaymentAmount = null);
+    Amount? SecondaryPaymentAmount = null,
+    IReadOnlyList<OutPoint>? SelectedUtxos = null,
+    IReadOnlyList<UtxoSplitOutput>? UtxoSplitOutputs = null)
+{
+    public IReadOnlyList<OutPoint> SelectedUtxosOrEmpty => SelectedUtxos ?? [];
+
+    public IReadOnlyList<UtxoSplitOutput> UtxoSplitOutputsOrEmpty => UtxoSplitOutputs ?? [];
+}
 
 public sealed record EconomyTransactionExecutionResult(
     BusinessObjectTransactionMode Mode,

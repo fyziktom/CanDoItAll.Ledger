@@ -1,0 +1,61 @@
+@using System.Globalization
+@namespace CanDoItAll.Economy.Components
+
+<TransactionAddressInput Label="Payment receiver"
+                         Value="@Draft.PaymentReceiverAddress.Value"
+                         ValueChanged="SetPaymentReceiverAddressAsync"
+                         Placeholder="cdia1..."
+                         ContainerClass="cda-economy-field cda-economy-field--wide"
+                         Bookmarks="Bookmarks"
+                         AccountScope="@AccountScope"
+                         DialogSubtitle="Send"
+                         TestId="cda-send-payment-receiver" />
+
+<FormField Text="Payment amount" ContainerClass="cda-economy-field">
+    <TextBox Value="@Draft.PaymentAmount.ToString()"
+             ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetPaymentAmountAsync))"
+             Immediate="true"
+             Placeholder="250"
+             aria-label="Payment amount"
+             data-testid="cda-send-payment-amount" />
+</FormField>
+
+<FormField Text="Memo" ContainerClass="cda-economy-field cda-economy-field--wide">
+    <TextBox Value="@Draft.ExternalRef"
+             ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetExternalRefAsync))"
+             Immediate="true"
+             Placeholder="operations payment"
+             aria-label="Memo"
+             data-testid="cda-send-payment-memo" />
+</FormField>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> DraftChanged { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string AccountScope { get; set; } = "transaction-composer";
+
+    private Task SetPaymentReceiverAddressAsync(string? value)
+        => UpdateDraftAsync(Draft with { PaymentReceiverAddress = new Address(value ?? string.Empty) });
+
+    private Task SetPaymentAmountAsync(string? value)
+        => UpdateDraftAsync(Draft with { PaymentAmount = ParseAmount(value) });
+
+    private Task SetExternalRefAsync(string? value)
+        => UpdateDraftAsync(Draft with { ExternalRef = value ?? string.Empty });
+
+    private Task UpdateDraftAsync(BusinessObjectTransactionDraft nextDraft)
+        => DraftChanged.InvokeAsync(nextDraft);
+
+    private static Amount ParseAmount(string? value)
+        => decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed) && parsed >= 0m
+            ? new Amount(parsed)
+            : Amount.Zero;
+}

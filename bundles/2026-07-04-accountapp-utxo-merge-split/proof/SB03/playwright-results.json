@@ -1,0 +1,31 @@
+{
+  "url": "http://localhost:5081/?view=wallet",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "send": {
+    "txid": "2e960d76bee085b18a7450fd99e6f63458e00148a554f4316c5f1bb6c9bd3d4f",
+    "inputCount": 1,
+    "outputCount": 2
+  },
+  "split": {
+    "txid": "f6783209dc6789805bd5feb0d22bddcdfa84b9c82ba8e1153a63641c2481f9b8",
+    "inputCount": 1,
+    "outputCount": 6
+  },
+  "merge": {
+    "txid": "0bc89af693783810fd931c6e069430dbe080ee1de2d75f31b3689e8cc9de4ca9",
+    "inputCount": 3,
+    "outputCount": 1
+  },
+  "screenshots": [
+    "screenshots/00-send-dialog.png",
+    "screenshots/00-send-details-io.png",
+    "screenshots/01-split-dialog.png",
+    "screenshots/02-split-details-io.png",
+    "screenshots/03-merge-dialog.png",
+    "screenshots/04-merge-details-io.png"
+  ],
+  "consoleMessages": []
+}

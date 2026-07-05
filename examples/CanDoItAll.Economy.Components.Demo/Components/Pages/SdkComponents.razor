@@ -40,7 +40,9 @@
         </div>
         <TransactionWorkbenchDialog Draft="workspace.TransactionDraft"
                                     TokenOptions="workspace.TokenOptions"
-                                    Bookmarks="workspace.AddressBookmarks" />
+                                    SpendableOutputs="workspace.SpendableOutputsOrEmpty"
+                                    Bookmarks="workspace.AddressBookmarks"
+                                    AccountScope="@workspace.Address.Value" />
 
         <div class="cda-sdk-demo-dialog-stack">
             <SendTransactionConfirmationDialog Draft="workspace.TransactionDraft" />

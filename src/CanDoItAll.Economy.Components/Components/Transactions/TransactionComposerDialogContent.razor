@@ -3,6 +3,7 @@
 
 <TransactionComposerShell Draft="Draft"
                           TokenOptions="TokenOptions"
+                          SpendableOutputs="SpendableOutputs"
                           Bookmarks="Bookmarks"
                           AccountScope="@AccountScope"
                           DraftChanged="DraftChanged"
@@ -17,6 +18,9 @@
 
     [Parameter]
     public IReadOnlyList<EconomyTokenOption> TokenOptions { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> SpendableOutputs { get; set; } = [];
 
     [Parameter]
     public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];

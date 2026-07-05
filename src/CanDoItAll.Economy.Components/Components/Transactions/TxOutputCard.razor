@@ -1,6 +1,6 @@
 @namespace CanDoItAll.Economy.Components
 
-<article class="cda-sdk-mini-card" data-testid="cda-tx-output-card">
+<article class="cda-sdk-mini-card cda-vef-tx-io-card cda-vef-tx-output-card" data-testid="cda-tx-output-card">
     <div class="cda-sdk-mini-card__top">
         <strong>Output #@Output.OutputIndex</strong>
         <Cluster Gap="LayoutGap.XSmall">
@@ -28,7 +28,10 @@
             </strong>
         </div>
     </div>
-    <CopyableMonoValue Value="@Output.Address.Value" />
+    <div class="cda-vef-io-address-line">
+        <span>Recipient</span>
+        <CopyableMonoValue Value="@Output.Address.Value" />
+    </div>
     @if (Output.BusinessObject is not null)
     {
         <small class="cda-sdk-muted">BO <CopyableMonoValue Value="@Output.BusinessObject.ObjectId.Value" Truncate="false" AriaLabel="Copy business object id" /> v@(Output.BusinessObject.Version) (@Output.BusinessObject.Operation)</small>

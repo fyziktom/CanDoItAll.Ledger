@@ -61,6 +61,18 @@ public sealed class BusinessObjectAccount(
     public Task<LedgerTransaction> BuildUnsignedTokenTransferTransactionAsync(TokenTransferRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildUnsignedTokenTransferAsync(Context, keySource, request, cancellationToken);
 
+    public Task<LedgerTransaction> BuildUtxoMergeTransactionAsync(UtxoMergeRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUtxoMergeAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUnsignedUtxoMergeTransactionAsync(UtxoMergeRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedUtxoMergeAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUtxoSplitTransactionAsync(UtxoSplitRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUtxoSplitAsync(Context, keySource, request, cancellationToken);
+
+    public Task<LedgerTransaction> BuildUnsignedUtxoSplitTransactionAsync(UtxoSplitRequest request, CancellationToken cancellationToken)
+        => transactionBuilder.BuildUnsignedUtxoSplitAsync(Context, keySource, request, cancellationToken);
+
     public Task<LedgerTransaction> BuildTokenMintTransactionAsync(TokenMintRequest request, CancellationToken cancellationToken)
         => transactionBuilder.BuildTokenMintAsync(Context, keySource, request, cancellationToken);
 
@@ -136,6 +148,18 @@ public sealed class BusinessObjectAccount(
     public async Task<LedgerSubmitResult> SendTokenTransferAsync(TokenTransferRequest request, CancellationToken cancellationToken)
     {
         LedgerTransaction transaction = await BuildTokenTransferTransactionAsync(request, cancellationToken).ConfigureAwait(false);
+        return await SubmitTransactionAsync(transaction, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerSubmitResult> MergeUtxosAsync(UtxoMergeRequest request, CancellationToken cancellationToken)
+    {
+        LedgerTransaction transaction = await BuildUtxoMergeTransactionAsync(request, cancellationToken).ConfigureAwait(false);
+        return await SubmitTransactionAsync(transaction, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerSubmitResult> SplitUtxosAsync(UtxoSplitRequest request, CancellationToken cancellationToken)
+    {
+        LedgerTransaction transaction = await BuildUtxoSplitTransactionAsync(request, cancellationToken).ConfigureAwait(false);
         return await SubmitTransactionAsync(transaction, cancellationToken).ConfigureAwait(false);
     }
 

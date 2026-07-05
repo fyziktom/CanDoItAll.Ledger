@@ -242,6 +242,94 @@ public sealed class BusinessObjectTransactionBuilder(
         return unsigned;
     }
 
+    public async Task<LedgerTransaction> BuildUtxoMergeAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        UtxoMergeRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedUtxoMergeAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedUtxoMergeAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        UtxoMergeRequest request,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<LedgerSpendableOutput> selected = await SelectExplicitPlainMainUtxosAsync(
+            context,
+            keySource,
+            request.SourceOutPoints,
+            minimumCount: 2,
+            cancellationToken).ConfigureAwait(false);
+        decimal selectedTotal = selected.Sum(output => output.MainAmount.Value);
+        if (selectedTotal <= 0m)
+        {
+            throw new InvalidOperationException("Selected UTXO total must be positive.");
+        }
+
+        var outputs = new[]
+        {
+            new TransactionOutput(0, request.ReceiverAddress ?? keySource.Address, new Amount(selectedTotal))
+        };
+
+        return CreateMultiInputTransaction(context, keySource, selected, outputs, TransactionKind.Transfer, data: null);
+    }
+
+    public async Task<LedgerTransaction> BuildUtxoSplitAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        UtxoSplitRequest request,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransaction unsigned = await BuildUnsignedUtxoSplitAsync(context, keySource, request, cancellationToken).ConfigureAwait(false);
+        return await transactionSigner.SignAsync(unsigned, keySource, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<LedgerTransaction> BuildUnsignedUtxoSplitAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        UtxoSplitRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Outputs.Count == 0)
+        {
+            throw new InvalidOperationException("At least one split output is required.");
+        }
+
+        foreach (UtxoSplitOutput output in request.Outputs)
+        {
+            EnsurePositive(output.Amount, nameof(request.Outputs));
+        }
+
+        IReadOnlyList<LedgerSpendableOutput> selected = await SelectExplicitPlainMainUtxosAsync(
+            context,
+            keySource,
+            request.SourceOutPoints,
+            minimumCount: 1,
+            cancellationToken).ConfigureAwait(false);
+        decimal selectedTotal = selected.Sum(output => output.MainAmount.Value);
+        decimal outputTotal = request.Outputs.Sum(output => output.Amount.Value);
+        if (outputTotal > selectedTotal)
+        {
+            throw new InvalidOperationException("Split output total cannot exceed the selected UTXO amount.");
+        }
+
+        var outputs = request.Outputs
+            .Select((output, index) => new TransactionOutput(index, output.ReceiverAddress, output.Amount))
+            .ToList();
+
+        decimal change = selectedTotal - outputTotal;
+        if (change > 0m)
+        {
+            outputs.Add(new TransactionOutput(outputs.Count, keySource.Address, new Amount(change)));
+        }
+
+        return CreateMultiInputTransaction(context, keySource, selected, outputs, TransactionKind.Transfer, data: null);
+    }
+
     public async Task<LedgerTransaction> BuildTokenMintAsync(
         LedgerAccountContext context,
         IAccountKeySource keySource,
@@ -920,6 +1008,54 @@ public sealed class BusinessObjectTransactionBuilder(
         }
 
         throw new InvalidOperationException($"Account does not have enough spendable token outputs for {tokenId.Value}.");
+    }
+
+    private async Task<IReadOnlyList<LedgerSpendableOutput>> SelectExplicitPlainMainUtxosAsync(
+        LedgerAccountContext context,
+        IAccountKeySource keySource,
+        IReadOnlyList<OutPoint> sourceOutPoints,
+        int minimumCount,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sourceOutPoints);
+        if (sourceOutPoints.Count < minimumCount)
+        {
+            throw new InvalidOperationException($"At least {minimumCount} selected UTXO(s) are required.");
+        }
+
+        IReadOnlyList<LedgerSpendableOutput> spendableOutputs = await ledgerReadClient
+            .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
+            .ConfigureAwait(false);
+        var byOutPoint = spendableOutputs.ToDictionary(output => output.OutPoint);
+        var seen = new HashSet<OutPoint>();
+        var selected = new List<LedgerSpendableOutput>(sourceOutPoints.Count);
+
+        foreach (OutPoint sourceOutPoint in sourceOutPoints)
+        {
+            if (!seen.Add(sourceOutPoint))
+            {
+                throw new InvalidOperationException($"Duplicate selected UTXO: {sourceOutPoint}.");
+            }
+
+            if (!byOutPoint.TryGetValue(sourceOutPoint, out LedgerSpendableOutput? output))
+            {
+                throw new InvalidOperationException($"Selected UTXO {sourceOutPoint} is not spendable by this account.");
+            }
+
+            if (output.BusinessObject is not null || output.Token is not null)
+            {
+                throw new InvalidOperationException($"Selected UTXO {sourceOutPoint} is not a plain main-currency output.");
+            }
+
+            if (output.MainAmount.Value <= 0m)
+            {
+                throw new InvalidOperationException($"Selected UTXO {sourceOutPoint} must have a positive main amount.");
+            }
+
+            selected.Add(output);
+        }
+
+        return selected;
     }
 
     private static LedgerSpendableOutput SelectPermissionIssueSource(

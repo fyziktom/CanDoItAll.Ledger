@@ -416,6 +416,143 @@ public sealed class BusinessObjectAdvancedTransactionTests
     }
 
     [Fact]
+    public async Task Account_MergesSelectedPlainUtxosIntoSingleOutput()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T00:20:00Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        BusinessObjectAccount bob = rig.CreateAccount("bob");
+
+        LedgerSubmitResult mint = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.FromDecimal(0.4m)),
+            new TransactionOutput(1, Alice, Amount.FromInt64(3)),
+            new TransactionOutput(2, Alice, Amount.FromDecimal(9.6m)));
+        Assert.True(mint.Accepted);
+
+        OutPoint first = new(mint.TxId!.Value, 0);
+        OutPoint third = new(mint.TxId.Value, 2);
+
+        LedgerTransaction merge = await alice.BuildUtxoMergeTransactionAsync(
+            new UtxoMergeRequest([first, third], Bob),
+            CancellationToken.None);
+
+        Assert.Equal(TransactionKind.Transfer, merge.Kind);
+        Assert.Equal(new[] { first, third }, merge.Inputs.Select(input => input.PreviousOutPoint));
+        TransactionOutput output = Assert.Single(merge.Outputs);
+        Assert.Equal(Bob, output.Address);
+        Assert.Equal("10", output.MainAmount.ToString());
+        Assert.Null(output.Token);
+        Assert.Null(output.BusinessObject);
+
+        LedgerSubmitResult result = await alice.SubmitTransactionAsync(merge, CancellationToken.None);
+
+        Assert.True(result.Accepted, string.Join("; ", result.Errors));
+        Assert.Equal("3", (await alice.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
+        Assert.Equal("10", (await bob.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
+    }
+
+    [Fact]
+    public async Task Account_SplitsSelectedPlainUtxosIntoRequestedOutputsAndChange()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T00:30:00Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        BusinessObjectAccount bob = rig.CreateAccount("bob");
+        BusinessObjectAccount carol = rig.CreateAccount("carol");
+        BusinessObjectAccount dave = rig.CreateAccount("dave");
+
+        LedgerSubmitResult mint = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.FromInt64(10)),
+            new TransactionOutput(1, Alice, Amount.FromInt64(2)));
+        Assert.True(mint.Accepted);
+
+        OutPoint first = new(mint.TxId!.Value, 0);
+        OutPoint second = new(mint.TxId.Value, 1);
+
+        LedgerTransaction split = await alice.BuildUtxoSplitTransactionAsync(
+            new UtxoSplitRequest(
+                [first, second],
+                [
+                    new UtxoSplitOutput(Bob, Amount.FromDecimal(0.5m)),
+                    new UtxoSplitOutput(Carol, Amount.FromDecimal(0.5m)),
+                    new UtxoSplitOutput(Dave, Amount.FromInt64(3))
+                ]),
+            CancellationToken.None);
+
+        Assert.Equal(TransactionKind.Transfer, split.Kind);
+        Assert.Equal(new[] { first, second }, split.Inputs.Select(input => input.PreviousOutPoint));
+        Assert.Equal(4, split.Outputs.Count);
+        Assert.Equal("0.5", split.Outputs[0].MainAmount.ToString());
+        Assert.Equal(Bob, split.Outputs[0].Address);
+        Assert.Equal("0.5", split.Outputs[1].MainAmount.ToString());
+        Assert.Equal(Carol, split.Outputs[1].Address);
+        Assert.Equal("3", split.Outputs[2].MainAmount.ToString());
+        Assert.Equal(Dave, split.Outputs[2].Address);
+        Assert.Equal("8", split.Outputs[3].MainAmount.ToString());
+        Assert.Equal(Alice, split.Outputs[3].Address);
+
+        LedgerSubmitResult result = await alice.SubmitTransactionAsync(split, CancellationToken.None);
+
+        Assert.True(result.Accepted, string.Join("; ", result.Errors));
+        Assert.Equal("8", (await alice.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
+        Assert.Equal("0.5", (await bob.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
+        Assert.Equal("0.5", (await carol.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
+        Assert.Equal("3", (await dave.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
+    }
+
+    [Fact]
+    public async Task Account_RejectsDisallowedOrInvalidExplicitUtxoSelections()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T00:40:00Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        LedgerSubmitResult mint = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.FromInt64(10)),
+            new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(5))),
+            new TransactionOutput(2, Alice, Amount.FromInt64(5)));
+        Assert.True(mint.Accepted);
+
+        OutPoint plain = new(mint.TxId!.Value, 0);
+        OutPoint token = new(mint.TxId.Value, 1);
+        OutPoint boSource = new(mint.TxId.Value, 2);
+
+        LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
+            new CreateBusinessObjectRequest(
+                new BusinessObjectId("explicit-utxo-bo"),
+                "settings",
+                "{}",
+                MainAmount: Amount.FromInt64(5),
+                SourceOutPoint: boSource),
+            CancellationToken.None);
+        Assert.True(create.Accepted, string.Join("; ", create.Errors));
+        LedgerBusinessObjectHolding holding = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
+
+        InvalidOperationException duplicate = await Assert.ThrowsAsync<InvalidOperationException>(() => alice.BuildUtxoMergeTransactionAsync(
+            new UtxoMergeRequest([plain, plain], Alice),
+            CancellationToken.None));
+        Assert.Contains("Duplicate", duplicate.Message, StringComparison.OrdinalIgnoreCase);
+
+        InvalidOperationException tokenError = await Assert.ThrowsAsync<InvalidOperationException>(() => alice.BuildUtxoMergeTransactionAsync(
+            new UtxoMergeRequest([plain, token], Alice),
+            CancellationToken.None));
+        Assert.Contains("plain main-currency", tokenError.Message, StringComparison.OrdinalIgnoreCase);
+
+        InvalidOperationException businessObjectError = await Assert.ThrowsAsync<InvalidOperationException>(() => alice.BuildUtxoSplitTransactionAsync(
+            new UtxoSplitRequest(
+                [holding.CurrentOutPoint],
+                [new UtxoSplitOutput(Alice, Amount.FromInt64(1))]),
+            CancellationToken.None));
+        Assert.Contains("plain main-currency", businessObjectError.Message, StringComparison.OrdinalIgnoreCase);
+
+        InvalidOperationException overspend = await Assert.ThrowsAsync<InvalidOperationException>(() => alice.BuildUtxoSplitTransactionAsync(
+            new UtxoSplitRequest(
+                [plain],
+                [new UtxoSplitOutput(Alice, Amount.FromInt64(11))]),
+            CancellationToken.None));
+        Assert.Contains("cannot exceed", overspend.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Account_SendsTokenTransfersWithMainAndTokenChange()
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T01:00:00Z"));

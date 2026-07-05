@@ -1,8 +1,10 @@
 using Bunit;
+using AngleSharp.Dom;
 using CanDoItAll.Components.BaseLib;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
+using CanDoItAll.Economy.Components.Samples;
 using CanDoItAll.Economy.Core;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -124,6 +126,92 @@ public sealed class TransactionUiComponentTests : TestContext
         Assert.DoesNotContain("\\u0022", payloadJson, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void TransactionComposerShell_RendersUtxoMergeWithOnlyPlainSpendableInputs()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        LedgerSpendableOutput extraPlain = CreateSpendableOutput("tx-extra-plain", 2, Amount.FromDecimal(3.5m), workspace.Address);
+        BusinessObjectTransactionDraft draft = workspace.TransactionDraft with
+        {
+            SelectedMode = BusinessObjectTransactionMode.UtxoMerge,
+            PaymentReceiverAddress = workspace.Address,
+            SelectedUtxos =
+            [
+                workspace.SpendableOutputsOrEmpty[0].OutPoint,
+                extraPlain.OutPoint
+            ]
+        };
+
+        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+            .Add(x => x.Draft, draft)
+            .Add(x => x.TokenOptions, workspace.TokenOptions)
+            .Add(x => x.Bookmarks, workspace.AddressBookmarks)
+            .Add(x => x.SpendableOutputs, workspace.SpendableOutputsOrEmpty.Append(extraPlain).ToArray()));
+
+        IReadOnlyList<IElement> rows = component.FindAll("[data-testid='cda-merge-utxo-selector-row']");
+
+        Assert.Equal(2, rows.Count);
+        Assert.Contains("2 selected", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Combine selected plain UTXOs into one output.", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("tx-token-source", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("tx-permission-source", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("tx-rule-permission-source", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TransactionUtxoSplitForm_AppliesEqualOutputPlanToDraft()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectTransactionDraft? captured = null;
+
+        IRenderedComponent<TransactionUtxoSplitForm> component = RenderComponent<TransactionUtxoSplitForm>(parameters => parameters
+            .Add(x => x.Draft, workspace.TransactionDraft with { SelectedMode = BusinessObjectTransactionMode.UtxoSplit })
+            .Add(x => x.Bookmarks, workspace.AddressBookmarks)
+            .Add(x => x.SpendableOutputs, workspace.SpendableOutputsOrEmpty)
+            .Add(x => x.DraftChanged, draft => captured = draft));
+
+        component.Find("[data-testid='cda-split-equal-count']").Input("3");
+        component.Find("[data-testid='cda-split-equal-amount']").Input("0.5");
+        IElement apply = component.FindAll("button")
+            .Single(button => button.TextContent.Contains("Apply equal outputs", StringComparison.Ordinal));
+        await apply.ClickAsync(new MouseEventArgs());
+
+        Assert.NotNull(captured);
+        Assert.Equal(3, captured!.UtxoSplitOutputsOrEmpty.Count);
+        Assert.All(captured.UtxoSplitOutputsOrEmpty, output =>
+        {
+            Assert.Equal(workspace.Address, output.ReceiverAddress);
+            Assert.Equal("0.5", output.Amount.ToString());
+        });
+    }
+
+    [Fact]
+    public void TransactionSendForm_UpdatesReusablePaymentDraftFields()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectTransactionDraft current = workspace.TransactionDraft with
+        {
+            SelectedMode = BusinessObjectTransactionMode.MainPayment
+        };
+
+        IRenderedComponent<TransactionSendForm> component = RenderComponent<TransactionSendForm>(parameters => parameters
+            .Add(x => x.Draft, current)
+            .Add(x => x.Bookmarks, workspace.AddressBookmarks)
+            .Add(x => x.DraftChanged, draft => current = draft));
+
+        component.Find("[data-testid='cda-send-payment-amount']").Input("12.25");
+        Assert.Equal("12.25", current.PaymentAmount.ToString());
+
+        component.SetParametersAndRender(parameters => parameters
+            .Add(x => x.Draft, current)
+            .Add(x => x.Bookmarks, workspace.AddressBookmarks)
+            .Add(x => x.DraftChanged, draft => current = draft));
+        component.Find("[data-testid='cda-send-payment-memo']").Input("ops payout");
+
+        Assert.Equal("ops payout", current.ExternalRef);
+        Assert.Equal("12.25", current.PaymentAmount.ToString());
+    }
+
     private static LedgerTransactionSummary CreateSummary(
         string txId,
         DateTimeOffset timestamp,
@@ -141,6 +229,21 @@ public sealed class TransactionUiComponentTests : TestContext
             [],
             data,
             ledgerSequence);
+
+    private static LedgerSpendableOutput CreateSpendableOutput(
+        string txId,
+        int outputIndex,
+        Amount amount,
+        Address address)
+        => new(
+            Context,
+            new OutPointKey(new HashHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+            new OutPoint(new TxId(txId), outputIndex),
+            address,
+            amount,
+            null,
+            null,
+            DateTimeOffset.Parse("2026-07-03T12:00:00Z"));
 
     private static TransactionData CreateMessageData()
         => new(
