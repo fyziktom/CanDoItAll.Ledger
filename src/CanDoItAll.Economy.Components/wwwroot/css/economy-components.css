@@ -4176,11 +4176,23 @@ button.cda-economy-list-item:focus-visible {
   flex: 0 0 auto;
 }
 
-.cda-vef-account-work-grid {
-  align-items: stretch;
+.cda-vef-account-home-tabs,
+.cda-vef-account-tab-panel,
+.cda-vef-account-tab-panel > * {
+  min-width: 0;
 }
 
-.cda-vef-account-work-grid > .cda-vef-panel {
+.cda-vef-account-home-tabs .cad-tabs__panel {
+  min-width: 0;
+}
+
+.cda-vef-account-tab-panel {
+  display: grid;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.cda-vef-account-home-tabs .cda-vef-account-panel--dense {
   min-height: 16rem;
 }
 

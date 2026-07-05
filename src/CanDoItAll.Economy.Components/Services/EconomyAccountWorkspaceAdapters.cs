@@ -238,13 +238,22 @@ public sealed class WasmAccountWorkspaceAdapter(
             .ConfigureAwait(false);
         if (cached is not null)
         {
-            return cached;
+            EconomyTransactionDetailsModel resolvedCached = await ResolveInputDetailsAsync(cached, cancellationToken)
+                .ConfigureAwait(false);
+            if (!ReferenceEquals(cached.Inputs, resolvedCached.Inputs))
+            {
+                await workspaceCache.SetJsonAsync(cacheKey, resolvedCached, cancellationToken).ConfigureAwait(false);
+            }
+
+            return resolvedCached;
         }
 
         LedgerTransactionSummary? summary = await ledgerReadClient
             .GetTransactionAsync(Context, txId, includeData: true, cancellationToken)
             .ConfigureAwait(false);
-        EconomyTransactionDetailsModel? details = summary is null ? null : ToDetails(summary);
+        EconomyTransactionDetailsModel? details = summary is null
+            ? null
+            : await ResolveInputDetailsAsync(ToDetails(summary), cancellationToken).ConfigureAwait(false);
         if (details is not null)
         {
             await workspaceCache.SetJsonAsync(cacheKey, details, cancellationToken).ConfigureAwait(false);
@@ -1005,6 +1014,37 @@ public sealed class WasmAccountWorkspaceAdapter(
             : addresses.Select((address, index) => new EconomyAddressBookmark($"Recent address {index + 1}", address)).ToArray();
     }
 
+    private async Task<EconomyTransactionDetailsModel> ResolveInputDetailsAsync(
+        EconomyTransactionDetailsModel details,
+        CancellationToken cancellationToken)
+    {
+        TransactionInputDetailResolver resolver = TransactionInputDetailResolver.Default;
+        if (!resolver.NeedsResolution(details.Inputs, details.Outputs))
+        {
+            return details;
+        }
+
+        IReadOnlyList<EconomyTransactionInputDetails> inputs = await resolver
+            .ResolveAsync(details.Inputs, details.Outputs, ResolvePreviousOutputAsync, cancellationToken)
+            .ConfigureAwait(false);
+
+        return details with { Inputs = inputs };
+    }
+
+    private async Task<EconomyTransactionOutputDetails?> ResolvePreviousOutputAsync(
+        OutPoint previousOutPoint,
+        CancellationToken cancellationToken)
+    {
+        LedgerTransactionSummary? previous = await ledgerReadClient
+            .GetTransactionAsync(Context, previousOutPoint.TxId, includeData: false, cancellationToken)
+            .ConfigureAwait(false);
+
+        return previous?.Outputs
+            .Where(output => output.OutputIndex == previousOutPoint.OutputIndex)
+            .Select(ToOutputDetails)
+            .FirstOrDefault();
+    }
+
     private static EconomyTransactionDetailsModel ToDetails(LedgerTransactionSummary summary)
         => new(
             summary.TxId,
@@ -1029,15 +1069,18 @@ public sealed class WasmAccountWorkspaceAdapter(
                 .ToArray(),
             summary.Outputs
                 .OrderBy(output => output.OutputIndex)
-                .Select(output => new EconomyTransactionOutputDetails(
-                    output.OutputIndex,
-                    output.Address,
-                    output.MainAmount,
-                    output.Token,
-                    output.BusinessObject,
-                    output.MetadataHash))
+                .Select(ToOutputDetails)
                 .ToArray(),
             summary.LedgerSequence);
+
+    private static EconomyTransactionOutputDetails ToOutputDetails(LedgerTransactionOutputSummary output)
+        => new(
+            output.OutputIndex,
+            output.Address,
+            output.MainAmount,
+            output.Token,
+            output.BusinessObject,
+            output.MetadataHash);
 
     private async Task<EconomyTransactionExecutionResult> SignAndSubmitAsync(
         BusinessObjectTransactionMode mode,

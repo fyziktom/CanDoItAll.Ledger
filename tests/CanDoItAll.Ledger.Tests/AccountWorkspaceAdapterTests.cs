@@ -42,7 +42,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                 parameters => parameters.Add(x => x.Adapter, new SampleWorkspaceAdapter(hostMode)));
 
             Assert.Contains(hostMode, component.Markup, StringComparison.Ordinal);
-            Assert.Contains("Recent Transactions", component.Markup, StringComparison.Ordinal);
+            Assert.Contains("Transactions history", component.Markup, StringComparison.Ordinal);
             Assert.Contains("UTXOs", component.Markup, StringComparison.Ordinal);
             Assert.Contains("Transaction composer", component.Markup, StringComparison.Ordinal);
             Assert.NotEmpty(component.FindAll("[data-testid='adapter-workspace-host']"));
@@ -201,6 +201,12 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         EconomyTransactionDetailsModel? details = await adapter.GetTransactionDetailsAsync(merge.TxId!.Value, CancellationToken.None);
         Assert.NotNull(details);
         Assert.Equal(2, details!.Inputs.Count);
+        Assert.Equal(
+            new[] { "40", "60" },
+            details.Inputs
+                .OrderBy(input => input.MainAmount?.Value ?? -1m)
+                .Select(input => input.MainAmount?.ToString() ?? "unknown")
+                .ToArray());
         EconomyTransactionOutputDetails output = Assert.Single(details.Outputs);
         Assert.Equal(Receiver, output.Address);
         Assert.Equal("100", output.MainAmount.ToString());
@@ -370,6 +376,8 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         Assert.NotNull(first);
         Assert.NotNull(second);
         Assert.Equal(first.TxId, second.TxId);
+        EconomyTransactionInputDetails input = Assert.Single(first.Inputs);
+        Assert.Equal("100", input.MainAmount?.ToString());
         Assert.Equal(1, readClient.TransactionDetailReadCount);
     }
 

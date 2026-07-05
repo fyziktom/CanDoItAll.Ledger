@@ -66,12 +66,40 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             RenderComponent<EconomyAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
+        ClickTab(home, "Balances");
+
         Assert.Contains("Balances", home.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain(">Token Sources<", home.Markup, StringComparison.Ordinal);
+        home.WaitForAssertion(() => Assert.Contains("Source UTXOs", home.Markup, StringComparison.Ordinal));
         Assert.Contains("tx-token-source", home.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-permission-source", home.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-rule-permission-source", home.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-rule-cashpool", home.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HomeWorkspace_RendersRequestedTabOrderAndPanels()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+
+        IRenderedComponent<EconomyAccountWorkspace> home =
+            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+                .Add(x => x.Workspace, workspace));
+
+        var tabs = home.FindAll("[role='tab']");
+
+        Assert.Collection(
+            tabs,
+            tab => Assert.Contains("Overview", tab.TextContent, StringComparison.Ordinal),
+            tab => Assert.Contains("Balances", tab.TextContent, StringComparison.Ordinal),
+            tab => Assert.Contains("Transactions history", tab.TextContent, StringComparison.Ordinal));
+        Assert.NotEmpty(home.FindAll("[data-testid='cda-vef-account-analytics']"));
+
+        ClickTab(home, "Balances");
+        home.WaitForAssertion(() => Assert.Contains("Source UTXOs", home.Markup, StringComparison.Ordinal));
+
+        ClickTab(home, "Transactions history");
+        home.WaitForAssertion(() => Assert.NotEmpty(home.FindAll("[data-testid='cda-recent-transactions']")));
     }
 
     [Fact]
