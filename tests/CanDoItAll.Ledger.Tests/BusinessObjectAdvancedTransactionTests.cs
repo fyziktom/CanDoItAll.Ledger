@@ -85,7 +85,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal(new BusinessObjectId("merged-work-order"), merged.ObjectId);
 
         rig.Time.Advance(TimeSpan.FromHours(1));
-        LedgerSubmitResult split = await alice.SplitBusinessObjectPaymentAsync(
+        LedgerTransaction splitTransaction = await alice.BuildSplitBusinessObjectPaymentTransactionAsync(
             new SplitBusinessObjectPaymentRequest(
                 new BusinessObjectId("merged-work-order"),
                 new[]
@@ -94,6 +94,22 @@ public sealed class BusinessObjectAdvancedTransactionTests
                     new BusinessObjectPaymentOutput(Carol, Amount.FromInt64(10))
                 }),
             CancellationToken.None);
+        Assert.Equal(4, splitTransaction.Outputs.Count);
+        Assert.Equal(Bob, splitTransaction.Outputs[0].Address);
+        Assert.Equal("0", splitTransaction.Outputs[0].MainAmount.ToString());
+        Assert.NotNull(splitTransaction.Outputs[0].BusinessObject);
+        Assert.Null(splitTransaction.Outputs[0].Token);
+        Assert.Equal(Bob, splitTransaction.Outputs[1].Address);
+        Assert.Equal("40", splitTransaction.Outputs[1].MainAmount.ToString());
+        Assert.Null(splitTransaction.Outputs[1].BusinessObject);
+        Assert.Equal(Carol, splitTransaction.Outputs[2].Address);
+        Assert.Equal("10", splitTransaction.Outputs[2].MainAmount.ToString());
+        Assert.Null(splitTransaction.Outputs[2].BusinessObject);
+        Assert.Equal(Alice, splitTransaction.Outputs[3].Address);
+        Assert.Equal("50", splitTransaction.Outputs[3].MainAmount.ToString());
+        Assert.Null(splitTransaction.Outputs[3].BusinessObject);
+
+        LedgerSubmitResult split = await alice.SubmitTransactionAsync(splitTransaction, CancellationToken.None);
         Assert.True(split.Accepted);
         Assert.Empty(await alice.GetBusinessObjectsAsync(CancellationToken.None));
         Assert.Equal("50", (await alice.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
@@ -619,7 +635,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
     }
 
     [Fact]
-    public async Task Account_CreatesTokenBackedBusinessObjectWithSeparateMainPaymentSource()
+    public async Task Account_CreatesTokenBackedBusinessObjectWithSeparateMainPaymentOutput()
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T01:30:30Z"));
         BusinessObjectAccount alice = rig.CreateAccount("alice");
@@ -643,15 +659,19 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal(2, create.Inputs.Count);
         Assert.Contains(create.Inputs, input => input.PreviousOutPoint.OutputIndex == 0);
         Assert.Contains(create.Inputs, input => input.PreviousOutPoint.OutputIndex == 1);
-        Assert.Equal(2, create.Outputs.Count);
+        Assert.Equal(3, create.Outputs.Count);
         Assert.Equal(Bob, create.Outputs[0].Address);
-        Assert.Equal("7", create.Outputs[0].MainAmount.ToString());
+        Assert.Equal("0", create.Outputs[0].MainAmount.ToString());
         Assert.Equal("1", create.Outputs[0].Token!.Amount.ToString());
         Assert.NotNull(create.Outputs[0].BusinessObject);
-        Assert.Equal(Alice, create.Outputs[1].Address);
-        Assert.Equal("3", create.Outputs[1].MainAmount.ToString());
-        Assert.Equal("4", create.Outputs[1].Token!.Amount.ToString());
+        Assert.Equal(Bob, create.Outputs[1].Address);
+        Assert.Equal("7", create.Outputs[1].MainAmount.ToString());
+        Assert.Null(create.Outputs[1].Token);
         Assert.Null(create.Outputs[1].BusinessObject);
+        Assert.Equal(Alice, create.Outputs[2].Address);
+        Assert.Equal("3", create.Outputs[2].MainAmount.ToString());
+        Assert.Equal("4", create.Outputs[2].Token!.Amount.ToString());
+        Assert.Null(create.Outputs[2].BusinessObject);
 
         LedgerSubmitResult result = await alice.SubmitTransactionAsync(create, CancellationToken.None);
 

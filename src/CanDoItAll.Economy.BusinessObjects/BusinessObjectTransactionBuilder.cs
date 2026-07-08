@@ -51,15 +51,21 @@ public sealed class BusinessObjectTransactionBuilder(
             throw new InvalidOperationException("BusinessObject create main amount cannot exceed the selected input amount.");
         }
 
+        Address ownerAddress = request.OwnerAddress ?? keySource.Address;
         var outputs = new List<TransactionOutput>
         {
             new(
                 0,
-                request.OwnerAddress ?? keySource.Address,
-                mainAmount,
+                ownerAddress,
+                request.Token is null ? mainAmount : Amount.Zero,
                 request.Token,
                 new BusinessObjectRef(request.ObjectId, 1, BusinessObjectOperation.Create, data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
         };
+
+        if (request.Token is not null && mainAmount.Value > 0m)
+        {
+            outputs.Add(new TransactionOutput(outputs.Count, ownerAddress, mainAmount));
+        }
 
         AddSelectedChangeOutput(outputs, selected, keySource.Address, mainAmount, request.Token);
 
@@ -843,17 +849,21 @@ public sealed class BusinessObjectTransactionBuilder(
             : BusinessObjectPayload.CreateData(stateJson, TransactionDataItemType.BusinessObject, externalRef: request.ExternalRef);
         var outputs = new List<TransactionOutput>();
 
+        BusinessObjectPaymentOutput carrierPayment = request.Payments[0];
+        outputs.Add(new TransactionOutput(
+            0,
+            carrierPayment.ReceiverAddress,
+            Amount.Zero,
+            selected.Token,
+            new BusinessObjectRef(request.ObjectId, selected.BusinessObject!.Version + 1, BusinessObjectOperation.Transfer, dataHash)));
+
         for (var i = 0; i < request.Payments.Count; i++)
         {
             BusinessObjectPaymentOutput payment = request.Payments[i];
             outputs.Add(new TransactionOutput(
-                i,
+                outputs.Count,
                 payment.ReceiverAddress,
-                payment.Amount,
-                i == 0 ? selected.Token : null,
-                i == 0
-                    ? new BusinessObjectRef(request.ObjectId, selected.BusinessObject!.Version + 1, BusinessObjectOperation.Transfer, dataHash)
-                    : null));
+                payment.Amount));
         }
 
         decimal change = selected.MainAmount.Value - paymentTotal;

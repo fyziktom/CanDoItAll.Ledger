@@ -3,47 +3,53 @@
   "commerceTabOrder": [
     "query_statsOverview",
     "account_balance_walletBalances",
-    "paymentsCommerce6",
-    "receipt_longTransactions history62"
+    "paymentsCommerce12",
+    "receipt_longTransactions history94"
   ],
-  "targetName": "Carrier proof post 1783513283341",
-  "targetObjectId": "bo:post:carrier-proof-post-1783513283341:8dedceb7aa88980-0003-9262395940bc",
-  "paymentObjectId": "bo:payment:80cadf2f5dbde32c90c6d1c1",
-  "receiptObjectId": "bo:receipt:8380b9f3eebe0a5169e57bd3",
-  "purchaseObjectId": "bo:purchase:8380b9f3eebe0a5169e57bd3",
-  "deliveredObjectId": "bo:clone:493c221c129012aff67dfb1d",
+  "targetName": "Carrier proof post 1783516280063",
+  "targetObjectId": "bo:post:carrier-proof-post-1783516280063:8dedcf2733441b0-0003-b27074b6dcb1",
+  "paymentObjectId": "bo:payment:bc25b25e3c8a05b065c407e5",
+  "receiptObjectId": "bo:receipt:2c67dbbb6fec143351acfa65",
+  "purchaseObjectId": "bo:purchase:2c67dbbb6fec143351acfa65",
+  "deliveredObjectId": "bo:clone:ef8156d4cb842f9e3d74e590",
   "carrierToken": "bo.posts",
   "outputs": {
     "created": {
-      "txId": "27dfff6e028aec40df99a567935124cf1c1f67de6045e9ee286af9ed580cef64",
+      "txId": "2ea517eeb96ab8e19ffa7db59eef45f4c990f39fcf793b99d8d96ff66ec74474",
       "outputIndex": 0,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
       "mainAmount": "0"
     },
     "payment": {
-      "txId": "e7e2118b1b56229e6d014e720c2445a854de2d34c9ae45e2c97303a7ee7fa0c1",
+      "txId": "c054577c0214bb1c0b0ebbe30a30adedc6cc49211869dcc4a088555e509c3586",
       "outputIndex": 0,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
+      "mainAmount": "0"
+    },
+    "paymentMainOutput": {
+      "txId": "c054577c0214bb1c0b0ebbe30a30adedc6cc49211869dcc4a088555e509c3586",
+      "outputIndex": 1,
+      "address": "cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu",
       "mainAmount": "7.25"
     },
     "receipt": {
-      "txId": "298cc7b48855fb968a171f836d632bd8c983ebe63d199e13a7cf21e563b6381b",
+      "txId": "32c1b19bb89c9b4b47d51230aab6c6191f05d076902da1f53d8f6d9171bff2e5",
       "outputIndex": 0,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
       "mainAmount": "0"
     },
     "purchase": {
-      "txId": "671ed701a621418e4e72ffb94e6c2c19bf01bb0bd38df53c67ea61cdb23d5aea",
+      "txId": "e3c77e27f1d7cf468bed35f948e54e7b5e734994c93bbba235b37f899e7df5c1",
       "outputIndex": 0,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
       "mainAmount": "0"
     },
     "delivered": {
-      "txId": "659e1b55278d6015de439ebf303809f3bdbc7e3029f858f77fd1de828fe6586b",
+      "txId": "46b93e731ebbc6721bc7e2491343a3d6a12c32d1fa0bf449ebf2a006ad0f42a4",
       "outputIndex": 1,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
@@ -51,32 +57,33 @@
     }
   },
   "receiptRecycle": {
-    "receiptObjectId": "bo:receipt:8380b9f3eebe0a5169e57bd3",
+    "receiptObjectId": "bo:receipt:2c67dbbb6fec143351acfa65",
     "receiptOutPoint": {
       "txId": {
-        "value": "298cc7b48855fb968a171f836d632bd8c983ebe63d199e13a7cf21e563b6381b"
+        "value": "32c1b19bb89c9b4b47d51230aab6c6191f05d076902da1f53d8f6d9171bff2e5"
       },
       "outputIndex": 0
     },
     "mergeSourceOutPoint": {
       "txId": {
-        "value": "671ed701a621418e4e72ffb94e6c2c19bf01bb0bd38df53c67ea61cdb23d5aea"
+        "value": "e3c77e27f1d7cf468bed35f948e54e7b5e734994c93bbba235b37f899e7df5c1"
       },
       "outputIndex": 1
     },
-    "mergeSourceAmount": "99998988",
-    "recycleTxId": "8df2cf3db1214b1d77d1406d2b91601856c321da8babb095d6b6e58ffbe96851",
+    "mergeSourceAmount": "99998979",
+    "recycleTxId": "96f4008448d02d480721eae714f594b7f8912b215a654a3fbf44b43299c7519f",
     "mergedSourceOutPoint": {
       "txId": {
-        "value": "8df2cf3db1214b1d77d1406d2b91601856c321da8babb095d6b6e58ffbe96851"
+        "value": "96f4008448d02d480721eae714f594b7f8912b215a654a3fbf44b43299c7519f"
       },
       "outputIndex": 0
     },
-    "mergedSourceAmount": "99998989"
+    "mergedSourceAmount": "99998980"
   },
   "screenshots": [
     "alice-created-bo-token-detail.png",
     "bob-payment-submitted.png",
+    "bob-payment-create-separate-output-transaction.png",
     "alice-dispatch-dashboard.png",
     "alice-payment-token-detail.png",
     "alice-receipt-token-detail.png",

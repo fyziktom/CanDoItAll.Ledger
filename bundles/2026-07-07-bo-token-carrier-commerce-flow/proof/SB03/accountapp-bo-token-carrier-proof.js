@@ -51,7 +51,9 @@ async function main() {
     const existingPaymentIds = new Set(await listPaymentIds(alice));
     await submitBobPayment(bob, bobBackup, targetObjectId);
     const payment = await waitForNewPayment(alice, existingPaymentIds, targetObjectId);
-    const paymentToken = await assertCarrierOutput(alice, payment, 'payment', { expectedMainAmount: salePrice });
+    const paymentToken = await assertCarrierOutput(alice, payment, 'payment', { expectedMainAmount: '0' });
+    const paymentMainOutput = await assertPlainMainPaymentOutput(alice, payment, 'payment', sellerAddress, salePrice);
+    await captureTransactionFromHistory(bob, paymentToken.txId, 'bob-payment-create-separate-output-transaction.png', ensureBobWorkspace);
 
     await waitForDispatch(alice, payment.objectId);
     const dispatchedPayment = await loadHolding(alice, payment.objectId);
@@ -81,6 +83,7 @@ async function main() {
       outputs: {
         created: createToken,
         payment: paymentToken,
+        paymentMainOutput,
         receipt: receiptToken,
         purchase: purchaseToken,
         delivered: deliveredToken
@@ -89,6 +92,7 @@ async function main() {
       screenshots: [
         'alice-created-bo-token-detail.png',
         'bob-payment-submitted.png',
+        'bob-payment-create-separate-output-transaction.png',
         'alice-dispatch-dashboard.png',
         'alice-payment-token-detail.png',
         'alice-receipt-token-detail.png',
@@ -457,6 +461,27 @@ async function assertCarrierOutput(page, holding, label, options = {}) {
   };
 }
 
+async function assertPlainMainPaymentOutput(page, holding, label, expectedAddress, expectedMainAmount) {
+  const txId = holding.currentOutPoint.txId.value ?? holding.currentOutPoint.txId;
+  const carrierOutputIndex = Number(holding.currentOutPoint.outputIndex);
+  const tx = await fetchJson(page, `/api/v1/ledger/default/transactions/${encodeURIComponent(txId)}?includeData=true`);
+  const outputs = tx.outputs ?? tx.vout ?? tx.transaction?.outputs ?? tx.value?.outputs ?? [];
+  const output = outputs.find(item =>
+    Number(item.outputIndex ?? item.index ?? item.n) !== carrierOutputIndex
+    && unwrap(item.address ?? item.recipient ?? item.receiverAddress) === expectedAddress
+    && amountValue(item.mainAmount ?? item.amount) === expectedMainAmount
+    && !(item.token ?? item.tokenTransfer)
+    && !(item.businessObject ?? item.businessObjectRef));
+  assert.ok(output, `${label} plain main output not found in tx ${txId}`);
+
+  return {
+    txId,
+    outputIndex: Number(output.outputIndex ?? output.index ?? output.n),
+    address: unwrap(output.address ?? output.recipient ?? output.receiverAddress),
+    mainAmount: amountValue(output.mainAmount ?? output.amount)
+  };
+}
+
 async function listPaymentIds(page) {
   return (await listPayments(page)).map(payment => payment.objectId);
 }
@@ -585,6 +610,20 @@ async function ensureAliceWorkspace(page) {
   await page.getByTestId('adapter-workspace-host').waitFor();
 }
 
+async function ensureBobWorkspace(page) {
+  await page.goto(bobUrl, { waitUntil: 'domcontentloaded' });
+  await page.getByTestId('account-app-root').waitFor();
+  if (await page.getByTestId('adapter-workspace-host').count() === 0) {
+    await page.getByTestId('unlock-password').fill(bobPassword);
+    await page.waitForFunction(() => {
+      const button = document.querySelector('[data-testid="unlock-account"]');
+      return button && !button.disabled;
+    });
+    await page.getByTestId('unlock-account').click();
+  }
+  await page.getByTestId('adapter-workspace-host').waitFor();
+}
+
 async function findCommerceRow(dashboard, kind, candidates) {
   const rows = dashboard.locator(`[data-commerce-kind="${kind}"]`);
   await rows.first().waitFor();
@@ -597,8 +636,8 @@ async function findCommerceRow(dashboard, kind, candidates) {
   return rows.first();
 }
 
-async function captureTransactionFromHistory(page, txId, screenshotName) {
-  await ensureAliceWorkspace(page);
+async function captureTransactionFromHistory(page, txId, screenshotName, ensureWorkspace = ensureAliceWorkspace) {
+  await ensureWorkspace(page);
   await page.getByTestId('refresh-workspace').click();
   await openAccountHomeTab(page, /Transactions history/i);
   const history = page.getByTestId('cda-recent-transactions');

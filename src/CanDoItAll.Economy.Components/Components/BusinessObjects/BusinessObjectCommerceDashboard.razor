@@ -124,14 +124,22 @@
         => Workspace.BusinessObjects
             .OfType<ICommerceBusinessObjectView>()
             .Where(item => item.Commerce.Payment is not null)
-            .OrderByDescending(item => item.CreatedAt)
+            .OrderByDescending(SortTimestampFor)
+            .ThenBy(TransactionOrderFor)
+            .ThenByDescending(item => item.Version)
+            .ThenByDescending(item => item.CurrentOutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenByDescending(item => item.CurrentOutPoint.OutputIndex)
             .ToArray();
 
     private IReadOnlyList<ICommerceBusinessObjectView> ReceiptItems
         => Workspace.BusinessObjects
             .OfType<ICommerceBusinessObjectView>()
             .Where(item => item.Commerce.Purchase is not null || item.Commerce.Receipt is not null)
-            .OrderByDescending(item => item.CreatedAt)
+            .OrderByDescending(SortTimestampFor)
+            .ThenBy(TransactionOrderFor)
+            .ThenByDescending(item => item.Version)
+            .ThenByDescending(item => item.CurrentOutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenByDescending(item => item.CurrentOutPoint.OutputIndex)
             .ToArray();
 
     private Task OpenDetailsAsync(ICommerceBusinessObjectView item)
@@ -237,6 +245,25 @@
         => item is null
             ? "Related BO is not visible in this account workspace"
             : $"Open details for {DisplayName(item)}";
+
+    private DateTimeOffset SortTimestampFor(IBusinessObjectView item)
+        => Workspace.Transactions
+            .FirstOrDefault(transaction => transaction.TxId == item.CurrentOutPoint.TxId)
+            ?.Timestamp
+            ?? item.CreatedAt;
+
+    private int TransactionOrderFor(IBusinessObjectView item)
+    {
+        for (int index = 0; index < Workspace.Transactions.Count; index++)
+        {
+            if (Workspace.Transactions[index].TxId == item.CurrentOutPoint.TxId)
+            {
+                return index;
+            }
+        }
+
+        return int.MaxValue;
+    }
 
     private static string IconFor(ICommerceBusinessObjectView item)
         => item.ObjectType switch

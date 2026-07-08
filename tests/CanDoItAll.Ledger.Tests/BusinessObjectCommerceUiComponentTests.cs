@@ -306,6 +306,50 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     }
 
     [Fact]
+    public async Task CommerceDashboard_OrdersPaymentAndReceiptRecordsByCurrentTransactionTimestamp()
+    {
+        ICommerceBusinessObjectView olderPayment = await CreatePaymentViewAsync(
+            new BusinessObjectId("bo:payment:older"),
+            new BusinessObjectId("bo:post:older-payment-target"));
+        ICommerceBusinessObjectView newerPayment = await CreatePaymentViewAsync(
+            new BusinessObjectId("bo:payment:newer"),
+            new BusinessObjectId("bo:post:newer-payment-target"));
+        ICommerceBusinessObjectView olderReceipt = await CreateReceiptViewAsync(
+            new BusinessObjectId("bo:payment:older-receipt"),
+            new BusinessObjectId("bo:post:older-receipt-target"));
+        ICommerceBusinessObjectView newerReceipt = await CreateReceiptViewAsync(
+            new BusinessObjectId("bo:payment:newer-receipt"),
+            new BusinessObjectId("bo:post:newer-receipt-target"));
+
+        IRenderedComponent<BusinessObjectCommerceDashboard> component =
+            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+                .Add(
+                    x => x.Workspace,
+                    CreateWorkspace(
+                        [olderPayment, newerPayment, olderReceipt, newerReceipt],
+                        [
+                            CreateObjectTransaction(olderPayment, ListedAtUtc.AddMinutes(1)),
+                            CreateObjectTransaction(newerPayment, ListedAtUtc.AddMinutes(3)),
+                            CreateObjectTransaction(olderReceipt, ListedAtUtc.AddMinutes(2)),
+                            CreateObjectTransaction(newerReceipt, ListedAtUtc.AddMinutes(4))
+                        ])));
+
+        string[] payments = component.Find("[data-testid='cda-commerce-payments']")
+            .QuerySelectorAll("[data-commerce-kind='payment']")
+            .Select(row => row.TextContent)
+            .ToArray();
+        string[] receipts = component.Find("[data-testid='cda-commerce-receipts']")
+            .QuerySelectorAll("[data-commerce-kind='receipt']")
+            .Select(row => row.TextContent)
+            .ToArray();
+
+        Assert.Contains("bo:post:newer-payment-target", payments[0], StringComparison.Ordinal);
+        Assert.Contains("bo:post:older-payment-target", payments[1], StringComparison.Ordinal);
+        Assert.Contains("bo:post:newer-receipt-target", receipts[0], StringComparison.Ordinal);
+        Assert.Contains("bo:post:older-receipt-target", receipts[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task CommerceDashboard_ShowsRelatedBusinessObjectActionForPaymentAndReceiptRecords()
     {
         ITypedBusinessObjectView listedPost = CreateListedPost();
@@ -374,59 +418,74 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         return CreateTypedView(objectId, objectType, stateJson, createdAt);
     }
 
-    private static async Task<ICommerceBusinessObjectView> CreatePaymentViewAsync()
+    private static async Task<ICommerceBusinessObjectView> CreatePaymentViewAsync(
+        BusinessObjectId? paymentId = null,
+        BusinessObjectId? targetObjectId = null,
+        DateTimeOffset? createdAt = null)
     {
-        var paymentId = new BusinessObjectId("bo:payment:listed-commerce-post");
-        BusinessObjectPaymentRecord payment = CreatePaymentRecord(paymentId);
+        BusinessObjectId effectivePaymentId = paymentId ?? new BusinessObjectId("bo:payment:listed-commerce-post");
+        DateTimeOffset effectiveCreatedAt = createdAt ?? ListedAtUtc;
+        BusinessObjectPaymentRecord payment = CreatePaymentRecord(effectivePaymentId, targetObjectId, effectiveCreatedAt);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
             BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
-        var caster = new CommerceBusinessObjectCaster(new ManualTimeProvider(ListedAtUtc.AddMinutes(3)));
+        var caster = new CommerceBusinessObjectCaster(new ManualTimeProvider(effectiveCreatedAt.AddMinutes(3)));
         IBusinessObjectView view = await caster.CastAsync(
-            CreateSource(paymentId, "payment", stateJson),
+            CreateSource(effectivePaymentId, "payment", stateJson, effectiveCreatedAt),
             CancellationToken.None);
 
         return Assert.IsAssignableFrom<ICommerceBusinessObjectView>(view);
     }
 
-    private static async Task<ICommerceBusinessObjectView> CreateReceiptViewAsync()
+    private static async Task<ICommerceBusinessObjectView> CreateReceiptViewAsync(
+        BusinessObjectId? paymentId = null,
+        BusinessObjectId? targetObjectId = null,
+        DateTimeOffset? createdAt = null)
     {
-        var paymentId = new BusinessObjectId("bo:payment:listed-commerce-post");
-        BusinessObjectId receiptId = BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(paymentId);
-        BusinessObjectPaymentRecord payment = CreatePaymentRecord(paymentId) with
+        BusinessObjectId effectivePaymentId = paymentId ?? new BusinessObjectId("bo:payment:listed-commerce-post");
+        BusinessObjectId effectiveTargetId = targetObjectId ?? ListedObjectId;
+        DateTimeOffset effectiveCreatedAt = createdAt ?? ListedAtUtc.AddMinutes(4);
+        BusinessObjectId receiptId = BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(effectivePaymentId);
+        BusinessObjectPaymentRecord payment = CreatePaymentRecord(effectivePaymentId, effectiveTargetId, effectiveCreatedAt) with
         {
             Status = BusinessObjectCommerceRecordStatus.Dispatched,
-            DeliveredObjectId = ListedObjectId.Value,
+            DeliveredObjectId = effectiveTargetId.Value,
             DispatchTxId = "dispatch-tx",
             ReceiptObjectId = receiptId.Value
         };
         BusinessObjectReceiptRecord receipt = BusinessObjectCommercePayloadBuilder.CreateReceiptRecord(
             receiptId,
             payment,
-            ListedObjectId,
+            effectiveTargetId,
             new TxId("dispatch-tx"),
-            ListedAtUtc.AddMinutes(4));
+            effectiveCreatedAt);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
             BusinessObjectCommercePayloadBuilder.CreateReceiptPayload(receipt));
-        var caster = new CommerceBusinessObjectCaster(new ManualTimeProvider(ListedAtUtc.AddMinutes(4)));
+        var caster = new CommerceBusinessObjectCaster(new ManualTimeProvider(effectiveCreatedAt));
         IBusinessObjectView view = await caster.CastAsync(
-            CreateSource(receiptId, "receipt", stateJson),
+            CreateSource(receiptId, "receipt", stateJson, effectiveCreatedAt),
             CancellationToken.None);
 
         return Assert.IsAssignableFrom<ICommerceBusinessObjectView>(view);
     }
 
-    private static BusinessObjectPaymentRecord CreatePaymentRecord(BusinessObjectId paymentId)
-        => BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
+    private static BusinessObjectPaymentRecord CreatePaymentRecord(
+        BusinessObjectId paymentId,
+        BusinessObjectId? targetObjectId = null,
+        DateTimeOffset? createdAt = null)
+    {
+        BusinessObjectId effectiveTargetId = targetObjectId ?? ListedObjectId;
+        return BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
             paymentId,
             Bob,
             Alice,
-            ListedObjectId,
+            effectiveTargetId,
             targetVersion: 1,
-            targetOutPoint: new OutPoint(new TxId("target-tx"), 0),
+            targetOutPoint: OutPointFor("post", effectiveTargetId),
             Amount.FromInt64(25),
             BusinessObjectSaleMode.Original,
             new TxId("payment-tx"),
-            ListedAtUtc);
+            createdAt ?? ListedAtUtc);
+    }
 
     private static ITypedBusinessObjectView CreateTypedView(
         BusinessObjectId objectId,
@@ -469,7 +528,8 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     private static BusinessObjectCastSource CreateSource(
         BusinessObjectId objectId,
         string objectType,
-        string stateJson)
+        string stateJson,
+        DateTimeOffset? createdAt = null)
         => new(
             Context,
             objectId,
@@ -479,11 +539,11 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             Alice,
             BusinessObjectOperation.Create,
             new HashHex(new string('2', 64)),
-            new OutPoint(new TxId($"tx-{objectType}"), 0),
+            OutPointFor(objectType, objectId),
             stateJson,
             null,
             TransactionDataItemType.BusinessObject,
-            ListedAtUtc);
+            createdAt ?? ListedAtUtc);
 
     private static BusinessObjectWorkspaceModel CreateWorkspace(params IBusinessObjectView[] businessObjects)
         => CreateWorkspace(businessObjects, []);
