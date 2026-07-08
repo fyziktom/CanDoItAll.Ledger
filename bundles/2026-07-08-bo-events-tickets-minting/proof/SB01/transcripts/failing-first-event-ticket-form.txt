@@ -1,0 +1,2 @@
+Command: Source assertion before SB01: BusinessObjectCreationWizard must contain event/ticket date-time controls, domain dropdowns, and mintAuthorAddress autofill. WorkingDirectory: C:\repositories\CanDoItAll.Ledger RunLabel: SB01 failing-first event ticket form source assertion MissingCount: 5 Missing: data-testid="cda-bo-field-eventDate-datetime"; data-testid="cda-bo-field-eventClass-dropdown"; data-testid="cda-bo-field-ticketClass-dropdown"; ApplyCreateDefaults; mintAuthorAddress
+ExitCode: 1

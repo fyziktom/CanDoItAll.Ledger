@@ -156,6 +156,7 @@ public static class BusinessObjectFamilyCatalog
                 new("location", "Location"),
                 new("locationCoordinates", "Location coordinates", Placeholder: "50.087,14.421"),
                 new("authorLink", "Author website", BusinessObjectFieldKind.Url),
+                new("mintAuthorAddress", "Mint author address", BusinessObjectFieldKind.Address),
                 new("ticketClass", "Ticket class", BusinessObjectFieldKind.Status, Placeholder: "Standard, VIP, Family"),
                 new("ticketDuration", "Ticket duration", BusinessObjectFieldKind.Status, Placeholder: "Day, Weekend, Week"),
                 new("holder", "Holder"),

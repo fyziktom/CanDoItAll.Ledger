@@ -1,0 +1,11 @@
+Command: Compute SHA-256 before/after hashes for SB01 changed production and test files. WorkingDirectory: C:\repositories\CanDoItAll.Ledger RunLabel: SB01 changed-file hashes InvariantIds: SB01-EVENT-TICKET-DOMAIN-CONTROLS SB01-MINT-AUTHOR-AUTOFILL
+File: repo://src/CanDoItAll.Economy.BusinessObjects/BusinessObjectFamilyCatalog.cs
+BeforeSHA256: 8181c641936b07dd6a661fed6ff8ba4d0d6784a5c044365db0e2480d10773d78
+AfterSHA256: 1152a555fb186e9068c290b4e91c7f70bf627d6cc1fe2a500c1a090483428564
+File: repo://src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+BeforeSHA256: da8442d80802a0b3ce8f48928c8d9fb6334882573463703f0741ac0bb8781f2e
+AfterSHA256: c111abbb9c15167fdf78cba5175efe349d0cd7aed142371ecf89679960f8f39a
+File: repo://tests/CanDoItAll.Ledger.Tests/BusinessObjectTicketMintingComponentTests.cs
+BeforeSHA256: 62ba27c7f7fda621c549fd0baa988cf1f29b0b8536791e5c8726aa4fa70e59e1
+AfterSHA256: 369de43df84286ce6739a08245c85fb801649b85bb3517292b9b09b69313c3c3
+ExitCode: 0

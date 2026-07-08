@@ -90,6 +90,93 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
     }
 
     [Fact]
+    public async Task EventWizard_RendersDomainControlsAndStagesMintAuthorAddress()
+    {
+        var stagedDrafts = new List<BusinessObjectTransactionDraft>();
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace();
+        BusinessObjectCreationWizardModel model = new(
+            "event",
+            Step: 2,
+            "Ledger Summit",
+            "#event",
+            "Event, milestone, meeting, or operational occurrence.",
+            string.Empty,
+            [],
+            null);
+
+        IRenderedComponent<BusinessObjectCreationWizard> component =
+            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+                .Add(x => x.Model, model)
+                .Add(x => x.Workspace, workspace)
+                .Add(
+                    x => x.StageBusinessObjectRequested,
+                    EventCallback.Factory.Create<BusinessObjectTransactionDraft>(
+                        this,
+                        request =>
+                        {
+                            stagedDrafts.Add(request);
+                            return Task.CompletedTask;
+                        })));
+
+        Assert.Single(component.FindAll("[data-testid='cda-bo-field-eventDate-datetime']"));
+        Assert.Single(component.FindAll("[data-testid='cda-bo-field-eventClass-dropdown']"));
+        Assert.Single(component.FindAll("[data-testid='cda-bo-field-mintAuthorAddress-auto']"));
+        Assert.Contains("Conference", component.Markup, StringComparison.Ordinal);
+
+        await ClickButtonAsync(component, "Next");
+        await ClickButtonAsync(component, "Stage BO Transaction");
+
+        BusinessObjectTransactionDraft draft = Assert.Single(stagedDrafts);
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(draft.StateJson, "event");
+        Assert.Equal("event", draft.ObjectType);
+        Assert.Equal(Alice.Value, payload.Fields?["mintAuthorAddress"]);
+        Assert.Equal("Conference", payload.Fields?["eventClass"]);
+        Assert.Equal("Scheduled", payload.Fields?["status"]);
+        Assert.Equal("2026-07-01T10:00:00Z", payload.Fields?["eventDate"]);
+    }
+
+    [Fact]
+    public async Task TicketWizard_RendersDomainControlsAndStagesMintAuthorAddress()
+    {
+        var stagedDrafts = new List<BusinessObjectTransactionDraft>();
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace([CreateEvent("Ledger Summit")]);
+        BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
+
+        IRenderedComponent<BusinessObjectCreationWizard> component =
+            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+                .Add(x => x.Model, model)
+                .Add(x => x.Workspace, workspace)
+                .Add(
+                    x => x.StageBusinessObjectRequested,
+                    EventCallback.Factory.Create<BusinessObjectTransactionDraft>(
+                        this,
+                        request =>
+                        {
+                            stagedDrafts.Add(request);
+                            return Task.CompletedTask;
+                        })));
+
+        Assert.Single(component.FindAll("[data-testid='cda-bo-field-eventDate-datetime']"));
+        Assert.Single(component.FindAll("[data-testid='cda-bo-field-ticketClass-dropdown']"));
+        Assert.Single(component.FindAll("[data-testid='cda-bo-field-ticketDuration-dropdown']"));
+        Assert.Single(component.FindAll("[data-testid='cda-bo-field-mintAuthorAddress-auto']"));
+        Assert.Contains("Free to use", component.Markup, StringComparison.Ordinal);
+
+        await ClickButtonAsync(component, "Next");
+        await ClickButtonAsync(component, "Stage BO Transaction");
+
+        BusinessObjectTransactionDraft draft = Assert.Single(stagedDrafts);
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(draft.StateJson, "ticket");
+        Assert.Equal("ticket", draft.ObjectType);
+        Assert.Equal(Alice.Value, payload.Fields?["mintAuthorAddress"]);
+        Assert.Equal("General", payload.Fields?["ticketClass"]);
+        Assert.Equal("Day", payload.Fields?["ticketDuration"]);
+        Assert.Equal("false", payload.Fields?["used"]);
+        Assert.Equal("FreeToUse", payload.Fields?["status"]);
+        Assert.Equal("2026-07-01T10:00:00Z", payload.Fields?["eventDate"]);
+    }
+
+    [Fact]
     public async Task TicketWizard_MultimintStagesDistinctDraftsToSelectedSubAccount()
     {
         var stagedBatches = new List<BusinessObjectBatchTransactionRequest>();

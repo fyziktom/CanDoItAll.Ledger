@@ -286,7 +286,35 @@
                                 @foreach (BusinessObjectFieldDefinition field in SelectedDefinition.Fields)
                                 {
                                     <FormField Text="@field.Label" ContainerClass="cda-economy-field">
-                                        @if (field.Kind == BusinessObjectFieldKind.LongText)
+                                        @if (IsAutoMintAuthorField(field))
+                                        {
+                                            <TextBox Value="@FieldValue(field.Key)"
+                                                     ReadOnly="true"
+                                                     aria-label="@field.Label"
+                                                     data-testid="@AutoFieldTestId(field.Key)" />
+                                        }
+                                        else if (IsDateTimeField(field))
+                                        {
+                                            <input type="datetime-local"
+                                                   class="cda-ticket-multimint-select"
+                                                   value="@DateTimeInputValue(field.Key)"
+                                                   @onchange="@(args => OnDateTimeFieldChanged(field.Key, args))"
+                                                   aria-label="@field.Label"
+                                                   data-testid="@DateTimeFieldTestId(field.Key)" />
+                                        }
+                                        else if (HasFieldOptions(field))
+                                        {
+                                            <div data-testid="@DropdownFieldTestId(field.Key)">
+                                                <DropDown TValue="string"
+                                                          Data="@FieldOptions(field)"
+                                                          TextProperty="Text"
+                                                          ValueProperty="Value"
+                                                          Value="@FieldValue(field.Key)"
+                                                          ValueChanged="@(value => SetFieldValue(field.Key, value))"
+                                                          aria-label="@field.Label" />
+                                            </div>
+                                        }
+                                        else if (field.Kind == BusinessObjectFieldKind.LongText)
                                         {
                                             <TextArea Value="@FieldValue(field.Key)"
                                                       ValueChanged="@(value => SetFieldValue(field.Key, value))"
@@ -439,6 +467,7 @@
         string modelKey = $"{Model.ObjectType}:{Model.Name}:{Model.EditSource?.ObjectId.Value}:{Model.EditSource?.EffectiveTimeUtc:o}";
         if (currentModelKey == modelKey)
         {
+            ApplyCreateDefaults();
             await LoadTagSuggestionsAsync();
             return;
         }
@@ -467,6 +496,7 @@
             StringComparer.Ordinal);
         uploadedItems = [];
         EnsureFieldKeys();
+        ApplyCreateDefaults();
         selectedTicketEvent = null;
         multimintEnabled = false;
         ticketMultimintCount = 5;
@@ -657,6 +687,7 @@
         }
 
         EnsureFieldKeys();
+        ApplyCreateDefaults();
     }
 
     private async Task OpenTicketEventPickerAsync()
@@ -1181,7 +1212,9 @@
         => SelectedDefinition.Icon;
 
     private BusinessObjectMediaPayload CreatePayload()
-        => BusinessObjectPayloadBuilder.CreatePayload(
+    {
+        ApplyCreateDefaults();
+        return BusinessObjectPayloadBuilder.CreatePayload(
             SelectedDefinition,
             name,
             description,
@@ -1189,6 +1222,183 @@
             string.Join(' ', Tags.Select(tag => $"#{tag}")),
             DisplayDataItems,
             fieldValues);
+    }
+
+    private bool IsEventSelected
+        => selectedObjectType.Equals("event", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsEventOrTicketSelected
+        => IsEventSelected || IsTicketSelected;
+
+    private bool IsAutoMintAuthorField(BusinessObjectFieldDefinition field)
+        => IsEventOrTicketSelected
+            && field.Key.Equals("mintAuthorAddress", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsDateTimeField(BusinessObjectFieldDefinition field)
+        => field.Kind == BusinessObjectFieldKind.DateTime;
+
+    private bool HasFieldOptions(BusinessObjectFieldDefinition field)
+        => FieldOptions(field).Count > 0;
+
+    private IReadOnlyList<FilterOption> FieldOptions(BusinessObjectFieldDefinition field)
+        => field.Key switch
+        {
+            "eventClass" => EventClassOptions,
+            "ticketClass" => TicketClassOptions,
+            "ticketDuration" => TicketDurationOptions,
+            "status" when IsTicketSelected => TicketStatusOptions,
+            "status" when IsEventSelected => EventStatusOptions,
+            "used" => BooleanStatusOptions,
+            "musicInLink" => BooleanStatusOptions,
+            _ => []
+        };
+
+    private void ApplyCreateDefaults()
+    {
+        if (IsEditMode || !IsEventOrTicketSelected || Workspace is null)
+        {
+            return;
+        }
+
+        SetDefaultField("mintAuthorAddress", Workspace.Address.Value);
+        SetDefaultField("eventDate", FormatDateTimePayload(Workspace.ViewedAtUtc));
+
+        if (IsEventSelected)
+        {
+            SetDefaultField("eventClass", EventClassOptions[0].Value);
+            SetDefaultField("status", EventStatusOptions[0].Value);
+            return;
+        }
+
+        SetDefaultField("ticketClass", TicketClassOptions[0].Value);
+        SetDefaultField("ticketDuration", TicketDurationOptions[0].Value);
+        SetDefaultField("used", BooleanStatusOptions[0].Value);
+        SetDefaultField("status", TicketStatusOptions[0].Value);
+    }
+
+    private void SetDefaultField(string key, string value)
+    {
+        if (!fieldValues.TryGetValue(key, out string? current) || string.IsNullOrWhiteSpace(current))
+        {
+            fieldValues[key] = value;
+        }
+    }
+
+    private string DateTimeInputValue(string key)
+    {
+        if (!DateTimeOffset.TryParse(
+                FieldValue(key),
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out DateTimeOffset timestamp))
+        {
+            return string.Empty;
+        }
+
+        return timestamp.UtcDateTime.ToString("yyyy-MM-ddTHH:mm", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private void OnDateTimeFieldChanged(string key, ChangeEventArgs args)
+    {
+        string? value = Convert.ToString(args.Value, System.Globalization.CultureInfo.InvariantCulture);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            fieldValues.Remove(key);
+            return;
+        }
+
+        if (DateTimeOffset.TryParse(
+                value,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out DateTimeOffset timestamp))
+        {
+            fieldValues[key] = FormatDateTimePayload(timestamp);
+            return;
+        }
+
+        fieldValues[key] = value.Trim();
+    }
+
+    private static string FormatDateTimePayload(DateTimeOffset timestamp)
+        => timestamp.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string FieldTestId(string key, string suffix)
+        => $"cda-bo-field-{key}-{suffix}";
+
+    private static string AutoFieldTestId(string key)
+        => FieldTestId(key, "auto");
+
+    private static string DateTimeFieldTestId(string key)
+        => FieldTestId(key, "datetime");
+
+    private static string DropdownFieldTestId(string key)
+        => FieldTestId(key, "dropdown");
+
+    private static readonly IReadOnlyList<FilterOption> EventClassOptions =
+    [
+        new("Conference", "Conference"),
+        new("Workshop", "Workshop"),
+        new("Meetup", "Meetup"),
+        new("OnlineMeeting", "Online meeting"),
+        new("Concert", "Concert"),
+        new("Festival", "Festival"),
+        new("Exhibition", "Exhibition"),
+        new("Sport", "Sport"),
+        new("Birthday", "Birthday"),
+        new("Other", "Other")
+    ];
+
+    private static readonly IReadOnlyList<FilterOption> TicketClassOptions =
+    [
+        new("General", "General"),
+        new("Standard", "Standard"),
+        new("VIP", "VIP"),
+        new("Backstage", "Backstage"),
+        new("Family", "Family"),
+        new("Student", "Student"),
+        new("Staff", "Staff"),
+        new("Press", "Press"),
+        new("Service", "Service"),
+        new("Approval", "Approval")
+    ];
+
+    private static readonly IReadOnlyList<FilterOption> TicketDurationOptions =
+    [
+        new("Day", "Day"),
+        new("SingleUse", "Single use"),
+        new("Weekend", "Weekend"),
+        new("Week", "Week"),
+        new("Month", "Month"),
+        new("Season", "Season"),
+        new("Permanent", "Permanent")
+    ];
+
+    private static readonly IReadOnlyList<FilterOption> EventStatusOptions =
+    [
+        new("Scheduled", "Scheduled"),
+        new("Draft", "Draft"),
+        new("Confirmed", "Confirmed"),
+        new("Live", "Live"),
+        new("Completed", "Completed"),
+        new("Cancelled", "Cancelled")
+    ];
+
+    private static readonly IReadOnlyList<FilterOption> TicketStatusOptions =
+    [
+        new("FreeToUse", "Free to use"),
+        new("Reserved", "Reserved"),
+        new("Issued", "Issued"),
+        new("Used", "Used"),
+        new("Cancelled", "Cancelled"),
+        new("Expired", "Expired")
+    ];
+
+    private static readonly IReadOnlyList<FilterOption> BooleanStatusOptions =
+    [
+        new("false", "No"),
+        new("true", "Yes")
+    ];
 
     private static IReadOnlyList<string> ParseTags(string value)
         => value

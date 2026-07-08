@@ -29,7 +29,7 @@ internal sealed class LearningScenarios(
         new("04", "Token mint and transfer", "Grant mint permission, mint a reusable token source, issue permission, and transfer tokens."),
         new("05", "BO DataItems and views", "Create and update a post BO with typed DataItems, then cast it to a view."),
         new("06", "BO transfer and transaction details", "Transfer a BO and read typed node transaction details."),
-        new("07", "Advanced BO transactions", "Set price, split payment, clone, merge, and close BOs."),
+        new("07", "Plain UTXO split and merge plus advanced BO transactions", "Split and merge plain UTXOs, then set price, split payment, clone, merge, and close BOs."),
         new("08", "Subaccounts, exports, and messages", "Create/import/export keys and subaccounts, then sign/encrypt messages."),
         new("09", "Account auto-refresh", "Start an account refresh loop, observe a new transaction event, and stop cleanly."),
         new("10", "Expected failures", "Show rejected or invalid SDK operations without crashing the demo.")
@@ -234,8 +234,31 @@ internal sealed class LearningScenarios(
 
     public async Task Learn07AdvancedBusinessObjectTransactionsAsync(CancellationToken cancellationToken)
     {
-        ConsoleUi.Section("7. Advanced BusinessObject transactions");
+        ConsoleUi.Section("7. Plain UTXO split and merge");
         await EnsureMainBalanceAsync(alice, Amount.FromInt64(75), cancellationToken).ConfigureAwait(false);
+
+        LedgerSubmitResult setupMint = await alice.MintMainAsync(Amount.FromInt64(75), cancellationToken).ConfigureAwait(false);
+        ConsoleUi.PrintReceipt("Treasury setup: mint a dedicated 75 main-unit UTXO to Alice", setupMint);
+        TxId setupTxId = RequireTxId(setupMint, "UTXO setup mint");
+
+        LedgerSubmitResult split = await alice.SplitUtxosAsync(
+            [new OutPoint(setupTxId, 0)],
+            [
+                new UtxoSplitOutput(alice.Address, Amount.FromInt64(25)),
+                new UtxoSplitOutput(alice.Address, Amount.FromInt64(35))
+            ],
+            cancellationToken).ConfigureAwait(false);
+        ConsoleUi.PrintReceipt("Plain UTXO split: one selected vin creates two requested vouts plus change", split);
+        TxId splitTxId = RequireTxId(split, "Plain UTXO split");
+
+        LedgerSubmitResult merge = await alice.MergeUtxosAsync(
+            [new OutPoint(splitTxId, 0), new OutPoint(splitTxId, 1)],
+            cancellationToken,
+            bob.Address).ConfigureAwait(false);
+        ConsoleUi.PrintReceipt("Plain UTXO merge: two selected vin create one Bob vout", merge);
+        await PrintTransactionShapeAsync("Plain UTXO merge details", alice, merge, cancellationToken).ConfigureAwait(false);
+
+        ConsoleUi.Section("7b. Advanced BusinessObject transactions");
 
         BusinessObjectId priceId = await CreateSimpleBusinessObjectAsync("price", Amount.FromInt64(2), cancellationToken).ConfigureAwait(false);
         ConsoleUi.PrintReceipt(
@@ -489,6 +512,32 @@ internal sealed class LearningScenarios(
                 mainAmount,
                 cancellationToken).ConfigureAwait(false));
         return objectId;
+    }
+
+    private static TxId RequireTxId(LedgerSubmitResult result, string label)
+        => result.Accepted && result.TxId is { } txId
+            ? txId
+            : throw new InvalidOperationException($"{label} did not return an accepted transaction id: {string.Join("; ", result.Errors.Select(error => $"{error.Code}: {error.Message}"))}");
+
+    private static async Task PrintTransactionShapeAsync(
+        string label,
+        DemoAccountDriver account,
+        LedgerSubmitResult result,
+        CancellationToken cancellationToken)
+    {
+        if (!result.Accepted || result.TxId is not { } txId)
+        {
+            return;
+        }
+
+        EconomyNodeTransactionDetails? details = await account.GetTransactionDetailsAsync(txId, cancellationToken)
+            .ConfigureAwait(false);
+        if (details is null)
+        {
+            return;
+        }
+
+        ConsoleUi.Success($"{label}: vin {details.Inputs.Count}, vout {details.Outputs.Count}.");
     }
 
     private async Task PrintSnapshotsAsync(string label, CancellationToken cancellationToken)

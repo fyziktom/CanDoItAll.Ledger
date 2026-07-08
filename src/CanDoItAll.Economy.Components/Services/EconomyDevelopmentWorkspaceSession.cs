@@ -69,7 +69,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             "{\"supplier\":\"Acme Metals\",\"amount\":42000,\"status\":\"draft\"}",
             "erp://purchase-orders/1043",
             TokenId: OperatingCreditToken,
-            TokenAmount: Amount.FromInt64(250),
+            TokenAmount: Amount.FromInt64(1),
             SecondaryPaymentAmount: Amount.FromInt64(500));
 
         var editor = new BusinessObjectEditorModel(
@@ -205,7 +205,8 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 new TransactionOutput(2, MainAddress, Amount.Zero, new TokenTransfer(OperatingCreditToken, Amount.FromInt64(39000))),
                 new TransactionOutput(3, ApprovalAddress, Amount.FromInt64(25000)),
                 new TransactionOutput(4, WarehouseAddress, Amount.FromInt64(41000)),
-                new TransactionOutput(5, MainAddress, Amount.Zero, new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(10_000))))
+                new TransactionOutput(5, MainAddress, Amount.Zero, new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(10_000))),
+                new TransactionOutput(6, WarehouseAddress, Amount.Zero, new TokenTransfer(OperatingCreditToken, Amount.FromInt64(2_000))))
                 .ConfigureAwait(false);
 
             timeProvider.Advance(TimeSpan.FromMinutes(5));

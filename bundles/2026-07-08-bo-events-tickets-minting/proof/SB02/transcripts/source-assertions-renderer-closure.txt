@@ -1,0 +1,19 @@
+﻿Command: PowerShell source assertion scan for SB02 event/ticket minting and renderer closure
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+RunLabel: SB02 source assertions after implementation
+InvariantIds: SB01-EVENT-TICKET-MINTING-FORM, SB01-MINT-AUTHOR-AUTOFILL, SB02-DETAIL-RENDERER-PRESERVES-EVENT-TICKET-FACTS, SB02-FINAL-CLOSURE-PROOF
+PASS: wizard exposes deterministic datetime test ids :: src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+PASS: wizard exposes deterministic dropdown test ids :: src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+PASS: event class predefined dropdown options :: src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+PASS: ticket class predefined dropdown options :: src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+PASS: ticket duration predefined dropdown options :: src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+PASS: mint author address defaults from minting workspace address :: src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+PASS: auto mint author field is read-only :: src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectCreationWizard.razor
+PASS: catalog exposes mint author address field :: src/CanDoItAll.Economy.BusinessObjects/BusinessObjectFamilyCatalog.cs
+PASS: event wizard component test covers new controls and author staging :: tests/CanDoItAll.Ledger.Tests/BusinessObjectTicketMintingComponentTests.cs
+PASS: ticket wizard component test covers new controls and author staging :: tests/CanDoItAll.Ledger.Tests/BusinessObjectTicketMintingComponentTests.cs
+PASS: detail renderer test asserts mint author label :: tests/CanDoItAll.Ledger.Tests/BusinessObjectDetailRendererLayoutTests.cs
+PASS: detail renderer test asserts ticket status fact :: tests/CanDoItAll.Ledger.Tests/BusinessObjectDetailRendererLayoutTests.cs
+TotalChecks: 12
+ExitCode: 0
+

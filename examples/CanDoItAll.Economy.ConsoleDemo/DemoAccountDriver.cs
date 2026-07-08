@@ -159,6 +159,22 @@ internal sealed class DemoAccountDriver : IDisposable
         CancellationToken cancellationToken)
         => Account.SendPaymentAsync(new PaymentRequest(receiver.Address, amount), cancellationToken);
 
+    public Task<LedgerSubmitResult> SplitUtxosAsync(
+        IReadOnlyList<OutPoint> sourceOutPoints,
+        IReadOnlyList<UtxoSplitOutput> outputs,
+        CancellationToken cancellationToken)
+        => Account.SplitUtxosAsync(
+            new UtxoSplitRequest(sourceOutPoints, outputs),
+            cancellationToken);
+
+    public Task<LedgerSubmitResult> MergeUtxosAsync(
+        IReadOnlyList<OutPoint> sourceOutPoints,
+        CancellationToken cancellationToken,
+        Address? receiverAddress = null)
+        => Account.MergeUtxosAsync(
+            new UtxoMergeRequest(sourceOutPoints, receiverAddress),
+            cancellationToken);
+
     public Task<LedgerTransaction> BuildBusinessObjectTransferAsync(
         BusinessObjectId objectId,
         DemoAccountDriver receiver,

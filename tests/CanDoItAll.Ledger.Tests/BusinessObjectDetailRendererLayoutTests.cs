@@ -126,7 +126,10 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
                 ["eventAddress"] = Alice.Value,
                 ["seat"] = "A12",
                 ["ticketClass"] = "VIP",
-                ["ticketDuration"] = "1 day"
+                ["ticketDuration"] = "1 day",
+                ["mintAuthorAddress"] = Alice.Value,
+                ["used"] = "false",
+                ["status"] = "FreeToUse"
             });
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
@@ -140,6 +143,9 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
         Assert.Empty(component.FindAll(".cda-vef-bo-selected-preview"));
         Assert.Contains("Conference Main Stage", component.Markup, StringComparison.Ordinal);
         Assert.Contains("A12", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Mint author address", component.Markup, StringComparison.Ordinal);
+        Assert.Contains(Alice.Value, component.Markup, StringComparison.Ordinal);
+        Assert.Contains("FreeToUse", component.Markup, StringComparison.Ordinal);
     }
 
     [Fact]

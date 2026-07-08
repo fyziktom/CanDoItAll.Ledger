@@ -1,0 +1,7 @@
+﻿Command: rg -n "TODO|HACK|NotImplementedException|placeholder|stubbed|fake implementation" changed event/ticket files
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+RunLabel: SB02 anti-stub audit
+InvariantIds: SB01-EVENT-TICKET-MINTING-FORM, SB01-MINT-AUTHOR-AUTOFILL, SB02-DETAIL-RENDERER-PRESERVES-EVENT-TICKET-FACTS, SB02-FINAL-CLOSURE-PROOF
+No anti-stub markers found in changed files.
+ExitCode: 0
+

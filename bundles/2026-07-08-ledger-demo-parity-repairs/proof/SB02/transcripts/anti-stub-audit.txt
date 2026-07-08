@@ -1,0 +1,6 @@
+Command: rg -n "TODO|NotImplemented|throw new NotImplementedException|fixture-specific" src\CanDoItAll.Economy.Components\Services\EconomyDevelopmentWorkspaceSession.cs src\CanDoItAll.Economy.Components\Services\EconomyNodeWorkspaceSession.cs tests\CanDoItAll.Ledger.Tests\SsrDemoParityTests.cs
+WorkingDirectory: C:\repositories\CanDoItAll.Ledger
+StartedUtc: 2026-07-08T18:47:41.6558122Z
+RgExitCode: 1
+Result: PASS no stub markers found
+FinishedUtc: 2026-07-08T18:47:41.9129539Z
