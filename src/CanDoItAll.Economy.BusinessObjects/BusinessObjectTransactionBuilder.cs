@@ -625,19 +625,40 @@ public sealed class BusinessObjectTransactionBuilder(
         CloseBusinessObjectRequest request,
         CancellationToken cancellationToken)
     {
-        LedgerSpendableOutput selected = await GetOwnedBusinessObjectAsync(context, keySource, request.ObjectId, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<LedgerSpendableOutput> spendableOutputs = await ledgerReadClient
+            .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
+            .ConfigureAwait(false);
+        LedgerSpendableOutput selected = spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == request.ObjectId)
+            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {request.ObjectId.Value}.");
         TransactionData data = BusinessObjectPayload.CreateData(request.StateJson, TransactionDataItemType.BusinessObject, externalRef: request.ExternalRef);
-        var unsigned = CreateSingleInputTransaction(
+
+        LedgerSpendableOutput? mergeSource = selected.Token is null
+            ? null
+            : SelectTokenMergeOutput(spendableOutputs, selected.Token.TokenId);
+        if (mergeSource is null)
+        {
+            return CreateSingleInputTransaction(
+                context,
+                keySource,
+                selected,
+                new[]
+                {
+                    new TransactionOutput(0, keySource.Address, selected.MainAmount, selected.Token)
+                },
+                data);
+        }
+
+        var outputToken = new TokenTransfer(
+            selected.Token!.TokenId,
+            new Amount(selected.Token.Amount.Value + mergeSource.Token!.Amount.Value));
+        var outputMain = new Amount(selected.MainAmount.Value + mergeSource.MainAmount.Value);
+        return CreateMultiInputTransaction(
             context,
             keySource,
-            selected,
-            new[]
-            {
-                new TransactionOutput(0, keySource.Address, selected.MainAmount, selected.Token)
-            },
+            [selected, mergeSource],
+            [new TransactionOutput(0, keySource.Address, outputMain, outputToken)],
+            TransactionKind.BusinessObject,
             data);
-
-        return unsigned;
     }
 
     public async Task<LedgerTransaction> BuildCloneAsync(
@@ -656,12 +677,17 @@ public sealed class BusinessObjectTransactionBuilder(
         CloneBusinessObjectRequest request,
         CancellationToken cancellationToken)
     {
+        request.Token?.Amount.EnsureNonNegative(nameof(request.Token));
         if (request.SourceObjectId == request.NewObjectId)
         {
             throw new InvalidOperationException("Clone requires a new BusinessObject id.");
         }
 
-        LedgerSpendableOutput source = await GetOwnedBusinessObjectAsync(context, keySource, request.SourceObjectId, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<LedgerSpendableOutput> spendableOutputs = await ledgerReadClient
+            .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
+            .ConfigureAwait(false);
+        LedgerSpendableOutput source = spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == request.SourceObjectId)
+            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {request.SourceObjectId.Value}.");
         TransactionData data = BusinessObjectPayload.CreateData(new CreateBusinessObjectRequest(
             request.NewObjectId,
             request.ObjectType,
@@ -669,32 +695,49 @@ public sealed class BusinessObjectTransactionBuilder(
             request.SchemaVersion,
             request.OwnerAddress,
             Amount.Zero,
-            null,
+            request.Token,
             TransactionDataItemType.BusinessObject));
-        var unsigned = CreateSingleInputTransaction(
-            context,
-            keySource,
-            source,
-            new[]
+        var selected = new List<LedgerSpendableOutput> { source };
+        LedgerSpendableOutput? tokenSource = null;
+        if (request.Token is not null)
+        {
+            tokenSource = request.SourceOutPoint is null
+                ? SelectTokenSourceOutput(spendableOutputs, request.Token.TokenId, request.Token.Amount, Amount.Zero)
+                : SelectExplicitCreateSource(spendableOutputs, request.SourceOutPoint, Amount.Zero, request.Token);
+            if (tokenSource.OutPoint == source.OutPoint)
             {
-                new TransactionOutput(
-                    0,
-                    keySource.Address,
-                    source.MainAmount,
-                    source.Token,
-                    source.BusinessObject! with
-                    {
-                        Version = source.BusinessObject.Version + 1,
-                        Operation = BusinessObjectOperation.Update
-                    }),
-                new TransactionOutput(
-                    1,
-                    request.OwnerAddress ?? keySource.Address,
-                    Amount.Zero,
-                    null,
-                    new BusinessObjectRef(request.NewObjectId, 1, BusinessObjectOperation.Create, data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
-            },
-            data);
+                throw new InvalidOperationException("Clone carrier token source cannot be the source BusinessObject output.");
+            }
+
+            selected.Add(tokenSource);
+        }
+
+        var outputs = new List<TransactionOutput>
+        {
+            new(
+                0,
+                keySource.Address,
+                source.MainAmount,
+                source.Token,
+                source.BusinessObject! with
+                {
+                    Version = source.BusinessObject.Version + 1,
+                    Operation = BusinessObjectOperation.Update
+                }),
+            new(
+                1,
+                request.OwnerAddress ?? keySource.Address,
+                Amount.Zero,
+                request.Token,
+                new BusinessObjectRef(request.NewObjectId, 1, BusinessObjectOperation.Create, data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
+        };
+
+        if (tokenSource is not null)
+        {
+            AddSelectedChangeOutput(outputs, [tokenSource], keySource.Address, Amount.Zero, request.Token);
+        }
+
+        LedgerTransaction unsigned = CreateMultiInputTransaction(context, keySource, selected, outputs, TransactionKind.BusinessObject, data);
 
         return unsigned;
     }
@@ -906,23 +949,24 @@ public sealed class BusinessObjectTransactionBuilder(
         Amount mainAmount,
         TokenTransfer? token)
     {
-        if (sourceOutPoint is not null)
-        {
-            return new[]
-            {
-                SelectExplicitCreateSource(spendableOutputs, sourceOutPoint, mainAmount, token)
-            };
-        }
-
         if (token is null)
         {
+            if (sourceOutPoint is not null)
+            {
+                return new[]
+                {
+                    SelectExplicitCreateSource(spendableOutputs, sourceOutPoint, mainAmount, token)
+                };
+            }
+
             return SelectMainOutputs(spendableOutputs, mainAmount);
         }
 
-        return new[]
-        {
-            SelectTokenSourceOutput(spendableOutputs, token.TokenId, token.Amount, mainAmount)
-        };
+        LedgerSpendableOutput tokenSource = sourceOutPoint is null
+            ? SelectTokenSourceOutput(spendableOutputs, token.TokenId, token.Amount, Amount.Zero)
+            : SelectExplicitCreateSource(spendableOutputs, sourceOutPoint, mainAmount, token);
+
+        return SelectCreateInputsFromTokenSource(spendableOutputs, tokenSource, mainAmount);
     }
 
     private static LedgerSpendableOutput SelectExplicitCreateSource(
@@ -939,13 +983,13 @@ public sealed class BusinessObjectTransactionBuilder(
             throw new InvalidOperationException("BusinessObject creation cannot use an existing BusinessObject output as its source.");
         }
 
-        if (source.MainAmount.Value < mainAmount.Value)
-        {
-            throw new InvalidOperationException("BusinessObject create main amount cannot exceed the selected source UTXO amount.");
-        }
-
         if (token is null)
         {
+            if (source.MainAmount.Value < mainAmount.Value)
+            {
+                throw new InvalidOperationException("BusinessObject create main amount cannot exceed the selected source UTXO amount.");
+            }
+
             if (source.Token is not null)
             {
                 throw new InvalidOperationException("A token source UTXO can only be used when the created BusinessObject requests the same token.");
@@ -968,6 +1012,28 @@ public sealed class BusinessObjectTransactionBuilder(
         return source;
     }
 
+    private static IReadOnlyList<LedgerSpendableOutput> SelectCreateInputsFromTokenSource(
+        IReadOnlyList<LedgerSpendableOutput> spendableOutputs,
+        LedgerSpendableOutput tokenSource,
+        Amount mainAmount)
+    {
+        var selected = new List<LedgerSpendableOutput> { tokenSource };
+        decimal coveredMain = tokenSource.MainAmount.Value;
+        if (coveredMain >= mainAmount.Value)
+        {
+            return selected;
+        }
+
+        Amount remainingMain = new(mainAmount.Value - coveredMain);
+        selected.AddRange(SelectMainOutputs(
+            spendableOutputs
+                .Where(output => output.OutPoint != tokenSource.OutPoint)
+                .ToArray(),
+            remainingMain));
+
+        return selected;
+    }
+
     private static LedgerSpendableOutput SelectTokenSourceOutput(
         IReadOnlyList<LedgerSpendableOutput> spendableOutputs,
         TokenId tokenId,
@@ -988,6 +1054,17 @@ public sealed class BusinessObjectTransactionBuilder(
             ?? throw new InvalidOperationException(
                 $"Account does not have a non-unique token source UTXO for {tokenId.Value} with amount larger than {amount}.");
     }
+
+    private static LedgerSpendableOutput? SelectTokenMergeOutput(
+        IReadOnlyList<LedgerSpendableOutput> spendableOutputs,
+        TokenId tokenId)
+        => spendableOutputs
+            .Where(output => output.BusinessObject is null && output.Token?.TokenId == tokenId)
+            .OrderByDescending(output => output.Token!.Amount.Value > 1m)
+            .ThenBy(output => output.CreatedAt)
+            .ThenBy(output => output.OutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenBy(output => output.OutPoint.OutputIndex)
+            .FirstOrDefault();
 
     private static IReadOnlyList<LedgerSpendableOutput> SelectTokenOutputs(
         IReadOnlyList<LedgerSpendableOutput> spendableOutputs,

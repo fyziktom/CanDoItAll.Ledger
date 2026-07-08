@@ -6621,6 +6621,25 @@ button.cda-economy-list-item:focus-visible {
   margin-top: 16px;
 }
 
+.cda-vef-commerce-group {
+  display: grid;
+  gap: 8px;
+}
+
+.cda-vef-commerce-group + .cda-vef-commerce-group {
+  margin-top: 14px;
+}
+
+.cda-vef-panel-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #344256;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .cda-vef-commerce-list {
   display: grid;
   gap: 8px;

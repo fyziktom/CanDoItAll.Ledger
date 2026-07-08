@@ -414,7 +414,7 @@
     private const int MaxTicketMultimintCount = 100;
     private int currentStep = 1;
     private string? currentModelKey;
-    private string? selectedTokenKey = EconomyTokenOption.MainKey;
+    private string? selectedTokenKey;
     private string selectedObjectType = "post";
     private string name = string.Empty;
     private IReadOnlyList<string> tagValues = [];
@@ -474,7 +474,11 @@
         selectedSubAccountAddress = string.Empty;
         selectedAddressBookAddress = string.Empty;
         recipientListText = string.Empty;
-        selectedTokenKey ??= Workspace?.TokenOptions.FirstOrDefault()?.Key ?? EconomyTokenOption.MainKey;
+        selectedTokenKey = IsEditMode
+            ? EconomyTokenOption.MainKey
+            : BusinessObjectCarrierTokenPolicy.GetDefaultCarrierTokenKey(Workspace?.TokenOptions)
+                ?? Workspace?.TokenOptions.FirstOrDefault()?.Key
+                ?? EconomyTokenOption.MainKey;
         await LoadTagSuggestionsAsync();
     }
 

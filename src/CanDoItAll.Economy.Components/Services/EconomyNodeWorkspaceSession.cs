@@ -104,12 +104,12 @@ public sealed class EconomyNodeWorkspaceSession(
             .ConfigureAwait(false);
 
         IReadOnlyList<EconomyTokenCreationAuthority> tokenAuthorities = CreateTokenCreationAuthorities(permissionSources);
+        IReadOnlyList<EconomyTokenOption> tokenOptions = CreateTokenOptions(balance, tokenTypes, tokenAuthorities);
         IReadOnlyList<EconomyAddressBookmark> bookmarks = await CreateAddressBookmarksAsync(
             normalizedAccount,
             cancellationToken).ConfigureAwait(false);
 
-        EconomyTokenOption? defaultToken = CreateTokenOptions(balance, tokenTypes, tokenAuthorities)
-            .FirstOrDefault(option => !option.IsMain && option.HasReusableSource);
+        EconomyTokenOption? defaultToken = BusinessObjectCarrierTokenPolicy.SelectDefaultCarrierToken(tokenOptions);
         Address peerAddress = bookmarks.FirstOrDefault()?.Address ?? account.Address;
         DateTimeOffset viewedAt = DateTimeOffset.UtcNow;
         BusinessObjectId draftObjectId = BusinessObjectCreateIdFactory.CreateNewObjectId("ui-message", $"Message from {normalizedAccount}");
@@ -148,7 +148,7 @@ public sealed class EconomyNodeWorkspaceSession(
             driver.Context,
             account.Address,
             balance,
-            CreateTokenOptions(balance, tokenTypes, tokenAuthorities),
+            tokenOptions,
             tokenAuthorities,
             bookmarks,
             businessObjects,
@@ -410,7 +410,10 @@ public sealed class EconomyNodeWorkspaceSession(
                     SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
-                    draft.ReceiverAddress),
+                    draft.ReceiverAddress,
+                    draft.TokenId is not null && draft.TokenAmount is not null
+                        ? new TokenTransfer(draft.TokenId.Value, draft.TokenAmount.Value)
+                        : null),
                 cancellationToken).ConfigureAwait(false),
 
             BusinessObjectTransactionMode.MainPayment => await account.SendPaymentAsync(

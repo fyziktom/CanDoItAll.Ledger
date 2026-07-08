@@ -17,6 +17,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
     private static readonly BusinessObjectId ImageTargetObjectId = new("bo:image:dispatch-target");
     private static readonly BusinessObjectId PaymentObjectId = new("bo:payment:dispatch-payment");
     private static readonly DateTimeOffset Now = DateTimeOffset.Parse("2026-06-30T12:00:00Z");
+    private static readonly TokenId OperatingToken = new("ops.carrier");
 
     [Fact]
     public async Task CopySale_DispatchesDeterministicCloneAndLinkedRecords()
@@ -35,6 +36,8 @@ public sealed class BusinessObjectCommerceDispatcherTests
         Assert.Equal(TargetObjectId, cloneDraft.SourceObjectId);
         Assert.Equal(expectedCloneId, cloneDraft.TargetObjectId);
         Assert.Equal(Bob, cloneDraft.OwnerAddress);
+        Assert.Equal(OperatingToken, cloneDraft.TokenId);
+        Assert.Equal("1", cloneDraft.TokenAmount!.Value.ToString());
         Assert.Null(BusinessObjectPayloadBuilder.ParseMediaPayload(cloneDraft.StateJson, "clone").Commerce?.Sale);
 
         BusinessObjectTransactionDraft saleUpdate = Assert.Single(adapter.SubmittedDrafts, draft => draft.ExternalRef.StartsWith("bo-commerce://sale/", StringComparison.Ordinal));
@@ -54,8 +57,42 @@ public sealed class BusinessObjectCommerceDispatcherTests
         Assert.NotNull(completedPayment.ReceiptObjectId);
         Assert.NotNull(completedPayment.PurchaseObjectId);
 
-        Assert.Contains(adapter.SubmittedDrafts, draft => draft.ObjectType == "receipt" && draft.OwnerAddress == Alice);
-        Assert.Contains(adapter.SubmittedDrafts, draft => draft.ObjectType == "purchase" && draft.OwnerAddress == Bob);
+        BusinessObjectTransactionDraft receiptDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.ObjectType == "receipt" && draft.OwnerAddress == Alice);
+        BusinessObjectTransactionDraft purchaseDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.ObjectType == "purchase" && draft.OwnerAddress == Bob);
+        Assert.Equal(OperatingToken, receiptDraft.TokenId);
+        Assert.Equal("1", receiptDraft.TokenAmount!.Value.ToString());
+        Assert.Equal(OperatingToken, purchaseDraft.TokenId);
+        Assert.Equal("1", purchaseDraft.TokenAmount!.Value.ToString());
+    }
+
+    [Fact]
+    public async Task CopySale_UsesTokenBalanceFallbackWhenSourceMetadataIsMissing()
+    {
+        ITypedBusinessObjectView target = CreateListedTarget(BusinessObjectSaleMode.Copy, maxClones: 2);
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync(BusinessObjectSaleMode.Copy);
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(target, payment) with
+        {
+            TokenOptions =
+            [
+                new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+                new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, UniqueAmount: Amount.FromInt64(9), UniqueUtxoCount: 9, TotalUtxoCount: 9)
+            ]
+        };
+        var adapter = new CapturingWorkspaceAdapter(workspace);
+        var dispatcher = new BusinessObjectCommerceDispatcher(() => Now.AddMinutes(5));
+
+        BusinessObjectCommerceDispatchResult result = await dispatcher.DispatchPendingAsync(adapter, workspace);
+
+        Assert.Equal(5, result.AcceptedCount);
+        BusinessObjectTransactionDraft cloneDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.SelectedMode == BusinessObjectTransactionMode.CloneObject);
+        BusinessObjectTransactionDraft receiptDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.ObjectType == "receipt" && draft.OwnerAddress == Alice);
+        BusinessObjectTransactionDraft purchaseDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.ObjectType == "purchase" && draft.OwnerAddress == Bob);
+        Assert.Equal(OperatingToken, cloneDraft.TokenId);
+        Assert.Equal("1", cloneDraft.TokenAmount!.Value.ToString());
+        Assert.Equal(OperatingToken, receiptDraft.TokenId);
+        Assert.Equal("1", receiptDraft.TokenAmount!.Value.ToString());
+        Assert.Equal(OperatingToken, purchaseDraft.TokenId);
+        Assert.Equal("1", purchaseDraft.TokenAmount!.Value.ToString());
     }
 
     [Fact]
@@ -357,7 +394,10 @@ public sealed class BusinessObjectCommerceDispatcherTests
             Context,
             Alice,
             Amount.FromInt64(100),
-            new Dictionary<TokenId, Amount>(),
+            new Dictionary<TokenId, Amount>
+            {
+                [OperatingToken] = Amount.FromInt64(9)
+            },
             UtxoCount: 3,
             Now);
         BusinessObjectTransactionDraft draft = new(
@@ -384,7 +424,10 @@ public sealed class BusinessObjectCommerceDispatcherTests
             Context,
             Alice,
             balance,
-            [new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true)],
+            [
+                new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+                new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, SourceAmount: Amount.FromInt64(9), SourceUtxoCount: 1, TotalUtxoCount: 1)
+            ],
             [],
             [],
             businessObjects,

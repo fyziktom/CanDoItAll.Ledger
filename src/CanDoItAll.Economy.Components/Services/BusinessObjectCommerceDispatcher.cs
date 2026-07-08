@@ -144,6 +144,7 @@ public sealed class BusinessObjectCommerceDispatcher
         TxId dispatchTxId = existingDelivery?.TxId
             ?? await SubmitDeliveryAsync(
                     adapter,
+                    workspace,
                     target ?? throw new InvalidOperationException("Target BusinessObject is required for new delivery."),
                     payment,
                     buyerAddress,
@@ -170,6 +171,7 @@ public sealed class BusinessObjectCommerceDispatcher
 
     private async Task<TxId> SubmitDeliveryAsync(
         IEconomyAccountWorkspaceAdapter adapter,
+        BusinessObjectWorkspaceModel workspace,
         IBusinessObjectView target,
         BusinessObjectPaymentRecord payment,
         Address buyerAddress,
@@ -179,7 +181,7 @@ public sealed class BusinessObjectCommerceDispatcher
         CancellationToken cancellationToken)
     {
         BusinessObjectTransactionDraft draft = payment.SaleMode == BusinessObjectSaleMode.Copy
-            ? CreateCloneDraft(target, buyerAddress, deliveredObjectId)
+            ? CreateCloneDraft(target, buyerAddress, deliveredObjectId, workspace.TokenOptions)
             : CreateOriginalTransferDraft(target, buyerAddress, sale);
 
         EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(draft, cancellationToken)
@@ -192,12 +194,13 @@ public sealed class BusinessObjectCommerceDispatcher
     private static BusinessObjectTransactionDraft CreateCloneDraft(
         IBusinessObjectView target,
         Address buyerAddress,
-        BusinessObjectId deliveredObjectId)
+        BusinessObjectId deliveredObjectId,
+        IReadOnlyList<EconomyTokenOption> tokenOptions)
     {
         string cloneStateJson = BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(
             target.StateJson,
             target.ObjectId.Value);
-        return new BusinessObjectTransactionDraft(
+        var draft = new BusinessObjectTransactionDraft(
             deliveredObjectId,
             target.ObjectType,
             target.SchemaVersion,
@@ -211,6 +214,7 @@ public sealed class BusinessObjectCommerceDispatcher
             BusinessObjectTransactionMode.CloneObject,
             SourceObjectId: target.ObjectId,
             TargetObjectId: deliveredObjectId);
+        return BusinessObjectCarrierTokenPolicy.WithDefaultCarrierToken(draft, tokenOptions, allowBalanceFallback: true);
     }
 
     private static BusinessObjectTransactionDraft CreateOriginalTransferDraft(
@@ -349,7 +353,8 @@ public sealed class BusinessObjectCommerceDispatcher
             "receipt",
             new Address(payment.SellerAddress),
             stateJson,
-            $"bo-commerce://receipt/{receiptObjectId.Value}");
+            $"bo-commerce://receipt/{receiptObjectId.Value}",
+            workspace.TokenOptions);
 
         EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(draft, cancellationToken)
             .ConfigureAwait(false);
@@ -384,7 +389,8 @@ public sealed class BusinessObjectCommerceDispatcher
             "purchase",
             new Address(payment.BuyerAddress),
             stateJson,
-            $"bo-commerce://purchase/{purchaseObjectId.Value}");
+            $"bo-commerce://purchase/{purchaseObjectId.Value}",
+            workspace.TokenOptions);
 
         EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(draft, cancellationToken)
             .ConfigureAwait(false);
@@ -530,8 +536,10 @@ public sealed class BusinessObjectCommerceDispatcher
         string objectType,
         Address ownerAddress,
         string stateJson,
-        string externalRef)
-        => new(
+        string externalRef,
+        IReadOnlyList<EconomyTokenOption> tokenOptions)
+    {
+        var draft = new BusinessObjectTransactionDraft(
             objectId,
             objectType,
             "1.0",
@@ -543,6 +551,8 @@ public sealed class BusinessObjectCommerceDispatcher
             stateJson,
             externalRef,
             BusinessObjectTransactionMode.Create);
+        return BusinessObjectCarrierTokenPolicy.WithDefaultCarrierToken(draft, tokenOptions, allowBalanceFallback: true);
+    }
 
     private static IReadOnlyList<ICommerceBusinessObjectView> GetPaymentViews(BusinessObjectWorkspaceModel workspace)
         => workspace.BusinessObjects

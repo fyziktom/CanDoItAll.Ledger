@@ -1,0 +1,55 @@
+{
+  "status": "passed",
+  "targetName": "Carrier proof post 1783453124305",
+  "targetObjectId": "bo:post:carrier-proof-post-1783453124305:8dedc5f64c44fa0-0003-9be2d82a5eb1",
+  "paymentObjectId": "bo:payment:4c3b6c98f7f1c9f81e65ee06",
+  "receiptObjectId": "bo:receipt:b50f0cb9a1e8807bf8dad2b8",
+  "purchaseObjectId": "bo:purchase:b50f0cb9a1e8807bf8dad2b8",
+  "deliveredObjectId": "bo:clone:f8dab96e9e11fdd95559b0a5",
+  "carrierToken": "bo.posts",
+  "outputs": {
+    "created": {
+      "txId": "a862eb070bd15df1f4d6bb9ecf07156703b7b800e9cc3daefcbfb4fd73923fd7",
+      "outputIndex": 0,
+      "tokenId": "bo.posts",
+      "tokenAmount": "1",
+      "mainAmount": "0"
+    },
+    "payment": {
+      "txId": "53800520408f8f2532ab03c0364788741db3a8baaa9aa9bc6355b0e3d7f95427",
+      "outputIndex": 0,
+      "tokenId": "bo.posts",
+      "tokenAmount": "1",
+      "mainAmount": "7.25"
+    },
+    "receipt": {
+      "txId": "f5649d7ba059cda203c668381d098fec3dee6e79d289e3e4f05af95bbfd874c3",
+      "outputIndex": 0,
+      "tokenId": "bo.posts",
+      "tokenAmount": "1",
+      "mainAmount": "0"
+    },
+    "purchase": {
+      "txId": "a5e00139a47f2a10cc3b6db4f211d56d8947052afc98223625fffb2613135505",
+      "outputIndex": 0,
+      "tokenId": "bo.posts",
+      "tokenAmount": "1",
+      "mainAmount": "0"
+    },
+    "delivered": {
+      "txId": "835e8ed9ea6cd5109360d297f16b231b089f719c59bbf0669a427263169700b5",
+      "outputIndex": 1,
+      "tokenId": "bo.posts",
+      "tokenAmount": "1",
+      "mainAmount": "0"
+    }
+  },
+  "screenshots": [
+    "alice-created-bo-token-detail.png",
+    "bob-payment-submitted.png",
+    "alice-dispatch-dashboard.png",
+    "alice-payment-token-detail.png",
+    "alice-receipt-token-detail.png",
+    "bob-purchase-token-detail.png"
+  ]
+}

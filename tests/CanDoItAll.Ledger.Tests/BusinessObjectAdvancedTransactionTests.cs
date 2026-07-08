@@ -619,6 +619,148 @@ public sealed class BusinessObjectAdvancedTransactionTests
     }
 
     [Fact]
+    public async Task Account_CreatesTokenBackedBusinessObjectWithSeparateMainPaymentSource()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T01:30:30Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        BusinessObjectAccount bob = rig.CreateAccount("bob");
+        LedgerSubmitResult mint = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(5))),
+            new TransactionOutput(1, Alice, Amount.FromInt64(10)));
+        Assert.True(mint.Accepted);
+
+        LedgerTransaction create = await alice.BuildCreateBusinessObjectTransactionAsync(
+            new CreateBusinessObjectRequest(
+                new BusinessObjectId("payment-bo"),
+                "payment",
+                "{\"kind\":\"payment\"}",
+                OwnerAddress: Bob,
+                MainAmount: Amount.FromInt64(7),
+                Token: new TokenTransfer(OperatingToken, Amount.FromInt64(1))),
+            CancellationToken.None);
+
+        Assert.Equal(2, create.Inputs.Count);
+        Assert.Contains(create.Inputs, input => input.PreviousOutPoint.OutputIndex == 0);
+        Assert.Contains(create.Inputs, input => input.PreviousOutPoint.OutputIndex == 1);
+        Assert.Equal(2, create.Outputs.Count);
+        Assert.Equal(Bob, create.Outputs[0].Address);
+        Assert.Equal("7", create.Outputs[0].MainAmount.ToString());
+        Assert.Equal("1", create.Outputs[0].Token!.Amount.ToString());
+        Assert.NotNull(create.Outputs[0].BusinessObject);
+        Assert.Equal(Alice, create.Outputs[1].Address);
+        Assert.Equal("3", create.Outputs[1].MainAmount.ToString());
+        Assert.Equal("4", create.Outputs[1].Token!.Amount.ToString());
+        Assert.Null(create.Outputs[1].BusinessObject);
+
+        LedgerSubmitResult result = await alice.SubmitTransactionAsync(create, CancellationToken.None);
+
+        Assert.True(result.Accepted, string.Join("; ", result.Errors));
+        LedgerAccountBalance aliceBalance = await alice.GetBalanceAsync(CancellationToken.None);
+        Assert.Equal("3", aliceBalance.MainBalance.ToString());
+        Assert.Equal("4", aliceBalance.TokenBalances[OperatingToken].ToString());
+        LedgerBusinessObjectHolding bobPayment = Assert.Single(await bob.GetBusinessObjectsAsync(CancellationToken.None));
+        Assert.Equal(new BusinessObjectId("payment-bo"), bobPayment.ObjectId);
+        LedgerAccountBalance bobBalance = await bob.GetBalanceAsync(CancellationToken.None);
+        Assert.Equal("7", bobBalance.MainBalance.ToString());
+        Assert.Equal("1", bobBalance.TokenBalances[OperatingToken].ToString());
+    }
+
+    [Fact]
+    public async Task Account_ClonesBusinessObjectWithFreshTokenFromReusableSource()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T01:31:00Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        BusinessObjectAccount bob = rig.CreateAccount("bob");
+        LedgerSubmitResult mint = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(8))));
+        Assert.True(mint.Accepted);
+
+        LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
+            new CreateBusinessObjectRequest(
+                new BusinessObjectId("token-backed-original"),
+                "post",
+                "{\"name\":\"original\"}",
+                Token: new TokenTransfer(OperatingToken, Amount.FromInt64(1))),
+            CancellationToken.None);
+        Assert.True(create.Accepted, string.Join("; ", create.Errors));
+
+        LedgerTransaction clone = await alice.BuildCloneBusinessObjectTransactionAsync(
+            new CloneBusinessObjectRequest(
+                new BusinessObjectId("token-backed-original"),
+                new BusinessObjectId("token-backed-clone"),
+                "post",
+                "{\"name\":\"clone\"}",
+                OwnerAddress: Bob,
+                Token: new TokenTransfer(OperatingToken, Amount.FromInt64(1))),
+            CancellationToken.None);
+
+        Assert.Equal(2, clone.Inputs.Count);
+        Assert.Equal(3, clone.Outputs.Count);
+        Assert.Equal(Alice, clone.Outputs[0].Address);
+        Assert.Equal("1", clone.Outputs[0].Token!.Amount.ToString());
+        Assert.Equal(BusinessObjectOperation.Update, clone.Outputs[0].BusinessObject!.Operation);
+        Assert.Equal(Bob, clone.Outputs[1].Address);
+        Assert.Equal("1", clone.Outputs[1].Token!.Amount.ToString());
+        Assert.Equal(new BusinessObjectId("token-backed-clone"), clone.Outputs[1].BusinessObject!.ObjectId);
+        Assert.Equal(Alice, clone.Outputs[2].Address);
+        Assert.Equal("6", clone.Outputs[2].Token!.Amount.ToString());
+        Assert.Null(clone.Outputs[2].BusinessObject);
+
+        LedgerSubmitResult result = await alice.SubmitTransactionAsync(clone, CancellationToken.None);
+
+        Assert.True(result.Accepted, string.Join("; ", result.Errors));
+        LedgerTokenType aliceType = Assert.Single(await alice.GetTokenTypesAsync(CancellationToken.None));
+        Assert.Equal("7", aliceType.TotalAmount.ToString());
+        Assert.Equal("6", aliceType.SourceAmount.ToString());
+        Assert.Equal("1", aliceType.UniqueAmount.ToString());
+        LedgerTokenType bobType = Assert.Single(await bob.GetTokenTypesAsync(CancellationToken.None));
+        Assert.Equal("1", bobType.TotalAmount.ToString());
+        Assert.Equal("1", bobType.UniqueAmount.ToString());
+    }
+
+    [Fact]
+    public async Task Account_ClosesTokenBackedBusinessObjectIntoReusableTokenSource()
+    {
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T01:31:30Z"));
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        LedgerSubmitResult mint = await rig.SubmitMintAsync(
+            CancellationToken.None,
+            new TransactionOutput(0, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(5))));
+        Assert.True(mint.Accepted);
+
+        LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
+            new CreateBusinessObjectRequest(
+                new BusinessObjectId("token-backed-close"),
+                "post",
+                "{\"name\":\"close\"}",
+                Token: new TokenTransfer(OperatingToken, Amount.FromInt64(1))),
+            CancellationToken.None);
+        Assert.True(create.Accepted, string.Join("; ", create.Errors));
+
+        LedgerTransaction close = await alice.BuildCloseBusinessObjectTransactionAsync(
+            new CloseBusinessObjectRequest(new BusinessObjectId("token-backed-close")),
+            CancellationToken.None);
+
+        Assert.Equal(2, close.Inputs.Count);
+        TransactionOutput output = Assert.Single(close.Outputs);
+        Assert.Equal(Alice, output.Address);
+        Assert.Equal("5", output.Token!.Amount.ToString());
+        Assert.Null(output.BusinessObject);
+
+        LedgerSubmitResult result = await alice.SubmitTransactionAsync(close, CancellationToken.None);
+
+        Assert.True(result.Accepted, string.Join("; ", result.Errors));
+        LedgerTokenType tokenType = Assert.Single(await alice.GetTokenTypesAsync(CancellationToken.None));
+        Assert.Equal("5", tokenType.TotalAmount.ToString());
+        Assert.Equal("5", tokenType.SourceAmount.ToString());
+        Assert.Equal("0", tokenType.UniqueAmount.ToString());
+        Assert.Equal(1, tokenType.SourceUtxoCount);
+        Assert.Equal(0, tokenType.UniqueUtxoCount);
+    }
+
+    [Fact]
     public async Task Account_CreateBusinessObjectWritesStructuredStateJsonForEveryObjectType()
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T01:32:00Z"));

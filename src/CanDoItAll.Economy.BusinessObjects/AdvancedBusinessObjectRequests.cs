@@ -18,7 +18,9 @@ public sealed record CloneBusinessObjectRequest(
     string ObjectType,
     string StateJson,
     string SchemaVersion = "1.0",
-    Address? OwnerAddress = null);
+    Address? OwnerAddress = null,
+    TokenTransfer? Token = null,
+    OutPoint? SourceOutPoint = null);
 
 public sealed record MergeBusinessObjectsRequest(
     BusinessObjectId FirstObjectId,

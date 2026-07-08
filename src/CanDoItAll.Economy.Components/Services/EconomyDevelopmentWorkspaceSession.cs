@@ -480,7 +480,10 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 draft.TargetObjectId ?? new BusinessObjectId($"bo:ui-clone-target-{nonce}"),
                 SafeText(draft.ObjectType, "purchase-order"),
                 SafeJson(draft.StateJson),
-                SafeText(draft.SchemaVersion, "1.0")),
+                SafeText(draft.SchemaVersion, "1.0"),
+                Token: draft.TokenId is not null && draft.TokenAmount is not null && draft.TokenAmount.Value.Value > 0m
+                    ? new TokenTransfer(draft.TokenId.Value, draft.TokenAmount.Value)
+                    : null),
             cancellationToken).ConfigureAwait(false);
     }
 

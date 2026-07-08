@@ -4,31 +4,76 @@
 <section class="cda-vef-panel cda-vef-commerce-dashboard" data-testid="cda-commerce-dashboard">
     <div class="cda-vef-panel-header">
         <span>Commerce Records</span>
-        <StatusBadge Text="@($"{CommerceItems.Count} item(s)")" Tone="info" />
+        <StatusBadge Text="@($"{CommerceItemCount} item(s)")" Tone="info" />
     </div>
     <div class="cda-vef-panel-body">
-        @if (CommerceItems.Count == 0)
+        @if (CommerceItemCount == 0)
         {
             <p class="cda-vef-empty-line">No payment, purchase, or receipt records are visible in this account.</p>
         }
         else
         {
-            <div class="cda-vef-commerce-list">
-                @foreach (ICommerceBusinessObjectView item in CommerceItems)
-                {
-                    <button type="button"
-                            class="cda-vef-commerce-row"
-                            data-testid="cda-commerce-record"
-                            @onclick="@(() => OpenDetailsAsync(item))">
-                        <span class="material-icons" aria-hidden="true">@IconFor(item)</span>
-                        <span>
-                            <strong>@DisplayName(item)</strong>
-                            <small>@SummaryFor(item)</small>
-                        </span>
-                        <em>@item.ObjectType</em>
-                    </button>
-                }
-            </div>
+            <section class="cda-vef-commerce-group" data-testid="cda-commerce-payments">
+                <div class="cda-vef-panel-subheader">
+                    <span>Payments</span>
+                    <StatusBadge Text="@($"{PaymentItems.Count} item(s)")" Tone="info" />
+                </div>
+                <div class="cda-vef-commerce-list">
+                    @if (PaymentItems.Count == 0)
+                    {
+                        <p class="cda-vef-empty-line">No payment records are visible in this account.</p>
+                    }
+                    else
+                    {
+                        @foreach (ICommerceBusinessObjectView item in PaymentItems)
+                        {
+                            <button type="button"
+                                    class="cda-vef-commerce-row"
+                                    data-testid="cda-commerce-record"
+                                    data-commerce-kind="payment"
+                                    @onclick="@(() => OpenDetailsAsync(item))">
+                                <span class="material-icons" aria-hidden="true">@IconFor(item)</span>
+                                <span>
+                                    <strong>@DisplayName(item)</strong>
+                                    <small>@SummaryFor(item)</small>
+                                </span>
+                                <em>@item.ObjectType</em>
+                            </button>
+                        }
+                    }
+                </div>
+            </section>
+
+            <section class="cda-vef-commerce-group" data-testid="cda-commerce-receipts">
+                <div class="cda-vef-panel-subheader">
+                    <span>Receipts</span>
+                    <StatusBadge Text="@($"{ReceiptItems.Count} item(s)")" Tone="info" />
+                </div>
+                <div class="cda-vef-commerce-list">
+                    @if (ReceiptItems.Count == 0)
+                    {
+                        <p class="cda-vef-empty-line">No receipt or purchase records are visible in this account.</p>
+                    }
+                    else
+                    {
+                        @foreach (ICommerceBusinessObjectView item in ReceiptItems)
+                        {
+                            <button type="button"
+                                    class="cda-vef-commerce-row"
+                                    data-testid="cda-commerce-record"
+                                    data-commerce-kind="receipt"
+                                    @onclick="@(() => OpenDetailsAsync(item))">
+                                <span class="material-icons" aria-hidden="true">@IconFor(item)</span>
+                                <span>
+                                    <strong>@DisplayName(item)</strong>
+                                    <small>@SummaryFor(item)</small>
+                                </span>
+                                <em>@item.ObjectType</em>
+                            </button>
+                        }
+                    }
+                </div>
+            </section>
         }
     </div>
 </section>
@@ -40,10 +85,22 @@
     [Parameter]
     public EventCallback<BusinessObjectTransactionDraft> EditRequested { get; set; }
 
-    private IReadOnlyList<ICommerceBusinessObjectView> CommerceItems
+    [Parameter]
+    public EventCallback<TxId> TransactionDetailsRequested { get; set; }
+
+    private int CommerceItemCount => PaymentItems.Count + ReceiptItems.Count;
+
+    private IReadOnlyList<ICommerceBusinessObjectView> PaymentItems
         => Workspace.BusinessObjects
             .OfType<ICommerceBusinessObjectView>()
-            .Where(item => item.Commerce.Payment is not null || item.Commerce.Purchase is not null || item.Commerce.Receipt is not null)
+            .Where(item => item.Commerce.Payment is not null)
+            .OrderByDescending(item => item.CreatedAt)
+            .ToArray();
+
+    private IReadOnlyList<ICommerceBusinessObjectView> ReceiptItems
+        => Workspace.BusinessObjects
+            .OfType<ICommerceBusinessObjectView>()
+            .Where(item => item.Commerce.Purchase is not null || item.Commerce.Receipt is not null)
             .OrderByDescending(item => item.CreatedAt)
             .ToArray();
 
@@ -55,7 +112,8 @@
                 [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = item,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc,
                 [nameof(BusinessObjectLedgerDetailsDialogContent.Workspace)] = Workspace,
-                [nameof(BusinessObjectLedgerDetailsDialogContent.EditRequested)] = EditRequested
+                [nameof(BusinessObjectLedgerDetailsDialogContent.EditRequested)] = EditRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested
             },
             new DialogOptions
             {

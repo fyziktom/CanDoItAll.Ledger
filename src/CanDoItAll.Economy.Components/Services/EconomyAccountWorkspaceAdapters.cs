@@ -180,6 +180,7 @@ public sealed class WasmAccountWorkspaceAdapter(
             .ConfigureAwait(false);
         IReadOnlyList<EconomyTokenCreationAuthority> authorities = CreateTokenCreationAuthorities(permissionSources);
         IReadOnlyList<EconomyTokenOption> tokenOptions = CreateTokenOptions(balance, tokenTypes, authorities);
+        EconomyTokenOption? defaultCarrierToken = BusinessObjectCarrierTokenPolicy.SelectDefaultCarrierToken(tokenOptions);
         IReadOnlyList<EconomyAddressBookmark> bookmarks = CreateAddressBookmarks(account.Address, transactions);
         Address receiver = bookmarks.FirstOrDefault(bookmark => bookmark.Address != account.Address)?.Address ?? account.Address;
         DateTimeOffset now = timeProvider.UtcNow;
@@ -195,7 +196,9 @@ public sealed class WasmAccountWorkspaceAdapter(
             Amount.Zero,
             Amount.FromInt64(1),
             "{\"source\":\"account-app\"}",
-            $"account-app://draft/{draftObjectId.Value}");
+            $"account-app://draft/{draftObjectId.Value}",
+            TokenId: defaultCarrierToken?.TokenId,
+            TokenAmount: defaultCarrierToken is null ? null : Amount.FromInt64(1));
 
         IBusinessObjectView? selected = businessObjects.FirstOrDefault();
         var editor = new BusinessObjectEditorModel(
@@ -906,7 +909,10 @@ public sealed class WasmAccountWorkspaceAdapter(
                     SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
-                    draft.OwnerAddress),
+                    draft.OwnerAddress,
+                    draft.TokenId is not null && draft.TokenAmount is not null
+                        ? new TokenTransfer(draft.TokenId.Value, draft.TokenAmount.Value)
+                        : null),
                 cancellationToken),
 
             BusinessObjectTransactionMode.MergeObjects => account.BuildUnsignedMergeBusinessObjectsTransactionAsync(

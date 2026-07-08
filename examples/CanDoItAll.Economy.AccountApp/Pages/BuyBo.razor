@@ -369,7 +369,7 @@
 
             string paymentState = BusinessObjectPayloadBuilder.Serialize(
                 BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
-            var draft = new BusinessObjectTransactionDraft(
+            var draft = BusinessObjectCarrierTokenPolicy.WithDefaultCarrierToken(new BusinessObjectTransactionDraft(
                 paymentObjectId,
                 "payment",
                 "1.0",
@@ -380,7 +380,9 @@
                 new Amount(saleTerms.PriceAmount),
                 paymentState,
                 $"bo-commerce://payment/{paymentObjectId.Value}",
-                BusinessObjectTransactionMode.Create);
+                BusinessObjectTransactionMode.Create),
+                Session.Workspace?.TokenOptions,
+                allowBalanceFallback: true);
 
             purchaseResult = await Session.WorkspaceAdapter.SubmitTransactionAsync(draft);
             Session.ApplyTransactionResult(purchaseResult);

@@ -286,6 +286,25 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         Assert.Contains(ListedObjectId.Value, row.TextContent, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task CommerceDashboard_SplitsPaymentsFromReceiptRecords()
+    {
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
+        ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync();
+
+        IRenderedComponent<BusinessObjectCommerceDashboard> component =
+            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+                .Add(x => x.Workspace, CreateWorkspace(payment, receipt)));
+
+        IElement payments = component.Find("[data-testid='cda-commerce-payments']");
+        IElement receipts = component.Find("[data-testid='cda-commerce-receipts']");
+
+        Assert.Single(payments.QuerySelectorAll("[data-commerce-kind='payment']"));
+        Assert.Empty(payments.QuerySelectorAll("[data-commerce-kind='receipt']"));
+        Assert.Single(receipts.QuerySelectorAll("[data-commerce-kind='receipt']"));
+        Assert.Contains("Receipts", receipts.TextContent, StringComparison.Ordinal);
+    }
+
     private static ITypedBusinessObjectView CreateListedPost(
         BusinessObjectSaleMode saleMode = BusinessObjectSaleMode.Copy)
     {
@@ -336,7 +355,46 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     private static async Task<ICommerceBusinessObjectView> CreatePaymentViewAsync()
     {
         var paymentId = new BusinessObjectId("bo:payment:listed-commerce-post");
-        BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
+        BusinessObjectPaymentRecord payment = CreatePaymentRecord(paymentId);
+        string stateJson = BusinessObjectPayloadBuilder.Serialize(
+            BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
+        var caster = new CommerceBusinessObjectCaster(new ManualTimeProvider(ListedAtUtc.AddMinutes(3)));
+        IBusinessObjectView view = await caster.CastAsync(
+            CreateSource(paymentId, "payment", stateJson),
+            CancellationToken.None);
+
+        return Assert.IsAssignableFrom<ICommerceBusinessObjectView>(view);
+    }
+
+    private static async Task<ICommerceBusinessObjectView> CreateReceiptViewAsync()
+    {
+        var paymentId = new BusinessObjectId("bo:payment:listed-commerce-post");
+        BusinessObjectId receiptId = BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(paymentId);
+        BusinessObjectPaymentRecord payment = CreatePaymentRecord(paymentId) with
+        {
+            Status = BusinessObjectCommerceRecordStatus.Dispatched,
+            DeliveredObjectId = ListedObjectId.Value,
+            DispatchTxId = "dispatch-tx",
+            ReceiptObjectId = receiptId.Value
+        };
+        BusinessObjectReceiptRecord receipt = BusinessObjectCommercePayloadBuilder.CreateReceiptRecord(
+            receiptId,
+            payment,
+            ListedObjectId,
+            new TxId("dispatch-tx"),
+            ListedAtUtc.AddMinutes(4));
+        string stateJson = BusinessObjectPayloadBuilder.Serialize(
+            BusinessObjectCommercePayloadBuilder.CreateReceiptPayload(receipt));
+        var caster = new CommerceBusinessObjectCaster(new ManualTimeProvider(ListedAtUtc.AddMinutes(4)));
+        IBusinessObjectView view = await caster.CastAsync(
+            CreateSource(receiptId, "receipt", stateJson),
+            CancellationToken.None);
+
+        return Assert.IsAssignableFrom<ICommerceBusinessObjectView>(view);
+    }
+
+    private static BusinessObjectPaymentRecord CreatePaymentRecord(BusinessObjectId paymentId)
+        => BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
             paymentId,
             Bob,
             Alice,
@@ -347,15 +405,6 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             BusinessObjectSaleMode.Original,
             new TxId("payment-tx"),
             ListedAtUtc);
-        string stateJson = BusinessObjectPayloadBuilder.Serialize(
-            BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
-        var caster = new CommerceBusinessObjectCaster(new ManualTimeProvider(ListedAtUtc.AddMinutes(3)));
-        IBusinessObjectView view = await caster.CastAsync(
-            CreateSource(paymentId, "payment", stateJson),
-            CancellationToken.None);
-
-        return Assert.IsAssignableFrom<ICommerceBusinessObjectView>(view);
-    }
 
     private static ITypedBusinessObjectView CreateTypedView(
         BusinessObjectId objectId,
