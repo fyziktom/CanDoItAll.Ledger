@@ -212,10 +212,13 @@ public sealed class EconomyNodeService(
                 token.TokenId,
                 cancellationToken).ConfigureAwait(false);
         TransactionData? data = CreateData(request.DataItemType, request.DataJson, request.ExternalRef);
-        var outputs = new List<TransactionOutput>
-        {
-            new(0, receiverAddress, mainAmount, token, CreateBusinessObjectRef(request.BusinessObjectId, data))
-        };
+        var outputs = new List<TransactionOutput>();
+        AddRequestedAssetOutputs(
+            outputs,
+            receiverAddress,
+            mainAmount,
+            token,
+            CreateBusinessObjectRef(request.BusinessObjectId, data));
         if (treasuryAuthority is not null)
         {
             AddPreservedAuthorityOutput(outputs, treasuryAuthority, treasuryAddress);
@@ -301,10 +304,13 @@ public sealed class EconomyNodeService(
         }
 
         TransactionData? data = CreateData(request.DataItemType, request.DataJson, request.ExternalRef);
-        var outputs = new List<TransactionOutput>
-        {
-            new(0, toAddress, mainAmount, token, CreateBusinessObjectRef(request.BusinessObjectId, data))
-        };
+        var outputs = new List<TransactionOutput>();
+        AddRequestedAssetOutputs(
+            outputs,
+            toAddress,
+            mainAmount,
+            token,
+            CreateBusinessObjectRef(request.BusinessObjectId, data));
 
         AddChangeOutput(outputs, selected, fromAddress.Value, mainAmount, token);
 
@@ -538,10 +544,14 @@ public sealed class EconomyNodeService(
         outputs.Add(new TransactionOutput(
             outputs.Count,
             treasuryAddress,
-            new Amount(authority.MainAmount),
+            EconomyNodeRecordMapper.ToTokenTransfer(authority) is null ? new Amount(authority.MainAmount) : Amount.Zero,
             EconomyNodeRecordMapper.ToTokenTransfer(authority),
             EconomyNodeRecordMapper.ToBusinessObjectRef(authority),
             string.IsNullOrWhiteSpace(authority.MetadataHash) ? null : new HashHex(authority.MetadataHash)));
+        if (EconomyNodeRecordMapper.ToTokenTransfer(authority) is not null)
+        {
+            AddMainOutputIfPositive(outputs, treasuryAddress, new Amount(authority.MainAmount));
+        }
     }
 
     private static void AddReturnedPermissionOutput(
@@ -555,7 +565,7 @@ public sealed class EconomyNodeService(
         outputs.Add(new TransactionOutput(
             outputs.Count,
             treasuryAddress,
-            new Amount(permission.MainAmount),
+            Amount.Zero,
             EconomyNodeRecordMapper.ToTokenTransfer(permission),
             permissionRef with
             {
@@ -563,6 +573,7 @@ public sealed class EconomyNodeService(
                 Operation = BusinessObjectOperation.Update
             },
             string.IsNullOrWhiteSpace(permission.MetadataHash) ? null : new HashHex(permission.MetadataHash)));
+        AddMainOutputIfPositive(outputs, treasuryAddress, new Amount(permission.MainAmount));
     }
 
     private static TransactionData? CreateData(string? itemType, string? dataJson, string? externalRef)
@@ -679,15 +690,56 @@ public sealed class EconomyNodeService(
             remainingToken = selectedToken - (requestedToken?.Amount.Value ?? 0m);
         }
 
-        if (remainingMain == 0m && remainingToken == 0m)
+        if (!string.IsNullOrWhiteSpace(selected.TokenId) && remainingToken > 0m)
+        {
+            outputs.Add(new TransactionOutput(
+                outputs.Count,
+                new Address(fromAddress),
+                Amount.Zero,
+                new TokenTransfer(new TokenId(selected.TokenId), new Amount(remainingToken))));
+        }
+
+        AddMainOutputIfPositive(outputs, new Address(fromAddress), new Amount(remainingMain));
+    }
+
+    private static void AddRequestedAssetOutputs(
+        List<TransactionOutput> outputs,
+        Address receiverAddress,
+        Amount mainAmount,
+        TokenTransfer? token,
+        BusinessObjectRef? businessObject)
+    {
+        if (businessObject is not null)
+        {
+            if (token is null || token.Amount.Value != 1m)
+            {
+                throw new InvalidOperationException("BusinessObject outputs must carry exactly 1 token and 0 main amount.");
+            }
+
+            outputs.Add(new TransactionOutput(outputs.Count, receiverAddress, Amount.Zero, token, businessObject));
+            AddMainOutputIfPositive(outputs, receiverAddress, mainAmount);
+            return;
+        }
+
+        if (token is not null)
+        {
+            outputs.Add(new TransactionOutput(outputs.Count, receiverAddress, Amount.Zero, token));
+        }
+
+        AddMainOutputIfPositive(outputs, receiverAddress, mainAmount);
+    }
+
+    private static void AddMainOutputIfPositive(
+        List<TransactionOutput> outputs,
+        Address address,
+        Amount amount)
+    {
+        if (amount.Value <= 0m)
         {
             return;
         }
 
-        TokenTransfer? changeToken = !string.IsNullOrWhiteSpace(selected.TokenId) && remainingToken > 0m
-            ? new TokenTransfer(new TokenId(selected.TokenId), new Amount(remainingToken))
-            : null;
-        outputs.Add(new TransactionOutput(outputs.Count, new Address(fromAddress), new Amount(remainingMain), changeToken));
+        outputs.Add(new TransactionOutput(outputs.Count, address, amount));
     }
 
     private static Amount ParseAmount(decimal value, string name)

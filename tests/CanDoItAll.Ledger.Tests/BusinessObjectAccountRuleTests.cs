@@ -11,6 +11,7 @@ public sealed class BusinessObjectAccountRuleTests
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("account-rule-ledger"));
     private static readonly Address Treasury = TokenCreationPolicyDefaults.TreasuryAdminAddress;
+    private static readonly TokenId CarrierToken = new("bo.carrier");
 
     [Fact]
     public async Task Account_CreatesRuleTokenFromRuleCreationPermission()
@@ -452,7 +453,8 @@ public sealed class BusinessObjectAccountRuleTests
                 new TransactionOutput(0, Treasury, Amount.FromInt64(1_000)),
                 new TransactionOutput(1, Treasury, Amount.Zero, new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(10_000))),
                 new TransactionOutput(2, aliceKey.Address, Amount.FromInt64(1_000)),
-                new TransactionOutput(3, bobKey.Address, Amount.FromInt64(1))
+                new TransactionOutput(3, bobKey.Address, Amount.FromInt64(1)),
+                new TransactionOutput(4, aliceKey.Address, Amount.Zero, new TokenTransfer(CarrierToken, Amount.FromInt64(100)))
             },
             null);
     }

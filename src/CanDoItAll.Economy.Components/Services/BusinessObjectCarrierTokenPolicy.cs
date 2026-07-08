@@ -10,17 +10,8 @@ public static class BusinessObjectCarrierTokenPolicy
         bool allowBalanceFallback = false)
     {
         EconomyTokenOption[] options = tokenOptions?.ToArray() ?? [];
-        EconomyTokenOption? reusable = options
+        return options
             .FirstOrDefault(option => !option.IsMain && option.TokenId is not null && option.HasReusableSource);
-        if (reusable is not null || !allowBalanceFallback)
-        {
-            return reusable;
-        }
-
-        return options.FirstOrDefault(option =>
-            !option.IsMain
-            && option.TokenId is not null
-            && option.AvailableAmount.Value > 0m);
     }
 
     public static string? GetDefaultCarrierTokenKey(IEnumerable<EconomyTokenOption>? tokenOptions)

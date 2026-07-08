@@ -374,7 +374,7 @@ public sealed class WasmAccountWorkspaceAdapter(
                     request.ObjectId,
                     "profile",
                     nextState,
-                    MainAmount: Amount.FromInt64(1),
+                    MainAmount: Amount.Zero,
                     ExternalRef: SafeNullable(request.ExternalRef)),
                 cancellationToken).ConfigureAwait(false)
             : await account.BuildUnsignedUpdateBusinessObjectTransactionAsync(
@@ -782,7 +782,7 @@ public sealed class WasmAccountWorkspaceAdapter(
                     secureMessage.StateJson,
                     SecureLedgerMessages.SchemaVersion,
                     OwnerAddress: receiverAddress,
-                    MainAmount: Amount.FromInt64(1),
+                    MainAmount: Amount.Zero,
                     ExternalRef: $"secure-message://{objectId.Value}"),
                 cancellationToken).ConfigureAwait(false);
 

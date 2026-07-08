@@ -13,6 +13,7 @@ public sealed class LedgerCriticalInvariantTests
     private static readonly LedgerId LedgerId = new("default");
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
     private static readonly BusinessObjectId ObjectId = new("settings");
+    private static readonly TokenId CarrierToken = new("bo.carrier");
 
     [Fact]
     public void AssetConservationValidator_RejectsBurnThatCreatesAssets()
@@ -139,6 +140,65 @@ public sealed class LedgerCriticalInvariantTests
     }
 
     [Fact]
+    public void TransactionShapeValidator_RejectsTokenOutputWithMainAmount()
+    {
+        var validator = new TransactionShapeValidator();
+        var transaction = new LedgerTransaction(
+            LedgerId,
+            null,
+            Version: 1,
+            TransactionKind.Genesis,
+            SigningMode.Independent,
+            DateTimeOffset.Parse("2026-05-10T00:00:00Z"),
+            Array.Empty<TransactionInput>(),
+            new[] { new TransactionOutput(0, Alice, Amount.FromInt64(1), new TokenTransfer(CarrierToken, Amount.FromInt64(5))) },
+            null);
+
+        ValidationResult result = validator.ValidateShape(transaction);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, x => x.Code == ValidationErrorCodes.InvalidTransactionShape
+            && x.Message.Contains("carries both token and main amount", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TransactionShapeValidator_RejectsNormalBusinessObjectWithoutUniqueTokenCarrier()
+    {
+        var validator = new TransactionShapeValidator();
+        HashHex dataHash = Hex.Sha256Hex(Hex.Utf8("{}"));
+        var noToken = new LedgerTransaction(
+            LedgerId,
+            null,
+            Version: 1,
+            TransactionKind.Genesis,
+            SigningMode.Independent,
+            DateTimeOffset.Parse("2026-05-10T00:00:00Z"),
+            Array.Empty<TransactionInput>(),
+            new[] { new TransactionOutput(0, Alice, Amount.Zero, null, new BusinessObjectRef(ObjectId, 1, BusinessObjectOperation.Create, dataHash)) },
+            new TransactionData("application/json", dataHash, "{}", null, TransactionDataItemType.BusinessObject));
+        var nonUniqueToken = noToken with
+        {
+            Outputs = new[]
+            {
+                new TransactionOutput(
+                    0,
+                    Alice,
+                    Amount.Zero,
+                    new TokenTransfer(CarrierToken, Amount.FromInt64(2)),
+                    new BusinessObjectRef(ObjectId, 1, BusinessObjectOperation.Create, dataHash))
+            }
+        };
+
+        ValidationResult noTokenResult = validator.ValidateShape(noToken);
+        ValidationResult nonUniqueTokenResult = validator.ValidateShape(nonUniqueToken);
+
+        Assert.False(noTokenResult.IsValid);
+        Assert.Contains(noTokenResult.Errors, x => x.Message.Contains("without a token carrier", StringComparison.Ordinal));
+        Assert.False(nonUniqueTokenResult.IsValid);
+        Assert.Contains(nonUniqueTokenResult.Errors, x => x.Message.Contains("exactly 1 token", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TransactionShapeValidator_RejectsUnknownEnumsAndNegativePreviousOutputIndex()
     {
         var validator = new TransactionShapeValidator();
@@ -216,8 +276,8 @@ public sealed class LedgerCriticalInvariantTests
                 new TransactionOutput(
                     0,
                     Alice,
-                    Amount.FromInt64(1),
-                    null,
+                    Amount.Zero,
+                    new TokenTransfer(CarrierToken, Amount.FromInt64(1)),
                     new BusinessObjectRef(ObjectId, 1, BusinessObjectOperation.Create, outputHash))
             },
             new TransactionData("application/json", inlineHash, inlineJson, null, TransactionDataItemType.BusinessObject)), CancellationToken.None);
@@ -258,9 +318,9 @@ public sealed class LedgerCriticalInvariantTests
         LedgerSubmitResult genesis = await rig.Executor.SubmitAsync(CreateGenesis(rig.Time.UtcNow, dataHash), CancellationToken.None);
         Assert.True(genesis.Accepted, string.Join("; ", genesis.Errors));
 
-        var plainOutPoint = new OutPoint(genesis.TxId!.Value, 1);
+        var carrierSourceOutPoint = new OutPoint(genesis.TxId!.Value, 1);
         LedgerSubmitResult duplicateCreate = await rig.Executor.SubmitAsync(
-            CreateSignedBusinessObjectCreate(rig, plainOutPoint, dataHash),
+            CreateSignedBusinessObjectCreate(rig, carrierSourceOutPoint, dataHash),
             CancellationToken.None);
 
         Assert.False(duplicateCreate.Accepted);
@@ -284,10 +344,10 @@ public sealed class LedgerCriticalInvariantTests
                 new TransactionOutput(
                     0,
                     Alice,
-                    Amount.FromInt64(10),
-                    null,
+                    Amount.Zero,
+                    new TokenTransfer(CarrierToken, Amount.FromInt64(1)),
                     new BusinessObjectRef(ObjectId, 1, BusinessObjectOperation.Create, dataHash)),
-                new TransactionOutput(1, Alice, Amount.FromInt64(5))
+                new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(CarrierToken, Amount.FromInt64(2)))
             },
             new TransactionData("application/json", dataHash, "{\"theme\":\"dark\"}", null, TransactionDataItemType.BusinessObject));
 
@@ -307,9 +367,10 @@ public sealed class LedgerCriticalInvariantTests
                 new TransactionOutput(
                     0,
                     Alice,
-                    Amount.FromInt64(5),
-                    null,
-                    new BusinessObjectRef(ObjectId, 1, BusinessObjectOperation.Create, dataHash))
+                    Amount.Zero,
+                    new TokenTransfer(CarrierToken, Amount.FromInt64(1)),
+                    new BusinessObjectRef(ObjectId, 1, BusinessObjectOperation.Create, dataHash)),
+                new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(CarrierToken, Amount.FromInt64(1)))
             },
             new TransactionData("application/json", dataHash, "{\"theme\":\"dark\"}", null, TransactionDataItemType.BusinessObject));
 

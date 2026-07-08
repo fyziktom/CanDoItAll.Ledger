@@ -57,7 +57,7 @@ public sealed class BusinessObjectCarrierTokenPolicyTests
     }
 
     [Fact]
-    public void WithDefaultCarrierToken_CanUseBalanceFallbackWhenReusableSourceMetadataIsMissing()
+    public void WithDefaultCarrierToken_DoesNotUseUniqueBalanceFallbackWhenReusableSourceMetadataIsMissing()
     {
         BusinessObjectTransactionDraft draft = new(
             new BusinessObjectId("bo:receipt:carrier-policy"),
@@ -81,8 +81,8 @@ public sealed class BusinessObjectCarrierTokenPolicyTests
 
         Assert.Null(strict.TokenId);
         Assert.Null(strict.TokenAmount);
-        Assert.Equal(OperatingToken, fallback.TokenId);
-        Assert.Equal("1", fallback.TokenAmount!.Value.ToString());
+        Assert.Null(fallback.TokenId);
+        Assert.Null(fallback.TokenAmount);
     }
 
     [Fact]

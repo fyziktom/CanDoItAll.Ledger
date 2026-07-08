@@ -66,7 +66,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
     }
 
     [Fact]
-    public async Task CopySale_UsesTokenBalanceFallbackWhenSourceMetadataIsMissing()
+    public async Task CopySale_DoesNotUseUniqueTokenBalanceFallbackWhenSourceMetadataIsMissing()
     {
         ITypedBusinessObjectView target = CreateListedTarget(BusinessObjectSaleMode.Copy, maxClones: 2);
         ICommerceBusinessObjectView payment = await CreatePaymentViewAsync(BusinessObjectSaleMode.Copy);
@@ -87,12 +87,12 @@ public sealed class BusinessObjectCommerceDispatcherTests
         BusinessObjectTransactionDraft cloneDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.SelectedMode == BusinessObjectTransactionMode.CloneObject);
         BusinessObjectTransactionDraft receiptDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.ObjectType == "receipt" && draft.OwnerAddress == Alice);
         BusinessObjectTransactionDraft purchaseDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.ObjectType == "purchase" && draft.OwnerAddress == Bob);
-        Assert.Equal(OperatingToken, cloneDraft.TokenId);
-        Assert.Equal("1", cloneDraft.TokenAmount!.Value.ToString());
-        Assert.Equal(OperatingToken, receiptDraft.TokenId);
-        Assert.Equal("1", receiptDraft.TokenAmount!.Value.ToString());
-        Assert.Equal(OperatingToken, purchaseDraft.TokenId);
-        Assert.Equal("1", purchaseDraft.TokenAmount!.Value.ToString());
+        Assert.Null(cloneDraft.TokenId);
+        Assert.Null(cloneDraft.TokenAmount);
+        Assert.Null(receiptDraft.TokenId);
+        Assert.Null(receiptDraft.TokenAmount);
+        Assert.Null(purchaseDraft.TokenId);
+        Assert.Null(purchaseDraft.TokenAmount);
     }
 
     [Fact]

@@ -28,7 +28,10 @@ public sealed class BusinessObjectAdvancedTransactionTests
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
             new TransactionOutput(0, Alice, Amount.FromInt64(100)),
-            new TransactionOutput(1, Dave, Amount.FromInt64(25)));
+            new TransactionOutput(1, Dave, Amount.FromInt64(25)),
+            new TransactionOutput(2, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(20))),
+            new TransactionOutput(3, Dave, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(2))),
+            new TransactionOutput(4, Bob, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(5))));
         Assert.True(funding.Accepted);
 
         Assert.Equal(Dave, subAccount.Address);
@@ -98,7 +101,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal(Bob, splitTransaction.Outputs[0].Address);
         Assert.Equal("0", splitTransaction.Outputs[0].MainAmount.ToString());
         Assert.NotNull(splitTransaction.Outputs[0].BusinessObject);
-        Assert.Null(splitTransaction.Outputs[0].Token);
+        Assert.Equal("1", splitTransaction.Outputs[0].Token!.Amount.ToString());
         Assert.Equal(Bob, splitTransaction.Outputs[1].Address);
         Assert.Equal("40", splitTransaction.Outputs[1].MainAmount.ToString());
         Assert.Null(splitTransaction.Outputs[1].BusinessObject);
@@ -136,7 +139,8 @@ public sealed class BusinessObjectAdvancedTransactionTests
         BusinessObjectId objectId = new("self-updated-post");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
-            new TransactionOutput(0, Alice, Amount.FromInt64(15)));
+            new TransactionOutput(0, Alice, Amount.FromInt64(15)),
+            new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(2))));
         Assert.True(funding.Accepted);
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
@@ -160,7 +164,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
             current,
             Alice,
             objectId,
-            Amount.FromInt64(15),
+            Amount.Zero,
             expectedVersion: 2,
             nextStateJson,
             "bo-update://self-updated-post");
@@ -181,7 +185,8 @@ public sealed class BusinessObjectAdvancedTransactionTests
         BusinessObjectId objectId = new("self-priced-post");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
-            new TransactionOutput(0, Alice, Amount.FromInt64(20)));
+            new TransactionOutput(0, Alice, Amount.FromInt64(20)),
+            new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(2))));
         Assert.True(funding.Accepted);
 
         BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
@@ -228,7 +233,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
             current,
             Alice,
             objectId,
-            Amount.FromInt64(20),
+            Amount.Zero,
             expectedVersion: 2,
             saleStateJson,
             "bo-commerce://sale/self-priced-post");
@@ -260,7 +265,8 @@ public sealed class BusinessObjectAdvancedTransactionTests
         BusinessObjectId ticketId = new("bo:ticket:ledger-conf-2026-001");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
-            new TransactionOutput(0, Alice, Amount.FromInt64(30)));
+            new TransactionOutput(0, Alice, Amount.FromInt64(30)),
+            new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(3))));
         Assert.True(funding.Accepted);
 
         LedgerSubmitResult createEvent = await alice.CreateBusinessObjectAsync(
@@ -336,7 +342,8 @@ public sealed class BusinessObjectAdvancedTransactionTests
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
-            new TransactionOutput(0, Alice, Amount.FromInt64(100)));
+            new TransactionOutput(0, Alice, Amount.FromInt64(100)),
+            new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(2))));
         Assert.True(funding.Accepted);
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
@@ -525,19 +532,19 @@ public sealed class BusinessObjectAdvancedTransactionTests
             CancellationToken.None,
             new TransactionOutput(0, Alice, Amount.FromInt64(10)),
             new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(5))),
-            new TransactionOutput(2, Alice, Amount.FromInt64(5)));
+            new TransactionOutput(2, Alice, Amount.FromInt64(5)),
+            new TransactionOutput(3, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(3))));
         Assert.True(mint.Accepted);
 
         OutPoint plain = new(mint.TxId!.Value, 0);
-        OutPoint token = new(mint.TxId.Value, 1);
-        OutPoint boSource = new(mint.TxId.Value, 2);
+        OutPoint boSource = new(mint.TxId.Value, 1);
+        OutPoint token = new(mint.TxId.Value, 3);
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
                 new BusinessObjectId("explicit-utxo-bo"),
                 "settings",
                 "{}",
-                MainAmount: Amount.FromInt64(5),
                 SourceOutPoint: boSource),
             CancellationToken.None);
         Assert.True(create.Accepted, string.Join("; ", create.Errors));
@@ -577,7 +584,8 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult mint = await rig.SubmitMintAsync(
             CancellationToken.None,
-            new TransactionOutput(0, Alice, Amount.FromInt64(10), new TokenTransfer(OperatingToken, Amount.FromInt64(100))));
+            new TransactionOutput(0, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(100))),
+            new TransactionOutput(1, Alice, Amount.FromInt64(10)));
         Assert.True(mint.Accepted);
 
         rig.Time.Advance(TimeSpan.FromMinutes(10));
@@ -659,7 +667,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal(2, create.Inputs.Count);
         Assert.Contains(create.Inputs, input => input.PreviousOutPoint.OutputIndex == 0);
         Assert.Contains(create.Inputs, input => input.PreviousOutPoint.OutputIndex == 1);
-        Assert.Equal(3, create.Outputs.Count);
+        Assert.Equal(4, create.Outputs.Count);
         Assert.Equal(Bob, create.Outputs[0].Address);
         Assert.Equal("0", create.Outputs[0].MainAmount.ToString());
         Assert.Equal("1", create.Outputs[0].Token!.Amount.ToString());
@@ -669,9 +677,13 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Null(create.Outputs[1].Token);
         Assert.Null(create.Outputs[1].BusinessObject);
         Assert.Equal(Alice, create.Outputs[2].Address);
-        Assert.Equal("3", create.Outputs[2].MainAmount.ToString());
+        Assert.Equal("0", create.Outputs[2].MainAmount.ToString());
         Assert.Equal("4", create.Outputs[2].Token!.Amount.ToString());
         Assert.Null(create.Outputs[2].BusinessObject);
+        Assert.Equal(Alice, create.Outputs[3].Address);
+        Assert.Equal("3", create.Outputs[3].MainAmount.ToString());
+        Assert.Null(create.Outputs[3].Token);
+        Assert.Null(create.Outputs[3].BusinessObject);
 
         LedgerSubmitResult result = await alice.SubmitTransactionAsync(create, CancellationToken.None);
 
@@ -787,7 +799,8 @@ public sealed class BusinessObjectAdvancedTransactionTests
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         LedgerSubmitResult mint = await rig.SubmitMintAsync(
             CancellationToken.None,
-            new TransactionOutput(0, Alice, Amount.FromInt64(10)));
+            new TransactionOutput(0, Alice, Amount.FromInt64(10)),
+            new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(2))));
         Assert.True(mint.Accepted);
 
         LedgerTransaction create = await alice.BuildCreateBusinessObjectTransactionAsync(
@@ -955,18 +968,17 @@ public sealed class BusinessObjectAdvancedTransactionTests
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
-            new TransactionOutput(0, Alice, Amount.FromInt64(100)));
+            new TransactionOutput(0, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(2))));
         Assert.True(funding.Accepted);
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
                 new BusinessObjectId("funded-object"),
                 "settings",
-                "{\"theme\":\"dense\"}",
-                MainAmount: Amount.FromInt64(100)),
+                "{\"theme\":\"dense\"}"),
             CancellationToken.None);
         Assert.True(create.Accepted);
-        Assert.Equal("100", (await alice.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
+        Assert.Equal("0", (await alice.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() => alice.BuildPaymentTransactionAsync(
             new PaymentRequest(Bob, Amount.FromInt64(1)),
@@ -982,7 +994,8 @@ public sealed class BusinessObjectAdvancedTransactionTests
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
-            new TransactionOutput(0, Alice, Amount.FromInt64(10)));
+            new TransactionOutput(0, Alice, Amount.FromInt64(10)),
+            new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(OperatingToken, Amount.FromInt64(2))));
         Assert.True(funding.Accepted);
         var registry = new BusinessObjectCastRegistry(new IBusinessObjectCaster[]
         {
@@ -1037,7 +1050,8 @@ public sealed class BusinessObjectAdvancedTransactionTests
         TransactionOutput output = Assert.Single(transaction.Outputs);
         Assert.Equal(owner, output.Address);
         Assert.Equal(expectedMainAmount, output.MainAmount);
-        Assert.Null(output.Token);
+        Assert.Equal("1", output.Token!.Amount.ToString());
+        Assert.Equal(OperatingToken, output.Token.TokenId);
         BusinessObjectRef? businessObject = output.BusinessObject;
         Assert.NotNull(businessObject);
         Assert.Equal(objectId, businessObject!.ObjectId);

@@ -14,6 +14,7 @@ public sealed class BusinessObjectLayerFoundationTests
     private static readonly LedgerAccountContext Context = new(LedgerId);
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
     private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-public"));
+    private static readonly TokenId CarrierToken = new("bo.carrier");
 
     [Fact]
     public async Task InProcessGateway_SubmitsTransactions_AndProjectsAccountReads()
@@ -29,12 +30,17 @@ public sealed class BusinessObjectLayerFoundationTests
         Assert.True(genesisResult.Accepted);
         LedgerAccountBalance aliceAfterGenesis = await gateway.GetBalanceAsync(new LedgerAddressQuery(Context, Alice), CancellationToken.None);
         Assert.Equal("100", aliceAfterGenesis.MainBalance.ToString());
-        Assert.Equal(1, aliceAfterGenesis.UtxoCount);
+        Assert.Equal(2, aliceAfterGenesis.UtxoCount);
         Assert.Equal(timeProvider.UtcNow, aliceAfterGenesis.AsOfUtc);
         Assert.Single(await gateway.GetBusinessObjectsAsync(new LedgerAddressQuery(Context, Alice), CancellationToken.None));
 
         timeProvider.Advance(TimeSpan.FromDays(2));
-        LedgerTransaction transfer = Sign(CreateTransfer(timeProvider.UtcNow, new OutPoint(genesisResult.TxId!.Value, 0)), hasher);
+        LedgerTransaction transfer = Sign(
+            CreateTransfer(
+                timeProvider.UtcNow,
+                new OutPoint(genesisResult.TxId!.Value, 0),
+                new OutPoint(genesisResult.TxId.Value, 1)),
+            hasher);
         LedgerSubmitResult transferResult = await gateway.SubmitTransactionAsync(transfer, CancellationToken.None);
 
         Assert.True(transferResult.Accepted);
@@ -44,7 +50,7 @@ public sealed class BusinessObjectLayerFoundationTests
         Assert.Equal("60", aliceAfterTransfer.MainBalance.ToString());
         Assert.Equal("40", bobAfterTransfer.MainBalance.ToString());
         Assert.Equal(1, aliceAfterTransfer.UtxoCount);
-        Assert.Equal(1, bobAfterTransfer.UtxoCount);
+        Assert.Equal(2, bobAfterTransfer.UtxoCount);
         Assert.Single(await gateway.GetBusinessObjectsAsync(new LedgerAddressQuery(Context, Bob), CancellationToken.None));
         Assert.Equal(2, (await gateway.GetTransactionsAsync(new LedgerAddressQuery(Context, Alice), CancellationToken.None)).Count);
         Assert.Single(await gateway.GetTransactionsAsync(new LedgerAddressQuery(Context, Bob), CancellationToken.None));
@@ -55,16 +61,17 @@ public sealed class BusinessObjectLayerFoundationTests
             CancellationToken.None);
         LedgerTransactionSummary transferHistory = Assert.Single(aliceTransactions, x => x.TxId == transferResult.TxId!.Value);
 
-        LedgerTransactionInputSummary input = Assert.Single(transferHistory.Inputs);
-        Assert.Equal(0, input.InputIndex);
-        Assert.Equal(Alice, input.Address);
-        Assert.Equal(genesisResult.TxId.Value, input.PreviousOutPoint.TxId);
-        Assert.Equal(0, input.PreviousOutPoint.OutputIndex);
-        Assert.NotNull(input.OutPointKey);
+        Assert.Equal(2, transferHistory.Inputs.Count);
+        Assert.Contains(transferHistory.Inputs, input =>
+            input.Address == Alice
+            && input.PreviousOutPoint.TxId == genesisResult.TxId.Value
+            && input.PreviousOutPoint.OutputIndex == 0
+            && input.OutPointKey is not null);
 
-        Assert.Equal(2, transferHistory.Outputs.Count);
-        Assert.Contains(transferHistory.Outputs, output => output.OutputIndex == 0 && output.Address == Bob && output.MainAmount == Amount.FromInt64(40));
-        Assert.Contains(transferHistory.Outputs, output => output.OutputIndex == 1 && output.Address == Alice && output.MainAmount == Amount.FromInt64(60));
+        Assert.Equal(3, transferHistory.Outputs.Count);
+        Assert.Contains(transferHistory.Outputs, output => output.OutputIndex == 0 && output.Address == Bob && output.MainAmount == Amount.Zero && output.Token?.Amount == Amount.FromInt64(1));
+        Assert.Contains(transferHistory.Outputs, output => output.OutputIndex == 1 && output.Address == Bob && output.MainAmount == Amount.FromInt64(40));
+        Assert.Contains(transferHistory.Outputs, output => output.OutputIndex == 2 && output.Address == Alice && output.MainAmount == Amount.FromInt64(60));
         Assert.Equal("{\"name\":\"settings\"}", transferHistory.Data?.InlineJson);
 
         Assert.All(
@@ -102,14 +109,15 @@ public sealed class BusinessObjectLayerFoundationTests
                 new TransactionOutput(
                     0,
                     Alice,
-                    Amount.FromInt64(100),
-                    null,
-                    new BusinessObjectRef(new BusinessObjectId("settings"), 1, BusinessObjectOperation.Create, dataHash))
+                    Amount.Zero,
+                    new TokenTransfer(CarrierToken, Amount.FromInt64(1)),
+                    new BusinessObjectRef(new BusinessObjectId("settings"), 1, BusinessObjectOperation.Create, dataHash)),
+                new TransactionOutput(1, Alice, Amount.FromInt64(100))
             },
             new TransactionData("application/json", dataHash, "{\"name\":\"settings\"}", null, TransactionDataItemType.AccountSettings));
     }
 
-    private static LedgerTransaction CreateTransfer(DateTimeOffset timestamp, OutPoint previousOutPoint)
+    private static LedgerTransaction CreateTransfer(DateTimeOffset timestamp, OutPoint businessObjectOutPoint, OutPoint mainOutPoint)
     {
         HashHex dataHash = Hex.Sha256Hex(Hex.Utf8("{\"name\":\"settings\"}"));
         return new LedgerTransaction(
@@ -121,17 +129,19 @@ public sealed class BusinessObjectLayerFoundationTests
             timestamp,
             new[]
             {
-                new TransactionInput(0, previousOutPoint, Alice, SignatureBundle.Empty)
+                new TransactionInput(0, businessObjectOutPoint, Alice, SignatureBundle.Empty),
+                new TransactionInput(1, mainOutPoint, Alice, SignatureBundle.Empty)
             },
             new[]
             {
                 new TransactionOutput(
                     0,
                     Bob,
-                    Amount.FromInt64(40),
-                    null,
+                    Amount.Zero,
+                    new TokenTransfer(CarrierToken, Amount.FromInt64(1)),
                     new BusinessObjectRef(new BusinessObjectId("settings"), 2, BusinessObjectOperation.Transfer, dataHash)),
-                new TransactionOutput(1, Alice, Amount.FromInt64(60))
+                new TransactionOutput(1, Bob, Amount.FromInt64(40)),
+                new TransactionOutput(2, Alice, Amount.FromInt64(60))
             },
             new TransactionData("application/json", dataHash, "{\"name\":\"settings\"}", null, TransactionDataItemType.BusinessObject));
     }

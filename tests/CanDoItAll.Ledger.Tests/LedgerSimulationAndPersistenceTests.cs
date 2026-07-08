@@ -713,14 +713,7 @@ public sealed class LedgerSimulationAndPersistenceTests
             Array.Empty<TransactionInput>(),
             new[]
             {
-                new TransactionOutput(
-                    0,
-                    Alice,
-                    Amount.FromInt64(100),
-                    null,
-                    data?.ItemType == TransactionDataItemType.AccountSettings
-                        ? new BusinessObjectRef(new BusinessObjectId("account-settings"), 1, BusinessObjectOperation.Create, data.DataHash ?? Hex.Sha256Hex("settings"u8.ToArray()))
-                        : null)
+                new TransactionOutput(0, Alice, Amount.FromInt64(100))
             },
             data);
 

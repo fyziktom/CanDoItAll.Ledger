@@ -1024,7 +1024,7 @@
         EconomyTokenOption? selectedToken)
     {
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
-        Amount mainAmount = selectedToken?.IsMain == false ? Amount.Zero : Amount.FromInt64(1);
+        Amount mainAmount = Amount.Zero;
         string normalizedName = BusinessObjectCreateIdFactory.NormalizeName(payload.Name);
         BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateNewObjectId(selectedObjectType, payload.Name);
         return new BusinessObjectTransactionDraft(

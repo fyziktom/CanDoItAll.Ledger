@@ -13,6 +13,7 @@ public sealed class BusinessObjectAccountTests
     private static readonly LedgerAccountContext Context = new(LedgerId);
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
     private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-public"));
+    private static readonly TokenId CarrierToken = new("bo.carrier");
     [Fact]
     public async Task Account_CreatesSignsAndTransfersBusinessObject()
     {
@@ -49,7 +50,8 @@ public sealed class BusinessObjectAccountTests
             new TransferBusinessObjectRequest(new BusinessObjectId("settings"), Bob, Amount.FromInt64(40)),
             CancellationToken.None);
 
-        TransactionInput input = Assert.Single(transfer.Inputs);
+        Assert.Equal(2, transfer.Inputs.Count);
+        TransactionInput input = transfer.Inputs[0];
         SignatureEnvelope signature = Assert.Single(input.SignatureBundle.Signatures);
         Assert.NotNull(input.SignaturePayloadHash);
         Assert.Equal(SignatureAlgorithmId.EcdsaP256Sha256, signature.Algorithm);
@@ -59,6 +61,7 @@ public sealed class BusinessObjectAccountTests
         Assert.Equal(Alice, Address.FromPublicKey(signature.PublicKeyMaterial!));
         Assert.Equal(Address.CalculatePublicKeyHash(signature.PublicKeyMaterial!), signature.PublicKeyHash);
         Assert.Contains("alice-private", System.Text.Encoding.UTF8.GetString(signature.SignatureBytes), StringComparison.Ordinal);
+        Assert.All(transfer.Inputs, signedInput => Assert.NotEmpty(signedInput.SignatureBundle.Signatures));
 
         LedgerSubmitResult transferResult = await account.SubmitTransactionAsync(transfer, CancellationToken.None);
 
@@ -85,7 +88,11 @@ public sealed class BusinessObjectAccountTests
             SigningMode.Independent,
             timestamp,
             Array.Empty<TransactionInput>(),
-            new[] { new TransactionOutput(0, Alice, Amount.FromInt64(100)) },
+            new[]
+            {
+                new TransactionOutput(0, Alice, Amount.FromInt64(100)),
+                new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(CarrierToken, Amount.FromInt64(10)))
+            },
             null);
 
     private sealed class EchoSignatureProvider : ISignatureProvider

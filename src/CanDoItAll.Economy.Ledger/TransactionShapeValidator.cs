@@ -117,6 +117,9 @@ public sealed class TransactionShapeValidator
             {
                 errors.Add(new ValidationError(ValidationErrorCodes.NegativeAmount, $"Output {output.OutputIndex} has negative token amount."));
             }
+
+            ValidateTokenOutputSeparation(errors, output);
+            ValidateNormalBusinessObjectCarrier(errors, transaction.Data, output);
         }
 
         foreach (var input in transaction.Inputs)
@@ -237,6 +240,49 @@ public sealed class TransactionShapeValidator
                 $"Transaction inline JSON cannot exceed {LedgerValidationLimits.MaxInlineJsonBytes} bytes."));
         }
     }
+
+    private static void ValidateTokenOutputSeparation(List<ValidationError> errors, TransactionOutput output)
+    {
+        if (output.Token is null || output.MainAmount.Value == 0m)
+        {
+            return;
+        }
+
+        errors.Add(new ValidationError(
+            ValidationErrorCodes.InvalidTransactionShape,
+            $"Output {output.OutputIndex} carries both token and main amount. Token outputs must use 0 main amount; create a separate plain main-currency output."));
+    }
+
+    private static void ValidateNormalBusinessObjectCarrier(
+        List<ValidationError> errors,
+        TransactionData? data,
+        TransactionOutput output)
+    {
+        if (output.BusinessObject is null || IsAuthorityBusinessObjectOutput(data, output))
+        {
+            return;
+        }
+
+        if (output.Token is null)
+        {
+            errors.Add(new ValidationError(
+                ValidationErrorCodes.InvalidTransactionShape,
+                $"Output {output.OutputIndex} carries a BusinessObject without a token carrier. Normal BusinessObject outputs must carry exactly 1 token and 0 main amount."));
+            return;
+        }
+
+        if (output.Token.Amount.Value != 1m)
+        {
+            errors.Add(new ValidationError(
+                ValidationErrorCodes.InvalidTransactionShape,
+                $"Output {output.OutputIndex} carries a BusinessObject with token amount {output.Token.Amount}. Normal BusinessObject outputs must carry exactly 1 token."));
+        }
+    }
+
+    private static bool IsAuthorityBusinessObjectOutput(TransactionData? data, TransactionOutput output)
+        => data?.ItemType is TransactionDataItemType.Permission or TransactionDataItemType.Rule
+            || PermissionTokenAuthority.IsPermissionToken(output.Token)
+            || RuleTokenAuthority.IsRuleToken(output.Token);
 
     private static void ValidateInlineJsonHash(List<ValidationError> errors, TransactionData data)
     {

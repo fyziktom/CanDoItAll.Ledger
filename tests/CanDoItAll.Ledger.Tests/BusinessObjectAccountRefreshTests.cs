@@ -10,6 +10,7 @@ namespace CanDoItAll.Economy.Tests;
 public sealed class BusinessObjectAccountRefreshTests
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("refresh-ledger"));
+    private static readonly TokenId CarrierToken = new("bo.carrier");
 
     [Fact]
     public async Task RefreshAsync_EmitsOnlyTransactionsObservedAfterBaseline()
@@ -259,7 +260,11 @@ public sealed class BusinessObjectAccountRefreshTests
             SigningMode.Independent,
             timestamp,
             Array.Empty<TransactionInput>(),
-            new[] { new TransactionOutput(0, aliceKey.Address, Amount.FromInt64(100)) },
+            new[]
+            {
+                new TransactionOutput(0, aliceKey.Address, Amount.FromInt64(100)),
+                new TransactionOutput(1, aliceKey.Address, Amount.Zero, new TokenTransfer(CarrierToken, Amount.FromInt64(20)))
+            },
             null);
     }
 

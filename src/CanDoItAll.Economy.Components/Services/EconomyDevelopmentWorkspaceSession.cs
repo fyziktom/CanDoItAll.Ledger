@@ -201,10 +201,11 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             await SeedGenesisAsync(
                 cancellationToken,
                 new TransactionOutput(0, MainAddress, Amount.FromInt64(126500)),
-                new TransactionOutput(1, MainAddress, Amount.FromInt64(250), new TokenTransfer(OperatingCreditToken, Amount.FromInt64(39000))),
-                new TransactionOutput(2, ApprovalAddress, Amount.FromInt64(25000)),
-                new TransactionOutput(3, WarehouseAddress, Amount.FromInt64(41000)),
-                new TransactionOutput(4, MainAddress, Amount.Zero, new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(10_000))))
+                new TransactionOutput(1, MainAddress, Amount.FromInt64(250)),
+                new TransactionOutput(2, MainAddress, Amount.Zero, new TokenTransfer(OperatingCreditToken, Amount.FromInt64(39000))),
+                new TransactionOutput(3, ApprovalAddress, Amount.FromInt64(25000)),
+                new TransactionOutput(4, WarehouseAddress, Amount.FromInt64(41000)),
+                new TransactionOutput(5, MainAddress, Amount.Zero, new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(10_000))))
                 .ConfigureAwait(false);
 
             timeProvider.Advance(TimeSpan.FromMinutes(5));
@@ -798,7 +799,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                     request.ObjectId,
                     "profile",
                     nextState,
-                    MainAmount: Amount.FromInt64(1),
+                    MainAmount: Amount.Zero,
                     ExternalRef: SafeNullable(request.ExternalRef)),
                 cancellationToken).ConfigureAwait(false)
             : await account.UpdateBusinessObjectAsync(

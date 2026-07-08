@@ -964,7 +964,9 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                     [],
                     [
                         new TransactionOutput(0, alice.UnlockedKey.Address, Amount.FromInt64(100)),
-                        new TransactionOutput(1, bob.UnlockedKey.Address, Amount.FromInt64(100))
+                        new TransactionOutput(1, bob.UnlockedKey.Address, Amount.FromInt64(100)),
+                        new TransactionOutput(2, alice.UnlockedKey.Address, Amount.Zero, new TokenTransfer(new TokenId("bo.secure-message"), Amount.FromInt64(10))),
+                        new TransactionOutput(3, bob.UnlockedKey.Address, Amount.Zero, new TokenTransfer(new TokenId("bo.secure-message"), Amount.FromInt64(10)))
                     ],
                     Data: null),
                 CancellationToken.None);

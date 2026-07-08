@@ -15,6 +15,7 @@ public sealed class EconomyClientTests
     private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-public"));
     private static readonly Address Warehouse = Address.FromPublicKey(Hex.Utf8("warehouse-public"));
     private static readonly Address Bootstrap = Address.FromPublicKey(Hex.Utf8("bootstrap-public"));
+    private static readonly TokenId CarrierToken = new("bo.carrier");
 
     [Fact]
     public async Task Client_LoadsAccountExportsKeyAndSubAccountAndSubmitsTransactions()
@@ -72,7 +73,8 @@ public sealed class EconomyClientTests
         Assert.Equal(3, (await client.GetTransactionsAsync(Context, Alice, CancellationToken.None)).Count);
         IReadOnlyList<LedgerTransactionSummary> aliceTransactions = await client.GetTransactionsAsync(Context, Alice, includeData: true, CancellationToken.None);
         LedgerTransactionSummary transferHistory = Assert.Single(aliceTransactions, x => x.TxId == transferTxId);
-        LedgerTransactionInputSummary historyInput = Assert.Single(transferHistory.Inputs);
+        Assert.Equal(2, transferHistory.Inputs.Count);
+        LedgerTransactionInputSummary historyInput = transferHistory.Inputs[0];
         SignatureEnvelope historySignature = Assert.Single(historyInput.SignatureBundle.Signatures);
         Assert.NotNull(historyInput.SignaturePayloadHash);
         Assert.Equal(historyInput.SignaturePayloadHash, historySignature.PayloadHash);
@@ -81,6 +83,7 @@ public sealed class EconomyClientTests
         Assert.Equal(Alice, Address.FromPublicKey(historySignature.PublicKeyMaterial!));
         Assert.Equal(Address.CalculatePublicKeyHash(historySignature.PublicKeyMaterial!), historySignature.PublicKeyHash);
         Assert.NotEmpty(historySignature.SignatureBytes);
+        Assert.All(transferHistory.Inputs, input => Assert.NotEmpty(input.SignatureBundle.Signatures));
         Assert.Equal(DateTimeOffset.Parse("2026-05-07T10:30:00Z"), transfer.Timestamp);
 
         LedgerState? state = await client.GetLedgerStateAsync(Context, CancellationToken.None);
@@ -218,7 +221,11 @@ public sealed class EconomyClientTests
             SigningMode.Independent,
             timestamp,
             Array.Empty<TransactionInput>(),
-            new[] { new TransactionOutput(0, Alice, amount) },
+            new[]
+            {
+                new TransactionOutput(0, Alice, amount),
+                new TransactionOutput(1, Alice, Amount.Zero, new TokenTransfer(CarrierToken, Amount.FromInt64(20)))
+            },
             null);
 
     private sealed record TestRig(EconomyClient Client, ILedgerGateway Gateway, ManualTimeProvider Time);

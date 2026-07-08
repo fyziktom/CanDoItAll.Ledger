@@ -82,19 +82,25 @@ public sealed class EfLedgerProjectionRebuilderTests
                     TransactionKind.BusinessObject,
                     SigningMode.Independent,
                     timeProvider.UtcNow,
-                    new[] { new TransactionInput(0, new OutPoint(transfer.TxId!.Value, 1), Alice, SignatureBundle.Empty) },
+                    new[]
+                    {
+                        new TransactionInput(0, new OutPoint(genesis.TxId!.Value, 1), Alice, SignatureBundle.Empty),
+                        new TransactionInput(1, new OutPoint(transfer.TxId!.Value, 1), Alice, SignatureBundle.Empty)
+                    },
                     new[]
                     {
                         new TransactionOutput(
                             0,
                             Alice,
-                            Amount.FromInt64(60),
-                            null,
+                            Amount.Zero,
+                            new TokenTransfer(tokenId, Amount.FromInt64(1)),
                             new BusinessObjectRef(
                                 new BusinessObjectId("invoice-1"),
                                 1,
                                 BusinessObjectOperation.Create,
-                                createData.DataHash!.Value))
+                                createData.DataHash!.Value)),
+                        new TransactionOutput(1, Alice, Amount.FromInt64(60)),
+                        new TransactionOutput(2, Alice, Amount.Zero, new TokenTransfer(tokenId, Amount.FromInt64(9)))
                     },
                     createData),
                 hasher),
@@ -118,8 +124,8 @@ public sealed class EfLedgerProjectionRebuilderTests
                         new TransactionOutput(
                             0,
                             Alice,
-                            Amount.FromInt64(60),
-                            null,
+                            Amount.Zero,
+                            new TokenTransfer(tokenId, Amount.FromInt64(1)),
                             new BusinessObjectRef(
                                 new BusinessObjectId("invoice-1"),
                                 2,

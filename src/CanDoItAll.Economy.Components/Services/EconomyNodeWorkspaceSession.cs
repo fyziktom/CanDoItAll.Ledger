@@ -513,7 +513,7 @@ public sealed class EconomyNodeWorkspaceSession(
                     request.ObjectId,
                     "profile",
                     nextState,
-                    MainAmount: Amount.FromInt64(1),
+                    MainAmount: Amount.Zero,
                     ExternalRef: SafeNullable(request.ExternalRef)),
                 cancellationToken).ConfigureAwait(false)
             : await driver.Account.UpdateBusinessObjectAsync(

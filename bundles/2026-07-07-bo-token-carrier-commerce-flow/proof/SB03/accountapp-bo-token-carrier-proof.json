@@ -3,53 +3,53 @@
   "commerceTabOrder": [
     "query_statsOverview",
     "account_balance_walletBalances",
-    "paymentsCommerce12",
-    "receipt_longTransactions history94"
+    "paymentsCommerce15",
+    "receipt_longTransactions history100"
   ],
-  "targetName": "Carrier proof post 1783516280063",
-  "targetObjectId": "bo:post:carrier-proof-post-1783516280063:8dedcf2733441b0-0003-b27074b6dcb1",
-  "paymentObjectId": "bo:payment:bc25b25e3c8a05b065c407e5",
-  "receiptObjectId": "bo:receipt:2c67dbbb6fec143351acfa65",
-  "purchaseObjectId": "bo:purchase:2c67dbbb6fec143351acfa65",
-  "deliveredObjectId": "bo:clone:ef8156d4cb842f9e3d74e590",
+  "targetName": "Carrier proof post 1783521816413",
+  "targetObjectId": "bo:post:carrier-proof-post-1783521816413:8dedcff59b53c50-0003-efd9d0d7b970",
+  "paymentObjectId": "bo:payment:830963d9acaab4686a5382ed",
+  "receiptObjectId": "bo:receipt:34a1c78030d04f4ada103e0c",
+  "purchaseObjectId": "bo:purchase:34a1c78030d04f4ada103e0c",
+  "deliveredObjectId": "bo:clone:86150e16cffa3af9366b70ad",
   "carrierToken": "bo.posts",
   "outputs": {
     "created": {
-      "txId": "2ea517eeb96ab8e19ffa7db59eef45f4c990f39fcf793b99d8d96ff66ec74474",
+      "txId": "46109481485e59a36f27af9735feb3cb48dfc505adab1d1be698e406111f712d",
       "outputIndex": 0,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
       "mainAmount": "0"
     },
     "payment": {
-      "txId": "c054577c0214bb1c0b0ebbe30a30adedc6cc49211869dcc4a088555e509c3586",
+      "txId": "fcb1c0a2f7e897605952d0cbb43bb26303f220947254fb227f7025f0b629cdc6",
       "outputIndex": 0,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
       "mainAmount": "0"
     },
     "paymentMainOutput": {
-      "txId": "c054577c0214bb1c0b0ebbe30a30adedc6cc49211869dcc4a088555e509c3586",
+      "txId": "fcb1c0a2f7e897605952d0cbb43bb26303f220947254fb227f7025f0b629cdc6",
       "outputIndex": 1,
       "address": "cdia1Ngb3miLzYorvFSfKzLFwYPvZH6Kw6LPsSu",
       "mainAmount": "7.25"
     },
     "receipt": {
-      "txId": "32c1b19bb89c9b4b47d51230aab6c6191f05d076902da1f53d8f6d9171bff2e5",
+      "txId": "e15b98a81b0318883b4bdf059e33db7dee98dfdc448578b8c7295c7e607e111e",
       "outputIndex": 0,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
       "mainAmount": "0"
     },
     "purchase": {
-      "txId": "e3c77e27f1d7cf468bed35f948e54e7b5e734994c93bbba235b37f899e7df5c1",
+      "txId": "84b05b4b1667a13f88b48c5162bd45f36da5abbb04edc68cea809f4bb42da629",
       "outputIndex": 0,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
       "mainAmount": "0"
     },
     "delivered": {
-      "txId": "46b93e731ebbc6721bc7e2491343a3d6a12c32d1fa0bf449ebf2a006ad0f42a4",
+      "txId": "103f45fb0884f544f2417dcf84e825c2909dfffbaff67f8cca01977f6381e19f",
       "outputIndex": 1,
       "tokenId": "bo.posts",
       "tokenAmount": "1",
@@ -57,28 +57,28 @@
     }
   },
   "receiptRecycle": {
-    "receiptObjectId": "bo:receipt:2c67dbbb6fec143351acfa65",
+    "receiptObjectId": "bo:receipt:34a1c78030d04f4ada103e0c",
     "receiptOutPoint": {
       "txId": {
-        "value": "32c1b19bb89c9b4b47d51230aab6c6191f05d076902da1f53d8f6d9171bff2e5"
+        "value": "e15b98a81b0318883b4bdf059e33db7dee98dfdc448578b8c7295c7e607e111e"
       },
       "outputIndex": 0
     },
     "mergeSourceOutPoint": {
       "txId": {
-        "value": "e3c77e27f1d7cf468bed35f948e54e7b5e734994c93bbba235b37f899e7df5c1"
+        "value": "84b05b4b1667a13f88b48c5162bd45f36da5abbb04edc68cea809f4bb42da629"
       },
       "outputIndex": 1
     },
-    "mergeSourceAmount": "99998979",
-    "recycleTxId": "96f4008448d02d480721eae714f594b7f8912b215a654a3fbf44b43299c7519f",
+    "mergeSourceAmount": "99998975",
+    "recycleTxId": "8bb8c83a53c3f2c61e522deaf3002fe467b42ffa09a7006932b9b68616b9e5f2",
     "mergedSourceOutPoint": {
       "txId": {
-        "value": "96f4008448d02d480721eae714f594b7f8912b215a654a3fbf44b43299c7519f"
+        "value": "8bb8c83a53c3f2c61e522deaf3002fe467b42ffa09a7006932b9b68616b9e5f2"
       },
       "outputIndex": 0
     },
-    "mergedSourceAmount": "99998980"
+    "mergedSourceAmount": "99998976"
   },
   "screenshots": [
     "alice-created-bo-token-detail.png",

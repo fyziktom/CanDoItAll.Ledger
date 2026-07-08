@@ -12,6 +12,7 @@ public sealed class BusinessObjectTransitionValidationTests
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
     private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-public"));
     private static readonly BusinessObjectId ObjectId = new("settings");
+    private static readonly TokenId CarrierToken = new("bo.carrier");
 
     [Fact]
     public async Task LedgerExecutor_RejectsMalformedBusinessObjectTransitions()
@@ -102,8 +103,8 @@ public sealed class BusinessObjectTransitionValidationTests
                 new TransactionOutput(
                     0,
                     Alice,
-                    Amount.FromInt64(10),
-                    null,
+                    Amount.Zero,
+                    new TokenTransfer(CarrierToken, Amount.FromInt64(1)),
                     new BusinessObjectRef(ObjectId, 1, BusinessObjectOperation.Create, dataHash)),
                 new TransactionOutput(1, Alice, Amount.FromInt64(5))
             },
@@ -125,7 +126,12 @@ public sealed class BusinessObjectTransitionValidationTests
             SigningMode.Independent,
             rig.Time.UtcNow,
             new[] { new TransactionInput(0, source, Alice, SignatureBundle.Empty) },
-            new[] { new TransactionOutput(0, receiver ?? Alice, amount, null, businessObject) },
+            new[]
+            {
+                businessObject is null
+                    ? new TransactionOutput(0, receiver ?? Alice, Amount.Zero, new TokenTransfer(CarrierToken, Amount.FromInt64(1)))
+                    : new TransactionOutput(0, receiver ?? Alice, Amount.Zero, new TokenTransfer(CarrierToken, Amount.FromInt64(1)), businessObject)
+            },
             businessObject is null
                 ? null
                 : new TransactionData("application/json", businessObject.DataHash, "{\"theme\":\"dark\"}", null, TransactionDataItemType.BusinessObject));
