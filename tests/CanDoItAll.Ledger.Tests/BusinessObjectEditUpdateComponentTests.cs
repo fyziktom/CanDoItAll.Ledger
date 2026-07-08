@@ -95,6 +95,43 @@ public sealed class BusinessObjectEditUpdateComponentTests : TestContext
         Assert.DoesNotContain("Verify ownership", component.Markup, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task DetailsActions_RecycleButtonEmitsCloseDraft()
+    {
+        var stagedDrafts = new List<BusinessObjectTransactionDraft>();
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        IBusinessObjectView businessObject = workspace.BusinessObjects
+            .First(item => item is IMediaBusinessObjectView);
+
+        IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
+            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+                .Add(x => x.Object, businessObject)
+                .Add(x => x.Workspace, workspace)
+                .Add(
+                    x => x.EditRequested,
+                    EventCallback.Factory.Create<BusinessObjectTransactionDraft>(
+                        this,
+                        draft =>
+                        {
+                            stagedDrafts.Add(draft);
+                            return Task.CompletedTask;
+                        })));
+
+        ClickTab(component, "Actions");
+        await component.Find("[data-testid='cda-bo-recycle-button']").ClickAsync(new MouseEventArgs());
+
+        BusinessObjectTransactionDraft draft = Assert.Single(stagedDrafts);
+        Assert.Equal(BusinessObjectTransactionMode.CloseObject, draft.SelectedMode);
+        Assert.Equal(businessObject.ObjectId, draft.ObjectId);
+        Assert.Equal(businessObject.ObjectId, draft.SourceObjectId);
+        Assert.Equal(businessObject.ObjectType, draft.ObjectType);
+        Assert.Equal(businessObject.OwnerAddress, draft.OwnerAddress);
+        Assert.Equal(businessObject.OwnerAddress, draft.ReceiverAddress);
+        Assert.Equal(Amount.Zero, draft.MainAmount);
+        Assert.Equal(Amount.Zero, draft.PaymentAmount);
+        Assert.StartsWith("bo-recycle://", draft.ExternalRef, StringComparison.Ordinal);
+    }
+
     private static Task ClickButtonAsync<TComponent>(IRenderedComponent<TComponent> component, string text)
         where TComponent : IComponent
         => component.FindAll("button")

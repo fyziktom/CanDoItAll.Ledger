@@ -6,6 +6,7 @@ using CanDoItAll.Economy.Components.Models;
 using CanDoItAll.Economy.Components.Samples;
 using CanDoItAll.Economy.Components.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
@@ -39,7 +40,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     }
 
     [Fact]
-    public void HomeSecuritySurface_StillHostsOwnershipVerificationTool()
+    public async Task HomeSecuritySurface_StillHostsOwnershipVerificationTool()
     {
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
 
@@ -50,7 +51,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             RenderComponent<MessageSecurityPanel>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
-        ClickTab(security, "Ownership");
+        await ClickTabAsync(security, "Ownership");
 
         Assert.NotEmpty(home.FindAll("[data-testid='cda-action-security']"));
         Assert.Contains("Ownership payload", security.Markup, StringComparison.Ordinal);
@@ -58,7 +59,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     }
 
     [Fact]
-    public void HomeBalances_ShowOnlyRealTokenSourcesInsideBalancesCard()
+    public async Task HomeBalances_ShowOnlyRealTokenSourcesInsideBalancesCard()
     {
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
 
@@ -66,7 +67,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             RenderComponent<EconomyAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
-        ClickTab(home, "Balances");
+        await ClickTabAsync(home, "Balances");
 
         Assert.Contains("Balances", home.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain(">Token Sources<", home.Markup, StringComparison.Ordinal);
@@ -78,7 +79,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     }
 
     [Fact]
-    public void HomeWorkspace_RendersRequestedTabOrderAndPanels()
+    public async Task HomeWorkspace_RendersRequestedTabOrderAndPanels()
     {
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
 
@@ -92,13 +93,17 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             tabs,
             tab => Assert.Contains("Overview", tab.TextContent, StringComparison.Ordinal),
             tab => Assert.Contains("Balances", tab.TextContent, StringComparison.Ordinal),
+            tab => Assert.Contains("Commerce", tab.TextContent, StringComparison.Ordinal),
             tab => Assert.Contains("Transactions history", tab.TextContent, StringComparison.Ordinal));
         Assert.NotEmpty(home.FindAll("[data-testid='cda-vef-account-analytics']"));
 
-        ClickTab(home, "Balances");
+        await ClickTabAsync(home, "Balances");
         home.WaitForAssertion(() => Assert.Contains("Source UTXOs", home.Markup, StringComparison.Ordinal));
 
-        ClickTab(home, "Transactions history");
+        await ClickTabAsync(home, "Commerce");
+        home.WaitForAssertion(() => Assert.NotEmpty(home.FindAll("[data-testid='cda-commerce-dashboard']")));
+
+        await ClickTabAsync(home, "Transactions history");
         home.WaitForAssertion(() => Assert.NotEmpty(home.FindAll("[data-testid='cda-recent-transactions']")));
     }
 
@@ -128,6 +133,12 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             .Single(item => item.TextContent.Contains(text, StringComparison.Ordinal))
             .Click();
     }
+
+    private static Task ClickTabAsync<TComponent>(IRenderedComponent<TComponent> component, string text)
+        where TComponent : IComponent
+        => component.FindAll("[role='tab']")
+            .Single(item => item.TextContent.Contains(text, StringComparison.Ordinal))
+            .ClickAsync(new MouseEventArgs());
 
     private static void AssertActionLabel(
         IRenderedComponent<EconomyAccountWorkspace> home,

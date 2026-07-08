@@ -39,6 +39,7 @@ async function main() {
 
   try {
     await ensureAliceHome(alice, aliceBackup);
+    const commerceTabOrder = await assertCommerceTabPlacement(alice);
 
     const created = await createAliceBusinessObject(alice);
     const targetObjectId = created.objectId;
@@ -65,9 +66,11 @@ async function main() {
 
     await captureAliceDashboard(alice, payment.objectId, receipt.objectId, targetObjectId);
     await captureBobPurchase(bob, purchase.objectId, targetObjectId);
+    const receiptRecycle = await recycleReceiptAndAssertMerge(alice, receipt.objectId);
 
     const result = {
       status: 'passed',
+      commerceTabOrder,
       targetName,
       targetObjectId,
       paymentObjectId: payment.objectId,
@@ -82,13 +85,17 @@ async function main() {
         purchase: purchaseToken,
         delivered: deliveredToken
       },
+      receiptRecycle,
       screenshots: [
         'alice-created-bo-token-detail.png',
         'bob-payment-submitted.png',
         'alice-dispatch-dashboard.png',
         'alice-payment-token-detail.png',
         'alice-receipt-token-detail.png',
-        'bob-purchase-token-detail.png'
+        'alice-payment-related-bo-detail.png',
+        'alice-receipt-related-bo-detail.png',
+        'bob-purchase-token-detail.png',
+        'alice-receipt-recycle-merge-transaction.png'
       ]
     };
     await fs.writeFile(path.join(proofDir, 'accountapp-bo-token-carrier-proof.json'), JSON.stringify(result, null, 2));
@@ -287,6 +294,7 @@ async function captureGalleryObjectTransaction(page, targetDisplayName, screensh
 async function captureAliceDashboard(page, paymentObjectId, receiptObjectId, targetObjectId) {
   await ensureAliceWorkspace(page);
   await page.getByTestId('refresh-workspace').click();
+  await openAccountHomeTab(page, /Commerce/i);
   const dashboard = page.getByTestId('cda-commerce-dashboard');
   await dashboard.waitFor();
   await dashboard.scrollIntoViewIfNeeded();
@@ -294,9 +302,11 @@ async function captureAliceDashboard(page, paymentObjectId, receiptObjectId, tar
 
   const paymentRow = await findCommerceRow(dashboard, 'payment', [paymentObjectId, targetObjectId]);
   await openCommerceTransactionDetail(page, paymentRow, 'alice-payment-token-detail.png');
+  await openCommerceRelatedBusinessObjectDetail(page, paymentRow, 'alice-payment-related-bo-detail.png');
 
   const receiptRow = await findCommerceRow(dashboard, 'receipt', [receiptObjectId, targetObjectId]);
   await openCommerceTransactionDetail(page, receiptRow, 'alice-receipt-token-detail.png');
+  await openCommerceRelatedBusinessObjectDetail(page, receiptRow, 'alice-receipt-related-bo-detail.png');
 }
 
 async function captureBobPurchase(page, purchaseObjectId, targetObjectId) {
@@ -308,6 +318,7 @@ async function captureBobPurchase(page, purchaseObjectId, targetObjectId) {
     await page.getByTestId('adapter-workspace-host').waitFor();
   }
   await page.getByTestId('refresh-workspace').click();
+  await openAccountHomeTab(page, /Commerce/i);
   const dashboard = page.getByTestId('cda-commerce-dashboard');
   await dashboard.waitFor();
   const purchaseRow = await findCommerceRow(dashboard, 'receipt', [purchaseObjectId, targetObjectId]);
@@ -317,11 +328,90 @@ async function captureBobPurchase(page, purchaseObjectId, targetObjectId) {
 async function openCommerceTransactionDetail(page, row, screenshotName) {
   await row.waitFor();
   await row.scrollIntoViewIfNeeded();
-  await row.click();
+  await row.getByTestId('cda-commerce-record-details').click();
   const details = page.getByTestId('cda-commerce-details-dialog');
   await details.waitFor();
   await captureOpenTransactionFromDetails(page, details, screenshotName);
   await closeDialogIfPresent(page, 'cda-commerce-details-dialog');
+}
+
+async function openCommerceRelatedBusinessObjectDetail(page, row, screenshotName) {
+  await row.waitFor();
+  await row.scrollIntoViewIfNeeded();
+  const button = row.getByTestId('cda-commerce-related-details');
+  await button.waitFor();
+  const disabled = await button.evaluate(element => element.disabled);
+  if (disabled) {
+    throw new Error('Related BO details button is disabled for a visible commerce record.');
+  }
+  await button.click();
+  const details = page.getByTestId('cda-commerce-details-dialog');
+  await details.waitFor();
+  await details.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(screenshotDir, screenshotName), fullPage: true });
+  await closeDialogIfPresent(page, 'cda-commerce-details-dialog');
+}
+
+async function recycleReceiptAndAssertMerge(page, receiptObjectId) {
+  await ensureAliceWorkspace(page);
+  await page.getByTestId('refresh-workspace').click();
+
+  const receipt = await loadHolding(page, receiptObjectId);
+  const receiptOutPoint = receipt.currentOutPoint;
+  const beforeSources = await listTokenSources(page, sellerAddress);
+  const mergeCandidate = selectTokenMergeCandidate(beforeSources);
+  assert.ok(mergeCandidate, 'Alice has no token source UTXO to merge the receipt into.');
+  const expectedMergedAmount = Number(amountValue(mergeCandidate.token.amount)) + 1;
+
+  await openAccountHomeTab(page, /Commerce/i);
+  const dashboard = page.getByTestId('cda-commerce-dashboard');
+  await dashboard.waitFor();
+  const receiptRow = await findCommerceRow(dashboard, 'receipt', [receiptObjectId]);
+  await receiptRow.getByTestId('cda-commerce-record-details').click();
+  const details = page.getByTestId('cda-commerce-details-dialog');
+  await details.waitFor();
+  await clickInDialog(details, /Actions/i);
+  const recycleButton = details.getByTestId('cda-bo-recycle-button');
+  await recycleButton.waitFor();
+  const disabled = await recycleButton.evaluate(button => button.disabled);
+  if (disabled) {
+    throw new Error('Receipt recycle button is disabled.');
+  }
+  await recycleButton.click();
+  await details.waitFor({ state: 'detached' }).catch(() => {});
+
+  const merged = await waitFor(async () => {
+    await page.getByTestId('refresh-workspace').click().catch(() => {});
+    const receiptStillExists = await tryLoadHolding(page, receiptObjectId);
+    if (receiptStillExists) {
+      return null;
+    }
+
+    const sources = await listTokenSources(page, sellerAddress);
+    return sources.find(source => Number(amountValue(source.token.amount)) === expectedMergedAmount) ?? null;
+  }, `receipt ${receiptObjectId} recycle merge`, 120);
+
+  const recycleTxId = unwrap(merged.outPoint.txId);
+  const tx = await fetchJson(page, `/api/v1/ledger/default/transactions/${encodeURIComponent(recycleTxId)}?includeData=true`);
+  const inputs = tx.inputs ?? tx.vin ?? tx.transaction?.inputs ?? [];
+  const outputs = tx.outputs ?? tx.vout ?? tx.transaction?.outputs ?? [];
+  assert.equal(inputs.length, 2, 'receipt recycle merge input count');
+  const output = assertSingle(outputs, 'receipt recycle merge output');
+  assert.equal(unwrap(output.token?.tokenId ?? output.tokenTransfer?.tokenId), tokenId, 'receipt recycle output token id');
+  assert.equal(Number(amountValue(output.token?.amount ?? output.tokenTransfer?.amount)), expectedMergedAmount, 'receipt recycle output token amount');
+  assert.equal(output.businessObject ?? output.businessObjectRef ?? null, null, 'receipt recycle output must not carry a BO');
+
+  await captureTransactionFromHistory(page, recycleTxId, 'alice-receipt-recycle-merge-transaction.png');
+
+  return {
+    receiptObjectId,
+    receiptOutPoint,
+    mergeSourceOutPoint: mergeCandidate.outPoint,
+    mergeSourceAmount: amountValue(mergeCandidate.token.amount),
+    recycleTxId,
+    mergedSourceOutPoint: merged.outPoint,
+    mergedSourceAmount: amountValue(merged.token.amount)
+  };
 }
 
 async function captureOpenTransactionFromDetails(page, details, screenshotName) {
@@ -392,6 +482,21 @@ async function loadHolding(page, objectId) {
   return holding;
 }
 
+async function tryLoadHolding(page, objectId) {
+  const rows = await queryBusinessObjects(page, { objectId, skip: 0, take: 1 });
+  return toHolding(rows[0]);
+}
+
+async function listTokenSources(page, address) {
+  const outputs = await fetchJson(page, `/api/v1/ledger/default/accounts/${encodeURIComponent(address)}/spendable-outputs`);
+  return outputs.filter(output =>
+    !output.businessObject
+    && !output.businessObjectRef
+    && output.token
+    && unwrap(output.token.tokenId) === tokenId
+    && Number(amountValue(output.token.amount)) > 1);
+}
+
 async function findBusinessObjectByName(page, ownerAddress, objectType, name) {
   const rows = await queryBusinessObjects(page, {
     ownerAddress,
@@ -444,6 +549,28 @@ async function openGallery(page) {
   await page.getByTestId('ssr-bo-gallery').waitFor();
 }
 
+async function assertCommerceTabPlacement(page) {
+  await ensureAliceWorkspace(page);
+  const tabs = await page.getByTestId('cda-account-home-tabs')
+    .getByRole('tab')
+    .evaluateAll(elements => elements.map(element => String(element.textContent ?? '').replace(/\s+/g, ' ').trim()));
+  const balancesIndex = tabs.findIndex(text => text.includes('Balances'));
+  const commerceIndex = tabs.findIndex(text => text.includes('Commerce'));
+  const transactionsIndex = tabs.findIndex(text => text.includes('Transactions history'));
+  assert.ok(balancesIndex >= 0, `Balances tab missing from ${JSON.stringify(tabs)}`);
+  assert.ok(commerceIndex >= 0, `Commerce tab missing from ${JSON.stringify(tabs)}`);
+  assert.ok(transactionsIndex >= 0, `Transactions history tab missing from ${JSON.stringify(tabs)}`);
+  assert.ok(balancesIndex < commerceIndex, `Commerce tab must be after Balances: ${JSON.stringify(tabs)}`);
+  assert.ok(commerceIndex < transactionsIndex, `Commerce tab must be before Transactions history: ${JSON.stringify(tabs)}`);
+  return tabs;
+}
+
+async function openAccountHomeTab(page, name) {
+  const tab = page.getByTestId('cda-account-home-tabs').getByRole('tab', { name }).first();
+  await tab.waitFor();
+  await tab.click();
+}
+
 async function ensureAliceWorkspace(page) {
   await page.goto(aliceUrl, { waitUntil: 'domcontentloaded' });
   await page.getByTestId('account-app-root').waitFor();
@@ -468,6 +595,50 @@ async function findCommerceRow(dashboard, kind, candidates) {
     }
   }
   return rows.first();
+}
+
+async function captureTransactionFromHistory(page, txId, screenshotName) {
+  await ensureAliceWorkspace(page);
+  await page.getByTestId('refresh-workspace').click();
+  await openAccountHomeTab(page, /Transactions history/i);
+  const history = page.getByTestId('cda-recent-transactions');
+  await history.waitFor();
+  const row = history.locator('.cda-vef-transaction-item').filter({ hasText: txId.slice(0, 8) }).first();
+  await row.waitFor();
+  await row.getByTestId('cda-transaction-details-button').click();
+  const txDialog = page.getByTestId('cda-transaction-details-dialog');
+  await txDialog.waitFor();
+  await clickInDialog(txDialog, /Inputs & outputs/i);
+  await page.screenshot({ path: path.join(screenshotDir, screenshotName), fullPage: true });
+  await closeDialogIfPresent(page, 'cda-transaction-details-dialog');
+}
+
+function selectTokenMergeCandidate(outputs) {
+  return [...outputs].sort((left, right) => {
+    const leftMulti = Number(amountValue(left.token.amount)) > 1 ? 1 : 0;
+    const rightMulti = Number(amountValue(right.token.amount)) > 1 ? 1 : 0;
+    if (leftMulti !== rightMulti) {
+      return rightMulti - leftMulti;
+    }
+
+    const leftCreated = Date.parse(left.createdAt ?? left.CreatedAt ?? '1970-01-01T00:00:00Z');
+    const rightCreated = Date.parse(right.createdAt ?? right.CreatedAt ?? '1970-01-01T00:00:00Z');
+    if (leftCreated !== rightCreated) {
+      return leftCreated - rightCreated;
+    }
+
+    const txCompare = unwrap(left.outPoint.txId).localeCompare(unwrap(right.outPoint.txId));
+    if (txCompare !== 0) {
+      return txCompare;
+    }
+
+    return Number(left.outPoint.outputIndex) - Number(right.outPoint.outputIndex);
+  })[0] ?? null;
+}
+
+function assertSingle(items, label) {
+  assert.equal(items.length, 1, `${label} count`);
+  return items[0];
 }
 
 async function waitForWorkspaceOrUnlock(page, unlockButtonTestId) {

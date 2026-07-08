@@ -1,20 +1,27 @@
 # Semantic Invariants
 
-Status: passed
+Status: passed; follow-up repair passed
 
-Final docker proof: `proof/SB03/transcripts/23-accountapp-real-transaction-proof-after-commerce-token-fallback.txt`
+Final docker proof: `proof/SB03/transcripts/29-accountapp-commerce-recycle-real-transaction-proof-nodepath.txt`
 
-Final full test sweep: `proof/SB02/transcripts/09-full-ledger-tests-final.txt` (`287` passed).
+Final full test sweep: `dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj` (`289` passed).
 
 Validated outputs from `proof/SB03/accountapp-bo-token-carrier-proof.json`:
 
 | Artifact | TxId | Output | Token | Main |
 | --- | --- | ---: | --- | ---: |
-| Created BO | `a862eb070bd15df1f4d6bb9ecf07156703b7b800e9cc3daefcbfb4fd73923fd7` | 0 | `1 bo.posts` | 0 |
-| Payment BO | `53800520408f8f2532ab03c0364788741db3a8baaa9aa9bc6355b0e3d7f95427` | 0 | `1 bo.posts` | 7.25 |
-| Receipt BO | `f5649d7ba059cda203c668381d098fec3dee6e79d289e3e4f05af95bbfd874c3` | 0 | `1 bo.posts` | 0 |
-| Purchase BO | `a5e00139a47f2a10cc3b6db4f211d56d8947052afc98223625fffb2613135505` | 0 | `1 bo.posts` | 0 |
-| Delivered clone | `835e8ed9ea6cd5109360d297f16b231b089f719c59bbf0669a427263169700b5` | 1 | `1 bo.posts` | 0 |
+| Created BO | `27dfff6e028aec40df99a567935124cf1c1f67de6045e9ee286af9ed580cef64` | 0 | `1 bo.posts` | 0 |
+| Payment BO | `e7e2118b1b56229e6d014e720c2445a854de2d34c9ae45e2c97303a7ee7fa0c1` | 0 | `1 bo.posts` | 7.25 |
+| Receipt BO | `298cc7b48855fb968a171f836d632bd8c983ebe63d199e13a7cf21e563b6381b` | 0 | `1 bo.posts` | 0 |
+| Purchase BO | `671ed701a621418e4e72ffb94e6c2c19bf01bb0bd38df53c67ea61cdb23d5aea` | 0 | `1 bo.posts` | 0 |
+| Delivered clone | `659e1b55278d6015de439ebf303809f3bdbc7e3029f858f77fd1de828fe6586b` | 1 | `1 bo.posts` | 0 |
+| Receipt recycle merge | `8df2cf3db1214b1d77d1406d2b91601856c321da8babb095d6b6e58ffbe96851` | 0 | `99998989 bo.posts` | 0 |
+
+Receipt recycle invariant:
+
+- Input 0 is the receipt BO output with `1 bo.posts`.
+- Input 1 is the same-token reusable source output with `99998988 bo.posts`.
+- Output 0 has no BO metadata and carries `99998989 bo.posts`.
 
 Screenshots visually checked:
 
@@ -22,6 +29,9 @@ Screenshots visually checked:
 - `proof/SB03/screenshots/alice-receipt-token-detail.png`
 - `proof/SB03/screenshots/bob-purchase-token-detail.png`
 - `proof/SB03/screenshots/alice-dispatch-dashboard.png`
+- `proof/SB03/screenshots/alice-payment-related-bo-detail.png`
+- `proof/SB03/screenshots/alice-receipt-related-bo-detail.png`
+- `proof/SB03/screenshots/alice-receipt-recycle-merge-transaction.png`
 
 Warnings observed:
 

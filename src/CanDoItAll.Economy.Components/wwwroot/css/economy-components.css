@@ -6647,17 +6647,16 @@ button.cda-economy-list-item:focus-visible {
 
 .cda-vef-commerce-row {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
   width: 100%;
   padding: 10px;
   color: inherit;
   text-align: left;
-  cursor: pointer;
 }
 
-.cda-vef-commerce-row span:nth-child(2) {
+.cda-vef-commerce-row__content {
   display: grid;
   gap: 2px;
   min-width: 0;
@@ -6674,6 +6673,35 @@ button.cda-economy-list-item:focus-visible {
   color: #586a7d;
   font-style: normal;
   font-size: 0.78rem;
+}
+
+.cda-vef-commerce-row__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.cda-vef-commerce-row__actions .cda-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .cda-vef-commerce-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .cda-vef-commerce-row > em {
+    grid-column: 2;
+  }
+
+  .cda-vef-commerce-row__actions {
+    grid-column: 2;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
 }
 
 .cda-ticket-event-panel {

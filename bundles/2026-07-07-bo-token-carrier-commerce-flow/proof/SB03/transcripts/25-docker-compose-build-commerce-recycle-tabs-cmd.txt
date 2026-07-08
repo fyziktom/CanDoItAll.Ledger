@@ -1,0 +1,527 @@
+ Image candoitall-ledger-accountapp:dev Building 
+ Image candoitall-ledger-accountapp:dev Building 
+ Image candoitall-ledger-accountapp:dev Building 
+ Image candoitall-ledger-demo-seeder:dev Building 
+ Image candoitall-ledger-economy-node:dev Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 4.04kB done
+#1 DONE 0.0s
+
+#2 [accountapp-bob internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.62kB 0.0s done
+#2 DONE 0.1s
+
+#3 [accountapp-bob] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#3 ...
+
+#4 [demo-seeder internal] load build definition from Dockerfile
+#4 transferring dockerfile: 1.57kB 0.0s done
+#4 DONE 0.1s
+
+#5 [economy-node internal] load build definition from Dockerfile
+#5 transferring dockerfile: 1.54kB 0.0s done
+#5 DONE 0.2s
+
+#3 [accountapp-alice] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#3 DONE 2.2s
+
+#6 [accountapp-bob] docker-image://docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
+#6 resolve docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
+#6 resolve docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89 0.2s done
+#6 resolve docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89 0.2s done
+#6 CACHED
+
+#7 [accountapp-alice internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0.201
+#7 ...
+
+#8 [economy-node context candoitall-external-packages] load .dockerignore
+#8 transferring candoitall-external-packages: 2B 0.0s done
+#8 DONE 0.2s
+
+#9 [accountapp-lab context candoitall-components] load .dockerignore
+#9 transferring candoitall-components: 232B 0.1s done
+#9 DONE 0.4s
+
+#10 [accountapp-lab internal] load metadata for docker.io/library/nginx:1.27-alpine
+#10 DONE 0.7s
+
+#11 [economy-node internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0
+#11 DONE 0.8s
+
+#12 [demo-seeder internal] load metadata for mcr.microsoft.com/dotnet/runtime:10.0
+#12 ...
+
+#7 [accountapp-bob internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0.201
+#7 DONE 1.0s
+
+#12 [demo-seeder internal] load metadata for mcr.microsoft.com/dotnet/runtime:10.0
+#12 DONE 0.9s
+
+#13 [accountapp-alice internal] load .dockerignore
+#13 transferring context: 297B 0.0s done
+#13 DONE 0.1s
+
+#14 [accountapp-lab internal] load build context
+#14 DONE 0.0s
+
+#15 [accountapp-lab context candoitall-external-packages] load from client
+#15 DONE 0.0s
+
+#16 [accountapp-lab context candoitall-components] load from client
+#16 DONE 0.0s
+
+#17 [accountapp-lab final 1/5] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#17 ...
+
+#14 [accountapp-bob internal] load build context
+#14 DONE 0.0s
+
+#15 [accountapp-bob context candoitall-external-packages] load from client
+#15 DONE 0.0s
+
+#16 [accountapp-bob context candoitall-components] load from client
+#16 DONE 0.0s
+
+#17 [accountapp-bob final 1/5] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#17 resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#17 ...
+
+#14 [economy-node internal] load build context
+#14 DONE 0.0s
+
+#15 [economy-node context candoitall-external-packages] load from client
+#15 DONE 0.0s
+
+#16 [economy-node context candoitall-components] load from client
+#16 DONE 0.0s
+
+#14 [accountapp-alice internal] load build context
+#14 DONE 0.0s
+
+#17 [accountapp-alice final 1/5] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#17 ...
+
+#15 [accountapp-alice context candoitall-external-packages] load from client
+#15 DONE 0.0s
+
+#16 [accountapp-alice context candoitall-components] load from client
+#16 DONE 0.0s
+
+#18 [demo-seeder final 1/4] FROM mcr.microsoft.com/dotnet/runtime:10.0@sha256:6a40d375e9c8432fcf4adebae05d7e0a276e9a90dd01174df6709a090771bebc
+#18 resolve mcr.microsoft.com/dotnet/runtime:10.0@sha256:6a40d375e9c8432fcf4adebae05d7e0a276e9a90dd01174df6709a090771bebc 1.0s done
+#18 DONE 1.0s
+
+#19 [accountapp-lab build 1/5] FROM mcr.microsoft.com/dotnet/sdk:10.0.201@sha256:127d7d4d601ae26b8e04c54efb37e9ce8766931bded0ee59fcd799afd21d6850
+#19 resolve mcr.microsoft.com/dotnet/sdk:10.0.201@sha256:127d7d4d601ae26b8e04c54efb37e9ce8766931bded0ee59fcd799afd21d6850 1.0s done
+#19 DONE 1.1s
+
+#15 [demo-seeder context candoitall-external-packages] load from client
+#15 ...
+
+#17 [accountapp-alice final 1/5] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#17 resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 0.9s done
+#17 DONE 1.1s
+
+#20 [economy-node final 1/4] FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:7644f992230d35cf230017189d4038c0ae0f7388b13f4f7ae1900a155bafb597
+#20 resolve mcr.microsoft.com/dotnet/aspnet:10.0@sha256:7644f992230d35cf230017189d4038c0ae0f7388b13f4f7ae1900a155bafb597 0.8s done
+#20 DONE 0.9s
+
+#16 [economy-node context candoitall-components] load from client
+#16 ...
+
+#15 [demo-seeder context candoitall-external-packages] load from client
+#15 transferring candoitall-external-packages: 632B 0.5s done
+#15 DONE 0.8s
+
+#14 [demo-seeder internal] load build context
+#14 ...
+
+#16 [accountapp-alice context candoitall-components] load from client
+#16 transferring candoitall-components: 106.54kB 1.0s done
+#16 DONE 1.3s
+
+#14 [demo-seeder internal] load build context
+#14 transferring context: 335.94kB 1.8s done
+#14 transferring context: 335.94kB 1.8s done
+#14 DONE 2.2s
+
+#21 [economy-node build 2/5] WORKDIR /src/CanDoItAll.Economy
+#21 CACHED
+
+#22 [economy-node build 3/5] COPY . .
+#22 DONE 5.6s
+
+#23 [accountapp-lab build 4/6] COPY --from=candoitall-components . /src/CanDoItAll.Components
+#23 ...
+
+#24 [demo-seeder build 4/5] COPY --from=candoitall-external-packages . /src/CanDoItAll/ExternalPackages
+#24 DONE 0.8s
+
+#25 [demo-seeder build 5/5] RUN dotnet restore "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#25 ...
+
+#23 [economy-node build 4/6] COPY --from=candoitall-components . /src/CanDoItAll.Components
+#23 DONE 2.8s
+
+#26 [economy-node build 5/6] COPY --from=candoitall-external-packages . /src/CanDoItAll/ExternalPackages
+#26 DONE 0.8s
+
+#27 [accountapp-alice build 6/6] RUN dotnet restore "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#27 ...
+
+#25 [demo-seeder build 5/5] RUN dotnet restore "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#25 10.61   Determining projects to restore...
+#25 ...
+
+#28 [economy-node build 6/6] RUN dotnet restore "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     /m:1     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#28 ...
+
+#27 [accountapp-alice build 6/6] RUN dotnet restore "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#27 14.39   Determining projects to restore...
+#27 ...
+
+#25 [demo-seeder build 5/5] RUN dotnet restore "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#25 20.52   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Ledger/CanDoItAll.Economy.Ledger.csproj (in 804 ms).
+#25 20.53   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Core/CanDoItAll.Economy.Core.csproj (in 729 ms).
+#25 20.55   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Cryptography/CanDoItAll.Economy.Cryptography.csproj (in 811 ms).
+#25 ...
+
+#28 [economy-node build 6/6] RUN dotnet restore "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     /m:1     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#28 14.66   Determining projects to restore...
+#28 ...
+
+#25 [demo-seeder build 5/5] RUN dotnet restore "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#25 28.22 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project. [/src/CanDoItAll.Economy/tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj]
+#25 28.22 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project. [/src/CanDoItAll.Economy/tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj]
+#25 28.23 /src/CanDoItAll.Economy/tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#25 28.36   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj (in 7.61 sec).
+#25 28.37   Restored /src/CanDoItAll.Economy/tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj (in 8.97 sec).
+#25 28.39   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj (in 7.62 sec).
+#25 DONE 28.6s
+
+#27 [accountapp-alice build 6/6] RUN dotnet restore "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#27 ...
+
+#29 [demo-seeder publish 1/1] RUN dotnet publish "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#29 ...
+
+#27 [accountapp-alice build 6/6] RUN dotnet restore "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#27 29.65   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Storage.InMemory/CanDoItAll.Economy.Storage.InMemory.csproj (in 994 ms).
+#27 29.68   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Core/CanDoItAll.Economy.Core.csproj (in 953 ms).
+#27 29.79   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Cryptography/CanDoItAll.Economy.Cryptography.csproj (in 51 ms).
+#27 29.82   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Ledger/CanDoItAll.Economy.Ledger.csproj (in 56 ms).
+#27 ...
+
+#29 [demo-seeder publish 1/1] RUN dotnet publish "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#29 12.82 /src/CanDoItAll.Economy/tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#29 ...
+
+#28 [economy-node build 6/6] RUN dotnet restore "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     /m:1     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#28 31.37   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Core/CanDoItAll.Economy.Core.csproj (in 1.35 sec).
+#28 31.40   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Storage.InMemory/CanDoItAll.Economy.Storage.InMemory.csproj (in 1.59 sec).
+#28 ...
+
+#29 [demo-seeder publish 1/1] RUN dotnet publish "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#29 21.10 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#29 ...
+
+#27 [accountapp-alice build 6/6] RUN dotnet restore "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#27 51.49   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Cryptography.Browser/CanDoItAll.Economy.Cryptography.Browser.csproj (in 21.55 sec).
+#27 54.94 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project. [/src/CanDoItAll.Economy/examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj]
+#27 55.01 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project. [/src/CanDoItAll.Economy/examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj]
+#27 57.60   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj (in 3.38 sec).
+#27 57.65   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj (in 26.57 sec).
+#27 59.26 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project. [/src/CanDoItAll.Economy/examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj]
+#27 59.28   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.QRCode/CanDoItAll.Components.QRCode.csproj (in 30.8 sec).
+#27 59.37   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.WebGlRunLib/CanDoItAll.Components.WebGlRunLib.csproj (in 1.58 sec).
+#27 59.39   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.WebGlLib/CanDoItAll.Components.WebGlLib.csproj (in 48 ms).
+#27 59.54   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.Common/CanDoItAll.Components.Common.csproj (in 17 ms).
+#27 59.89   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.OverlayLib/CanDoItAll.Components.OverlayLib.csproj (in 216 ms).
+#27 59.97   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.BaseLib/CanDoItAll.Components.BaseLib.csproj (in 53 ms).
+#27 60.04   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj (in 29.53 sec).
+#27 ...
+
+#28 [economy-node build 6/6] RUN dotnet restore "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     /m:1     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#28 60.19 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project. [/src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj]
+#28 60.78   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Persistence.EFCore/CanDoItAll.Economy.Persistence.EFCore.csproj (in 31.04 sec).
+#28 62.28   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj (in 30.94 sec).
+#28 63.72   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.WebGlLib/CanDoItAll.Components.WebGlLib.csproj (in 31.38 sec).
+#28 66.68   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Ledger/CanDoItAll.Economy.Ledger.csproj (in 228 ms).
+#28 66.70   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Cryptography/CanDoItAll.Economy.Cryptography.csproj (in 621 ms).
+#28 67.11 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project. [/src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj]
+#28 67.87   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj (in 888 ms).
+#28 71.00   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.WebGlRunLib/CanDoItAll.Components.WebGlRunLib.csproj (in 1.44 sec).
+#28 82.76   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.QRCode/CanDoItAll.Components.QRCode.csproj (in 10.89 sec).
+#28 83.42   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.OverlayLib/CanDoItAll.Components.OverlayLib.csproj (in 283 ms).
+#28 83.98   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.Common/CanDoItAll.Components.Common.csproj (in 327 ms).
+#28 84.45   Restored /src/CanDoItAll.Components/src/CanDoItAll.Components.BaseLib/CanDoItAll.Components.BaseLib.csproj (in 243 ms).
+#28 84.78 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project. [/src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj]
+#28 85.75   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj (in 18.17 sec).
+#28 89.64   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Persistence.PostgreSql/CanDoItAll.Economy.Persistence.PostgreSql.csproj (in 58.18 sec).
+#28 ...
+
+#27 [accountapp-alice build 6/6] RUN dotnet restore "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#27 99.12 /src/CanDoItAll.Economy/examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#27 99.34   Restored /src/CanDoItAll.Economy/examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj (in 41.6 sec).
+#27 DONE 100.3s
+
+#28 [economy-node build 6/6] RUN dotnet restore "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     /m:1     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#28 99.39 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+#28 99.44 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#28 99.56   Restored /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj (in 38.65 sec).
+#28 DONE 100.3s
+
+#27 [accountapp-alice build 6/6] RUN dotnet restore "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     /m:1     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#27 DONE 100.3s
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 ...
+
+#29 [demo-seeder publish 1/1] RUN dotnet publish "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#29 74.22   CanDoItAll.Economy.Core -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Core/bin/Release/net10.0/CanDoItAll.Economy.Core.dll
+#29 76.43   CanDoItAll.Economy.Cryptography -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Cryptography/bin/Release/net10.0/CanDoItAll.Economy.Cryptography.dll
+#29 83.70   CanDoItAll.Economy.Ledger -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Ledger/bin/Release/net10.0/CanDoItAll.Economy.Ledger.dll
+#29 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 13.87 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+#31 13.88 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#31 ...
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 15.24 /src/CanDoItAll.Economy/examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#30 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 23.47 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#31 ...
+
+#29 [demo-seeder publish 1/1] RUN dotnet publish "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#29 99.14   CanDoItAll.Economy.BusinessObjects -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/bin/Release/net10.0/CanDoItAll.Economy.BusinessObjects.dll
+#29 99.23 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#29 102.8   CanDoItAll.Economy.Sdk -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/bin/Release/net10.0/CanDoItAll.Economy.Sdk.dll
+#29 104.9   CanDoItAll.Economy.DemoSeeder -> /src/CanDoItAll.Economy/tools/CanDoItAll.Economy.DemoSeeder/bin/Release/net10.0/CanDoItAll.Economy.DemoSeeder.dll
+#29 105.0   CanDoItAll.Economy.DemoSeeder -> /app/publish/
+#29 DONE 105.4s
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 24.98 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#30 ...
+
+#32 [demo-seeder final 3/4] RUN mkdir -p /var/lib/candoitall-economy-demo/keys     && chown -R "1654:1654" /var/lib/candoitall-economy-demo
+#32 CACHED
+
+#33 [demo-seeder final 2/4] WORKDIR /app
+#33 CACHED
+
+#34 [demo-seeder final 4/4] COPY --from=publish /app/publish .
+#34 CACHED
+
+#35 [demo-seeder] exporting to image
+#35 exporting layers 0.0s done
+#35 exporting manifest sha256:a1dbf7a93f88f2574d2a7e60a9eb868776d04d718c7dbaacb3a2c0d14a7bd02b
+#35 exporting manifest sha256:a1dbf7a93f88f2574d2a7e60a9eb868776d04d718c7dbaacb3a2c0d14a7bd02b 0.0s done
+#35 exporting config sha256:76a9214d149d7c21bd156b1c5de8d9d2348214419b5c71ef1cd87ccb9109c84c 0.0s done
+#35 exporting attestation manifest sha256:6bf10d4f159180d12a57078c49177ee589d46c95478430ce6ca2ecf40d37cf3e
+#35 exporting attestation manifest sha256:6bf10d4f159180d12a57078c49177ee589d46c95478430ce6ca2ecf40d37cf3e 0.3s done
+#35 exporting manifest list sha256:0521ca8d71500ca7690b8c949c74d21706f1bdc71c69f5f7bb608dc073a9f3c3
+#35 exporting manifest list sha256:0521ca8d71500ca7690b8c949c74d21706f1bdc71c69f5f7bb608dc073a9f3c3 0.1s done
+#35 naming to docker.io/library/candoitall-ledger-demo-seeder:dev 0.0s done
+#35 unpacking to docker.io/library/candoitall-ledger-demo-seeder:dev 0.0s done
+#35 DONE 0.7s
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 ...
+
+#36 [demo-seeder] resolving provenance for metadata file
+#36 DONE 0.1s
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 57.65   CanDoItAll.Economy.Core -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Core/bin/Release/net10.0/CanDoItAll.Economy.Core.dll
+#30 60.64   CanDoItAll.Economy.Cryptography -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Cryptography/bin/Release/net10.0/CanDoItAll.Economy.Cryptography.dll
+#30 63.24   CanDoItAll.Economy.Ledger -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Ledger/bin/Release/net10.0/CanDoItAll.Economy.Ledger.dll
+#30 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 57.86   CanDoItAll.Economy.Core -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Core/bin/Release/net10.0/CanDoItAll.Economy.Core.dll
+#31 60.92   CanDoItAll.Economy.Cryptography -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Cryptography/bin/Release/net10.0/CanDoItAll.Economy.Cryptography.dll
+#31 64.43   CanDoItAll.Economy.Ledger -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Ledger/bin/Release/net10.0/CanDoItAll.Economy.Ledger.dll
+#31 ...
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 76.92   CanDoItAll.Economy.BusinessObjects -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/bin/Release/net10.0/CanDoItAll.Economy.BusinessObjects.dll
+#30 76.97 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#30 77.02 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#30 78.43   CanDoItAll.Economy.Sdk -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/bin/Release/net10.0/CanDoItAll.Economy.Sdk.dll
+#30 79.15   CanDoItAll.Economy.Storage.InMemory -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Storage.InMemory/bin/Release/net10.0/CanDoItAll.Economy.Storage.InMemory.dll
+#30 80.06   CanDoItAll.Components.Common -> /src/CanDoItAll.Components/src/CanDoItAll.Components.Common/bin/Release/net10.0/CanDoItAll.Components.Common.dll
+#30 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 78.42   CanDoItAll.Economy.BusinessObjects -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.BusinessObjects/bin/Release/net10.0/CanDoItAll.Economy.BusinessObjects.dll
+#31 78.50 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#31 78.56 /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj : warning NU1701: Package 'ncalc 1.3.8' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net10.0'. This package may not be fully compatible with your project.
+#31 80.87   CanDoItAll.Economy.Sdk -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Sdk/bin/Release/net10.0/CanDoItAll.Economy.Sdk.dll
+#31 81.64   CanDoItAll.Economy.Storage.InMemory -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Storage.InMemory/bin/Release/net10.0/CanDoItAll.Economy.Storage.InMemory.dll
+#31 82.48   CanDoItAll.Components.Common -> /src/CanDoItAll.Components/src/CanDoItAll.Components.Common/bin/Release/net10.0/CanDoItAll.Components.Common.dll
+#31 ...
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 120.3   CanDoItAll.Components.BaseLib -> /src/CanDoItAll.Components/src/CanDoItAll.Components.BaseLib/bin/Release/net10.0/CanDoItAll.Components.BaseLib.dll
+#30 123.0   CanDoItAll.Components.OverlayLib -> /src/CanDoItAll.Components/src/CanDoItAll.Components.OverlayLib/bin/Release/net10.0/CanDoItAll.Components.OverlayLib.dll
+#30 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 123.3   CanDoItAll.Components.BaseLib -> /src/CanDoItAll.Components/src/CanDoItAll.Components.BaseLib/bin/Release/net10.0/CanDoItAll.Components.BaseLib.dll
+#31 126.4   CanDoItAll.Components.OverlayLib -> /src/CanDoItAll.Components/src/CanDoItAll.Components.OverlayLib/bin/Release/net10.0/CanDoItAll.Components.OverlayLib.dll
+#31 ...
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 135.3   CanDoItAll.Components.WebGlLib -> /src/CanDoItAll.Components/src/CanDoItAll.Components.WebGlLib/bin/Release/net10.0/CanDoItAll.Components.WebGlLib.dll
+#30 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 137.7   CanDoItAll.Components.WebGlLib -> /src/CanDoItAll.Components/src/CanDoItAll.Components.WebGlLib/bin/Release/net10.0/CanDoItAll.Components.WebGlLib.dll
+#31 ...
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 144.0   CanDoItAll.Components.WebGlRunLib -> /src/CanDoItAll.Components/src/CanDoItAll.Components.WebGlRunLib/bin/Release/net10.0/CanDoItAll.Components.WebGlRunLib.dll
+#30 146.9   CanDoItAll.Components.QRCode -> /src/CanDoItAll.Components/src/CanDoItAll.Components.QRCode/bin/Release/net10.0/CanDoItAll.Components.QRCode.dll
+#30 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 145.1   CanDoItAll.Components.WebGlRunLib -> /src/CanDoItAll.Components/src/CanDoItAll.Components.WebGlRunLib/bin/Release/net10.0/CanDoItAll.Components.WebGlRunLib.dll
+#31 147.5   CanDoItAll.Components.QRCode -> /src/CanDoItAll.Components/src/CanDoItAll.Components.QRCode/bin/Release/net10.0/CanDoItAll.Components.QRCode.dll
+#31 187.9   CanDoItAll.Economy.Components -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Components/bin/Release/net10.0/CanDoItAll.Economy.Components.dll
+#31 ...
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 189.8   CanDoItAll.Economy.Components -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Components/bin/Release/net10.0/CanDoItAll.Economy.Components.dll
+#30 191.9   CanDoItAll.Economy.Cryptography.Browser -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Cryptography.Browser/bin/Release/net10.0/CanDoItAll.Economy.Cryptography.Browser.dll
+#30 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 197.5   CanDoItAll.Economy.Persistence.EFCore -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Persistence.EFCore/bin/Release/net10.0/CanDoItAll.Economy.Persistence.EFCore.dll
+#31 200.2   CanDoItAll.Economy.Persistence.PostgreSql -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Persistence.PostgreSql/bin/Release/net10.0/CanDoItAll.Economy.Persistence.PostgreSql.dll
+#31 ...
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 211.7   CanDoItAll.Economy.AccountApp -> /src/CanDoItAll.Economy/examples/CanDoItAll.Economy.AccountApp/bin/Release/net10.0/CanDoItAll.Economy.AccountApp.dll
+#30 211.7   CanDoItAll.Economy.AccountApp (Blazor output) -> /src/CanDoItAll.Economy/examples/CanDoItAll.Economy.AccountApp/bin/Release/net10.0/wwwroot
+#30 213.4   Optimizing assemblies for size may change the behavior of the app. Be sure to test after publishing. See: https://aka.ms/dotnet-illink
+#30 213.4   Optimizing assemblies for size. This process might take a while.
+#30 ...
+
+#31 [economy-node publish 1/1] RUN dotnet publish "src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#31 225.5   CanDoItAll.Economy.Node -> /src/CanDoItAll.Economy/src/CanDoItAll.Economy.Node/bin/Release/net10.0/CanDoItAll.Economy.Node.dll
+#31 267.7   CanDoItAll.Economy.Node -> /app/publish/
+#31 DONE 268.5s
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 ...
+
+#37 [economy-node final 2/4] WORKDIR /app
+#37 CACHED
+
+#38 [economy-node final 3/4] RUN mkdir -p /var/lib/candoitall-economy/dpkeys     && chown -R "1654:1654" /var/lib/candoitall-economy
+#38 CACHED
+
+#39 [economy-node final 4/4] COPY --from=publish /app/publish .
+#39 DONE 1.1s
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 ...
+
+#40 [economy-node] exporting to image
+#40 exporting layers
+#40 exporting layers 16.1s done
+#40 exporting manifest sha256:8caee5d4ddbaf6917b4d9482e346991ce82d059b51a31de4e383432accd2e4d1 0.0s done
+#40 exporting config sha256:0ee98170f355dabfef901c137d1ca249e475f9663d5e6578c4abbbce253cf149 0.0s done
+#40 exporting attestation manifest sha256:0c6887b3a876b476a9715b4fc1f7509d8543e6d3eafe6e48c06e0ecaa11d215f 0.0s done
+#40 exporting manifest list sha256:e2af962a746de512dcbe58d9eb8669699f700444d86d91911406ce7ab01e71ff
+#40 exporting manifest list sha256:e2af962a746de512dcbe58d9eb8669699f700444d86d91911406ce7ab01e71ff 0.0s done
+#40 naming to docker.io/library/candoitall-ledger-economy-node:dev done
+#40 unpacking to docker.io/library/candoitall-ledger-economy-node:dev
+#40 unpacking to docker.io/library/candoitall-ledger-economy-node:dev 2.2s done
+#40 DONE 18.5s
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 ...
+
+#41 [economy-node] resolving provenance for metadata file
+#41 DONE 0.2s
+
+#30 [accountapp-bob publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 387.8   Publishing without optimizations. Although it's optional for Blazor, we strongly recommend using `wasm-tools` workload! You can install it by running `dotnet workload install wasm-tools` from the command line.
+#30 387.8   CanDoItAll.Economy.AccountApp -> /app/publish/
+#30 DONE 388.1s
+
+#30 [accountapp-lab publish 1/1] RUN dotnet publish "examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj"     --configuration Release     --no-restore     /m:1     --output /app/publish     /p:UseAppHost=false     /p:EnableBusinessObjectIpfsStorage=false     /p:CanDoItAllPackageBaseVersion="0.1.0"     /p:CanDoItAllComponentsPackageVersion="0.1.0"     /p:Version="0.1.0"     /p:PackageVersion="0.1.0"
+#30 DONE 388.1s
+
+#42 [accountapp-alice final 2/5] COPY docker/accountapp/nginx.conf /etc/nginx/conf.d/default.conf
+#42 CACHED
+
+#43 [accountapp-alice final 3/5] COPY docker/accountapp/docker-entrypoint-accountapp.sh /docker-entrypoint.d/30-accountapp-config.sh
+#43 CACHED
+
+#44 [accountapp-alice final 4/5] RUN chmod +x /docker-entrypoint.d/30-accountapp-config.sh
+#44 CACHED
+
+#45 [accountapp-alice final 5/5] COPY --from=publish /app/publish/wwwroot /usr/share/nginx/html
+#45 CACHED
+
+#42 [accountapp-lab final 2/5] COPY docker/accountapp/nginx.conf /etc/nginx/conf.d/default.conf
+#42 CACHED
+
+#43 [accountapp-lab final 3/5] COPY docker/accountapp/docker-entrypoint-accountapp.sh /docker-entrypoint.d/30-accountapp-config.sh
+#43 CACHED
+
+#44 [accountapp-lab final 4/5] RUN chmod +x /docker-entrypoint.d/30-accountapp-config.sh
+#44 CACHED
+
+#46 [accountapp-alice] exporting to image
+#46 exporting layers 0.0s done
+#46 exporting manifest sha256:597dd1326026236e051c2f7d5effa19cf7b470a4caccea1715562ce2d57acc20 0.0s done
+#46 exporting config sha256:2cafb09a2587f3dde9d0011dcab5cd1e67fcbc11bb29b92e5507b12819c21dd6 done
+#46 exporting attestation manifest sha256:ab55636a55bffd33c88faf44d5d892fe1fa9584ba682f564957f52e4cbe6ad7c
+#46 exporting attestation manifest sha256:ab55636a55bffd33c88faf44d5d892fe1fa9584ba682f564957f52e4cbe6ad7c 0.2s done
+#46 exporting manifest list sha256:b38ec25f35a49115c0e232312e835aed447a730741f94ffef7d10da7c326c321 0.1s done
+#46 naming to docker.io/library/candoitall-ledger-accountapp:dev
+#46 naming to docker.io/library/candoitall-ledger-accountapp:dev 0.0s done
+#46 unpacking to docker.io/library/candoitall-ledger-accountapp:dev 0.1s done
+#46 DONE 0.5s
+
+#47 [accountapp-bob] exporting to image
+#47 exporting layers 0.0s done
+#47 exporting manifest sha256:d88204350922791ce8cfc930c13ef4119ca9be539088ccf0ecf81648a141e227 0.0s done
+#47 exporting config sha256:35fd35d7e48a14166fae445126e92e2c268bcc66b412762ef0adaa87ed9f0f95 0.0s done
+#47 exporting attestation manifest sha256:37a6303bd37fa59d32cb7d49e265a1d5acbf687327890f747ca52335e0426ef6 0.1s done
+#47 exporting manifest list sha256:8d604e795334116974939afc90dd9a4ca349c1ad8ccf967573eca27f6813fed0 0.1s done
+#47 naming to docker.io/library/candoitall-ledger-accountapp:dev 0.0s done
+#47 unpacking to docker.io/library/candoitall-ledger-accountapp:dev 0.1s done
+#47 DONE 0.5s
+
+#48 [accountapp-lab] exporting to image
+#48 exporting layers 0.0s done
+#48 exporting manifest sha256:8cd3030e9cbfc154727fa4990bde263a34ec9d40f64e6f909f480d2a9a3f67ba 0.0s done
+#48 exporting config sha256:8463dd5883211ffa6d3690efca4afcc2f646607ea2ee4bc2b9c28f5016e773ac 0.0s done
+#48 exporting attestation manifest sha256:4a71e0728bb3565a3e551d97b4f5e5ba6652448cc256626584e4b61ba2bfce54 0.1s done
+#48 exporting manifest list sha256:96768daa8b8ce0cc0497472df3c605b9d359d69c9c6f1cc423a16e4270251525 0.0s done
+#48 naming to docker.io/library/candoitall-ledger-accountapp:dev 0.0s done
+#48 unpacking to docker.io/library/candoitall-ledger-accountapp:dev 0.1s done
+#48 DONE 0.7s
+
+#49 [accountapp-alice] resolving provenance for metadata file
+#49 DONE 0.3s
+
+#50 [accountapp-bob] resolving provenance for metadata file
+#50 DONE 0.4s
+
+#51 [accountapp-lab] resolving provenance for metadata file
+#51 DONE 0.2s
+ Image candoitall-ledger-accountapp:dev Built 
+ Image candoitall-ledger-accountapp:dev Built 
+ Image candoitall-ledger-economy-node:dev Built 
+ Image candoitall-ledger-demo-seeder:dev Built 
+ Image candoitall-ledger-accountapp:dev Built 

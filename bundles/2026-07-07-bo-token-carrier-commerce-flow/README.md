@@ -1,7 +1,7 @@
 # BO token carrier commerce flow
 
-Status: implemented and validated
-Date: 2026-07-07
+Status: implemented and validated; follow-up repair validated
+Date: 2026-07-08
 
 This follow-up bundle repairs the completed `bundles/bo-commerce-flow` implementation so BusinessObject create, payment, receipt, purchase, and copy-dispatch records follow the legacy VEFramework NFT payment/receipt pattern: every created BO artifact is represented by a unique one-unit token output, while payments also carry the main payment amount.
 
@@ -15,11 +15,14 @@ The user-reported regression is visible in `inputs/screenshot-bo-token-none.png`
 - Create commerce payment, receipt, and purchase BOs with one-unit token outputs.
 - Keep close/destroy behavior able to return the BO's token to a non-BO output for later source merge operations.
 - Split or label commerce lists so payments and receipts/purchases can be inspected independently, matching the old `NFTPaymentsList` and `NFTReceiptsList` account-home concept.
+- Move Account home payment/receipt commerce lists to their own Commerce tab between Balances and Transactions history.
+- Add explicit Record and Sold/Bought BO detail actions on payment/receipt rows.
+- Wire BO detail Recycle to submit a `CloseObject` draft, which the ledger builder converts into a two-input token-source merge transaction when a same-token source exists.
 
 ## Validation
 
 - Focused unit tests for transaction builder, token policy, dispatcher drafts, and UI rendering passed.
-- Full `CanDoItAll.Ledger.Tests` project passed: 287 tests.
+- Full `CanDoItAll.Ledger.Tests` project passed: 289 tests after follow-up repair.
 - AccountApp build passed.
-- Docker AccountApp validation passed with real Alice/Bob transactions and screenshots showing token-backed BO create, payment, receipt, purchase, and delivered clone details.
+- Docker AccountApp validation passed with real Alice/Bob transactions and screenshots showing token-backed BO create, payment, receipt, purchase, delivered clone details, related BO detail buttons, and receipt recycle merge.
 - Final proof JSON: `proof/SB03/accountapp-bo-token-carrier-proof.json`.

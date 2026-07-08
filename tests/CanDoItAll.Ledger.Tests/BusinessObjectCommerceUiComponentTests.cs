@@ -305,6 +305,28 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         Assert.Contains("Receipts", receipts.TextContent, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task CommerceDashboard_ShowsRelatedBusinessObjectActionForPaymentAndReceiptRecords()
+    {
+        ITypedBusinessObjectView listedPost = CreateListedPost();
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
+        ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync();
+
+        IRenderedComponent<BusinessObjectCommerceDashboard> component =
+            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+                .Add(x => x.Workspace, CreateWorkspace(listedPost, payment, receipt)));
+
+        IRefreshableElementCollection<IElement> relatedButtons = component.FindAll("[data-testid='cda-commerce-related-details']");
+
+        Assert.Equal(2, relatedButtons.Count);
+        Assert.All(relatedButtons, button =>
+        {
+            Assert.Contains("Sold BO", button.TextContent, StringComparison.Ordinal);
+            Assert.False(button.HasAttribute("disabled"));
+            Assert.Contains("Listed Commerce Post", button.GetAttribute("title") ?? string.Empty, StringComparison.Ordinal);
+        });
+    }
+
     private static ITypedBusinessObjectView CreateListedPost(
         BusinessObjectSaleMode saleMode = BusinessObjectSaleMode.Copy)
     {

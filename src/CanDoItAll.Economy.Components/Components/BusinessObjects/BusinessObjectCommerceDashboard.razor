@@ -27,18 +27,33 @@
                     {
                         @foreach (ICommerceBusinessObjectView item in PaymentItems)
                         {
-                            <button type="button"
-                                    class="cda-vef-commerce-row"
-                                    data-testid="cda-commerce-record"
-                                    data-commerce-kind="payment"
-                                    @onclick="@(() => OpenDetailsAsync(item))">
-                                <span class="material-icons" aria-hidden="true">@IconFor(item)</span>
-                                <span>
+                            IBusinessObjectView? relatedObject = ResolveRelatedBusinessObject(item);
+                            <article class="cda-vef-commerce-row"
+                                     data-testid="cda-commerce-record"
+                                     data-commerce-kind="payment">
+                                <span class="material-icons cda-vef-commerce-row__icon" aria-hidden="true">@IconFor(item)</span>
+                                <span class="cda-vef-commerce-row__content">
                                     <strong>@DisplayName(item)</strong>
                                     <small>@SummaryFor(item)</small>
                                 </span>
                                 <em>@item.ObjectType</em>
-                            </button>
+                                <span class="cda-vef-commerce-row__actions">
+                                    <Button Text="Record"
+                                            Icon="info"
+                                            Size="ButtonSize.Small"
+                                            Variant="Variant.Outlined"
+                                            Click="@(() => OpenDetailsAsync(item))"
+                                            data-testid="cda-commerce-record-details" />
+                                    <Button Text="@RelatedButtonText(item)"
+                                            Icon="inventory_2"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Secondary"
+                                            Disabled="@(relatedObject is null)"
+                                            Click="@(() => OpenRelatedDetailsAsync(relatedObject))"
+                                            title="@RelatedButtonTitle(relatedObject)"
+                                            data-testid="cda-commerce-related-details" />
+                                </span>
+                            </article>
                         }
                     }
                 </div>
@@ -58,18 +73,33 @@
                     {
                         @foreach (ICommerceBusinessObjectView item in ReceiptItems)
                         {
-                            <button type="button"
-                                    class="cda-vef-commerce-row"
-                                    data-testid="cda-commerce-record"
-                                    data-commerce-kind="receipt"
-                                    @onclick="@(() => OpenDetailsAsync(item))">
-                                <span class="material-icons" aria-hidden="true">@IconFor(item)</span>
-                                <span>
+                            IBusinessObjectView? relatedObject = ResolveRelatedBusinessObject(item);
+                            <article class="cda-vef-commerce-row"
+                                     data-testid="cda-commerce-record"
+                                     data-commerce-kind="receipt">
+                                <span class="material-icons cda-vef-commerce-row__icon" aria-hidden="true">@IconFor(item)</span>
+                                <span class="cda-vef-commerce-row__content">
                                     <strong>@DisplayName(item)</strong>
                                     <small>@SummaryFor(item)</small>
                                 </span>
                                 <em>@item.ObjectType</em>
-                            </button>
+                                <span class="cda-vef-commerce-row__actions">
+                                    <Button Text="Record"
+                                            Icon="info"
+                                            Size="ButtonSize.Small"
+                                            Variant="Variant.Outlined"
+                                            Click="@(() => OpenDetailsAsync(item))"
+                                            data-testid="cda-commerce-record-details" />
+                                    <Button Text="@RelatedButtonText(item)"
+                                            Icon="inventory_2"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Secondary"
+                                            Disabled="@(relatedObject is null)"
+                                            Click="@(() => OpenRelatedDetailsAsync(relatedObject))"
+                                            title="@RelatedButtonTitle(relatedObject)"
+                                            data-testid="cda-commerce-related-details" />
+                                </span>
+                            </article>
                         }
                     }
                 </div>
@@ -105,8 +135,16 @@
             .ToArray();
 
     private Task OpenDetailsAsync(ICommerceBusinessObjectView item)
+        => OpenDetailsDialogAsync(item, $"{DisplayName(item)} - Details");
+
+    private Task OpenRelatedDetailsAsync(IBusinessObjectView? item)
+        => item is null
+            ? Task.CompletedTask
+            : OpenDetailsDialogAsync(item, $"{DisplayName(item)} - BO Details");
+
+    private Task OpenDetailsDialogAsync(IBusinessObjectView item, string title)
         => DialogService.OpenAsync<BusinessObjectLedgerDetailsDialogContent>(
-            $"{DisplayName(item)} - Details",
+            title,
             new Dictionary<string, object?>
             {
                 [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = item,
@@ -125,8 +163,80 @@
                 TestId = "cda-commerce-details-dialog"
             });
 
-    private static string DisplayName(ICommerceBusinessObjectView item)
-        => !string.IsNullOrWhiteSpace(item.Name) ? item.Name : item.ObjectId.Value;
+    private IBusinessObjectView? ResolveRelatedBusinessObject(ICommerceBusinessObjectView item)
+    {
+        foreach (string objectId in CandidateRelatedObjectIds(item).Distinct(StringComparer.Ordinal))
+        {
+            IBusinessObjectView? relatedObject = Workspace.BusinessObjects.FirstOrDefault(candidate =>
+                candidate.ObjectId != item.ObjectId
+                && string.Equals(candidate.ObjectId.Value, objectId, StringComparison.Ordinal));
+            if (relatedObject is not null)
+            {
+                return relatedObject;
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> CandidateRelatedObjectIds(ICommerceBusinessObjectView item)
+    {
+        if (item.Commerce.Purchase is { } purchase)
+        {
+            if (!string.IsNullOrWhiteSpace(purchase.DeliveredObjectId))
+            {
+                yield return purchase.DeliveredObjectId;
+            }
+
+            yield return purchase.TargetObjectId;
+        }
+
+        if (item.Commerce.Receipt is { } receipt)
+        {
+            yield return receipt.DeliveredObjectId;
+            yield return receipt.TargetObjectId;
+        }
+
+        if (item.Commerce.Payment is { } payment)
+        {
+            if (!string.IsNullOrWhiteSpace(payment.DeliveredObjectId))
+            {
+                yield return payment.DeliveredObjectId;
+            }
+
+            yield return payment.TargetObjectId;
+        }
+    }
+
+    private static string DisplayName(IBusinessObjectView item)
+    {
+        if (item is ICommerceBusinessObjectView commerce && !string.IsNullOrWhiteSpace(commerce.Name))
+        {
+            return commerce.Name;
+        }
+
+        if (item is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name))
+        {
+            return media.Name;
+        }
+
+        return BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload)
+            && !string.IsNullOrWhiteSpace(payload?.Name)
+                ? payload.Name
+                : item.ObjectId.Value;
+    }
+
+    private static string RelatedButtonText(ICommerceBusinessObjectView item)
+        => item.Commerce.Purchase is not null
+            ? "Bought BO"
+            : item.Commerce.Payment is not null || item.Commerce.Receipt is not null
+                ? "Sold BO"
+                : "BO details";
+
+    private static string RelatedButtonTitle(IBusinessObjectView? item)
+        => item is null
+            ? "Related BO is not visible in this account workspace"
+            : $"Open details for {DisplayName(item)}";
 
     private static string IconFor(ICommerceBusinessObjectView item)
         => item.ObjectType switch

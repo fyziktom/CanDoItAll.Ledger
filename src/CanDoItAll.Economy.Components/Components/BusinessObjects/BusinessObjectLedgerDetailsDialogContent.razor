@@ -146,7 +146,14 @@ else
                                     <Button Text="Upload DataItem" Icon="upload_file" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" />
                                     <Button Text="Send" Icon="send" ButtonStyle="ButtonStyle.Secondary" Click="SendAsync" />
                                     <Button Text="Set Sale" Icon="sell" ButtonStyle="ButtonStyle.Secondary" Click="SetPriceAsync" />
-                                    <Button Text="Recycle" Icon="delete" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Warning" />
+                                    <Button Text="Recycle"
+                                            Icon="delete"
+                                            Variant="Variant.Outlined"
+                                            ButtonStyle="ButtonStyle.Warning"
+                                            IsBusy="@recycleBusy"
+                                            Disabled="@(!CanRecycle)"
+                                            Click="RecycleAsync"
+                                            data-testid="cda-bo-recycle-button" />
                                 </div>
                             </div>
                         </section>
@@ -316,6 +323,7 @@ else
     private BusinessObjectTicketVerificationResult? ticketVerification;
     private bool ticketVerificationBusy;
     private bool ticketUseBusy;
+    private bool recycleBusy;
     private string? recordedTagKey;
 
     [Parameter]
@@ -448,6 +456,9 @@ else
     private bool CanEdit
         => Object is not null && Workspace is not null && EditRequested.HasDelegate;
 
+    private bool CanRecycle
+        => Object is not null && EditRequested.HasDelegate;
+
     private bool TicketUsed
         => Object is not null && BusinessObjectTicketVerification.StateHasUsedFlag(Object.StateJson);
 
@@ -526,6 +537,50 @@ else
     {
         await EditRequested.InvokeAsync(draft);
         await DialogService.CloseAsync(draft);
+    }
+
+    private async Task RecycleAsync()
+    {
+        if (Object is null)
+        {
+            return;
+        }
+
+        if (!EditRequested.HasDelegate)
+        {
+            Notifications.Warning("Recycle unavailable", "BusinessObject recycling needs an account transaction submit handler.", position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        recycleBusy = true;
+        try
+        {
+            BusinessObjectTransactionDraft draft = new(
+                Object.ObjectId,
+                Object.ObjectType,
+                Object.SchemaVersion,
+                Object.OwnerAddress,
+                Object.OwnerAddress,
+                Object.OwnerAddress,
+                Amount.Zero,
+                Amount.Zero,
+                Object.StateJson ?? "{}",
+                $"bo-recycle://{Object.ObjectId.Value}",
+                BusinessObjectTransactionMode.CloseObject,
+                SourceObjectId: Object.ObjectId);
+
+            await EditRequested.InvokeAsync(draft);
+            Notifications.Info("Recycle submitted", "BusinessObject close transaction was requested.", position: NotificationPosition.BottomCenter);
+            await DialogService.CloseAsync(draft);
+        }
+        catch (Exception exception)
+        {
+            Notifications.Error("Recycle failed", exception.Message, position: NotificationPosition.BottomCenter);
+        }
+        finally
+        {
+            recycleBusy = false;
+        }
     }
 
     private Task OpenTransactionAsync()

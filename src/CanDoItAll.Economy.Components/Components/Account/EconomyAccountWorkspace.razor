@@ -70,10 +70,6 @@
                     <TokenAllocationDonut TokenOptions="Workspace.TokenOptions" />
                     <TransactionKindStackedChart Transactions="Workspace.Transactions" />
                 </Grid>
-
-                <BusinessObjectCommerceDashboard Workspace="Workspace"
-                                                 EditRequested="TransactionSubmitRequested"
-                                                 TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested" />
             </div>
         </TabsItem>
 
@@ -143,6 +139,14 @@
                         </div>
                     </div>
                 </section>
+            </div>
+        </TabsItem>
+
+        <TabsItem Text="Commerce" Icon="payments" BadgeText="@CommerceRecordCount.ToString()">
+            <div class="cda-vef-account-tab-panel" data-testid="cda-commerce-tab-panel">
+                <BusinessObjectCommerceDashboard Workspace="Workspace"
+                                                 EditRequested="TransactionSubmitRequested"
+                                                 TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested" />
             </div>
         </TabsItem>
 
@@ -264,6 +268,13 @@
             .ThenByDescending(output => output.Token!.Amount.Value)
             .Take(5)
             .ToArray();
+
+    private int CommerceRecordCount
+        => Workspace.BusinessObjects
+            .OfType<ICommerceBusinessObjectView>()
+            .Count(item => item.Commerce.Payment is not null
+                || item.Commerce.Purchase is not null
+                || item.Commerce.Receipt is not null);
 
     private IReadOnlyList<LedgerTransactionSummary> RecentTransactions
         => LedgerTransactionOrdering
