@@ -9,6 +9,8 @@ public static class ServiceCollectionExtensions
     {
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectRendererProvider, SettingsBusinessObjectRendererProvider>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectRendererProvider, RuleBusinessObjectRendererProvider>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectRendererProvider, CommerceBusinessObjectRendererProvider>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectRendererProvider, TypedFamilyBusinessObjectRendererProvider>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectRendererProvider, MediaBusinessObjectRendererProvider>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IBusinessObjectRendererProvider, GenericBusinessObjectRendererProvider>());
         services.TryAddScoped<IBusinessObjectRendererRegistry, BusinessObjectRendererRegistry>();

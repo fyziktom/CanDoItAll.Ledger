@@ -54,56 +54,9 @@
     <div class="cda-vef-card-deck">
         @foreach (IBusinessObjectView item in FilteredItems)
         {
-            BusinessObjectDataItem? previewImage = ImageFor(item);
-            <article class="cda-vef-gallery-card">
-                @if (previewImage is not null)
-                {
-                    <button type="button" class="cda-vef-gallery-preview cda-vef-gallery-preview--media" @onclick="@(() => OpenDetails(item))">
-                        <BusinessObjectDataItemPreview Item="previewImage" />
-                    </button>
-                }
-                else
-                {
-                    <button type="button" class="@PreviewClass(item)" @onclick="@(() => OpenDetails(item))">
-                        <span class="material-icons" aria-hidden="true">@PreviewIcon(item)</span>
-                    </button>
-                }
-                <div class="cda-vef-gallery-card-body">
-                    <h3>@DisplayName(item)</h3>
-                    <p>@Description(item)</p>
-                    <div class="cda-vef-badges">
-                        <span>@item.Operation</span>
-                        <span>BO</span>
-                        <span>@item.ObjectType</span>
-                        @if (SaleTermsFor(item) is { Status: BusinessObjectSaleStatus.Listed } sale)
-                        {
-                            <span class="cda-vef-sale-badge" data-testid="cda-bo-sale-badge">@sale.Mode / @FormatPrice(sale.PriceAmount, sale.TokenId)</span>
-                        }
-                    </div>
-                    <div class="cda-vef-gallery-meta">
-                        <span>@ShortObjectId(item.ObjectId)</span>
-                        <span>@SortTimestampFor(item).ToString("MM.dd.yyyy HH:mm")</span>
-                    </div>
-                    @if (FactsFor(item).Count > 0)
-                    {
-                        <div class="cda-vef-gallery-meta">
-                            @foreach (BusinessObjectDisplayFact fact in FactsFor(item).Take(2))
-                            {
-                                <span>@fact.Label: @fact.Value</span>
-                            }
-                        </div>
-                    }
-                    <div class="cda-vef-tags">
-                        @foreach (string tag in TagsFor(item))
-                        {
-                            <span>#@tag</span>
-                        }
-                    </div>
-                </div>
-                <button type="button" class="cda-vef-info-button" @onclick="@(() => OpenDetails(item))" aria-label="Open BO details">
-                    <span class="material-icons" aria-hidden="true">info</span>
-                </button>
-            </article>
+            <BusinessObjectGalleryCard Item="item"
+                                       Workspace="Workspace"
+                                       OpenRequested="OpenDetails" />
         }
     </div>
 </section>
@@ -145,8 +98,8 @@
     private IReadOnlyList<IBusinessObjectView> FilteredItems
         => GalleryItems
             .Where(MatchesFilters)
-            .OrderByDescending(SortTimestampFor)
-            .ThenBy(TransactionOrderFor)
+            .OrderByDescending(item => BusinessObjectCardDisplay.SortTimestampFor(item, Workspace))
+            .ThenBy(item => BusinessObjectCardDisplay.TransactionOrderFor(item, Workspace))
             .ThenByDescending(item => item.Version)
             .ThenByDescending(item => item.CurrentOutPoint.TxId.Value, StringComparer.Ordinal)
             .ThenByDescending(item => item.CurrentOutPoint.OutputIndex)
@@ -160,7 +113,7 @@
 
     private IReadOnlyList<string> FeaturedTags
         => GalleryItems
-            .SelectMany(TagsFor)
+            .SelectMany(BusinessObjectCardDisplay.TagsFor)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(6)
             .ToArray();
@@ -172,7 +125,7 @@
 
     private Task OpenDetails(IBusinessObjectView item)
         => DialogService.OpenAsync<BusinessObjectLedgerDetailsDialogContent>(
-            $"{DisplayName(item)} - Details",
+            $"{BusinessObjectCardDisplay.DisplayName(item)} - Details",
             new Dictionary<string, object?>
             {
                 [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = item,
@@ -214,34 +167,15 @@
 
         string probe = string.Join(
             ' ',
-            DisplayName(item),
+            BusinessObjectCardDisplay.DisplayName(item),
             item.ObjectId.Value,
             item.ObjectType,
             item.Operation,
-            StateText(item),
-            string.Join(' ', TagsFor(item)),
-            string.Join(' ', FactsFor(item).Select(fact => $"{fact.Label} {fact.Value}")));
+            BusinessObjectCardDisplay.StateText(item),
+            string.Join(' ', BusinessObjectCardDisplay.TagsFor(item)),
+            string.Join(' ', BusinessObjectCardDisplay.FactsFor(item).Select(fact => $"{fact.Label} {fact.Value}")));
 
         return probe.Contains(search.TrimStart('#'), StringComparison.OrdinalIgnoreCase);
-    }
-
-    private DateTimeOffset SortTimestampFor(IBusinessObjectView item)
-        => Workspace.Transactions
-            .FirstOrDefault(transaction => transaction.TxId == item.CurrentOutPoint.TxId)
-            ?.Timestamp
-            ?? item.CreatedAt;
-
-    private int TransactionOrderFor(IBusinessObjectView item)
-    {
-        for (int index = 0; index < Workspace.Transactions.Count; index++)
-        {
-            if (Workspace.Transactions[index].TxId == item.CurrentOutPoint.TxId)
-            {
-                return index;
-            }
-        }
-
-        return int.MaxValue;
     }
 
     private static bool IsGalleryItem(IBusinessObjectView item)
@@ -336,156 +270,6 @@
                 .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
                 .Select(value => new FilterOption(value, value)))
             .ToArray();
-
-    private static string DisplayName(IBusinessObjectView item)
-    {
-        if (item is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name))
-        {
-            return media.Name;
-        }
-
-        BusinessObjectMediaPayload? payload = PayloadFor(item);
-        return string.IsNullOrWhiteSpace(payload?.Name)
-            ? item.ObjectId.Value
-            : payload.Name;
-    }
-
-    private static string Description(IBusinessObjectView item)
-    {
-        if (item is IMediaBusinessObjectView media)
-        {
-            string mediaDescription = !string.IsNullOrWhiteSpace(media.Description)
-                ? media.Description
-                : media.Text;
-            if (!string.IsNullOrWhiteSpace(mediaDescription))
-            {
-                return mediaDescription.Length > 120 ? $"{mediaDescription[..120]}..." : mediaDescription;
-            }
-        }
-
-        BusinessObjectMediaPayload? payload = PayloadFor(item);
-        string state = !string.IsNullOrWhiteSpace(payload?.Description)
-            ? payload.Description
-            : !string.IsNullOrWhiteSpace(payload?.Text)
-                ? payload.Text
-                : StateText(item);
-
-        return state.Length > 120 ? $"{state[..120]}..." : state;
-    }
-
-    private static string StateText(IBusinessObjectView item)
-        => item.StateJson ?? string.Empty;
-
-    private static IReadOnlyList<string> TagsFor(IBusinessObjectView item)
-    {
-        IEnumerable<string> mediaTags = item is IMediaBusinessObjectView media
-            ? media.Tags
-            : [];
-        BusinessObjectMediaPayload? payload = PayloadFor(item);
-        IEnumerable<string> payloadTags = string.IsNullOrWhiteSpace(payload?.Tags)
-            ? []
-            : payload.Tags
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(tag => tag.TrimStart('#'));
-
-        return mediaTags
-            .Concat(payloadTags)
-            .Concat(item.ObjectType.Split(['-', ':', '.'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            .Concat([item.Operation.ToString(), $"v{item.Version}"])
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(8)
-            .ToArray();
-    }
-
-    private static BusinessObjectDataItem? ImageFor(IBusinessObjectView item)
-    {
-        IReadOnlyList<BusinessObjectDataItem> mediaDataItems = item is IMediaBusinessObjectView media
-            ? media.DataItems
-            : [];
-        BusinessObjectMediaPayload? payload = PayloadFor(item);
-        BusinessObjectDataItem? dataItem = mediaDataItems
-            .Concat(payload?.DataItems ?? [])
-            .OrderByDescending(dataItem => dataItem.IsMain)
-            .FirstOrDefault(dataItem => dataItem.Type == BusinessObjectDataItemType.Image && dataItem.Uri is not null);
-
-        if (dataItem is not null)
-        {
-            return dataItem;
-        }
-
-        if (!string.IsNullOrWhiteSpace(payload?.ImageLink)
-            && Uri.TryCreate(payload.ImageLink, UriKind.Absolute, out Uri? uri))
-        {
-            return new BusinessObjectDataItem(
-                "Image",
-                BusinessObjectDataItemType.Image,
-                BusinessObjectDataItemStorage.Url,
-                uri.ToString(),
-                uri,
-                "image/*",
-                IsMain: true);
-        }
-
-        return null;
-    }
-
-    private static BusinessObjectMediaPayload? PayloadFor(IBusinessObjectView item)
-    {
-        if (BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload))
-        {
-            return payload;
-        }
-
-        return null;
-    }
-
-    private static IReadOnlyList<BusinessObjectDisplayFact> FactsFor(IBusinessObjectView item)
-    {
-        if (item is ITypedBusinessObjectView typed)
-        {
-            return typed.Facts;
-        }
-
-        if (!BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out BusinessObjectFamilyDefinition definition))
-        {
-            return [];
-        }
-
-        return BusinessObjectPayloadBuilder.CreateFacts(definition, PayloadFor(item)?.Fields);
-    }
-
-    private static BusinessObjectSaleTerms? SaleTermsFor(IBusinessObjectView item)
-        => BusinessObjectCommercePayloadBuilder.TryGetSaleTerms(item.StateJson, out BusinessObjectSaleTerms? terms)
-            ? terms
-            : null;
-
-    private static string FormatPrice(decimal amount, string? tokenId)
-        => $"{amount:0.#############################} {(string.IsNullOrWhiteSpace(tokenId) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : tokenId)}";
-
-    private static string PreviewIcon(IBusinessObjectView item)
-        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out BusinessObjectFamilyDefinition definition)
-            ? definition.Icon
-            : item.ObjectType switch
-        {
-            "settings" or "account-settings" => "settings",
-            "purchase-order" => "receipt_long",
-            "inventory-lot" => "inventory_2",
-            _ => "widgets"
-        };
-
-    private static string PreviewClass(IBusinessObjectView item)
-        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out _)
-            ? "cda-vef-gallery-preview cda-vef-gallery-preview--icon"
-            : item.ObjectType switch
-        {
-            "settings" or "account-settings" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--settings",
-            "purchase-order" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--order",
-            "inventory-lot" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--inventory",
-            _ => "cda-vef-gallery-preview cda-vef-gallery-preview--icon"
-        };
-
-    private static string ShortObjectId(BusinessObjectId objectId)
-        => objectId.Value.Length > 18 ? $"{objectId.Value[..10]}...{objectId.Value[^6..]}" : objectId.Value;
 
     private sealed record FilterOption(string Value, string Text);
 }

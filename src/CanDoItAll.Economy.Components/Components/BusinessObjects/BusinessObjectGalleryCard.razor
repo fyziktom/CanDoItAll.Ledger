@@ -1,0 +1,112 @@
+@namespace CanDoItAll.Economy.Components
+
+<article class="@CardClass" data-testid="@TestId">
+    @if (PreviewImage is not null)
+    {
+        <button type="button" class="cda-vef-gallery-preview cda-vef-gallery-preview--media" @onclick="OpenAsync">
+            <BusinessObjectDataItemPreview Item="PreviewImage" />
+        </button>
+    }
+    else
+    {
+        <button type="button" class="@BusinessObjectCardDisplay.PreviewClass(Item)" @onclick="OpenAsync">
+            <span class="material-icons" aria-hidden="true">@BusinessObjectCardDisplay.PreviewIcon(Item)</span>
+        </button>
+    }
+    <div class="cda-vef-gallery-card-body">
+        <h3>@DisplayName</h3>
+        <p>@Description</p>
+        <div class="cda-vef-badges">
+            <span>@Item.Operation</span>
+            <span>BO</span>
+            <span>@Item.ObjectType</span>
+            @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
+            {
+                <span class="cda-vef-sale-badge" data-testid="cda-bo-sale-badge">@sale.Mode / @BusinessObjectCardDisplay.FormatPrice(sale.PriceAmount, sale.TokenId)</span>
+            }
+        </div>
+        <div class="cda-vef-gallery-meta">
+            <span>@BusinessObjectCardDisplay.ShortObjectId(Item.ObjectId)</span>
+            <span>@SortTimestamp.ToString("MM.dd.yyyy HH:mm")</span>
+        </div>
+        @if (Facts.Count > 0)
+        {
+            <div class="cda-vef-gallery-meta">
+                @foreach (BusinessObjectDisplayFact fact in Facts.Take(MaxFacts))
+                {
+                    <span>@fact.Label: @fact.Value</span>
+                }
+            </div>
+        }
+        <div class="cda-vef-tags">
+            @foreach (string tag in Tags)
+            {
+                <span>#@tag</span>
+            }
+        </div>
+    </div>
+    @if (ShowInfoButton)
+    {
+        <button type="button" class="cda-vef-info-button" @onclick="OpenAsync" aria-label="@InfoLabel">
+            <span class="material-icons" aria-hidden="true">info</span>
+        </button>
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public IBusinessObjectView Item { get; set; } = default!;
+
+    [Parameter]
+    public BusinessObjectWorkspaceModel? Workspace { get; set; }
+
+    [Parameter]
+    public EventCallback<IBusinessObjectView> OpenRequested { get; set; }
+
+    [Parameter]
+    public bool ShowInfoButton { get; set; } = true;
+
+    [Parameter]
+    public int MaxFacts { get; set; } = 2;
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public string TestId { get; set; } = "cda-bo-gallery-card";
+
+    private string CardClass
+        => string.IsNullOrWhiteSpace(Class)
+            ? "cda-vef-gallery-card"
+            : $"cda-vef-gallery-card {Class}";
+
+    private BusinessObjectDataItem? PreviewImage
+        => BusinessObjectCardDisplay.ImageFor(Item);
+
+    private string DisplayName
+        => BusinessObjectCardDisplay.DisplayName(Item);
+
+    private string Description
+        => BusinessObjectCardDisplay.Description(Item);
+
+    private IReadOnlyList<BusinessObjectDisplayFact> Facts
+        => BusinessObjectCardDisplay.FactsFor(Item);
+
+    private IReadOnlyList<string> Tags
+        => BusinessObjectCardDisplay.TagsFor(Item);
+
+    private BusinessObjectSaleTerms? SaleTerms
+        => BusinessObjectCardDisplay.SaleTermsFor(Item);
+
+    private DateTimeOffset SortTimestamp
+        => BusinessObjectCardDisplay.SortTimestampFor(Item, Workspace);
+
+    private string InfoLabel
+        => $"Open BO details for {DisplayName}";
+
+    private Task OpenAsync()
+        => OpenRequested.HasDelegate
+            ? OpenRequested.InvokeAsync(Item)
+            : Task.CompletedTask;
+}
+

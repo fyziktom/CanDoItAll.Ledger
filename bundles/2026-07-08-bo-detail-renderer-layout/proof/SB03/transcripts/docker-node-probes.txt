@@ -1,0 +1,28 @@
+
+
+Url        : http://127.0.0.1:8080/
+StatusCode : 200
+Length     : 18986
+Sample     : <!DOCTYPE html>
+             <html lang="en"><head><meta charset="utf-8">
+                 <meta name="viewport" content="width=device-width, in
+
+Url        : http://127.0.0.1:8080/swagger
+StatusCode : ERROR
+Length     : The remote server returned an error: (404) Not Found.
+Sample     : 
+
+Url        : http://127.0.0.1:8080/healthz
+StatusCode : ERROR
+Length     : The remote server returned an error: (404) Not Found.
+Sample     : 
+
+Url        : http://127.0.0.1:8080/api/health
+StatusCode : 200
+Length     : 1078
+Sample     : {"status":"ok","utcNow":"2026-07-08T16:30:03.8558891+00:00","storageProvider":"not_checked","ledgerId":"de
+             fault","latest
+
+
+
+

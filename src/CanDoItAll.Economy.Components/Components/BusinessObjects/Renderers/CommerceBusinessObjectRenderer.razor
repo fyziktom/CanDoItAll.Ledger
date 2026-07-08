@@ -1,0 +1,78 @@
+@namespace CanDoItAll.Economy.Components
+
+@if (Commerce is null)
+{
+    <TypedFamilyBusinessObjectRenderer Object="Object"
+                                       Mode="Mode"
+                                       ViewedAtUtc="ViewedAtUtc"
+                                       Descriptor="Descriptor" />
+}
+else if (Mode == BusinessObjectRenderMode.Summary)
+{
+    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
+        <strong>@Commerce.Name</strong>
+        <span>@RecordKind / @Commerce.ObjectType</span>
+        <Cluster Gap="LayoutGap.Small">
+            <StatusBadge Tone="info" Text="@RecordKind" />
+            <StatusBadge Tone="neutral" Text="@StatusText" />
+        </Cluster>
+    </Stack>
+}
+else
+{
+    <Stack GapScale="LayoutGap.Medium">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Small">
+            <SummaryTile Label="Renderer" Value="@Descriptor.DisplayName" />
+            <SummaryTile Label="Record" Value="@RecordKind" Tone="info" />
+            <SummaryTile Label="Object type" Value="@Commerce.ObjectType" />
+            <SummaryTile Label="Status" Value="@StatusText" Tone="success" />
+            <SummaryTile Label="Name" Value="@Commerce.Name" />
+            <SummaryTile Label="Operation" Value="@Commerce.Operation.ToString()" />
+            @foreach (BusinessObjectDisplayFact fact in Commerce.Facts)
+            {
+                <SummaryTile Label="@fact.Label" Value="@fact.Value" />
+            }
+        </Grid>
+
+        @if (!string.IsNullOrWhiteSpace(Commerce.Text))
+        {
+            <SummaryTile Label="Text" Value="@Commerce.Text" />
+        }
+    </Stack>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IBusinessObjectView Object { get; set; } = default!;
+
+    [Parameter]
+    public BusinessObjectRenderMode Mode { get; set; } = BusinessObjectRenderMode.Detail;
+
+    [Parameter]
+    public DateTimeOffset? ViewedAtUtc { get; set; }
+
+    [Parameter, EditorRequired]
+    public BusinessObjectRendererDescriptor Descriptor { get; set; } = default!;
+
+    private ICommerceBusinessObjectView? Commerce
+        => Object as ICommerceBusinessObjectView;
+
+    private string RecordKind
+        => Commerce?.Commerce switch
+        {
+            { Payment: not null } => "Payment",
+            { Purchase: not null } => "Purchase",
+            { Receipt: not null } => "Receipt",
+            _ => "Commerce"
+        };
+
+    private string StatusText
+        => Commerce?.Commerce switch
+        {
+            { Payment: { } payment } => payment.Status.ToString(),
+            { Purchase: { } purchase } => purchase.Status.ToString(),
+            { Receipt: { } receipt } => receipt.Status.ToString(),
+            _ => "Unknown"
+        };
+}
+

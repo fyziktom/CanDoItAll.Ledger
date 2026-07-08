@@ -19,90 +19,86 @@ else
               Class="cda-vef-dialog-tabs cda-vef-bo-detail-tabs"
               AriaLabel="Business object detail sections">
             <TabsItem Text="Overview" Icon="dashboard" BadgeText="@($"{DataItems.Count} item(s)")">
-                <section class="cda-vef-bo-overview-workspace">
-                    <div class="cda-vef-bo-selected-preview">
-                        @if (SelectedItem is not null)
-                        {
-                            <BusinessObjectDataItemInteractivePreview Item="SelectedItem" />
-                        }
-                        else
-                        {
-                            <div class="cda-vef-bo-preview-empty">
-                                <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
-                                <strong>@DisplayName</strong>
-                                <small>No data items are attached.</small>
-                            </div>
-                        }
-                    </div>
-
-                    <aside class="cda-vef-bo-overview-aside">
-                        <div class="cda-vef-bo-summary">
-                            <span class="cda-economy-eyebrow">@Object.ObjectType</span>
-                            <h3>@DisplayName</h3>
-                            <p>@Description</p>
-                            @if (HasLongDescription)
+                @if (HasDataItems)
+                {
+                    <section class="cda-vef-bo-overview-workspace">
+                        <div class="cda-vef-bo-selected-preview">
+                            @if (SelectedItem is not null)
                             {
-                                <section class="cda-vef-bo-long-description" data-testid="cda-bo-long-description" aria-label="Business object long description">
-                                    <span>Long description</span>
-                                    <p>@LongDescription</p>
-                                </section>
-                            }
-                            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
-                                @foreach (string tag in Tags.Take(6))
-                                {
-                                    <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="cda-bo-detail-tag-badge" />
-                                }
-                            </Cluster>
-                        </div>
-
-                        <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-vef-bo-overview-facts">
-                            <div class="cda-economy-fact"><span>Version</span><strong>@Object.Version</strong></div>
-                            <div class="cda-economy-fact"><span>Operation</span><strong>@Object.Operation</strong></div>
-                            <div class="cda-economy-fact"><span>Data items</span><strong>@DataItems.Count</strong></div>
-                            <div class="cda-economy-fact"><span>Created</span><strong>@Object.CreatedAt.ToString("MM.dd HH:mm")</strong></div>
-                        </Grid>
-                        @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
-                        {
-                            <section class="cda-vef-sale-panel" data-testid="cda-bo-sale-panel">
-                                <div>
-                                    <span>For sale</span>
-                                    <strong>@sale.Mode / @FormatPrice(sale.PriceAmount, sale.TokenId)</strong>
-                                </div>
-                                @if (sale.MaxClones is not null)
-                                {
-                                    <div>
-                                        <span>Copies</span>
-                                        <strong>@sale.SoldCount / @sale.MaxClones</strong>
-                                    </div>
-                                }
-                                <div class="cda-vef-sale-panel__link">
-                                    <span>Buy link</span>
-                                    <CopyableMonoValue Value="@BuyLink" StartChars="32" EndChars="12" AriaLabel="Copy buy link" />
-                                </div>
-                            </section>
-                        }
-                        @if (TypedFacts.Count > 0)
-                        {
-                            <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-vef-bo-overview-facts">
-                                @foreach (BusinessObjectDisplayFact fact in TypedFacts)
-                                {
-                                    <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
-                                }
-                            </Grid>
-                        }
-
-                        <section class="cda-vef-bo-gallery-rail" aria-label="Business object data items">
-                            <div class="cda-vef-bo-gallery-rail__header">
-                                <strong>Data items</strong>
-                                <StatusBadge Text="@($"{DataItems.Count} item(s)")" Tone="info" />
-                            </div>
-
-                            @if (DataItems.Count == 0)
-                            {
-                                <p class="cda-vef-empty-line">No visual or attached data items are available for this BusinessObject.</p>
+                                <BusinessObjectDataItemInteractivePreview Item="SelectedItem" />
                             }
                             else
                             {
+                                <div class="cda-vef-bo-preview-empty">
+                                    <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
+                                    <strong>@DisplayName</strong>
+                                    <small>No data items are attached.</small>
+                                </div>
+                            }
+                        </div>
+
+                        <aside class="cda-vef-bo-overview-aside">
+                            <div class="cda-vef-bo-summary">
+                                <span class="cda-economy-eyebrow">@Object.ObjectType</span>
+                                <h3>@DisplayName</h3>
+                                <p>@Description</p>
+                                @if (HasLongDescription)
+                                {
+                                    <section class="cda-vef-bo-long-description" data-testid="cda-bo-long-description" aria-label="Business object long description">
+                                        <span>Long description</span>
+                                        <p>@LongDescription</p>
+                                    </section>
+                                }
+                                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
+                                    @foreach (string tag in Tags.Take(6))
+                                    {
+                                        <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="cda-bo-detail-tag-badge" />
+                                    }
+                                </Cluster>
+                            </div>
+
+                            <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-vef-bo-overview-facts">
+                                <div class="cda-economy-fact"><span>Version</span><strong>@Object.Version</strong></div>
+                                <div class="cda-economy-fact"><span>Operation</span><strong>@Object.Operation</strong></div>
+                                <div class="cda-economy-fact"><span>Data items</span><strong>@DataItems.Count</strong></div>
+                                <div class="cda-economy-fact"><span>Created</span><strong>@Object.CreatedAt.ToString("MM.dd HH:mm")</strong></div>
+                            </Grid>
+                            @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
+                            {
+                                <section class="cda-vef-sale-panel" data-testid="cda-bo-sale-panel">
+                                    <div>
+                                        <span>For sale</span>
+                                        <strong>@sale.Mode / @FormatPrice(sale.PriceAmount, sale.TokenId)</strong>
+                                    </div>
+                                    @if (sale.MaxClones is not null)
+                                    {
+                                        <div>
+                                            <span>Copies</span>
+                                            <strong>@sale.SoldCount / @sale.MaxClones</strong>
+                                        </div>
+                                    }
+                                    <div class="cda-vef-sale-panel__link">
+                                        <span>Buy link</span>
+                                        <CopyableMonoValue Value="@BuyLink" StartChars="32" EndChars="12" AriaLabel="Copy buy link" />
+                                    </div>
+                                </section>
+                            }
+                            @if (TypedFacts.Count > 0)
+                            {
+                                <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-vef-bo-overview-facts">
+                                    @foreach (BusinessObjectDisplayFact fact in TypedFacts)
+                                    {
+                                        <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
+                                    }
+                                </Grid>
+                            }
+
+                            <section class="cda-vef-bo-gallery-rail" aria-label="Business object data items">
+                                <div class="cda-vef-bo-gallery-rail__header">
+                                    <strong>Data items</strong>
+                                    <StatusBadge Text="@($"{DataItems.Count} item(s)")" Tone="info" />
+                                </div>
+
                                 <div class="cda-vef-bo-gallery-list">
                                     @foreach (BusinessObjectDataItem item in DataItems)
                                     {
@@ -118,10 +114,99 @@ else
                                         </button>
                                     }
                                 </div>
-                            }
+                            </section>
+                        </aside>
+                    </section>
+                }
+                else
+                {
+                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" data-testid="cda-bo-overview-no-data">
+                        <section class="cda-vef-panel" data-testid="cda-bo-overview-summary">
+                            <div class="cda-vef-panel-header">
+                                <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center">
+                                    <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
+                                    <span>@Object.ObjectType</span>
+                                </Cluster>
+                            </div>
+                            <div class="cda-vef-panel-body">
+                                <Stack GapScale="LayoutGap.Small">
+                                    <span class="cda-economy-eyebrow">@Object.ObjectType</span>
+                                    <h3>@DisplayName</h3>
+                                    <p>@Description</p>
+                                    @if (HasLongDescription)
+                                    {
+                                        <section class="cda-vef-bo-long-description" data-testid="cda-bo-long-description" aria-label="Business object long description">
+                                            <span>Long description</span>
+                                            <p>@LongDescription</p>
+                                        </section>
+                                    }
+                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
+                                        @foreach (string tag in Tags.Take(8))
+                                        {
+                                            <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="cda-bo-detail-tag-badge" />
+                                        }
+                                    </Cluster>
+                                    @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
+                                    {
+                                        <section class="cda-vef-sale-panel" data-testid="cda-bo-sale-panel">
+                                            <div>
+                                                <span>For sale</span>
+                                                <strong>@sale.Mode / @FormatPrice(sale.PriceAmount, sale.TokenId)</strong>
+                                            </div>
+                                            @if (sale.MaxClones is not null)
+                                            {
+                                                <div>
+                                                    <span>Copies</span>
+                                                    <strong>@sale.SoldCount / @sale.MaxClones</strong>
+                                                </div>
+                                            }
+                                            <div class="cda-vef-sale-panel__link">
+                                                <span>Buy link</span>
+                                                <CopyableMonoValue Value="@BuyLink" StartChars="32" EndChars="12" AriaLabel="Copy buy link" />
+                                            </div>
+                                        </section>
+                                    }
+                                </Stack>
+                            </div>
                         </section>
-                    </aside>
-                </section>
+
+                        <Stack GapScale="LayoutGap.Medium">
+                            <section class="cda-vef-panel" data-testid="cda-bo-overview-facts">
+                                <div class="cda-vef-panel-header">Key information</div>
+                                <div class="cda-vef-panel-body">
+                                    <Grid ColumnsLg="2" Gap="LayoutGap.Small" Class="cda-vef-bo-fact-grid">
+                                        <div class="cda-economy-fact"><span>Version</span><strong>@Object.Version</strong></div>
+                                        <div class="cda-economy-fact"><span>Operation</span><strong>@Object.Operation</strong></div>
+                                        <div class="cda-economy-fact"><span>Data items</span><strong>@DataItems.Count</strong></div>
+                                        <div class="cda-economy-fact"><span>Created</span><strong>@Object.CreatedAt.ToString("MM.dd HH:mm")</strong></div>
+                                        @foreach (BusinessObjectDisplayFact fact in TypedFacts)
+                                        {
+                                            <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
+                                        }
+                                    </Grid>
+                                </div>
+                            </section>
+
+                            @if (RelatedBusinessObjects.Count > 0)
+                            {
+                                <section class="cda-vef-panel" data-testid="cda-bo-related-panel">
+                                    <div class="cda-vef-panel-header">Related business object</div>
+                                    <div class="cda-vef-panel-body">
+                                        <Grid ColumnsLg="1" Gap="LayoutGap.Small">
+                                            @foreach (IBusinessObjectView related in RelatedBusinessObjects)
+                                            {
+                                                <BusinessObjectGalleryCard Item="related"
+                                                                           Workspace="Workspace"
+                                                                           OpenRequested="OpenRelatedDetailsAsync"
+                                                                           TestId="cda-bo-related-card" />
+                                            }
+                                        </Grid>
+                                    </div>
+                                </section>
+                            }
+                        </Stack>
+                    </Grid>
+                }
             </TabsItem>
 
             @if (ShowActions)
@@ -381,6 +466,11 @@ else
             ? media.DataItems
             : Payload?.DataItems ?? [];
 
+    private bool HasDataItems => DataItems.Count > 0;
+
+    private IReadOnlyList<IBusinessObjectView> RelatedBusinessObjects
+        => ResolveRelatedBusinessObjects().ToArray();
+
     private IReadOnlyList<string> Tags
         => Object is IMediaBusinessObjectView media
             ? media.Tags
@@ -586,6 +676,31 @@ else
     private Task OpenTransactionAsync()
         => Object is null ? Task.CompletedTask : TransactionDetailsRequested.InvokeAsync(Object.CurrentOutPoint.TxId);
 
+    private Task OpenRelatedDetailsAsync(IBusinessObjectView item)
+        => DialogService.OpenAsync<BusinessObjectLedgerDetailsDialogContent>(
+            $"{BusinessObjectCardDisplay.DisplayName(item)} - Details",
+            new Dictionary<string, object?>
+            {
+                [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = item,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace?.ViewedAtUtc ?? ViewedAtUtc,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.Workspace)] = Workspace,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.SendRequested)] = SendRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.SetPriceRequested)] = SetPriceRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.EditRequested)] = EditRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.TicketVerificationRequested)] = TicketVerificationRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.TicketUseRequested)] = TicketUseRequested
+            },
+            new DialogOptions
+            {
+                Subtitle = item.ObjectType,
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--bo-detail",
+                TestId = "cda-bo-details-dialog"
+            });
+
     private async Task CreateTicketVerificationAsync()
     {
         if (Object is null || TicketVerificationRequested is null)
@@ -672,6 +787,139 @@ else
             && !string.IsNullOrWhiteSpace(value)
                 ? value
                 : "none";
+
+    private IEnumerable<IBusinessObjectView> ResolveRelatedBusinessObjects()
+    {
+        if (Object is null || Workspace is null)
+        {
+            yield break;
+        }
+
+        int yieldedCount = 0;
+        var visitedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string relatedObjectId in CandidateRelatedObjectIds(Object))
+        {
+            if (!visitedIds.Add(relatedObjectId)
+                || string.Equals(relatedObjectId, Object.ObjectId.Value, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            IBusinessObjectView? related = Workspace.BusinessObjects.FirstOrDefault(candidate =>
+                string.Equals(candidate.ObjectId.Value, relatedObjectId, StringComparison.OrdinalIgnoreCase));
+            if (related is not null)
+            {
+                yield return related;
+                yieldedCount++;
+                if (yieldedCount >= 4)
+                {
+                    yield break;
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<string> CandidateRelatedObjectIds(IBusinessObjectView item)
+    {
+        if (item is ICommerceBusinessObjectView commerce)
+        {
+            foreach (string commerceId in CandidateCommerceRelatedObjectIds(commerce))
+            {
+                yield return commerceId;
+            }
+        }
+
+        foreach (string fieldKey in KnownRelatedObjectFieldKeys)
+        {
+            if (TryGetPayloadField(item, fieldKey, out string? value))
+            {
+                yield return value;
+            }
+        }
+    }
+
+    private static IEnumerable<string> CandidateCommerceRelatedObjectIds(ICommerceBusinessObjectView commerce)
+    {
+        if (commerce.Commerce.Purchase is { } purchase)
+        {
+            foreach (string objectId in NonBlankObjectIds(
+                purchase.DeliveredObjectId,
+                purchase.TargetObjectId,
+                purchase.PaymentObjectId,
+                purchase.ReceiptObjectId))
+            {
+                yield return objectId;
+            }
+        }
+
+        if (commerce.Commerce.Receipt is { } receipt)
+        {
+            foreach (string objectId in NonBlankObjectIds(
+                receipt.DeliveredObjectId,
+                receipt.TargetObjectId,
+                receipt.PaymentObjectId))
+            {
+                yield return objectId;
+            }
+        }
+
+        if (commerce.Commerce.Payment is { } payment)
+        {
+            foreach (string objectId in NonBlankObjectIds(
+                payment.DeliveredObjectId,
+                payment.TargetObjectId,
+                payment.PurchaseObjectId,
+                payment.ReceiptObjectId))
+            {
+                yield return objectId;
+            }
+        }
+    }
+
+    private static IEnumerable<string> NonBlankObjectIds(params string?[] objectIds)
+    {
+        foreach (string? objectId in objectIds)
+        {
+            if (!string.IsNullOrWhiteSpace(objectId))
+            {
+                yield return objectId.Trim();
+            }
+        }
+    }
+
+    private static IReadOnlyList<string> KnownRelatedObjectFieldKeys { get; } =
+    [
+        "eventId",
+        "targetObjectId",
+        "deliveredObjectId",
+        "paymentObjectId",
+        "purchaseObjectId",
+        "receiptObjectId"
+    ];
+
+    private static bool TryGetPayloadField(IBusinessObjectView item, string key, out string value)
+    {
+        value = string.Empty;
+        IReadOnlyDictionary<string, string>? fields = item is ITypedBusinessObjectView typed
+            ? typed.Fields
+            : PayloadFor(item)?.Fields;
+        if (fields is null)
+        {
+            return false;
+        }
+
+        foreach ((string candidateKey, string candidateValue) in fields)
+        {
+            if (string.Equals(candidateKey, key, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(candidateValue))
+            {
+                value = candidateValue.Trim();
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static string Short(string? value)
         => string.IsNullOrWhiteSpace(value)

@@ -6,6 +6,8 @@ internal static class DefaultBusinessObjectRendererRegistry
     [
         new SettingsBusinessObjectRendererProvider(),
         new RuleBusinessObjectRendererProvider(),
+        new CommerceBusinessObjectRendererProvider(),
+        new TypedFamilyBusinessObjectRendererProvider(),
         new MediaBusinessObjectRendererProvider(),
         new GenericBusinessObjectRendererProvider()
     ]);
