@@ -155,4 +155,19 @@ public sealed class BrowserCryptoVaultTests
         await Assert.ThrowsAsync<CryptographicException>(async () =>
             await vault.UnlockAsync(VaultId, Password, CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Account_vault_delete_removes_stored_record()
+    {
+        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        var store = new InMemoryAccountVaultStore();
+        var vault = new AccountVaultService(driver, store);
+        await vault.CreateAsync(new AccountVaultCreateRequest(VaultId, Password), CancellationToken.None);
+
+        await vault.DeleteAsync(VaultId, CancellationToken.None);
+
+        Assert.Null(await store.GetAsync(VaultId, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await vault.UnlockAsync(VaultId, Password, CancellationToken.None));
+    }
 }

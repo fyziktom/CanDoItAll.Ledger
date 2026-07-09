@@ -1,0 +1,28 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260708184839
+Username: DESKTOP-5FDLU29\dell
+RunAs User: DESKTOP-5FDLU29\dell
+Configuration Name: 
+Machine: DESKTOP-5FDLU29 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$transcript = Resolve-Path bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB01\transcripts | Join-Path -ChildPath failing-first.txt; Start-Transcript -Path $transcript -Force; Write-Output "Command: adversarial negative source assertion requiring the removed account-app__workspace-frame to still be present"; Write-Output "Invariant ID: TOPBAR-REMOVAL-01"; $homeSource = Get-Content examples\CanDoItAll.Economy.AccountApp\Pages\Home.razor -Raw; if ($homeSource.Contains('account-app__workspace-frame')) { Write-Output 'Unexpected pass: stale top workspace frame is still present.'; $exitCode = 0 } else { Write-Output 'Expected failure: stale top workspace frame is absent, so old screenshot top bar cannot pass.'; $exitCode = 1 }; Write-Output "ExitCode: $exitCode"; Stop-Transcript; exit 0
+Process ID: 2976
+PSVersion: 5.1.26100.8655
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8655
+BuildVersion: 10.0.26100.8655
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\repositories\CanDoItAll.Ledger\bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB01\transcripts\failing-first.txt
+Command: adversarial negative source assertion requiring the removed account-app__workspace-frame to still be present
+Invariant ID: TOPBAR-REMOVAL-01
+Expected failure: stale top workspace frame is absent, so old screenshot top bar cannot pass.
+ExitCode: 1
+**********************
+Windows PowerShell transcript end
+End time: 20260708184839
+**********************

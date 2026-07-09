@@ -1,0 +1,27 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260708181905
+Username: DESKTOP-5FDLU29\dell
+RunAs User: DESKTOP-5FDLU29\dell
+Configuration Name: 
+Machine: DESKTOP-5FDLU29 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$transcript = Resolve-Path bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB01\transcripts | Join-Path -ChildPath anti-stub-audit.txt; Start-Transcript -Path $transcript -Force; Write-Output "Command: rg -n TODO|stub|placeholder|NotImplementedException|throw new NotSupportedException on changed app/test files"; $files = @('examples\CanDoItAll.Economy.AccountApp\Pages\Home.razor','examples\CanDoItAll.Economy.AccountApp\Services\AccountAppSession.cs','examples\CanDoItAll.Economy.AccountApp\wwwroot\css\app.css','tests\CanDoItAll.Ledger.Tests\BrowserCryptoVaultTests.cs','tests\CanDoItAll.Ledger.Tests\AccountAppUiSourceContractTests.cs'); $matches = rg -n "TODO|stub|placeholder|NotImplementedException|throw new NotSupportedException" $files; $exitCode = $LASTEXITCODE; if ($exitCode -eq 1) { Write-Output 'No placeholder/stub markers found in changed app/test files.'; $exitCode = 0 } else { $matches | ForEach-Object { Write-Output $_ } }; Write-Output "ExitCode: $exitCode"; Stop-Transcript; Copy-Item $transcript bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB02\transcripts\anti-stub-audit.txt -Force; exit $exitCode
+Process ID: 32392
+PSVersion: 5.1.26100.8655
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8655
+BuildVersion: 10.0.26100.8655
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\repositories\CanDoItAll.Ledger\bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB01\transcripts\anti-stub-audit.txt
+Command: rg -n TODO|stub|placeholder|NotImplementedException|throw new NotSupportedException on changed app/test files
+No placeholder/stub markers found in changed app/test files.
+ExitCode: 0
+**********************
+Windows PowerShell transcript end
+End time: 20260708181906
+**********************

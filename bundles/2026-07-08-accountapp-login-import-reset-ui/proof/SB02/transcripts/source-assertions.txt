@@ -1,0 +1,34 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260708181852
+Username: DESKTOP-5FDLU29\dell
+RunAs User: DESKTOP-5FDLU29\dell
+Configuration Name: 
+Machine: DESKTOP-5FDLU29 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$transcript = Resolve-Path bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB01\transcripts | Join-Path -ChildPath source-assertions.txt; Start-Transcript -Path $transcript -Force; Write-Output "Command: source assertions for account entry, topbar removal, import steps, and reset guard"; $homeSource = Get-Content examples\CanDoItAll.Economy.AccountApp\Pages\Home.razor -Raw; $sessionSource = Get-Content examples\CanDoItAll.Economy.AccountApp\Services\AccountAppSession.cs -Raw; $cssSource = Get-Content examples\CanDoItAll.Economy.AccountApp\wwwroot\css\app.css -Raw; $assertions = [ordered]@{ AccountEntryTestId = $homeSource.Contains('data-testid="account-entry"'); NoWorkspaceFrameInHome = -not $homeSource.Contains('account-app__workspace-frame'); UsesSteps = $homeSource.Contains('<Steps @bind-Value="importStep"'); UsesStepsItems = $homeSource.Contains('<StepsItem Text="Import"') -and $homeSource.Contains('<StepsItem Text="Password"') -and $homeSource.Contains('<StepsItem Text="Finish"'); ResetPhrase = $sessionSource.Contains('RESET LOCAL VAULT'); ResetDeletesVault = $sessionSource.Contains('vaultStore.DeleteAsync(Options.VaultId'); ResetButtonGuard = $homeSource.Contains('disabled="@(!Session.CanResetLocalVault)"'); NoWorkspaceFrameCss = -not $cssSource.Contains('account-app__workspace-frame') }; $assertions.GetEnumerator() | ForEach-Object { Write-Output "$($_.Key): $($_.Value)" }; if ($assertions.Values -contains $false) { throw 'One or more source assertions failed.' }; Write-Output "ExitCode: 0"; Stop-Transcript; Copy-Item $transcript bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB02\transcripts\source-assertions.txt -Force
+Process ID: 21276
+PSVersion: 5.1.26100.8655
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8655
+BuildVersion: 10.0.26100.8655
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\repositories\CanDoItAll.Ledger\bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB01\transcripts\source-assertions.txt
+Command: source assertions for account entry, topbar removal, import steps, and reset guard
+AccountEntryTestId: True
+NoWorkspaceFrameInHome: True
+UsesSteps: True
+UsesStepsItems: True
+ResetPhrase: True
+ResetDeletesVault: True
+ResetButtonGuard: True
+NoWorkspaceFrameCss: True
+ExitCode: 0
+**********************
+Windows PowerShell transcript end
+End time: 20260708181852
+**********************

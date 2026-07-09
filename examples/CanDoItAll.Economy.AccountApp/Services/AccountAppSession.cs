@@ -15,6 +15,8 @@ public sealed class AccountAppSession(
     IEconomyCryptoDriver cryptoDriver,
     WasmAccountWorkspaceAdapter workspaceAdapter)
 {
+    public const string ResetConfirmationPhrase = "RESET LOCAL VAULT";
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true
@@ -54,9 +56,18 @@ public sealed class AccountAppSession(
 
     public string PastedKeyName { get; set; } = options.DefaultAccountName;
 
+    public bool ResetAcknowledged { get; set; }
+
+    public string ResetConfirmation { get; set; } = string.Empty;
+
     public bool HasStoredVault { get; private set; }
 
     public bool IsUnlocked => UnlockedKey is not null;
+
+    public bool CanResetLocalVault
+        => HasStoredVault
+            && ResetAcknowledged
+            && string.Equals(ResetConfirmation.Trim(), ResetConfirmationPhrase, StringComparison.Ordinal);
 
     public AccountSetupAccount? Account { get; private set; }
 
@@ -203,6 +214,20 @@ public sealed class AccountAppSession(
             StatusMessage = "Pasted key pair imported into the encrypted browser vault.";
         }).ConfigureAwait(false);
 
+    public async Task ResetLocalVaultAsync(CancellationToken cancellationToken = default)
+        => await RunAsync(async () =>
+        {
+            if (!CanResetLocalVault)
+            {
+                throw new InvalidOperationException($"Confirm reset by acknowledging the warning and typing {ResetConfirmationPhrase}.");
+            }
+
+            await vaultStore.DeleteAsync(Options.VaultId, cancellationToken).ConfigureAwait(false);
+            ClearSessionState();
+            HasStoredVault = false;
+            StatusMessage = "Local browser vault reset. Create or import an account to continue.";
+        }).ConfigureAwait(false);
+
     public async Task RefreshWorkspaceAsync(CancellationToken cancellationToken = default)
         => await RunAsync(async () =>
         {
@@ -269,6 +294,8 @@ public sealed class AccountAppSession(
             Convert.ToBase64String(unlocked.PublicKeyMaterial));
         AccountName = Account.DisplayName;
         HasStoredVault = true;
+        ResetAcknowledged = false;
+        ResetConfirmation = string.Empty;
         await workspaceAdapter.UseUnlockedAccountAsync(unlocked, cancellationToken).ConfigureAwait(false);
         Workspace = await workspaceAdapter.GetWorkspaceAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -321,6 +348,26 @@ public sealed class AccountAppSession(
         PastedPrivateKeyBase64 = string.Empty;
         PastedKeyPassword = string.Empty;
         PastedKeyConfirmPassword = string.Empty;
+    }
+
+    private void ClearSessionState()
+    {
+        AccountName = Options.DefaultAccountName;
+        CreatePassword = string.Empty;
+        CreateConfirmPassword = string.Empty;
+        UnlockPassword = string.Empty;
+        BackupJson = string.Empty;
+        BackupStatus = "No backup exported in this session.";
+        ClearImportBackupFields();
+        ClearPastedKeyFields();
+        PastedKeyName = Options.DefaultAccountName;
+        ResetAcknowledged = false;
+        ResetConfirmation = string.Empty;
+        Account = null;
+        UnlockedKey = null;
+        Workspace = null;
+        LastTransactionResult = null;
+        SelectedTransactionDetails = null;
     }
 
     private sealed record AccountAppVaultBackup(

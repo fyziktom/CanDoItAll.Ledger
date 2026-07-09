@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260708184851
+Username: DESKTOP-5FDLU29\dell
+RunAs User: DESKTOP-5FDLU29\dell
+Configuration Name: 
+Machine: DESKTOP-5FDLU29 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$transcript = Resolve-Path bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB02\transcripts | Join-Path -ChildPath failing-first.txt; Start-Transcript -Path $transcript -Force; Write-Output "Command: adversarial negative source assertions for old import/reset behavior"; Write-Output "Invariant ID: IMPORT-STEPS-01"; Write-Output "Invariant ID: RESET-GUARD-01"; $homeSource = Get-Content examples\CanDoItAll.Economy.AccountApp\Pages\Home.razor -Raw; $sessionSource = Get-Content examples\CanDoItAll.Economy.AccountApp\Services\AccountAppSession.cs -Raw; $oldImportWouldPass = -not $homeSource.Contains('<Steps @bind-Value="importStep"'); $oldResetWouldPass = $sessionSource.Contains('=> HasStoredVault && ResetAcknowledged;') -or -not $sessionSource.Contains('ResetConfirmationPhrase'); if ($oldImportWouldPass -or $oldResetWouldPass) { Write-Output 'Unexpected pass: a shallow old import/reset behavior still appears present.'; $exitCode = 0 } else { Write-Output 'Expected failure: import uses Steps and reset requires the exact typed phrase, so the shallow old behavior cannot pass.'; $exitCode = 1 }; Write-Output "ExitCode: $exitCode"; Stop-Transcript; exit 0
+Process ID: 1964
+PSVersion: 5.1.26100.8655
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8655
+BuildVersion: 10.0.26100.8655
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\repositories\CanDoItAll.Ledger\bundles\2026-07-08-accountapp-login-import-reset-ui\proof\SB02\transcripts\failing-first.txt
+Command: adversarial negative source assertions for old import/reset behavior
+Invariant ID: IMPORT-STEPS-01
+Invariant ID: RESET-GUARD-01
+Expected failure: import uses Steps and reset requires the exact typed phrase, so the shallow old behavior cannot pass.
+ExitCode: 1
+**********************
+Windows PowerShell transcript end
+End time: 20260708184852
+**********************
