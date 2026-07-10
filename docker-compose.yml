@@ -90,7 +90,7 @@ services:
       ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Alice import test
       ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
       ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5081/ipfs-api/
-      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5081/ipfs-api/cat?arg=
+      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
     ports:
       - "5081:80"
     extra_hosts:
@@ -112,7 +112,7 @@ services:
       ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Bob import test
       ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
       ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5082/ipfs-api/
-      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5082/ipfs-api/cat?arg=
+      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
     ports:
       - "5082:80"
     extra_hosts:
@@ -134,7 +134,7 @@ services:
       ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Scratch account
       ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
       ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5083/ipfs-api/
-      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5083/ipfs-api/cat?arg=
+      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
     ports:
       - "5083:80"
     extra_hosts:

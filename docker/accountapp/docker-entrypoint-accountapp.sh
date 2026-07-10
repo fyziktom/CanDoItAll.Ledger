@@ -12,7 +12,7 @@ json_escape() {
 : "${ACCOUNT_APP_DEFAULT_ACCOUNT_NAME:=Browser account}"
 : "${ACCOUNT_APP_ENABLE_IPFS_UPLOADS:=false}"
 : "${ACCOUNT_APP_IPFS_API_BASE_URI:=http://localhost:5081/ipfs-api/}"
-: "${ACCOUNT_APP_IPFS_GATEWAY_BASE_URI:=http://localhost:5081/ipfs-api/cat?arg=}"
+: "${ACCOUNT_APP_IPFS_GATEWAY_BASE_URI:=http://localhost:5001/}"
 
 if [ "${ACCOUNT_APP_SCENARIO_ID:-}" = "" ] || [ "${ACCOUNT_APP_SCENARIO_ID:-}" = "__null__" ]; then
     scenario_json="null"

@@ -1,5 +1,6 @@
 @namespace CanDoItAll.Economy.Components
 @using System.Globalization
+@inherits BusinessObjectDataItemAddressComponentBase
 @inject DialogService DialogService
 @inject NavigationManager Navigation
 @inject NotificationService Notifications
@@ -255,6 +256,7 @@ else
                                     <div class="cda-vef-bo-action-table">
                                         @foreach (BusinessObjectDataItem item in DataItems)
                                         {
+                                            string? itemUri = ResolveDataItemUriString(item);
                                             <article>
                                                 <div>
                                                     <strong>@item.Name</strong>
@@ -269,18 +271,18 @@ else
                                                             Icon="open_in_new"
                                                             Size="ButtonSize.Small"
                                                             Variant="Variant.Outlined"
-                                                            Href="@item.Uri?.ToString()"
+                                                            Href="@itemUri"
                                                             Target="_blank"
                                                             Rel="noopener noreferrer"
-                                                            Disabled="@(item.Uri is null)" />
+                                                            Disabled="@(itemUri is null)" />
                                                     <Button Text="Download"
                                                             Icon="download"
                                                             Size="ButtonSize.Small"
                                                             Variant="Variant.Outlined"
-                                                            Href="@item.Uri?.ToString()"
+                                                            Href="@itemUri"
                                                             Target="_blank"
                                                             Rel="noopener noreferrer"
-                                                            Disabled="@(item.Uri is null)" />
+                                                            Disabled="@(itemUri is null)" />
                                                 </Cluster>
                                             </article>
                                         }

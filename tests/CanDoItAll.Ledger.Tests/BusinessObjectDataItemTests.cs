@@ -82,7 +82,7 @@ public sealed class BusinessObjectDataItemTests
             client,
             new HttpIpfsBusinessObjectDataItemUploadOptions(
                 new Uri("http://localhost:5081/ipfs-api/"),
-                "http://localhost:5081/ipfs-api/cat?arg="));
+                "http://localhost:5001/"));
         await using var stream = new MemoryStream([1, 2, 3, 4]);
 
         BusinessObjectDataItem item = await service.SaveToIpfsAsync(
@@ -93,7 +93,7 @@ public sealed class BusinessObjectDataItemTests
         Assert.Equal(BusinessObjectDataItemStorage.Ipfs, item.Storage);
         Assert.Equal(BusinessObjectDataItemType.Image, item.Type);
         Assert.Equal("QmBrowserUpload", item.Hash);
-        Assert.Equal("http://localhost:5081/ipfs-api/cat?arg=QmBrowserUpload", item.Uri?.ToString());
+        Assert.Equal("http://localhost:5001/ipfs/QmBrowserUpload", item.Uri?.ToString());
         Assert.True(item.IsMain);
     }
 

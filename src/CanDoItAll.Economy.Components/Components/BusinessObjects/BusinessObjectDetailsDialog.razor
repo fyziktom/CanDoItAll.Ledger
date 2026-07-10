@@ -1,4 +1,5 @@
 @namespace CanDoItAll.Economy.Components
+@inherits BusinessObjectDataItemAddressComponentBase
 
 <Dialog IsOpen="@IsOpen"
         Title="@DialogTitle"
@@ -63,10 +64,16 @@
                     <Stack GapScale="LayoutGap.Small">
                         <div class="cda-economy-fact"><span>Selected item</span><strong>@(SelectedDataItem?.Name ?? "none")</strong></div>
                         <Grid ColumnsMd="2" Gap="LayoutGap.Small">
-                            <CopyButton Text="Copy Link" Icon="link" Variant="Variant.Outlined" Value="@(SelectedDataItem?.Uri?.ToString())" Disabled="@(SelectedDataItem?.Uri is null)" />
+                            <CopyButton Text="Copy Link" Icon="link" Variant="Variant.Outlined" Value="@SelectedDataItemUri" Disabled="@(SelectedDataItemUri is null)" />
                             <CopyButton Text="Copy Hash" Icon="tag" Variant="Variant.Outlined" Value="@(SelectedDataItem?.Hash)" Disabled="@(string.IsNullOrWhiteSpace(SelectedDataItem?.Hash))" />
                         </Grid>
-                        <Button Text="Open DataItem Link" Icon="open_in_new" Variant="Variant.Outlined" />
+                        <Button Text="Open DataItem Link"
+                                Icon="open_in_new"
+                                Variant="Variant.Outlined"
+                                Href="@SelectedDataItemUri"
+                                Target="_blank"
+                                Rel="noopener noreferrer"
+                                Disabled="@(SelectedDataItemUri is null)" />
                     </Stack>
                 </SectionCard>
             </Stack>
@@ -90,6 +97,9 @@
         => selectedDataItem is not null && Item?.Object.DataItems.Contains(selectedDataItem) == true
             ? selectedDataItem
             : Item?.Object.DataItems.FirstOrDefault(item => item.IsMain) ?? Item?.Object.DataItems.FirstOrDefault();
+
+    private string? SelectedDataItemUri
+        => SelectedDataItem is null ? null : ResolveDataItemUriString(SelectedDataItem);
 
     private string DialogTitle
         => Item is null ? "BusinessObject Details" : $"{Item.Object.Name} - Details";

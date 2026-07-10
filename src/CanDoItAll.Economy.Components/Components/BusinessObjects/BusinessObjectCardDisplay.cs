@@ -76,7 +76,10 @@ internal static class BusinessObjectCardDisplay
         BusinessObjectDataItem? dataItem = mediaDataItems
             .Concat(payload?.DataItems ?? [])
             .OrderByDescending(dataItem => dataItem.IsMain)
-            .FirstOrDefault(dataItem => dataItem.Type == BusinessObjectDataItemType.Image && dataItem.Uri is not null);
+            .FirstOrDefault(dataItem =>
+                dataItem.Type == BusinessObjectDataItemType.Image
+                && (dataItem.Uri is not null
+                    || dataItem.Storage == BusinessObjectDataItemStorage.Ipfs && !string.IsNullOrWhiteSpace(dataItem.Hash)));
 
         if (dataItem is not null)
         {

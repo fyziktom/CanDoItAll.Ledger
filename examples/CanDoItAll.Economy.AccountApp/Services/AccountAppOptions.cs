@@ -18,5 +18,5 @@ public sealed record AccountAppOptions
 
     public Uri? IpfsApiBaseUri { get; init; }
 
-    public string IpfsGatewayBaseUri { get; init; } = "http://127.0.0.1:5001/api/v0/cat?arg=";
+    public Uri IpfsGatewayBaseUri { get; init; } = new("http://127.0.0.1:5001/", UriKind.Absolute);
 }

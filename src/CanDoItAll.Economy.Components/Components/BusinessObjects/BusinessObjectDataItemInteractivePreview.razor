@@ -1,5 +1,6 @@
 @namespace CanDoItAll.Economy.Components
 @using System.Globalization
+@inherits BusinessObjectDataItemAddressComponentBase
 
 <section class="cda-vef-bo-preview-stage" data-testid="cda-bo-selected-preview">
     <div class="cda-vef-bo-preview-stage__toolbar">
@@ -104,10 +105,7 @@
     }
 
     private string? PreviewUri
-        => Item.Uri?.ToString()
-            ?? (Item.Storage == BusinessObjectDataItemStorage.Ipfs && !string.IsNullOrWhiteSpace(Item.Hash)
-                ? $"https://ipfs.io/ipfs/{Item.Hash}"
-                : null);
+        => ResolveDataItemUriString(Item);
 
     private string DownloadFileName
         => string.IsNullOrWhiteSpace(Item.FileName)

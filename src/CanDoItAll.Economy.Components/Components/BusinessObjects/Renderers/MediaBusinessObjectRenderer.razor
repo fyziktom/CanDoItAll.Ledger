@@ -1,4 +1,5 @@
 @namespace CanDoItAll.Economy.Components
+@inherits BusinessObjectDataItemAddressComponentBase
 
 @if (Media is null)
 {
@@ -68,7 +69,7 @@ else
             <Grid ColumnsMd="2" ColumnsXl="3" Gap="LayoutGap.Small" Class="cda-economy-media-items">
                 @foreach (BusinessObjectDataItem item in Media.DataItems)
                 {
-                    string? itemUri = item.Uri?.ToString();
+                    string? itemUri = ResolveDataItemUriString(item);
                     <Stack GapScale="LayoutGap.Small" Class="cda-venft-dataitem-card">
                         <BusinessObjectDataItemPreview Item="item" />
                         <Grid ColumnsMd="2" Gap="LayoutGap.Small">

@@ -1,4 +1,5 @@
 @namespace CanDoItAll.Economy.Components
+@inherits BusinessObjectDataItemAddressComponentBase
 
 <Stack Class="@(Large ? "cda-venft-dataitem-preview cda-venft-dataitem-preview--large" : "cda-venft-dataitem-preview")">
     @if (Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null)
@@ -38,7 +39,7 @@
     public bool Large { get; set; }
 
     private string? PreviewUri
-        => Item.Uri?.ToString();
+        => ResolveDataItemUriString(Item);
 
     private bool IsVideo
         => Item.Type == BusinessObjectDataItemType.AVMedia
