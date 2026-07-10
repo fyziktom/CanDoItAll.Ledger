@@ -44,9 +44,13 @@ public sealed class DisabledTokenCreationPolicy : ITokenCreationPolicy
         => Task.FromResult(ValidationResult.Success);
 }
 
-public sealed class TokenCreationPolicy(TokenCreationPolicyOptions options) : ITokenCreationPolicy
+public sealed class TokenCreationPolicy(
+    TokenCreationPolicyOptions options,
+    ITokenDefinitionHasher? providedTokenDefinitionHasher = null) : ITokenCreationPolicy
 {
     private const int MaxOriginTraceDepth = 64;
+    private readonly ITokenDefinitionHasher tokenDefinitionHasher = providedTokenDefinitionHasher
+        ?? new TokenDefinitionHasher(new DefaultTokenDefinitionCanonicalizer());
 
     public async Task<ValidationResult> ValidateAsync(
         LedgerTransaction transaction,
@@ -122,7 +126,10 @@ public sealed class TokenCreationPolicy(TokenCreationPolicyOptions options) : IT
         foreach (TransactionOutput output in transaction.Outputs.Where(x => x.Token is not null))
         {
             TokenTransfer token = output.Token!;
-            if (!TokenCreationAuthority.IsValidNamespace(token.TokenId.Value.Trim()))
+            TokenDefinition? definition = transaction.TokenDefinition?.Definition;
+            bool isDefinedV2Token = definition is not null
+                && tokenDefinitionHasher.CalculateTokenId(definition) == token.TokenId;
+            if (!isDefinedV2Token && !TokenCreationAuthority.IsValidNamespace(token.TokenId.Value.Trim()))
             {
                 errors.Add(new ValidationError(ValidationErrorCodes.InvalidTokenId, $"Token id is invalid: {token.TokenId.Value}."));
                 continue;
@@ -160,7 +167,12 @@ public sealed class TokenCreationPolicy(TokenCreationPolicyOptions options) : IT
             ResolvedPermissionInput? permission = permissionInputs.FirstOrDefault(input =>
                 input.OriginatesFromTreasury
                 && string.Equals(input.Grant.Action, PermissionTokenAuthority.MintNewTokenTypeAction, StringComparison.Ordinal)
-                && PermissionTokenAuthority.IsTokenInNamespace(token.TokenId, input.Grant.Namespace));
+                && (!isDefinedV2Token || input.Output.Address == definition!.Issuer)
+                && PermissionTokenAuthority.IsTokenInNamespace(
+                    isDefinedV2Token
+                        ? new TokenId($"{definition!.Namespace}.{definition.Symbol}")
+                        : token.TokenId,
+                    input.Grant.Namespace));
             if (permission is null)
             {
                 errors.Add(new ValidationError(

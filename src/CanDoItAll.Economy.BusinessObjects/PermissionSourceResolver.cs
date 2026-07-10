@@ -64,6 +64,32 @@ internal static class PermissionSourceResolver
             ?? throw new InvalidOperationException($"Account does not have a permission source for minting token {tokenId.Value}.");
     }
 
+    public static LedgerPermissionSource SelectMintPermissionSource(
+        IReadOnlyList<LedgerPermissionSource> permissionSources,
+        string tokenNamespace,
+        string tokenLabel,
+        OutPoint? sourceOutPoint)
+    {
+        string normalizedNamespace = PermissionTokenAuthority.NormalizeNamespace(tokenNamespace);
+        IEnumerable<LedgerPermissionSource> candidates = permissionSources
+            .Where(source => source.AllowsMintNamespace(normalizedNamespace));
+        if (sourceOutPoint is not null)
+        {
+            return candidates.FirstOrDefault(source => source.OutPoint == sourceOutPoint)
+                ?? throw new InvalidOperationException(
+                    $"Permission source UTXO {sourceOutPoint} is not spendable by this account or does not authorize {tokenLabel} in namespace {normalizedNamespace}.");
+        }
+
+        return candidates
+            .OrderBy(source => source.Grant.Namespace.Length)
+            .ThenBy(source => source.Output.CreatedAt)
+            .ThenBy(source => source.OutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenBy(source => source.OutPoint.OutputIndex)
+            .FirstOrDefault()
+            ?? throw new InvalidOperationException(
+                $"Account does not have a permission source for minting {tokenLabel} in namespace {normalizedNamespace}.");
+    }
+
     public static LedgerPermissionSource SelectRuleCreationPermissionSource(
         IReadOnlyList<LedgerPermissionSource> permissionSources,
         string ruleNamespace,

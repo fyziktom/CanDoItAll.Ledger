@@ -49,7 +49,8 @@ public sealed record TokenMintRequest(
     Amount TokenAmount,
     Address? ReceiverAddress = null,
     Amount? MainAmount = null,
-    OutPoint? PermissionSourceOutPoint = null);
+    OutPoint? PermissionSourceOutPoint = null,
+    TokenDefinitionEnvelope? TokenDefinition = null);
 
 public sealed record PermissionIssueRequest(
     Address ReceiverAddress,

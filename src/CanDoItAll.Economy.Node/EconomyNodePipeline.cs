@@ -390,7 +390,9 @@ public static partial class EconomyNodeHost
         AppendAntiforgery(builder, requestVerificationToken);
         builder.AppendLine("<label>Name<input name=\"name\" autocomplete=\"off\" value=\"node api token\"></label>");
         builder.AppendLine("<label>Lifetime minutes<input name=\"lifetimeMinutes\" type=\"number\" min=\"1\" value=\"60\"></label>");
-        builder.AppendLine("<label>Scopes<input name=\"scopes\" autocomplete=\"off\" value=\"node.api\"></label>");
+        builder.Append("<label>Scopes<input name=\"scopes\" autocomplete=\"off\" value=\"")
+            .Append(WebUtility.HtmlEncode(EconomyNodeScopes.DefaultIssuedScopes))
+            .AppendLine("\"></label>");
         builder.AppendLine("<button type=\"submit\">Create JWT</button></form></section>");
         builder.AppendLine("<section class=\"panel\"><h2>Issued tokens</h2><table><thead><tr><th>Name</th><th>Expires</th><th>Status</th><th>Scopes</th><th></th></tr></thead><tbody>");
         DateTimeOffset now = DateTimeOffset.UtcNow;

@@ -38,3 +38,12 @@ Large-screen only (target viewport at least 1440x900):
 - a raw invalid mixed output is rejected by the node through the AccountApp origin;
 - a raw invalid spent/double-spend or issuance exploit is rejected;
 - screenshots and response assertions are saved under `proof/browser/` and `proof/docker/`.
+
+## Second-wave proof contract
+
+1. Migration: invalid legacy asset rows fail adoption and do not write the baseline; valid legacy and empty databases reach the same migration set.
+2. Replay: hash-valid but asset-imbalanced history fails semantic verification; unsupported version is not mapped to v1/v2; valid v1/v2 histories pass.
+3. Token v2: canonical ID golden vector, tampered ID, mismatched supply/issuer/permission, fungible-with-BO, BO-carrier source-with-BO, and unit-without-BO negatives.
+4. JWT: missing scope, unknown scope, read-on-write, and write-on-admin deny; hierarchy and legacy alias positives; API-key/development behavior characterization.
+5. NCalc: arithmetic/comparison/coercion/error vectors run directly against the driver; fake evaluator proves BusinessObjects orchestration has no NCalc dependency; DI resolves the driver through the contract.
+6. Composition: full solution build/test, migration list/script, package audit, PostgreSQL proof, and Docker readiness with semantic status.

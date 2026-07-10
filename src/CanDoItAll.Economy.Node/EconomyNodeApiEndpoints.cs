@@ -65,7 +65,7 @@ public static partial class EconomyNodeHost
             return Results.Ok(new { utcNow = timeProvider.Advance(duration) });
         })
         .AddEndpointFilter(ValidateRequestBodySizeAsync)
-        .AddEndpointFilter(ValidateEconomyWriteAuthorizationAsync)
+        .AddEndpointFilter(ValidateEconomyAdminAuthorizationAsync)
         .RequireRateLimiting(WriteRateLimitPolicy);
 
         api.MapPost("/ledger/reset", async (EconomyLedgerCommandService commands, EconomyNodeHostOptions options, CancellationToken cancellationToken) =>
@@ -82,7 +82,7 @@ public static partial class EconomyNodeHost
             return Results.Ok(new { status = "reset" });
         })
         .AddEndpointFilter(ValidateRequestBodySizeAsync)
-        .AddEndpointFilter(ValidateEconomyWriteAuthorizationAsync)
+        .AddEndpointFilter(ValidateEconomyAdminAuthorizationAsync)
         .RequireRateLimiting(WriteRateLimitPolicy);
 
         api.MapPost("/transactions/mint", async (MintTransactionRequest request, EconomyTreasuryCommandService treasury, CancellationToken cancellationToken) =>
@@ -92,7 +92,7 @@ public static partial class EconomyNodeHost
                 cancellationToken).ConfigureAwait(false);
         })
         .AddEndpointFilter(ValidateRequestBodySizeAsync)
-        .AddEndpointFilter(ValidateEconomyWriteAuthorizationAsync)
+        .AddEndpointFilter(ValidateEconomyAdminAuthorizationAsync)
         .RequireRateLimiting(WriteRateLimitPolicy);
 
         api.MapPost("/transactions/transfer", async (TransferTransactionRequest request, EconomyTreasuryCommandService treasury, CancellationToken cancellationToken) =>
@@ -102,7 +102,7 @@ public static partial class EconomyNodeHost
                 cancellationToken).ConfigureAwait(false);
         })
         .AddEndpointFilter(ValidateRequestBodySizeAsync)
-        .AddEndpointFilter(ValidateEconomyWriteAuthorizationAsync)
+        .AddEndpointFilter(ValidateEconomyAdminAuthorizationAsync)
         .RequireRateLimiting(WriteRateLimitPolicy);
 
         api.MapPost("/token-authorities/grants", async (TokenAuthorityGrantRequest request, EconomyTreasuryCommandService treasury, CancellationToken cancellationToken) =>
@@ -112,7 +112,7 @@ public static partial class EconomyNodeHost
                 cancellationToken).ConfigureAwait(false);
         })
         .AddEndpointFilter(ValidateRequestBodySizeAsync)
-        .AddEndpointFilter(ValidateEconomyWriteAuthorizationAsync)
+        .AddEndpointFilter(ValidateEconomyAdminAuthorizationAsync)
         .RequireRateLimiting(WriteRateLimitPolicy);
 
         api.MapPost("/permissions/grants", async (PermissionGrantRequest request, EconomyTreasuryCommandService treasury, CancellationToken cancellationToken) =>
@@ -122,7 +122,7 @@ public static partial class EconomyNodeHost
                 cancellationToken).ConfigureAwait(false);
         })
         .AddEndpointFilter(ValidateRequestBodySizeAsync)
-        .AddEndpointFilter(ValidateEconomyWriteAuthorizationAsync)
+        .AddEndpointFilter(ValidateEconomyAdminAuthorizationAsync)
         .RequireRateLimiting(WriteRateLimitPolicy);
 
         api.MapPost("/ledger/transactions", async (LedgerTransaction transaction, EconomyLedgerCommandService commands, CancellationToken cancellationToken) =>
@@ -277,8 +277,23 @@ public static partial class EconomyNodeHost
         {
             EconomyNodeApiSecurityMode.Development => await next(context).ConfigureAwait(false),
             EconomyNodeApiSecurityMode.RequireApiKey => await ValidateApiKeyAuthorizationAsync(context, next).ConfigureAwait(false),
-            EconomyNodeApiSecurityMode.RequireJwtBearer => await ValidateJwtBearerAuthorizationAsync(context, next).ConfigureAwait(false),
-            EconomyNodeApiSecurityMode.RequireApiKeyOrJwt => await ValidateApiKeyOrJwtAuthorizationAsync(context, next).ConfigureAwait(false),
+            EconomyNodeApiSecurityMode.RequireJwtBearer => await ValidateJwtBearerAuthorizationAsync(context, next, EconomyNodeAuthPolicies.WriteApi).ConfigureAwait(false),
+            EconomyNodeApiSecurityMode.RequireApiKeyOrJwt => await ValidateApiKeyOrJwtAuthorizationAsync(context, next, EconomyNodeAuthPolicies.WriteApi).ConfigureAwait(false),
+            _ => UnsupportedSecurityMode(context, options.ApiSecurityMode.ToString())
+        };
+    }
+
+    private static async ValueTask<object?> ValidateEconomyAdminAuthorizationAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
+    {
+        EconomyNodeHostOptions options = context.HttpContext.RequestServices.GetRequiredService<EconomyNodeHostOptions>();
+        return options.ApiSecurityMode switch
+        {
+            EconomyNodeApiSecurityMode.Development => await next(context).ConfigureAwait(false),
+            EconomyNodeApiSecurityMode.RequireApiKey => await ValidateApiKeyAuthorizationAsync(context, next).ConfigureAwait(false),
+            EconomyNodeApiSecurityMode.RequireJwtBearer => await ValidateJwtBearerAuthorizationAsync(context, next, EconomyNodeAuthPolicies.AdminApi).ConfigureAwait(false),
+            EconomyNodeApiSecurityMode.RequireApiKeyOrJwt => await ValidateApiKeyOrJwtAuthorizationAsync(context, next, EconomyNodeAuthPolicies.AdminApi).ConfigureAwait(false),
             _ => UnsupportedSecurityMode(context, options.ApiSecurityMode.ToString())
         };
     }
@@ -292,8 +307,8 @@ public static partial class EconomyNodeHost
         {
             EconomyNodeApiReadSecurityMode.Public => await next(context).ConfigureAwait(false),
             EconomyNodeApiReadSecurityMode.RequireApiKey => await ValidateApiKeyAuthorizationAsync(context, next).ConfigureAwait(false),
-            EconomyNodeApiReadSecurityMode.RequireJwtBearer => await ValidateJwtBearerAuthorizationAsync(context, next).ConfigureAwait(false),
-            EconomyNodeApiReadSecurityMode.RequireApiKeyOrJwt => await ValidateApiKeyOrJwtAuthorizationAsync(context, next).ConfigureAwait(false),
+            EconomyNodeApiReadSecurityMode.RequireJwtBearer => await ValidateJwtBearerAuthorizationAsync(context, next, EconomyNodeAuthPolicies.ReadApi).ConfigureAwait(false),
+            EconomyNodeApiReadSecurityMode.RequireApiKeyOrJwt => await ValidateApiKeyOrJwtAuthorizationAsync(context, next, EconomyNodeAuthPolicies.ReadApi).ConfigureAwait(false),
             _ => UnsupportedSecurityMode(context, options.ReadSecurityMode.ToString())
         };
     }
@@ -326,7 +341,8 @@ public static partial class EconomyNodeHost
 
     private static async ValueTask<object?> ValidateApiKeyOrJwtAuthorizationAsync(
         EndpointFilterInvocationContext context,
-        EndpointFilterDelegate next)
+        EndpointFilterDelegate next,
+        string requiredPolicy)
     {
         EconomyNodeHostOptions options = context.HttpContext.RequestServices.GetRequiredService<EconomyNodeHostOptions>();
         if (HasValidApiKey(context.HttpContext, options))
@@ -334,12 +350,13 @@ public static partial class EconomyNodeHost
             return await next(context).ConfigureAwait(false);
         }
 
-        return await ValidateJwtBearerAuthorizationAsync(context, next).ConfigureAwait(false);
+        return await ValidateJwtBearerAuthorizationAsync(context, next, requiredPolicy).ConfigureAwait(false);
     }
 
     private static async ValueTask<object?> ValidateJwtBearerAuthorizationAsync(
         EndpointFilterInvocationContext context,
-        EndpointFilterDelegate next)
+        EndpointFilterDelegate next,
+        string requiredPolicy)
     {
         AuthenticateResult result = await context.HttpContext
             .AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme)
@@ -347,7 +364,20 @@ public static partial class EconomyNodeHost
         if (result.Succeeded && result.Principal?.Identity?.IsAuthenticated == true)
         {
             context.HttpContext.User = result.Principal;
-            return await next(context).ConfigureAwait(false);
+            AuthorizationResult authorization = await context.HttpContext.RequestServices
+                .GetRequiredService<IAuthorizationService>()
+                .AuthorizeAsync(result.Principal, context.HttpContext, requiredPolicy)
+                .ConfigureAwait(false);
+            if (authorization.Succeeded)
+            {
+                return await next(context).ConfigureAwait(false);
+            }
+
+            LogAuthorizationFailure(context, $"insufficient_scope:{requiredPolicy}");
+            return Results.Problem(
+                title: "Economy node authorization failed",
+                detail: $"The bearer token does not grant the required {requiredPolicy} policy.",
+                statusCode: StatusCodes.Status403Forbidden);
         }
 
         LogAuthorizationFailure(context, "invalid_jwt_bearer_token");

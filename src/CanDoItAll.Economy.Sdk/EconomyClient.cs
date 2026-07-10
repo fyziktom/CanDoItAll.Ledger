@@ -8,12 +8,18 @@ public sealed class EconomyClient
     private readonly ILedgerGateway ledgerGateway;
     private readonly ILedgerReadClient ledgerReadClient;
     private readonly BusinessObjectTransactionBuilder transactionBuilder;
+    private readonly IAccountRuleExpressionEvaluator ruleExpressionEvaluator;
 
     public EconomyClient(
         ILedgerGateway ledgerGateway,
         ILedgerReadClient ledgerReadClient,
         BusinessObjectTransactionBuilder transactionBuilder)
-        : this(ledgerGateway, ledgerReadClient, transactionBuilder, new EconomyAccountHandler())
+        : this(
+            ledgerGateway,
+            ledgerReadClient,
+            transactionBuilder,
+            new EconomyAccountHandler(),
+            UnavailableAccountRuleExpressionEvaluator.Instance)
     {
     }
 
@@ -22,10 +28,26 @@ public sealed class EconomyClient
         ILedgerReadClient ledgerReadClient,
         BusinessObjectTransactionBuilder transactionBuilder,
         IEconomyAccountHandler accountHandler)
+        : this(
+            ledgerGateway,
+            ledgerReadClient,
+            transactionBuilder,
+            accountHandler,
+            UnavailableAccountRuleExpressionEvaluator.Instance)
+    {
+    }
+
+    public EconomyClient(
+        ILedgerGateway ledgerGateway,
+        ILedgerReadClient ledgerReadClient,
+        BusinessObjectTransactionBuilder transactionBuilder,
+        IEconomyAccountHandler accountHandler,
+        IAccountRuleExpressionEvaluator ruleExpressionEvaluator)
     {
         this.ledgerGateway = ledgerGateway;
         this.ledgerReadClient = ledgerReadClient;
         this.transactionBuilder = transactionBuilder;
+        this.ruleExpressionEvaluator = ruleExpressionEvaluator;
         AccountHandler = accountHandler;
     }
 
@@ -42,7 +64,13 @@ public sealed class EconomyClient
 
     public BusinessObjectAccount LoadAccount(LedgerAccountContext context, IAccountKeySource keySource)
     {
-        var account = new BusinessObjectAccount(context, keySource, ledgerGateway, ledgerReadClient, transactionBuilder);
+        var account = new BusinessObjectAccount(
+            context,
+            keySource,
+            ledgerGateway,
+            ledgerReadClient,
+            transactionBuilder,
+            ruleExpressionEvaluator);
         AccountHandler.Observe(account);
         return account;
     }

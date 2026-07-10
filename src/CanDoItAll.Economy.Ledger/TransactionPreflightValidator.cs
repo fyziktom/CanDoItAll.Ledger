@@ -25,6 +25,12 @@ public sealed class TransactionPreflightValidator
             return new ValidationResult(errors);
         }
 
+        if (transaction.TokenDefinition is not null && transaction.TokenDefinition.Definition is null)
+        {
+            errors.Add(Invalid("Token definition envelope must contain an immutable definition."));
+            return new ValidationResult(errors);
+        }
+
         if (transaction.Inputs.Count > LedgerValidationLimits.MaxTransactionInputs)
         {
             errors.Add(Limit($"Transaction cannot contain more than {LedgerValidationLimits.MaxTransactionInputs} inputs."));

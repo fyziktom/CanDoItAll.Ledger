@@ -125,7 +125,8 @@ public sealed class EfLedgerHistoryReader(IDbContextFactory<EconomyDbContext> db
             data,
             new TxId(row.TxId),
             ToHashHex(row.TxHash),
-            (TransactionStatus)row.Status);
+            (TransactionStatus)row.Status,
+            DeserializeTokenDefinition(row.TokenDefinitionJson));
     }
 
     private static TransactionInput MapInput(LedgerTransactionInputRecord row)
@@ -172,6 +173,11 @@ public sealed class EfLedgerHistoryReader(IDbContextFactory<EconomyDbContext> db
                 string.IsNullOrWhiteSpace(x.PublicKeyMaterialBase64) ? null : Convert.FromBase64String(x.PublicKeyMaterialBase64)))
             .ToArray());
     }
+
+    private static TokenDefinitionEnvelope? DeserializeTokenDefinition(string? json)
+        => string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<TokenDefinitionEnvelope>(json, JsonOptions);
 
     private static ScenarioId? ToScenarioId(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : new ScenarioId(value);

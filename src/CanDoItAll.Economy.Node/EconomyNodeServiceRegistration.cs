@@ -15,6 +15,7 @@ using CanDoItAll.Economy.Ledger;
 using CanDoItAll.Economy.Node.Components;
 using CanDoItAll.Economy.Persistence.EFCore;
 using CanDoItAll.Economy.Persistence.PostgreSql;
+using CanDoItAll.Economy.Storage.InMemory;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -73,6 +74,8 @@ public static partial class EconomyNodeHost
         AddPersistence(services, options);
         services.AddScoped<ITransactionCanonicalizer, DefaultTransactionCanonicalizer>();
         services.AddScoped<ITransactionHasher, TransactionHasher>();
+        services.AddScoped<ITokenDefinitionCanonicalizer, DefaultTokenDefinitionCanonicalizer>();
+        services.AddScoped<ITokenDefinitionHasher, TokenDefinitionHasher>();
         services.AddScoped<ISignaturePayloadBuilder, SignaturePayloadBuilder>();
         services.AddSingleton<ISignatureProviderRegistry>(_ => SignatureProviderRegistry.CreateDefault());
         services.AddScoped<IAccountInputSigner, AccountInputSigner>();
@@ -85,6 +88,7 @@ public static partial class EconomyNodeHost
                     ledgerAdminAccount,
                     serviceProvider.GetRequiredService<ISignatureProviderRegistry>()));
         services.AddScoped<ITokenCreationPolicy, TokenCreationPolicy>();
+        services.AddScoped<ITokenDefinitionPolicy, TokenDefinitionPolicy>();
         services.AddScoped<IMainCurrencyIssuancePolicy>(_ => new MainCurrencyIssuancePolicy(
             new MainCurrencyIssuancePolicyOptions { TreasuryAdminAddress = treasuryAdminAccount.Address }));
         services.AddScoped<InputReferenceValidator>();
@@ -92,6 +96,11 @@ public static partial class EconomyNodeHost
         services.AddScoped<InputSignatureValidator>();
         services.AddScoped<AssetConservationValidator>();
         services.AddScoped<LedgerTransactionValidationPipeline>();
+        services.AddScoped<ILedgerSemanticRuleSet, LedgerV1SemanticRuleSet>();
+        services.AddScoped<ILedgerSemanticRuleSet, LedgerV2SemanticRuleSet>();
+        services.AddScoped(serviceProvider => new LedgerSemanticRuleSetRegistry(
+            serviceProvider.GetServices<ILedgerSemanticRuleSet>()));
+        services.AddScoped<LedgerSemanticReplayVerifier>();
         services.AddScoped<LedgerExecutor>();
         services.AddScoped<EconomyLedgerReadModelService>();
         services.AddScoped<EconomyNodeService>();
@@ -237,7 +246,23 @@ public static partial class EconomyNodeHost
                 policy.RequireAuthenticatedUser();
                 policy.RequireRole(EconomyNodeAuthPolicies.AdministratorRole);
             });
+            authorization.AddPolicy(EconomyNodeAuthPolicies.ReadApi, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.AddRequirements(new EconomyNodeScopeRequirement(EconomyNodeScopes.Read));
+            });
+            authorization.AddPolicy(EconomyNodeAuthPolicies.WriteApi, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.AddRequirements(new EconomyNodeScopeRequirement(EconomyNodeScopes.Write));
+            });
+            authorization.AddPolicy(EconomyNodeAuthPolicies.AdminApi, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.AddRequirements(new EconomyNodeScopeRequirement(EconomyNodeScopes.Admin));
+            });
         });
+        services.AddSingleton<IAuthorizationHandler, EconomyNodeScopeAuthorizationHandler>();
     }
 
     private static void AddDataProtection(IServiceCollection services, EconomyNodeHostOptions options)
@@ -313,6 +338,7 @@ public static partial class EconomyNodeHost
     private static async Task ApplySchemaManagementAsync(
         EconomyDbContext db,
         EconomyNodeHostOptions options,
+        IEconomySchemaMigrator schemaMigrator,
         CancellationToken cancellationToken)
     {
         switch (options.SchemaManagementMode)
@@ -322,7 +348,7 @@ public static partial class EconomyNodeHost
                 return;
 
             case EconomyNodeSchemaManagementMode.Migrate:
-                await db.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+                await schemaMigrator.MigrateAsync(db, cancellationToken).ConfigureAwait(false);
                 return;
 
             case EconomyNodeSchemaManagementMode.None:

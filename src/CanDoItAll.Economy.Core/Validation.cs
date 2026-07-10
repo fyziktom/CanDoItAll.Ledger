@@ -52,6 +52,10 @@ public static class ValidationErrorCodes
     public const string UnknownAddress = "unknown_address";
     public const string InvalidBusinessObjectTransition = "invalid_business_object_transition";
     public const string InvalidTokenId = "invalid_token_id";
+    public const string InvalidTokenDefinition = "invalid_token_definition";
+    public const string InvalidTokenDefinitionId = "invalid_token_definition_id";
+    public const string InvalidTokenInitialSupply = "invalid_token_initial_supply";
+    public const string InvalidTokenClassification = "invalid_token_classification";
     public const string DuplicateTokenType = "duplicate_token_type";
     public const string UnauthorizedTokenCreation = "unauthorized_token_creation";
     public const string UnauthorizedMainCurrencyIssuance = "unauthorized_main_currency_issuance";

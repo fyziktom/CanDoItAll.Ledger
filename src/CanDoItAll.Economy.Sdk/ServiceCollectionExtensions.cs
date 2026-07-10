@@ -1,6 +1,7 @@
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Economy.Rules.NCalc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -10,6 +11,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddEconomySdk(this IServiceCollection services)
     {
+        services.AddNCalcAccountRuleExpressionDriver();
         services.TryAddScoped<ITransactionCanonicalizer, DefaultTransactionCanonicalizer>();
         services.TryAddScoped<ITransactionHasher, TransactionHasher>();
         services.TryAddScoped<ISignaturePayloadBuilder, SignaturePayloadBuilder>();

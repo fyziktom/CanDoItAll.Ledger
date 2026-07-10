@@ -33,3 +33,15 @@ Findings are based on exact source inspection, the 311-test baseline, implementa
 | F-027 | Medium | Resolved | Token-creation policy was optional in direct `LedgerExecutor` composition, creating unsafe-by-omission behavior. | `LedgerExecutor.cs`; `DisabledTokenCreationPolicy`; composition regression | Omission now creates the fail-closed policy; simulations must explicitly opt out. |
 | F-028 | Medium | Resolved | Account setup/import/unlock text fields updated only on `change`, so the first navigation/unlock click could be consumed by rerendering. | `AccountApp/Pages/Home.razor`; source-contract tests; browser screenshot | Setup-sensitive fields bind on `oninput`; import and unlock succeed on the first click. |
 | F-029 | Critical | Resolved | Main-currency increase in a raw `Mint` had no ledger-layer treasury authorization; any signed account with a plain UTXO could construct inflation while the supported treasury command also needed to remain valid. | `MainCurrencyIssuancePolicy.cs`; default/treasury policy regressions; treasury endpoint proof | A separate fail-closed issuance policy permits positive main deltas only from a configured treasury consuming its plain authority output; simulations must opt out explicitly. |
+
+## Second-wave closure note — 2026-07-10
+
+This table is the preserved audit snapshot. F-017 through F-022 and F-024 were subsequently implemented under R-001 through R-005 and are now closed in the control workbook and review reports:
+
+- F-017: exact-version semantic replay and readiness integration;
+- F-018–F-020: protocol-v2 hash-derived immutable token definitions, metadata, and classification;
+- F-021: read/write/admin JWT authorization policies;
+- F-022: PostgreSQL EF migrations and fail-closed legacy adoption;
+- F-024: NCalc retained only in a replaceable adapter driver.
+
+Evidence: `../proof/second-wave/summary.md` and `../reviews/02-security-and-architecture-review.md`.

@@ -32,3 +32,39 @@
 - Every critical finding has negative proof.
 - Residual proposals are compatibility-scoped, not presented as shipped fixes.
 
+## Second-wave checkpoints
+
+### After SB08
+
+- migration/adoption SQL lives only in PostgreSQL persistence;
+- invalid legacy rows block before history mutation;
+- Node callers share the migrator contract;
+- migration assembly selection is proven.
+
+### After SB09/SB10
+
+- replay version registry has exact v1/v2 owners and rejects unsupported versions;
+- Core/Ledger still have no storage/EF dependency;
+- v1 golden vectors pass unchanged;
+- token definition persistence contains immutable metadata while display metadata remains outside the ID hash.
+
+### After SB11
+
+- JWT authentication and authorization are separate;
+- endpoint privilege classification is explicit and denied scopes never invoke handlers.
+
+### After SB12
+
+- NCalc package/types exist only in the driver;
+- rule orchestration can be tested with a fake evaluator;
+- BusinessObjects did not gain a service locator/global mutable provider.
+
+### Second-wave final gate
+
+- direct `.csproj` graph has no cycle/forbidden reference;
+- no new partial class;
+- each extracted service/strategy/adapter has direct tests;
+- architecture review is Pass or Pass with named follow-up;
+- failed CodeAnalytics snapshot remains recorded rather than treated as an empty clean graph.
+
+Closure: Passed on 2026-07-10. Evidence is in `../reviews/csharp-architecture-gate.md` and `../proof/second-wave/summary.md`.

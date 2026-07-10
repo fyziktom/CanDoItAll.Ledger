@@ -327,6 +327,10 @@ public sealed class EfLedgerProjectionRebuilder(
             return;
         }
 
+        TokenDefinitionEnvelope? tokenDefinition = string.IsNullOrWhiteSpace(tx.TokenDefinitionJson)
+            ? null
+            : JsonSerializer.Deserialize<TokenDefinitionEnvelope>(tx.TokenDefinitionJson, JsonOptions);
+
         foreach (LedgerTransactionOutputRecord output in outputs.Where(x => !string.IsNullOrWhiteSpace(x.TokenId)))
         {
             if (inputTokenIds.Contains(output.TokenId!))
@@ -341,6 +345,20 @@ public sealed class EfLedgerProjectionRebuilder(
                 LedgerId = tx.LedgerId,
                 ScenarioId = tx.ScenarioId,
                 TokenId = output.TokenId!,
+                ProtocolVersion = tokenDefinition?.Definition.ProtocolVersion ?? 1,
+                DefinitionHash = tokenDefinition is not null
+                    && TokenDefinitionIdentity.IsV2TokenId(new TokenId(output.TokenId!))
+                        ? output.TokenId![TokenDefinitionIdentity.V2TokenIdPrefix.Length..]
+                        : null,
+                TokenNamespace = tokenDefinition?.Definition.Namespace,
+                Symbol = tokenDefinition?.Definition.Symbol,
+                IssuerAddress = tokenDefinition?.Definition.Issuer.Value,
+                InitialSupply = tokenDefinition?.Definition.InitialSupply.Value,
+                DecimalPlaces = tokenDefinition?.Definition.DecimalPlaces,
+                Classification = (int)(tokenDefinition?.Definition.Classification ?? TokenClassification.LegacyUnspecified),
+                DisplayName = tokenDefinition?.DisplayMetadata?.DisplayName,
+                Description = tokenDefinition?.DisplayMetadata?.Description,
+                DisplayExternalRef = tokenDefinition?.DisplayMetadata?.ExternalRef,
                 CreatedTxId = tx.TxId,
                 CreatedOutputIndex = output.OutputIndex,
                 CreatedAt = confirmedAt

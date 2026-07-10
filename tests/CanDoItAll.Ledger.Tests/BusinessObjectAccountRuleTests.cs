@@ -2,6 +2,7 @@ using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
 using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Economy.Rules.NCalc;
 using CanDoItAll.Economy.Storage.InMemory;
 using Xunit;
 
@@ -65,6 +66,29 @@ public sealed class BusinessObjectAccountRuleTests
         Assert.Equal(AccountRuleExecutionStatus.Executed, execution.Status);
         Assert.Equal(AccountRuleActionKind.Payment, execution.ActionKind);
         Assert.Equal(900m, activeCashpool.MainBalance.Value);
+    }
+
+    [Fact]
+    public async Task RefreshRuleExecution_UsesInjectedEvaluatorContractWithoutNCalcConstruction()
+    {
+        var evaluator = new AlwaysFalseEvaluator();
+        TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-14T11:30:00Z"), evaluator);
+        BusinessObjectAccount admin = rig.CreateAccount("treasury-admin");
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        BusinessObjectAccount cashpool = rig.CreateAccount("cashpool");
+        await IssuePermissionAndCreateRuleAsync(admin, alice, CreateCashpoolRule(cashpool.Address));
+
+        AccountRefreshResult result = await alice.RefreshAsync(
+            new AccountRefreshOptions
+            {
+                MaxTransactionCount = 50,
+                RuleExecution = new AccountRuleExecutionOptions { Enabled = true, MaxActionsPerRefresh = 5 }
+            },
+            CancellationToken.None);
+
+        Assert.True(evaluator.BooleanEvaluationCount > 0);
+        Assert.Equal(AccountRuleExecutionStatus.Skipped, Assert.Single(result.RuleExecutions).Status);
+        Assert.Equal(0m, (await cashpool.GetBalanceAsync(CancellationToken.None)).MainBalance.Value);
     }
 
     [Fact]
@@ -401,7 +425,9 @@ public sealed class BusinessObjectAccountRuleTests
         return createRule;
     }
 
-    private static TestRig CreateRig(DateTimeOffset utcNow)
+    private static TestRig CreateRig(
+        DateTimeOffset utcNow,
+        IAccountRuleExpressionEvaluator? evaluator = null)
     {
         ITransactionHasher hasher = new TransactionHasher(new DefaultTransactionCanonicalizer());
         var store = new InMemoryLedgerStore(hasher);
@@ -433,7 +459,12 @@ public sealed class BusinessObjectAccountRuleTests
             new AccountInputSigner(signatureRegistry),
             timeProvider);
 
-        return new TestRig(gateway, builder, timeProvider, CreateKeySource("cashpool").Address);
+        return new TestRig(
+            gateway,
+            builder,
+            timeProvider,
+            CreateKeySource("cashpool").Address,
+            evaluator ?? new NCalcAccountRuleExpressionEvaluator());
     }
 
     private static LedgerTransaction CreateBootstrapGenesis(DateTimeOffset timestamp)
@@ -475,13 +506,38 @@ public sealed class BusinessObjectAccountRuleTests
         InProcessLedgerGateway Gateway,
         BusinessObjectTransactionBuilder Builder,
         ManualTimeProvider Time,
-        Address CashpoolAddress)
+        Address CashpoolAddress,
+        IAccountRuleExpressionEvaluator RuleEvaluator)
     {
         public BusinessObjectAccount CreateAccount(string keyId)
         {
             IAccountKeySource keySource = CreateKeySource(keyId);
-            return new BusinessObjectAccount(Context, keySource, Gateway, Gateway, Builder);
+            return new BusinessObjectAccount(
+                Context,
+                keySource,
+                Gateway,
+                Gateway,
+                Builder,
+                RuleEvaluator);
         }
+    }
+
+    private sealed class AlwaysFalseEvaluator : IAccountRuleExpressionEvaluator
+    {
+        public int BooleanEvaluationCount { get; private set; }
+
+        public AccountRuleBooleanEvaluation EvaluateBoolean(
+            string expressionText,
+            IReadOnlyDictionary<string, object?> variables)
+        {
+            BooleanEvaluationCount++;
+            return AccountRuleBooleanEvaluation.Success(false);
+        }
+
+        public AccountRuleNumberEvaluation EvaluateNumber(
+            string expressionText,
+            IReadOnlyDictionary<string, object?> variables)
+            => AccountRuleNumberEvaluation.Failed("Number evaluation should not be reached when the condition is false.");
     }
 
     private sealed class EchoSignatureProvider : ISignatureProvider

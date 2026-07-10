@@ -30,6 +30,7 @@ public sealed class LedgerTransactionRecord
     public string? DataHash { get; set; }
     public string? InlineJson { get; set; }
     public string? ExternalRef { get; set; }
+    public string? TokenDefinitionJson { get; set; }
     public string? AdminSignatureJson { get; set; }
 }
 
@@ -115,6 +116,17 @@ public sealed class LedgerTokenTypeRecord
     public string LedgerId { get; set; } = string.Empty;
     public string? ScenarioId { get; set; }
     public string TokenId { get; set; } = string.Empty;
+    public int ProtocolVersion { get; set; } = 1;
+    public string? DefinitionHash { get; set; }
+    public string? TokenNamespace { get; set; }
+    public string? Symbol { get; set; }
+    public string? IssuerAddress { get; set; }
+    public decimal? InitialSupply { get; set; }
+    public int? DecimalPlaces { get; set; }
+    public int Classification { get; set; }
+    public string? DisplayName { get; set; }
+    public string? Description { get; set; }
+    public string? DisplayExternalRef { get; set; }
     public string CreatedTxId { get; set; } = string.Empty;
     public int CreatedOutputIndex { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

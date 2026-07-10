@@ -12,7 +12,8 @@ public sealed record MintTransactionRequest(
     string? DataJson,
     string? ExternalRef,
     string? BusinessObjectId,
-    string? ScenarioId);
+    string? ScenarioId,
+    TokenDefinitionEnvelope? TokenDefinition = null);
 
 public sealed record TransferTransactionRequest(
     string FromAddress,

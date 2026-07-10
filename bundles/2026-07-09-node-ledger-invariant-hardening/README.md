@@ -1,6 +1,6 @@
 # Node and Ledger Invariant Hardening
 
-Status: Implemented and verified on 2026-07-09
+Status: Complete — second implementation wave (R-001 through R-005) verified on 2026-07-10
 
 ## Objective
 
@@ -26,14 +26,24 @@ This bundle closes only when:
 
 This is a single-node tamper-evident ledger, not a distributed blockchain. No consensus, peer, mempool, mining, reorg, or P2P work is in scope.
 
-## Compatibility-sensitive proposals
+## Compatibility-sensitive implementations
 
-Two desired model upgrades are documented but are not silently imposed on the existing v1 transaction format:
+Two model upgrades were implemented without reinterpreting the existing v1 transaction format:
 
 1. A token definition whose immutable ID is derived from canonical definition content while retaining a human symbol/namespace.
 2. Semantic replay of persisted history in readiness, in addition to the existing hash-chain and projection verification.
 
-Both require a versioned compatibility and migration decision. They remain explicit architecture proposals unless this execution can add them without changing canonical v1 hashes or existing AccountApp token IDs.
+The user approved R-001 through R-005 for implementation on 2026-07-10. The second wave adds a production migration/adoption path, version-selected semantic replay, protocol-v2 token definitions without reinterpreting v1 IDs, JWT scope enforcement, and an isolated NCalc driver. The original v1 closure evidence remains immutable historical proof.
+
+## Second-wave outcome contract
+
+- Existing PostgreSQL schemas are audited before a migration baseline is adopted; invalid rows block rollout.
+- New PostgreSQL databases are migration-created, and previously `EnsureCreated` schemas can be adopted safely.
+- Readiness replays history through a rule set selected by transaction protocol version and reports semantic failures.
+- Protocol v2 token IDs derive from canonical immutable definitions while v1 token IDs remain addressable and hash-compatible.
+- V2 token classification enforces fungible versus BusinessObject-carrier output semantics at the ledger boundary.
+- JWT bearer access requires named read, write, or admin scope; development and API-key behavior remain explicit.
+- BusinessObjects no longer references NCalc; a dedicated driver project implements the repository-owned expression contract.
 
 ## Bundle map
 
@@ -63,6 +73,17 @@ Both require a versioned compatibility and migration decision. They remain expli
 - Docker: PostgreSQL, rebuilt Node, and three rebuilt AccountApps running; readiness at ledger sequence 12 reports zero chain or projection issues.
 - Large-screen browser proof: signed token-backed BO create/transfer, main-currency split/merge, account import/unlock, and refresh all passed at 1600x1000.
 - Deployed negative proof: mixed main/token output rejected, spent outputs rejected, unauthorized mint rejected, and an oversized chunked JSON request returned HTTP 413.
-- All eight subbundles are complete. Compatibility-sensitive protocol-v2 work and production schema migration remain explicit roadmap items, not hidden passes.
+- The original eight subbundles are complete. SB08-SB13 are the approved second implementation wave and will carry independent proof without rewriting the 2026-07-09 evidence.
+
+Second-wave closure:
+
+- 361 passed, 0 failed, 0 skipped; final TRX is `proof/second-wave/second-wave-full-final-361.trx`.
+- Four PostgreSQL migration proofs pass: new database, valid legacy adoption, invalid-row refusal, and concurrent-start serialization.
+- The retained Docker database contains both EF migrations and all ten output/UTXO constraints; sequence 13 readiness is `valid_semantic_payload` with zero semantic/projection issues.
+- Protocol-v2 token definitions have deterministic hash IDs, immutable registry metadata, explicit classification/divisibility rules, and v1 compatibility coverage.
+- JWT read/write/admin policies have direct and live-host allow/deny tests.
+- NCalc is owned only by `CanDoItAll.Economy.Rules.NCalc`; BusinessObjects depends only on the repository-owned evaluator contract.
+- Rebuilt AccountApp large-screen refresh passed at 1600x1000 with seven successful API responses and no browser errors.
+- Targeted Node/PostgreSQL/NCalc/test package audits report no known vulnerable packages. A separate solution-wide audit still reports the pre-existing AppHost MessagePack advisory, recorded as residual scope.
 
 Proof starts at `reviews/01-execution-report.md`; the editable matrix is `traceability/ledger-hardening-checklist.xlsx`.

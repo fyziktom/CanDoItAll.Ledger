@@ -10,6 +10,12 @@
 | 5 | SB05 | Node request/dependency hardening and architecture review | SB01-SB04 | Request limit proof; advisory resolved or explicitly blocked; dependency/partial/testability gate. |
 | 6 | SB06 | Full automated and Docker AccountApp large-screen proof | SB01-SB05 | Full tests, Docker build/up, Playwright MCP assertions/screenshots. |
 | 7 | SB07 | Final reconciliation and compatibility roadmap | SB06 | Workbook, findings, execution report, residual risks, raw-request closure agree. |
+| 8 | SB08 | R-001 PostgreSQL migration baseline, existing-schema audit, and adoption | SB07 | New database migration proof; valid legacy adoption; invalid-row fail-closed proof. |
+| 9 | SB09 | R-002 version-aware semantic replay and readiness integration | SB08 | V1/V2 rule-set selection; valid history pass; hash-valid semantic-invalid history fails readiness. |
+| 10 | SB10 | R-003 protocol-v2 token definitions and classification | SB08-SB09 | V1 golden vectors unchanged; deterministic v2 ID; immutable registry metadata; BO/fungible negatives. |
+| 11 | SB11 | R-004 JWT read/write/admin scope authorization | SB08 | Named policies; least-privilege endpoint mapping; missing/wrong scope denied. |
+| 12 | SB12 | R-005 NCalc driver isolation | SB07 | NCalc package only in driver project; contract fake and compatibility vectors; composition smoke. |
+| 13 | SB13 | Second-wave full proof and reconciliation | SB08-SB12 | Full tests, migration/PostgreSQL proof, package audit, Docker readiness, workbook and review closure. |
 
 ## Execution posture
 
@@ -20,4 +26,4 @@
 
 ## Completion
 
-All phases completed on 2026-07-09. Final evidence is 334/334 automated tests, a clean current dependency-vulnerability scan, rebuilt Docker services, deployed negative probes, and large-screen AccountApp browser proof. The compatibility roadmap in the security/architecture review is intentionally outside the v1 implementation boundary.
+Phases 0-7 completed on 2026-07-09. Phases 8-13 were reopened by explicit user approval and completed on 2026-07-10. They preserve the original evidence and add versioned/operational repairs rather than retroactively changing the v1 closure claim.

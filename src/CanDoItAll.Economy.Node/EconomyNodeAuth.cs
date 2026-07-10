@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -35,6 +36,95 @@ public static class EconomyNodeAuthPolicies
 {
     public const string AdministratorRole = "Administrator";
     public const string Administrator = "economy-node-admin";
+    public const string ReadApi = "economy-node-api-read";
+    public const string WriteApi = "economy-node-api-write";
+    public const string AdminApi = "economy-node-api-admin";
+}
+
+public static class EconomyNodeScopes
+{
+    public const string Read = "economy.read";
+    public const string Write = "economy.write";
+    public const string Admin = "economy.admin";
+    public const string LegacyNodeApi = "node.api";
+    public const string DefaultIssuedScopes = Read + " " + Write;
+
+    private static readonly HashSet<string> Allowed = new(StringComparer.Ordinal)
+    {
+        Read,
+        Write,
+        Admin,
+        LegacyNodeApi
+    };
+
+    public static string NormalizeForIssuance(string? value)
+    {
+        string source = string.IsNullOrWhiteSpace(value) ? DefaultIssuedScopes : value;
+        string[] scopes = Split(source)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(ScopeOrder)
+            .ThenBy(scope => scope, StringComparer.Ordinal)
+            .ToArray();
+        string[] unknown = scopes.Where(scope => !Allowed.Contains(scope)).ToArray();
+        if (unknown.Length > 0)
+        {
+            throw new InvalidOperationException($"Unknown JWT scope(s): {string.Join(", ", unknown)}.");
+        }
+
+        return string.Join(' ', scopes);
+    }
+
+    public static bool PrincipalHasScope(ClaimsPrincipal principal, string requiredScope)
+    {
+        HashSet<string> granted = principal.Claims
+            .Where(claim => claim.Type is "scope" or "scp")
+            .SelectMany(claim => Split(claim.Value))
+            .ToHashSet(StringComparer.Ordinal);
+        if (granted.Contains(LegacyNodeApi) || granted.Contains(Admin))
+        {
+            return true;
+        }
+
+        return requiredScope switch
+        {
+            Read => granted.Contains(Read) || granted.Contains(Write),
+            Write => granted.Contains(Write),
+            Admin => false,
+            _ => false
+        };
+    }
+
+    private static IEnumerable<string> Split(string value)
+        => value.Split(
+            [' ', '\t', '\r', '\n', ',', ';'],
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private static int ScopeOrder(string scope)
+        => scope switch
+        {
+            Read => 0,
+            Write => 1,
+            Admin => 2,
+            LegacyNodeApi => 3,
+            _ => 4
+        };
+}
+
+public sealed record EconomyNodeScopeRequirement(string RequiredScope) : IAuthorizationRequirement;
+
+public sealed class EconomyNodeScopeAuthorizationHandler : AuthorizationHandler<EconomyNodeScopeRequirement>
+{
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        EconomyNodeScopeRequirement requirement)
+    {
+        if (EconomyNodeScopes.PrincipalHasScope(context.User, requirement.RequiredScope))
+        {
+            context.Succeed(requirement);
+        }
+
+        return Task.CompletedTask;
+    }
 }
 
 public sealed class EconomyNodeUser : IdentityUser
@@ -66,7 +156,7 @@ public sealed class EconomyJwtTokenRecord
     public string? RevokedByUserId { get; set; }
 
     [MaxLength(512)]
-    public string Scopes { get; set; } = "node.api";
+    public string Scopes { get; set; } = EconomyNodeScopes.DefaultIssuedScopes;
 
     [MaxLength(128)]
     public string TokenFingerprint { get; set; } = string.Empty;
@@ -324,9 +414,7 @@ public sealed class EconomyNodeJwtService
 
     private static string NormalizeScopes(string? value)
     {
-        string normalized = string.IsNullOrWhiteSpace(value)
-            ? "node.api"
-            : value.Trim();
+        string normalized = EconomyNodeScopes.NormalizeForIssuance(value);
         if (normalized.Length > 512)
         {
             throw new InvalidOperationException("JWT scopes value is too long.");

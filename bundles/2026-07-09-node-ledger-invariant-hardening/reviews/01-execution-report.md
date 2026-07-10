@@ -1,6 +1,6 @@
 # Execution report
 
-Status: Complete — 2026-07-09
+Status: Complete — original v1 hardening 2026-07-09; approved R-001–R-005 second wave verified 2026-07-10
 
 ## Outcome
 
@@ -127,3 +127,58 @@ See `02-security-and-architecture-review.md` for severity and decisions.
 | Good C# architecture/testability | Complete: cohesive validators/pipeline, dependency direction preserved, review gate passed. |
 | Implement and test | Complete: 334/334 plus package/Docker/browser proof. |
 | AccountApps in Docker with Playwright MCP | Complete at large screen only. |
+
+## Second-wave execution report — 2026-07-10
+
+The five approved roadmap findings are now implemented rather than left as proposals.
+
+| Finding | Implemented outcome | Primary proof |
+| --- | --- | --- |
+| R-001 | Provider-owned EF migrations; audited adoption of prior `EnsureCreated` schema; session advisory lock spans adoption and migration. | Four `PostgreSqlMigrationTests`; retained Docker DB has both migrations and ten checks. |
+| R-002 | Exact-version semantic rule registry and replay into fresh in-memory state; readiness requires chain, semantics, and projection validity. | Semantic imbalance/unsupported/duplicate tests; Docker `valid_semantic_payload`, zero issues. |
+| R-003 | Protocol-v2 immutable token definition, SHA-256-derived ID, persisted metadata, exact initial supply, divisibility and classification policy. | Golden/tamper/classification/authorization/InMemory/EF tests; v1 vectors unchanged. |
+| R-004 | Named JWT read/write/admin policies with normalized scopes and explicit 401/403 behavior. | Policy matrix and live ASP.NET endpoint tests. |
+| R-005 | Repository-owned evaluator contract plus dedicated NCalc adapter project; orchestration is constructor-injected. | Compatibility, fake-driver, assembly-reference, and DI tests. |
+
+### Final proof
+
+| Check | Result |
+| --- | --- |
+| Full test suite | 361 passed, 0 failed, 0 skipped; 1m23s. |
+| Full solution build | 37 projects built, 0 errors; existing external/IPFS/NCalc/AppHost warning backlog remains. |
+| PostgreSQL migration focus | 4 passed, including concurrent legacy startup serialization. |
+| Token protocol focus | 8 passed, including v1 addressability and EF round trip. |
+| Targeted vulnerable-package audit | No known vulnerable packages in Node, PostgreSQL provider, NCalc driver, or test project. |
+| Solution-wide package observation | Separate AppHost project still carries pre-existing vulnerable MessagePack 2.5.192 transitively; outside R-001–R-005 and recorded as residual. |
+| Docker | Node and AccountApp images rebuilt; retained PostgreSQL database migrated without reset. |
+| Readiness | HTTP 200; sequence 13; `valid_semantic_payload`; semantic issues 0; projection `valid`, issues 0; schema mode `Migrate`. |
+| AccountApp | 1600x1000 vault/create/refresh smoke; seven API responses HTTP 200; no console/page errors. |
+| Diff hygiene | `git diff --check` clean apart from repository line-ending notices. |
+
+Final TRX: `../proof/second-wave/second-wave-full-final-361.trx`.
+
+Migration script: `../proof/second-wave/postgresql-idempotent-migrations.sql`.
+
+Browser screenshot: `../proof/second-wave/accountapp-large-refresh.png`.
+
+### Architecture closure
+
+- Core owns immutable protocol contracts; Cryptography owns canonical bytes/hashes; Ledger owns rules; stores own representation; Node is the outer composition/readiness/authorization boundary.
+- Persistence.EFCore owns the migration seam while the PostgreSQL adapter owns provider SQL and migrations.
+- BusinessObjects no longer references NCalc. Only `CanDoItAll.Economy.Rules.NCalc` declares the package; SDK composition may substitute a pre-registered evaluator because registration is `TryAdd`.
+- No service locator, partial-class expansion, cyclic reference, domain-to-persistence reference, or fake extraction was added.
+- CodeAnalytics retry failed as `snap-20260710110637-cfb21d28-failed` because its host resolved repository SDK 10.0.200 while the installed SDK is 10.0.300. The gate uses successful compilation/tests and direct `.csproj`/source inspection.
+
+### Remaining explicit risks
+
+1. NCalc 1.3.8 still emits NU1701 by design; it is isolated for later replacement, not falsely described as modernized.
+2. The development Docker profile remains intentionally insecure and host-exposed.
+3. Semantic readiness validates the supported v1/v2 rule sets; future versions must add an exact rule strategy before their history can pass.
+4. AppHost's separate transitive MessagePack advisory remains outside this approved change set.
+
+### Approved-note closure
+
+| User note | Result | Closure |
+| --- | --- | --- |
+| Repair/improve R-001 through R-005. | Solved | All five are production implementations with direct negative proof and a 361-test regression. |
+| Retain NCalc but isolate it behind a replaceable contract/driver. | Solved | NCalc remains version 1.3.8 only in `Rules.NCalc`; BusinessObjects owns the contract and fake-driver tests prove substitution. |

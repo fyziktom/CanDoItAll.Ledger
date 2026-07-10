@@ -202,6 +202,25 @@ public sealed class EfLedgerStore : ILedgerConfirmationStore
             .ConfigureAwait(false);
     }
 
+    public async Task<RegisteredTokenDefinition?> GetTokenDefinitionAsync(
+        LedgerId ledgerId,
+        ScenarioId? scenarioId,
+        TokenId tokenId,
+        CancellationToken cancellationToken)
+    {
+        await using EconomyDbContext db = await dbContextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        string? scenarioValue = scenarioId?.Value;
+        LedgerTokenTypeRecord? row = await db.LedgerTokenTypes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                item => item.LedgerId == ledgerId.Value
+                    && item.ScenarioId == scenarioValue
+                    && item.TokenId == tokenId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return row is null ? null : MapRegisteredTokenDefinition(row);
+    }
+
     public async Task<LedgerSubmitResult> ConfirmTransactionAsync(
         LedgerTransaction normalizedTransaction,
         IReadOnlyList<OutPointKey> inputKeys,
@@ -821,6 +840,19 @@ public sealed class EfLedgerStore : ILedgerConfirmationStore
                 LedgerId = tx.LedgerId.Value,
                 ScenarioId = tx.ScenarioId?.Value,
                 TokenId = tokenId.Value,
+                ProtocolVersion = tx.TokenDefinition?.Definition.ProtocolVersion ?? 1,
+                DefinitionHash = tx.TokenDefinition is not null && TokenDefinitionIdentity.IsV2TokenId(tokenId)
+                    ? tokenId.Value[TokenDefinitionIdentity.V2TokenIdPrefix.Length..]
+                    : null,
+                TokenNamespace = tx.TokenDefinition?.Definition.Namespace,
+                Symbol = tx.TokenDefinition?.Definition.Symbol,
+                IssuerAddress = tx.TokenDefinition?.Definition.Issuer.Value,
+                InitialSupply = tx.TokenDefinition?.Definition.InitialSupply.Value,
+                DecimalPlaces = tx.TokenDefinition?.Definition.DecimalPlaces,
+                Classification = (int)(tx.TokenDefinition?.Definition.Classification ?? TokenClassification.LegacyUnspecified),
+                DisplayName = tx.TokenDefinition?.DisplayMetadata?.DisplayName,
+                Description = tx.TokenDefinition?.DisplayMetadata?.Description,
+                DisplayExternalRef = tx.TokenDefinition?.DisplayMetadata?.ExternalRef,
                 CreatedTxId = txId.Value,
                 CreatedOutputIndex = tx.Outputs.First(x => x.Token?.TokenId == tokenId).OutputIndex,
                 CreatedAt = confirmedTransaction.ConfirmedAt
@@ -1041,7 +1073,8 @@ public sealed class EfLedgerStore : ILedgerConfirmationStore
             data,
             new TxId(row.TxId),
             ToHashHex(row.TxHash),
-            (TransactionStatus)row.Status);
+            (TransactionStatus)row.Status,
+            DeserializeTokenDefinition(row.TokenDefinitionJson));
     }
 
     private static LedgerTransactionInputRecord ToInputRecord(TxId txId, TransactionInput input, string outPointKey)
@@ -1117,9 +1150,35 @@ public sealed class EfLedgerStore : ILedgerConfirmationStore
             DataHash = tx.Data?.DataHash?.Value,
             InlineJson = tx.Data?.InlineJson,
             ExternalRef = tx.Data?.ExternalRef,
+            TokenDefinitionJson = tx.TokenDefinition is null
+                ? null
+                : JsonSerializer.Serialize(tx.TokenDefinition, JsonOptions),
             AdminSignatureJson = SerializeSignatureBundle(confirmedTransaction.AdminSignature)
         };
     }
+
+    private static RegisteredTokenDefinition MapRegisteredTokenDefinition(LedgerTokenTypeRecord row)
+        => new(
+            new TokenId(row.TokenId),
+            row.ProtocolVersion,
+            row.TokenNamespace,
+            row.Symbol,
+            string.IsNullOrWhiteSpace(row.IssuerAddress) ? null : new Address(row.IssuerAddress),
+            row.InitialSupply.HasValue ? new Amount(row.InitialSupply.Value) : null,
+            row.DecimalPlaces,
+            (TokenClassification)row.Classification,
+            string.IsNullOrWhiteSpace(row.DefinitionHash) ? null : new HashHex(row.DefinitionHash),
+            row.DisplayName is null && row.Description is null && row.DisplayExternalRef is null
+                ? null
+                : new TokenDisplayMetadata(row.DisplayName, row.Description, row.DisplayExternalRef),
+            new TxId(row.CreatedTxId),
+            row.CreatedOutputIndex,
+            row.CreatedAt);
+
+    private static TokenDefinitionEnvelope? DeserializeTokenDefinition(string? json)
+        => string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<TokenDefinitionEnvelope>(json, JsonOptions);
 
     private async Task<string> ResolveInputOutPointKeyAsync(
         EconomyDbContext db,

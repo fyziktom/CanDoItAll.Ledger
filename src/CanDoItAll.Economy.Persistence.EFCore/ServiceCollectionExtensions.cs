@@ -33,6 +33,7 @@ public static class EconomyEfCoreServiceCollectionExtensions
 
     public static IServiceCollection AddEconomyEfCoreStores(this IServiceCollection services)
     {
+        services.TryAddScoped<IEconomySchemaMigrator, EfEconomySchemaMigrator>();
         services.AddScoped<ILedgerStore, EfLedgerStore>();
         services.AddScoped<EfLedgerHistoryReader>();
         services.AddScoped<EfLedgerProjectionVerifier>();

@@ -18,4 +18,14 @@ The editable execution matrix is `ledger-hardening-checklist.xlsx`. All RQ-001 t
 | RQ-023 profiles | SB05 | Node host options/composition | production fail-closed tests; explicit simulation opt-out |
 | RQ-024 end to end | SB06 | rebuilt Node and AccountApps | 334/334; Docker readiness; 1600x1000 signed browser flows/screenshots |
 
-Residual protocol-v2 and rollout work is tracked in `../reviews/02-security-and-architecture-review.md`; it is not required to reinterpret completed v1 rows.
+The approved protocol-v2 and rollout work is now implemented without reinterpreting completed v1 rows. Residual risks remain tracked in `../reviews/02-security-and-architecture-review.md`.
+
+## Approved second-wave traceability
+
+| Requirement | Finding | Owner | Production target | Required negative proof | Status |
+| --- | --- | --- | --- | --- | --- |
+| RQ-025 | R-001 | SB08 | PostgreSQL migration assembly and schema migrator | Existing schema with invalid asset rows is not baselined or upgraded. | Complete — 4 PostgreSQL tests + Docker adoption |
+| RQ-026 | R-002 | SB09 | Versioned semantic replay verifier and Node readiness | Hash-valid but imbalanced history is reported invalid; unsupported version is explicit. | Complete — direct negatives + readiness |
+| RQ-027 | R-003 | SB10 | Core token-definition protocol, Ledger policy, stores, builders | Tampered ID, supply mismatch, fungible BO, and carrier amount-one without BO reject. | Complete — golden/negative/store tests |
+| RQ-028 | R-004 | SB11 | Named JWT scope policies and endpoint filters | Missing/read-only/wrong scope cannot reach write/admin endpoints. | Complete — policy matrix + live host |
+| RQ-029 | R-005 | SB12 | BusinessObjects evaluator contract and NCalc driver | BusinessObjects has no NCalc package/type reference; fake evaluator controls rule result. | Complete — boundary/DI/fake tests |

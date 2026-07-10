@@ -18,7 +18,9 @@ public sealed class EconomyNodeService(
     ISignaturePayloadBuilder? signaturePayloadBuilder = null,
     IAccountInputSigner? accountInputSigner = null,
     EconomyNodeHostOptions? hostOptions = null,
-    EconomyLedgerReadModelService? readModelService = null)
+    EconomyLedgerReadModelService? readModelService = null,
+    IEconomySchemaMigrator? schemaMigrator = null,
+    ITokenDefinitionHasher? providedTokenDefinitionHasher = null)
 {
     private static readonly LedgerId DefaultLedgerId = new("default");
     private readonly EconomyNodeHostOptions options = hostOptions ?? new EconomyNodeHostOptions();
@@ -26,6 +28,9 @@ public sealed class EconomyNodeService(
     private readonly ISignaturePayloadBuilder inputPayloadBuilder = signaturePayloadBuilder ?? new SignaturePayloadBuilder(transactionHasher ?? new TransactionHasher(new DefaultTransactionCanonicalizer()));
     private readonly IAccountInputSigner inputSigner = accountInputSigner ?? new AccountInputSigner(SignatureProviderRegistry.CreateDefault());
     private readonly EconomyLedgerReadModelService readModels = readModelService ?? new EconomyLedgerReadModelService(dbContextFactory);
+    private readonly IEconomySchemaMigrator? configuredSchemaMigrator = schemaMigrator;
+    private readonly ITokenDefinitionHasher tokenDefinitionHasher = providedTokenDefinitionHasher
+        ?? new TokenDefinitionHasher(new DefaultTokenDefinitionCanonicalizer());
 
     public async Task ResetAsync(CancellationToken cancellationToken)
     {
@@ -187,7 +192,9 @@ public sealed class EconomyNodeService(
     public async Task<TransactionReceipt> MintAsync(MintTransactionRequest request, CancellationToken cancellationToken)
     {
         Amount mainAmount = ParseAmount(request.MainAmount, nameof(request.MainAmount));
-        TokenTransfer? token = CreateToken(request.TokenId, request.TokenAmount);
+        TokenTransfer? token = request.TokenDefinition is null
+            ? CreateToken(request.TokenId, request.TokenAmount)
+            : CreateVersionTwoToken(request.TokenDefinition, request.TokenId, request.TokenAmount);
 
         if (mainAmount.Value == 0m && token is null)
         {
@@ -196,6 +203,10 @@ public sealed class EconomyNodeService(
 
         Address receiverAddress = new(request.Address);
         Address treasuryAddress = new(options.TreasuryAdminAddress.Trim());
+        if (request.TokenDefinition is not null && request.TokenDefinition.Definition.Issuer != treasuryAddress)
+        {
+            throw new InvalidOperationException("Treasury helper token definition issuer must be the configured treasury address.");
+        }
         if (token is not null && receiverAddress != treasuryAddress)
         {
             throw new InvalidOperationException("Grant-holder token minting must be submitted as a signed ledger transaction from the account that owns the token authority BO.");
@@ -210,6 +221,7 @@ public sealed class EconomyNodeService(
             : await GetOrCreateTreasuryTokenMintPermissionOutputAsync(
                 scenarioId,
                 token.TokenId,
+                request.TokenDefinition?.Definition.Namespace,
                 cancellationToken).ConfigureAwait(false);
         TransactionData? data = CreateData(request.DataItemType, request.DataJson, request.ExternalRef);
         var outputs = new List<TransactionOutput>();
@@ -251,13 +263,14 @@ public sealed class EconomyNodeService(
         var transaction = new LedgerTransaction(
             DefaultLedgerId,
             scenarioId,
-            Version: 1,
+            Version: request.TokenDefinition is null ? 1 : 2,
             TransactionKind.Mint,
             SigningMode.Independent,
             timeProvider.UtcNow,
             inputs,
             outputs,
-            data);
+            data,
+            TokenDefinition: request.TokenDefinition);
 
         LedgerSubmitResult result = await ledgerExecutor.SubmitAsync(
             await SignTreasuryInputsAsync(transaction, cancellationToken).ConfigureAwait(false),
@@ -480,11 +493,13 @@ public sealed class EconomyNodeService(
     private async Task<UnspentOutputRecord> GetOrCreateTreasuryTokenMintPermissionOutputAsync(
         ScenarioId? scenarioId,
         TokenId tokenId,
+        string? authorizationNamespace,
         CancellationToken cancellationToken)
     {
         UnspentOutputRecord? existing = await GetTreasuryTokenMintPermissionOutputAsync(
             scenarioId,
             tokenId,
+            authorizationNamespace,
             cancellationToken).ConfigureAwait(false);
         if (existing is not null)
         {
@@ -494,7 +509,7 @@ public sealed class EconomyNodeService(
         string treasuryAddress = options.TreasuryAdminAddress.Trim();
         await GrantPermissionAsync(
             new PermissionGrantRequest(
-                tokenId.Value,
+                authorizationNamespace ?? tokenId.Value,
                 treasuryAddress,
                 Amount: 1m,
                 Repeatable: true,
@@ -505,6 +520,7 @@ public sealed class EconomyNodeService(
         return await GetTreasuryTokenMintPermissionOutputAsync(
                 scenarioId,
                 tokenId,
+                authorizationNamespace,
                 cancellationToken)
             .ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Treasury admin could not create a mint permission for token {tokenId.Value}.");
@@ -513,6 +529,7 @@ public sealed class EconomyNodeService(
     private async Task<UnspentOutputRecord?> GetTreasuryTokenMintPermissionOutputAsync(
         ScenarioId? scenarioId,
         TokenId tokenId,
+        string? authorizationNamespace,
         CancellationToken cancellationToken)
     {
         string treasuryAddress = options.TreasuryAdminAddress.Trim();
@@ -533,7 +550,9 @@ public sealed class EconomyNodeService(
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return candidates.FirstOrDefault(candidate => PermissionObjectAllowsToken(candidate, tokenId));
+        return candidates.FirstOrDefault(candidate => authorizationNamespace is null
+            ? PermissionObjectAllowsToken(candidate, tokenId)
+            : PermissionObjectAllowsToken(candidate, new TokenId(authorizationNamespace)));
     }
 
     private static void AddPreservedAuthorityOutput(
@@ -643,6 +662,27 @@ public sealed class EconomyNodeService(
         }
 
         return new TokenTransfer(new TokenId(normalizedTokenId), parsedAmount);
+    }
+
+    private TokenTransfer CreateVersionTwoToken(
+        TokenDefinitionEnvelope envelope,
+        string? requestedTokenId,
+        decimal? requestedAmount)
+    {
+        TokenId tokenId = tokenDefinitionHasher.CalculateTokenId(envelope.Definition);
+        if (!string.IsNullOrWhiteSpace(requestedTokenId)
+            && !string.Equals(requestedTokenId.Trim(), tokenId.Value, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Protocol-v2 token id must be the hash-derived id {tokenId.Value}.");
+        }
+
+        Amount amount = ParseAmount(requestedAmount ?? envelope.Definition.InitialSupply.Value, nameof(requestedAmount));
+        if (amount != envelope.Definition.InitialSupply)
+        {
+            throw new InvalidOperationException("Protocol-v2 token amount must equal the immutable initial supply.");
+        }
+
+        return new TokenTransfer(tokenId, amount);
     }
 
     private static bool PermissionObjectAllowsToken(UnspentOutputRecord row, TokenId tokenId)
@@ -785,7 +825,12 @@ public sealed class EconomyNodeService(
                 return;
 
             case EconomyNodeSchemaManagementMode.Migrate:
-                await db.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+                if (configuredSchemaMigrator is null)
+                {
+                    throw new InvalidOperationException("Schema migration mode requires an IEconomySchemaMigrator.");
+                }
+
+                await configuredSchemaMigrator.MigrateAsync(db, cancellationToken).ConfigureAwait(false);
                 return;
 
             case EconomyNodeSchemaManagementMode.None:

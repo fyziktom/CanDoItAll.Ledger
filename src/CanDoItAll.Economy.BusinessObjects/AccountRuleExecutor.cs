@@ -7,14 +7,13 @@ using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.BusinessObjects;
 
-internal static class AccountRuleExecutor
+internal sealed class AccountRuleExecutor(IAccountRuleExpressionEvaluator evaluator)
 {
-    private static readonly IAccountRuleExpressionEvaluator Evaluator = new NCalcAccountRuleExpressionEvaluator();
     private static readonly Regex TemplatePlaceholderPattern = new(
         "\\{\\{\\s*(?<name>[A-Za-z0-9_.:-]+)\\s*\\}\\}",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    public static async Task<IReadOnlyList<AccountRuleExecutionResult>> ExecuteAsync(
+    public async Task<IReadOnlyList<AccountRuleExecutionResult>> ExecuteAsync(
         BusinessObjectAccount account,
         AccountRefreshResult refresh,
         AccountRuleExecutionOptions options,
@@ -49,7 +48,7 @@ internal static class AccountRuleExecutor
 
                 string ruleExecutionId = CreateRuleExecutionId(rule.Definition, trigger, refresh.Snapshot);
                 IReadOnlyDictionary<string, object?> variables = BuildVariables(refresh.Snapshot, rule.Definition, trigger, ruleExecutionId);
-                AccountRuleBooleanEvaluation condition = EvaluateConditions(rule.Definition, variables);
+                AccountRuleBooleanEvaluation condition = EvaluateConditions(rule.Definition, variables, evaluator);
                 if (!condition.Succeeded)
                 {
                     results.Add(Failed(rule.Definition, trigger, AccountRuleActionKind.MarkProcessed, condition.Error ?? "Condition evaluation failed."));
@@ -77,9 +76,10 @@ internal static class AccountRuleExecutor
                             refresh.Snapshot,
                             rule.Definition,
                             trigger,
-                            action,
-                            variables,
-                            ruleExecutionId,
+                        action,
+                        variables,
+                        evaluator,
+                        ruleExecutionId,
                             options,
                             cancellationToken)
                         .ConfigureAwait(false);
@@ -223,11 +223,12 @@ internal static class AccountRuleExecutor
 
     private static AccountRuleBooleanEvaluation EvaluateConditions(
         AccountRuleDefinition rule,
-        IReadOnlyDictionary<string, object?> variables)
+        IReadOnlyDictionary<string, object?> variables,
+        IAccountRuleExpressionEvaluator evaluator)
     {
         foreach (string condition in rule.Conditions)
         {
-            AccountRuleBooleanEvaluation evaluation = Evaluator.EvaluateBoolean(condition, variables);
+            AccountRuleBooleanEvaluation evaluation = evaluator.EvaluateBoolean(condition, variables);
             if (!evaluation.Succeeded || !evaluation.Value)
             {
                 return evaluation;
@@ -244,6 +245,7 @@ internal static class AccountRuleExecutor
         RuleTriggerContext trigger,
         AccountRuleAction action,
         IReadOnlyDictionary<string, object?> variables,
+        IAccountRuleExpressionEvaluator evaluator,
         string ruleExecutionId,
         AccountRuleExecutionOptions options,
         CancellationToken cancellationToken)
@@ -253,9 +255,9 @@ internal static class AccountRuleExecutor
             switch (action.Kind)
             {
                 case AccountRuleActionKind.Payment:
-                    return await ExecutePaymentAsync(account, rule, trigger, action, variables, cancellationToken).ConfigureAwait(false);
+                    return await ExecutePaymentAsync(account, rule, trigger, action, variables, evaluator, cancellationToken).ConfigureAwait(false);
                 case AccountRuleActionKind.TokenTransfer:
-                    return await ExecuteTokenTransferAsync(account, rule, trigger, action, variables, cancellationToken).ConfigureAwait(false);
+                    return await ExecuteTokenTransferAsync(account, rule, trigger, action, variables, evaluator, cancellationToken).ConfigureAwait(false);
                 case AccountRuleActionKind.TransferBusinessObject:
                     return await ExecuteBusinessObjectTransferAsync(account, snapshot, rule, trigger, action, variables, cancellationToken).ConfigureAwait(false);
                 case AccountRuleActionKind.UpdateBusinessObject:
@@ -283,6 +285,7 @@ internal static class AccountRuleExecutor
         RuleTriggerContext trigger,
         AccountRuleAction action,
         IReadOnlyDictionary<string, object?> variables,
+        IAccountRuleExpressionEvaluator evaluator,
         CancellationToken cancellationToken)
     {
         if (!TryResolveAddress(action.ReceiverAddress, variables, out Address receiverAddress, out string? receiverError))
@@ -290,7 +293,7 @@ internal static class AccountRuleExecutor
             return Failed(rule, trigger, action.Kind, receiverError ?? "Payment action requires a valid receiver address.");
         }
 
-        AccountRuleNumberEvaluation amount = Evaluator.EvaluateNumber(action.AmountExpression ?? string.Empty, variables);
+        AccountRuleNumberEvaluation amount = evaluator.EvaluateNumber(action.AmountExpression ?? string.Empty, variables);
         if (!amount.Succeeded)
         {
             return Failed(rule, trigger, action.Kind, amount.Error ?? "Payment amount evaluation failed.");
@@ -314,6 +317,7 @@ internal static class AccountRuleExecutor
         RuleTriggerContext trigger,
         AccountRuleAction action,
         IReadOnlyDictionary<string, object?> variables,
+        IAccountRuleExpressionEvaluator evaluator,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(action.TokenId))
@@ -326,7 +330,7 @@ internal static class AccountRuleExecutor
             return Failed(rule, trigger, action.Kind, receiverError ?? "Token transfer action requires a valid receiver address.");
         }
 
-        AccountRuleNumberEvaluation amount = Evaluator.EvaluateNumber(action.AmountExpression ?? string.Empty, variables);
+        AccountRuleNumberEvaluation amount = evaluator.EvaluateNumber(action.AmountExpression ?? string.Empty, variables);
         if (!amount.Succeeded)
         {
             return Failed(rule, trigger, action.Kind, amount.Error ?? "Token amount evaluation failed.");

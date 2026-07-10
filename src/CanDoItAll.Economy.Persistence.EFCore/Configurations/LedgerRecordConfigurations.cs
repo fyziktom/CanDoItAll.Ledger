@@ -31,6 +31,7 @@ public sealed class LedgerTransactionRecordConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.LedgerEntryHash).HasMaxLength(128);
         builder.Property(x => x.TxHash).HasMaxLength(128);
         builder.Property(x => x.DataHash).HasMaxLength(128);
+        builder.Property(x => x.TokenDefinitionJson).HasColumnType("text");
         builder.HasIndex(x => new { x.LedgerId, x.ScenarioId, x.LedgerSequence }).IsUnique();
         builder.HasIndex(x => new { x.LedgerId, x.ScenarioId, x.Status });
         builder.HasIndex(x => new { x.LedgerId, x.ScenarioId, x.DataItemType });
@@ -170,6 +171,14 @@ public sealed class LedgerTokenTypeRecordConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.LedgerId).HasMaxLength(128).IsRequired();
         builder.Property(x => x.ScenarioId).HasMaxLength(128);
         builder.Property(x => x.TokenId).HasMaxLength(128).IsRequired();
+        builder.Property(x => x.DefinitionHash).HasMaxLength(128);
+        builder.Property(x => x.TokenNamespace).HasMaxLength(128);
+        builder.Property(x => x.Symbol).HasMaxLength(64);
+        builder.Property(x => x.IssuerAddress).HasMaxLength(256);
+        builder.Property(x => x.InitialSupply).HasColumnType("numeric");
+        builder.Property(x => x.DisplayName).HasMaxLength(160);
+        builder.Property(x => x.Description).HasMaxLength(2048);
+        builder.Property(x => x.DisplayExternalRef).HasMaxLength(2048);
         builder.Property(x => x.CreatedTxId).HasMaxLength(128).IsRequired();
         builder.HasIndex(x => new { x.LedgerId, x.ScenarioId, x.TokenId }).IsUnique();
     }

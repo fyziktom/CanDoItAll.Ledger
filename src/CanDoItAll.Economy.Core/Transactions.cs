@@ -42,7 +42,8 @@ public sealed record LedgerTransaction(
     TransactionData? Data,
     TxId? TxId = null,
     HashHex? TxHash = null,
-    TransactionStatus Status = TransactionStatus.Pending);
+    TransactionStatus Status = TransactionStatus.Pending,
+    TokenDefinitionEnvelope? TokenDefinition = null);
 
 public sealed record ConfirmedTransaction(
     LedgerTransaction Transaction,

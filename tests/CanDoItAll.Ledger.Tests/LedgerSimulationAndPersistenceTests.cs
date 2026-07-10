@@ -860,6 +860,13 @@ public sealed class LedgerSimulationAndPersistenceTests
             CancellationToken cancellationToken)
             => Task.FromResult(false);
 
+        public Task<RegisteredTokenDefinition?> GetTokenDefinitionAsync(
+            LedgerId ledgerId,
+            ScenarioId? scenarioId,
+            TokenId tokenId,
+            CancellationToken cancellationToken)
+            => Task.FromResult<RegisteredTokenDefinition?>(null);
+
         public Task AppendConfirmedTransactionAsync(ConfirmedTransaction confirmedTransaction, CancellationToken cancellationToken)
             => throw new LedgerStoreConflictException(
                 ValidationErrorCodes.LedgerStateConflict,

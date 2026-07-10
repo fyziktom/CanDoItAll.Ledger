@@ -15,6 +15,7 @@
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Node\CanDoItAll.Economy.Node.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Persistence.EFCore\CanDoItAll.Economy.Persistence.EFCore.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Persistence.PostgreSql\CanDoItAll.Economy.Persistence.PostgreSql.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Rules.NCalc\CanDoItAll.Economy.Rules.NCalc.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Storage.InMemory\CanDoItAll.Economy.Storage.InMemory.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator\CanDoItAll.Ledger.Simulator.csproj" />

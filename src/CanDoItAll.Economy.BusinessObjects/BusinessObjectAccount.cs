@@ -7,11 +7,14 @@ public sealed class BusinessObjectAccount(
     IAccountKeySource keySource,
     ILedgerGateway ledgerGateway,
     ILedgerReadClient ledgerReadClient,
-    BusinessObjectTransactionBuilder transactionBuilder)
+    BusinessObjectTransactionBuilder transactionBuilder,
+    IAccountRuleExpressionEvaluator? ruleExpressionEvaluator = null)
 {
     private readonly Dictionary<Address, BusinessObjectSubAccount> subAccounts = new();
     private readonly SemaphoreSlim refreshLock = new(1, 1);
     private AccountRefreshState refreshState = AccountRefreshState.Empty;
+    private readonly AccountRuleExecutor ruleExecutor = new(
+        ruleExpressionEvaluator ?? UnavailableAccountRuleExpressionEvaluator.Instance);
 
     public LedgerAccountContext Context { get; } = context;
 
@@ -29,7 +32,13 @@ public sealed class BusinessObjectAccount(
 
     public BusinessObjectSubAccount AddSubAccount(string name, IAccountKeySource subAccountKeySource)
     {
-        var account = new BusinessObjectAccount(Context, subAccountKeySource, ledgerGateway, ledgerReadClient, transactionBuilder);
+        var account = new BusinessObjectAccount(
+            Context,
+            subAccountKeySource,
+            ledgerGateway,
+            ledgerReadClient,
+            transactionBuilder,
+            ruleExpressionEvaluator);
         var subAccount = new BusinessObjectSubAccount(name, this, account);
         account.RefreshCompleted += (_, args) => PublishRefreshCompleted(args.RouteToParent(this, subAccount));
         account.NewTransactionsObserved += (_, args) => PublishNewTransactionsObserved(args.RouteToParent(this, subAccount));
@@ -407,7 +416,7 @@ public sealed class BusinessObjectAccount(
 
         if (options.RuleExecution?.Enabled == true)
         {
-            IReadOnlyList<AccountRuleExecutionResult> ruleExecutions = await AccountRuleExecutor
+            IReadOnlyList<AccountRuleExecutionResult> ruleExecutions = await ruleExecutor
                 .ExecuteAsync(this, result, options.RuleExecution, cancellationToken)
                 .ConfigureAwait(false);
             result = result with { RuleExecutions = ruleExecutions };

@@ -17,8 +17,11 @@ public sealed class LedgerTransactionValidationPipeline(
     IMainCurrencyIssuancePolicy mainCurrencyIssuancePolicy,
     ITokenCreationPolicy tokenCreationPolicy,
     InputSignatureValidator inputSignatureValidator,
-    AssetConservationValidator assetConservationValidator)
+    AssetConservationValidator assetConservationValidator,
+    ITokenDefinitionPolicy? providedTokenDefinitionPolicy = null)
 {
+    private readonly ITokenDefinitionPolicy tokenDefinitionPolicy = providedTokenDefinitionPolicy ?? new TokenDefinitionPolicy();
+
     public async Task<ValidationResult> ValidateAsync(
         LedgerTransactionValidationContext context,
         CancellationToken cancellationToken)
@@ -62,6 +65,14 @@ public sealed class LedgerTransactionValidationPipeline(
         if (!mainCurrencyIssuance.IsValid)
         {
             return mainCurrencyIssuance;
+        }
+
+        ValidationResult tokenDefinition = await tokenDefinitionPolicy
+            .ValidateAsync(transaction, context.UnspentOutputs, context.Store, cancellationToken)
+            .ConfigureAwait(false);
+        if (!tokenDefinition.IsValid)
+        {
+            return tokenDefinition;
         }
 
         ValidationResult tokenPolicy = await tokenCreationPolicy

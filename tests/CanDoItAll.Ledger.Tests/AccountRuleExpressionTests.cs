@@ -1,6 +1,8 @@
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Economy.Rules.NCalc;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
@@ -82,6 +84,21 @@ public sealed class AccountRuleExpressionTests
 
         Assert.False(result.Succeeded);
         Assert.Contains("limit", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void NCalcDriver_IsOuterImplementationBehindBusinessObjectsContract()
+    {
+        Assert.DoesNotContain(
+            typeof(BusinessObjectAccount).Assembly.GetReferencedAssemblies(),
+            reference => reference.Name?.Contains("NCalc", StringComparison.OrdinalIgnoreCase) == true);
+
+        var services = new ServiceCollection();
+        services.AddNCalcAccountRuleExpressionDriver();
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        Assert.IsType<NCalcAccountRuleExpressionEvaluator>(
+            provider.GetRequiredService<IAccountRuleExpressionEvaluator>());
     }
 
     private static AccountRuleDefinition CreateCashpoolRule(Address cashpoolAddress)

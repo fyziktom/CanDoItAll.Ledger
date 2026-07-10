@@ -6,6 +6,7 @@ using CanDoItAll.Economy.Persistence.EFCore.Records;
 using CanDoItAll.Economy.Sdk;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using CanDoItAll.Economy.Storage.InMemory;
 
 namespace CanDoItAll.Economy.Node;
 
@@ -111,6 +112,7 @@ public sealed class EconomyNodeHealthService(
     ITransactionHasher hasher,
     ISignaturePayloadBuilder payloadBuilder,
     ISignatureProviderRegistry signatureProviderRegistry,
+    LedgerSemanticReplayVerifier semanticReplayVerifier,
     EfLedgerProjectionVerifier projectionVerifier,
     ITimeProvider timeProvider,
     EconomyNodeHostOptions options)
@@ -161,6 +163,9 @@ public sealed class EconomyNodeHealthService(
                 trustedAdminKeys.Count == 0 ? null : signatureProviderRegistry,
                 trustedAdminKeys);
             LedgerChainVerificationReport verification = verifier.Verify(history);
+            LedgerSemanticReplayReport semanticVerification = await semanticReplayVerifier
+                .VerifyAsync(history, new InMemoryLedgerStore(hasher), cancellationToken)
+                .ConfigureAwait(false);
             EfLedgerProjectionVerificationReport projectionVerification = await projectionVerifier
                 .VerifyAsync(DefaultLedgerId, null, cancellationToken)
                 .ConfigureAwait(false);
@@ -173,13 +178,15 @@ public sealed class EconomyNodeHealthService(
                 ? "missing_trusted_admin_key"
                 : history.Count == 0
                     ? "empty"
-                    : verification.IsValid && trustedAdminKeys.Count == 0
-                        ? "valid_payload_only"
-                        : verification.IsValid
-                            ? "valid_trusted"
+                    : verification.IsValid && semanticVerification.IsValid && trustedAdminKeys.Count == 0
+                        ? "valid_semantic_payload"
+                        : verification.IsValid && semanticVerification.IsValid
+                            ? "valid_semantic_trusted"
                             : "invalid";
             string[] verificationIssueCodes = verification.Issues
                 .Select(x => x.Code.ToString())
+                .Concat(semanticVerification.Issues.Select(x =>
+                    $"Semantic:{x.ValidationCode ?? x.Code.ToString()}"))
                 .Distinct(StringComparer.Ordinal)
                 .Order(StringComparer.Ordinal)
                 .ToArray();
@@ -193,6 +200,7 @@ public sealed class EconomyNodeHealthService(
             }
 
             bool overallOk = verification.IsValid
+                && semanticVerification.IsValid
                 && projectionVerification.IsValid
                 && !missingRequiredTrustedVerification;
 

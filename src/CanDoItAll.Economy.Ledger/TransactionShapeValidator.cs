@@ -10,9 +10,16 @@ public sealed class TransactionShapeValidator
     {
         var errors = new List<ValidationError>();
 
-        if (transaction.Version <= 0)
+        if (transaction.Version is not (1 or 2))
         {
-            errors.Add(new ValidationError("invalid_version", "Transaction version must be positive."));
+            errors.Add(new ValidationError("unsupported_transaction_version", "Transaction version must be 1 or 2."));
+        }
+
+        if (transaction.Version == 1 && transaction.TokenDefinition is not null)
+        {
+            errors.Add(new ValidationError(
+                ValidationErrorCodes.InvalidTokenDefinition,
+                "Protocol-v1 transactions cannot carry protocol-v2 token definitions."));
         }
 
         if (!Enum.IsDefined(transaction.Kind))

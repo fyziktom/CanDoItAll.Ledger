@@ -18,6 +18,7 @@
     <Project Path="src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj" />
     <Project Path="src/CanDoItAll.Economy.Persistence.EFCore/CanDoItAll.Economy.Persistence.EFCore.csproj" />
     <Project Path="src/CanDoItAll.Economy.Persistence.PostgreSql/CanDoItAll.Economy.Persistence.PostgreSql.csproj" />
+    <Project Path="src/CanDoItAll.Economy.Rules.NCalc/CanDoItAll.Economy.Rules.NCalc.csproj" />
     <Project Path="src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj" />
     <Project Path="src/CanDoItAll.Economy.Simulation.Abstractions/CanDoItAll.Economy.Simulation.Abstractions.csproj" />
     <Project Path="src/CanDoItAll.Economy.Simulation.Ledger/CanDoItAll.Economy.Simulation.Ledger.csproj" />

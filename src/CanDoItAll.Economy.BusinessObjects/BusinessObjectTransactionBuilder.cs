@@ -7,8 +7,13 @@ public sealed class BusinessObjectTransactionBuilder(
     ITransactionHasher transactionHasher,
     ISignaturePayloadBuilder signaturePayloadBuilder,
     IAccountInputSigner inputSigner,
-    ITimeProvider timeProvider)
+    ITimeProvider timeProvider,
+    ITokenDefinitionHasher? providedTokenDefinitionHasher = null)
 {
+    private readonly ITokenDefinitionHasher tokenDefinitionHasher = providedTokenDefinitionHasher
+        ?? new CanDoItAll.Economy.Cryptography.TokenDefinitionHasher(
+            new CanDoItAll.Economy.Cryptography.DefaultTokenDefinitionCanonicalizer());
+
     private readonly IAccountTransactionSigner transactionSigner = new AccountTransactionSigner(
         transactionHasher,
         signaturePayloadBuilder,
@@ -362,6 +367,27 @@ public sealed class BusinessObjectTransactionBuilder(
             throw new InvalidOperationException("Permission-holder token minting cannot mint main ledger amount.");
         }
 
+        TokenId tokenId = request.TokenDefinition is null
+            ? request.TokenId
+            : tokenDefinitionHasher.CalculateTokenId(request.TokenDefinition.Definition);
+        if (request.TokenDefinition is not null)
+        {
+            if (request.TokenId != tokenId)
+            {
+                throw new InvalidOperationException($"Protocol-v2 token id must be the hash-derived id {tokenId.Value}.");
+            }
+
+            if (request.TokenDefinition.Definition.InitialSupply != request.TokenAmount)
+            {
+                throw new InvalidOperationException("Protocol-v2 token amount must equal the immutable initial supply.");
+            }
+
+            if (request.TokenDefinition.Definition.Issuer != keySource.Address)
+            {
+                throw new InvalidOperationException("Protocol-v2 token issuer must be the account consuming the mint permission.");
+            }
+        }
+
         IReadOnlyList<LedgerSpendableOutput> spendableOutputs = await ledgerReadClient
             .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
             .ConfigureAwait(false);
@@ -369,10 +395,17 @@ public sealed class BusinessObjectTransactionBuilder(
             .GetTransactionsAsync(new LedgerAddressQuery(context, keySource.Address), includeData: true, cancellationToken)
             .ConfigureAwait(false);
 
-        LedgerPermissionSource permission = PermissionSourceResolver.SelectMintPermissionSource(
-            PermissionSourceResolver.Resolve(spendableOutputs, transactions),
-            request.TokenId,
-            request.PermissionSourceOutPoint);
+        IReadOnlyList<LedgerPermissionSource> permissionSources = PermissionSourceResolver.Resolve(spendableOutputs, transactions);
+        LedgerPermissionSource permission = request.TokenDefinition is null
+            ? PermissionSourceResolver.SelectMintPermissionSource(
+                permissionSources,
+                tokenId,
+                request.PermissionSourceOutPoint)
+            : PermissionSourceResolver.SelectMintPermissionSource(
+                permissionSources,
+                request.TokenDefinition.Definition.Namespace,
+                tokenId.Value,
+                request.PermissionSourceOutPoint);
         BusinessObjectRef permissionRef = permission.Output.BusinessObject
             ?? throw new InvalidOperationException("Permission source output is missing its BusinessObject reference.");
 
@@ -382,7 +415,7 @@ public sealed class BusinessObjectTransactionBuilder(
                 0,
                 request.ReceiverAddress ?? keySource.Address,
                 mainAmount,
-                new TokenTransfer(request.TokenId, request.TokenAmount))
+                new TokenTransfer(tokenId, request.TokenAmount))
         };
 
         if (permission.Grant.Repeatable)
@@ -403,7 +436,7 @@ public sealed class BusinessObjectTransactionBuilder(
         var unsigned = new LedgerTransaction(
             context.LedgerId,
             context.ScenarioId,
-            Version: 1,
+            Version: request.TokenDefinition is null ? 1 : 2,
             TransactionKind.Mint,
             SigningMode.Independent,
             timeProvider.UtcNow,
@@ -412,7 +445,8 @@ public sealed class BusinessObjectTransactionBuilder(
                 new TransactionInput(0, permission.OutPoint, keySource.Address, SignatureBundle.Empty)
             },
             outputs,
-            Data: null);
+            Data: null,
+            TokenDefinition: request.TokenDefinition);
 
         return unsigned;
     }

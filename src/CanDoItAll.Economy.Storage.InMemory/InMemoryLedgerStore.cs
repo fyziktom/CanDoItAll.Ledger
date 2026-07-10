@@ -15,6 +15,7 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
     private readonly Dictionary<OutPointKey, SpentOutput> spentOutputs = new();
     private readonly Dictionary<string, RegisteredAddress> addresses = new(StringComparer.Ordinal);
     private readonly HashSet<string> tokenIds = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, RegisteredTokenDefinition> tokenDefinitions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, UnspentOutput> currentBusinessObjects = new(StringComparer.Ordinal);
     private readonly HashSet<string> businessObjectVersionKeys = new(StringComparer.Ordinal);
 
@@ -168,6 +169,19 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
         }
     }
 
+    public Task<RegisteredTokenDefinition?> GetTokenDefinitionAsync(
+        LedgerId ledgerId,
+        ScenarioId? scenarioId,
+        TokenId tokenId,
+        CancellationToken cancellationToken)
+    {
+        lock (gate)
+        {
+            tokenDefinitions.TryGetValue(TokenKey(ledgerId, scenarioId, tokenId), out RegisteredTokenDefinition? definition);
+            return Task.FromResult(definition);
+        }
+    }
+
     public async Task AppendConfirmedTransactionAsync(
         ConfirmedTransaction confirmedTransaction,
         CancellationToken cancellationToken)
@@ -217,6 +231,10 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
             }
 
             ValidateBusinessObjectProjectionState(tx, consumedOutputs.Select(x => x.Output).ToArray());
+            HashSet<TokenId> inputTokenIds = consumedOutputs
+                .Where(item => item.Output.Token is not null)
+                .Select(item => item.Output.Token!.TokenId)
+                .ToHashSet();
 
             foreach ((OutPointKey key, TransactionInput input, UnspentOutput previous) in consumedOutputs)
             {
@@ -260,7 +278,17 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
 
                 if (output.Token is not null)
                 {
-                    tokenIds.Add(TokenKey(tx.LedgerId, tx.ScenarioId, output.Token.TokenId));
+                    string tokenKey = TokenKey(tx.LedgerId, tx.ScenarioId, output.Token.TokenId);
+                    tokenIds.Add(tokenKey);
+                    if (tx.Kind is TransactionKind.Genesis or TransactionKind.Mint
+                        && !inputTokenIds.Contains(output.Token.TokenId)
+                        && !tokenDefinitions.ContainsKey(tokenKey))
+                    {
+                        tokenDefinitions[tokenKey] = CreateRegisteredTokenDefinition(
+                            tx,
+                            output,
+                            confirmedTransaction.ConfirmedAt);
+                    }
                 }
 
                 if (output.BusinessObject is not null)
@@ -408,4 +436,45 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
     private static string BusinessObjectKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectId objectId) => $"{ledgerId.Value}|{scenarioId?.Value ?? string.Empty}|{objectId.Value}";
 
     private static string BusinessObjectVersionKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectId objectId, int version) => $"{BusinessObjectKey(ledgerId, scenarioId, objectId)}|{version.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+
+    private static RegisteredTokenDefinition CreateRegisteredTokenDefinition(
+        LedgerTransaction transaction,
+        TransactionOutput output,
+        DateTimeOffset createdAt)
+    {
+        TokenTransfer token = output.Token!;
+        TokenDefinitionEnvelope? envelope = transaction.TokenDefinition;
+        if (envelope is not null && TokenDefinitionIdentity.IsV2TokenId(token.TokenId))
+        {
+            return new RegisteredTokenDefinition(
+                token.TokenId,
+                envelope.Definition.ProtocolVersion,
+                envelope.Definition.Namespace,
+                envelope.Definition.Symbol,
+                envelope.Definition.Issuer,
+                envelope.Definition.InitialSupply,
+                envelope.Definition.DecimalPlaces,
+                envelope.Definition.Classification,
+                new HashHex(token.TokenId.Value[TokenDefinitionIdentity.V2TokenIdPrefix.Length..]),
+                envelope.DisplayMetadata,
+                transaction.TxId!.Value,
+                output.OutputIndex,
+                createdAt);
+        }
+
+        return new RegisteredTokenDefinition(
+            token.TokenId,
+            1,
+            null,
+            null,
+            null,
+            null,
+            null,
+            TokenClassification.LegacyUnspecified,
+            null,
+            null,
+            transaction.TxId!.Value,
+            output.OutputIndex,
+            createdAt);
+    }
 }

@@ -78,6 +78,10 @@ public sealed record LedgerPermissionSource(
         => string.Equals(Grant.Action, PermissionTokenAuthority.MintNewTokenTypeAction, StringComparison.Ordinal)
             && PermissionTokenAuthority.IsTokenInNamespace(tokenId, Grant.Namespace);
 
+    public bool AllowsMintNamespace(string tokenNamespace)
+        => string.Equals(Grant.Action, PermissionTokenAuthority.MintNewTokenTypeAction, StringComparison.Ordinal)
+            && PermissionTokenAuthority.IsTokenInNamespace(new TokenId(tokenNamespace), Grant.Namespace);
+
     public bool AllowsRuleCreation(string ruleNamespace)
         => string.Equals(Grant.Action, RuleTokenAuthority.CreateRuleTokenAction, StringComparison.Ordinal)
             && PermissionTokenAuthority.IsTokenInNamespace(new TokenId(ruleNamespace), Grant.Namespace);

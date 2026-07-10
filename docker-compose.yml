@@ -37,6 +37,7 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080
       Economy__Persistence__Provider: PostgreSql
+      Economy__Persistence__SchemaManagementMode: Migrate
       Economy__PostgreSql__ConnectionString: Host=postgres;Port=5432;Database=candoitall_economy;Username=candoitall;Password=candoitall-dev
       Economy__PostgreSql__EnableRetryOnFailure: "true"
       Economy__Treasury__AdminMainAmount: "1000000000000"

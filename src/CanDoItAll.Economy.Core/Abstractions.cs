@@ -57,6 +57,12 @@ public interface ILedgerStore
         TokenId tokenId,
         CancellationToken cancellationToken);
 
+    Task<RegisteredTokenDefinition?> GetTokenDefinitionAsync(
+        LedgerId ledgerId,
+        ScenarioId? scenarioId,
+        TokenId tokenId,
+        CancellationToken cancellationToken);
+
     Task AppendConfirmedTransactionAsync(ConfirmedTransaction confirmedTransaction, CancellationToken cancellationToken);
 }
 

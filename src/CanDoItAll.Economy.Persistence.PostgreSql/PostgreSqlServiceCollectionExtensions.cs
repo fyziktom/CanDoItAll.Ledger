@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CanDoItAll.Economy.Persistence.PostgreSql;
 
@@ -25,6 +26,8 @@ public sealed class EconomyPostgreSqlOptions
 
 public static class EconomyPostgreSqlServiceCollectionExtensions
 {
+    public static string DefaultMigrationsAssembly { get; } = typeof(EconomyPostgreSqlServiceCollectionExtensions).Assembly.GetName().Name!;
+
     public static IServiceCollection AddEconomyPostgreSqlPersistence(
         this IServiceCollection services,
         string connectionString,
@@ -35,7 +38,9 @@ public static class EconomyPostgreSqlServiceCollectionExtensions
             .Configure(options =>
             {
                 options.ConnectionString = connectionString;
-                options.MigrationsAssembly = migrationsAssembly;
+                options.MigrationsAssembly = string.IsNullOrWhiteSpace(migrationsAssembly)
+                    ? DefaultMigrationsAssembly
+                    : migrationsAssembly;
                 configure?.Invoke(options);
             })
             .ValidateDataAnnotations()
@@ -66,6 +71,10 @@ public static class EconomyPostgreSqlServiceCollectionExtensions
 
     private static void AddEconomyPostgreSqlServices(IServiceCollection services)
     {
+        services.PostConfigure<EconomyPostgreSqlOptions>(options =>
+            options.MigrationsAssembly = string.IsNullOrWhiteSpace(options.MigrationsAssembly)
+                ? DefaultMigrationsAssembly
+                : options.MigrationsAssembly);
         services.AddDbContextFactory<EconomyDbContext>((serviceProvider, optionsBuilder) =>
         {
             EconomyPostgreSqlOptions options = serviceProvider.GetRequiredService<IOptions<EconomyPostgreSqlOptions>>().Value;
@@ -89,5 +98,6 @@ public static class EconomyPostgreSqlServiceCollectionExtensions
         });
 
         services.AddEconomyEfCoreStores();
+        services.Replace(ServiceDescriptor.Scoped<IEconomySchemaMigrator, PostgreSqlEconomySchemaMigrator>());
     }
 }

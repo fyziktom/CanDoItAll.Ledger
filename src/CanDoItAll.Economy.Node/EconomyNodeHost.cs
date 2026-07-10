@@ -80,7 +80,11 @@ public static partial class EconomyNodeHost
             .ConfigureAwait(false);
         await using (db)
         {
-            await ApplySchemaManagementAsync(db, scope.ServiceProvider.GetRequiredService<EconomyNodeHostOptions>(), cancellationToken)
+            await ApplySchemaManagementAsync(
+                    db,
+                    scope.ServiceProvider.GetRequiredService<EconomyNodeHostOptions>(),
+                    scope.ServiceProvider.GetRequiredService<IEconomySchemaMigrator>(),
+                    cancellationToken)
                 .ConfigureAwait(false);
             EconomyNodeHostOptions options = scope.ServiceProvider.GetRequiredService<EconomyNodeHostOptions>();
             if (options.BootstrapTreasuryAdmin)
