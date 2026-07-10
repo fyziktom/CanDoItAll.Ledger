@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Primitives;
 
 namespace CanDoItAll.Economy.Node;
@@ -48,6 +49,8 @@ public static partial class EconomyNodeHost
 
         services.AddProblemDetails();
         services.AddSingleton(options);
+        services.Configure<KestrelServerOptions>(serverOptions =>
+            serverOptions.Limits.MaxRequestBodySize = options.MaxRequestBodyBytes);
         services.AddHttpContextAccessor();
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
@@ -82,6 +85,13 @@ public static partial class EconomyNodeHost
                     ledgerAdminAccount,
                     serviceProvider.GetRequiredService<ISignatureProviderRegistry>()));
         services.AddScoped<ITokenCreationPolicy, TokenCreationPolicy>();
+        services.AddScoped<IMainCurrencyIssuancePolicy>(_ => new MainCurrencyIssuancePolicy(
+            new MainCurrencyIssuancePolicyOptions { TreasuryAdminAddress = treasuryAdminAccount.Address }));
+        services.AddScoped<InputReferenceValidator>();
+        services.AddScoped<BusinessObjectTransitionValidator>();
+        services.AddScoped<InputSignatureValidator>();
+        services.AddScoped<AssetConservationValidator>();
+        services.AddScoped<LedgerTransactionValidationPipeline>();
         services.AddScoped<LedgerExecutor>();
         services.AddScoped<EconomyLedgerReadModelService>();
         services.AddScoped<EconomyNodeService>();

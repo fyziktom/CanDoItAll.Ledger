@@ -1002,6 +1002,8 @@ public static class EconomyDevelopmentWorkspaceServiceCollectionExtensions
         services.TryAddScoped<ISignatureProviderRegistry>(_ => new SignatureProviderRegistry([new DevelopmentEcdsaSignatureProvider()]));
         services.TryAddScoped<IAccountInputSigner, AccountInputSigner>();
         services.TryAddScoped<ILedgerStore, InMemoryLedgerStore>();
+        services.TryAddScoped<ITokenCreationPolicy>(_ => DisabledTokenCreationPolicy.Instance);
+        services.TryAddScoped<IMainCurrencyIssuancePolicy>(_ => DisabledMainCurrencyIssuancePolicy.Instance);
         services.TryAddScoped<LedgerExecutor>();
         services.AddBusinessObjectLedgerLayer();
         services.AddEconomySdk();

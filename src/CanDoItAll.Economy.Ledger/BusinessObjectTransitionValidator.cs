@@ -43,11 +43,10 @@ public sealed class BusinessObjectTransitionValidator
             }
 
             TransactionOutput output = produced[0];
-            BusinessObjectRef next = output.BusinessObject!;
             consumedByObjectId.TryGetValue(objectId, out UnspentOutput[]? consumed);
             UnspentOutput? current = consumed?.Length == 1 ? consumed[0] : null;
 
-            ValidateProducedReference(transaction, objectId, next, current, errors);
+            ValidateProducedReference(transaction, objectId, output, current, errors);
         }
 
         return errors.Count == 0 ? ValidationResult.Success : new ValidationResult(errors);
@@ -73,10 +72,11 @@ public sealed class BusinessObjectTransitionValidator
     private static void ValidateProducedReference(
         LedgerTransaction transaction,
         BusinessObjectId objectId,
-        BusinessObjectRef next,
+        TransactionOutput output,
         UnspentOutput? current,
         List<ValidationError> errors)
     {
+        BusinessObjectRef next = output.BusinessObject!;
         if (!Enum.IsDefined(next.Operation))
         {
             errors.Add(InvalidTransition(
@@ -97,7 +97,7 @@ public sealed class BusinessObjectTransitionValidator
                 break;
             case BusinessObjectOperation.Update:
             case BusinessObjectOperation.Transfer:
-                ValidateCurrentVersionTransition(objectId, next, current, errors);
+                ValidateCurrentVersionTransition(objectId, output, current, errors);
                 break;
             case BusinessObjectOperation.Close:
                 errors.Add(InvalidTransition(
@@ -129,10 +129,11 @@ public sealed class BusinessObjectTransitionValidator
 
     private static void ValidateCurrentVersionTransition(
         BusinessObjectId objectId,
-        BusinessObjectRef next,
+        TransactionOutput output,
         UnspentOutput? current,
         List<ValidationError> errors)
     {
+        BusinessObjectRef next = output.BusinessObject!;
         if (current?.BusinessObject is null)
         {
             errors.Add(InvalidTransition(
@@ -146,6 +147,24 @@ public sealed class BusinessObjectTransitionValidator
             errors.Add(InvalidTransition(
                 $"BusinessObject {objectId.Value} {next.Operation} must advance from version {current.BusinessObject.Version} to {expectedVersion}, not {next.Version}."));
         }
+
+        if (current.Token is null || output.Token is null || current.Token.TokenId != output.Token.TokenId)
+        {
+            errors.Add(InvalidTransition(
+                $"BusinessObject {objectId.Value} {next.Operation} must preserve carrier token id {current.Token?.TokenId.Value ?? "<missing>"}."));
+        }
+
+        if (next.Operation == BusinessObjectOperation.Update && output.Address != current.Address)
+        {
+            errors.Add(InvalidTransition(
+                $"BusinessObject {objectId.Value} update must keep owner {current.Address.Value}."));
+        }
+
+        if (next.Operation == BusinessObjectOperation.Transfer && output.Address == current.Address)
+        {
+            errors.Add(InvalidTransition(
+                $"BusinessObject {objectId.Value} transfer must change owner from {current.Address.Value}."));
+        }
     }
 
     private static void ValidateInlineDataBinding(
@@ -156,7 +175,7 @@ public sealed class BusinessObjectTransitionValidator
         List<ValidationError> errors)
     {
         TransactionData? data = transaction.Data;
-        if (data?.InlineJson is null)
+        if (data is null)
         {
             return;
         }
@@ -164,7 +183,7 @@ public sealed class BusinessObjectTransitionValidator
         if (data.DataHash is null)
         {
             errors.Add(InvalidTransition(
-                $"BusinessObject {objectId.Value} carries inline transaction data without a transaction data hash."));
+                $"BusinessObject {objectId.Value} carries transaction data without a transaction data hash."));
             return;
         }
 
@@ -177,7 +196,7 @@ public sealed class BusinessObjectTransitionValidator
         if (next.DataHash != data.DataHash.Value)
         {
             errors.Add(InvalidTransition(
-                $"BusinessObject {objectId.Value} data hash must match transaction inline data hash when the object state changes."));
+                $"BusinessObject {objectId.Value} data hash must match the declared transaction data hash when the object state changes."));
         }
     }
 

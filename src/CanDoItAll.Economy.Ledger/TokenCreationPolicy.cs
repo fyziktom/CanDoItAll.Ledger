@@ -24,6 +24,26 @@ public interface ITokenCreationPolicy
         CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Explicit opt-out for controlled simulations and compatibility fixtures.
+/// Production composition must use <see cref="TokenCreationPolicy"/>.
+/// </summary>
+public sealed class DisabledTokenCreationPolicy : ITokenCreationPolicy
+{
+    public static DisabledTokenCreationPolicy Instance { get; } = new();
+
+    private DisabledTokenCreationPolicy()
+    {
+    }
+
+    public Task<ValidationResult> ValidateAsync(
+        LedgerTransaction transaction,
+        IReadOnlyDictionary<OutPointKey, UnspentOutput> inputs,
+        ILedgerStore store,
+        CancellationToken cancellationToken)
+        => Task.FromResult(ValidationResult.Success);
+}
+
 public sealed class TokenCreationPolicy(TokenCreationPolicyOptions options) : ITokenCreationPolicy
 {
     private const int MaxOriginTraceDepth = 64;

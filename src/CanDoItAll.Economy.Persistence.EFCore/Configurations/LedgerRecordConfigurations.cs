@@ -58,7 +58,22 @@ public sealed class LedgerTransactionOutputRecordConfiguration : IEntityTypeConf
 {
     public void Configure(EntityTypeBuilder<LedgerTransactionOutputRecord> builder)
     {
-        builder.ToTable("Economy_LedgerTransactionOutputs");
+        builder.ToTable("Economy_LedgerTransactionOutputs", table =>
+        {
+            table.HasCheckConstraint("CK_Economy_TxOutput_MainNonNegative", "\"MainAmount\" >= 0");
+            table.HasCheckConstraint(
+                "CK_Economy_TxOutput_TokenPair",
+                "(\"TokenId\" IS NULL AND \"TokenAmount\" IS NULL) OR (\"TokenId\" IS NOT NULL AND \"TokenAmount\" IS NOT NULL)");
+            table.HasCheckConstraint(
+                "CK_Economy_TxOutput_TokenPositive",
+                "\"TokenAmount\" IS NULL OR \"TokenAmount\" > 0");
+            table.HasCheckConstraint(
+                "CK_Economy_TxOutput_AssetSeparation",
+                "NOT (\"MainAmount\" > 0 AND \"TokenId\" IS NOT NULL)");
+            table.HasCheckConstraint(
+                "CK_Economy_TxOutput_HasValue",
+                "\"MainAmount\" > 0 OR \"TokenId\" IS NOT NULL");
+        });
         builder.HasKey(x => x.Id);
         builder.Property(x => x.TxId).HasMaxLength(128).IsRequired();
         builder.Property(x => x.Address).HasMaxLength(256).IsRequired();
@@ -78,7 +93,22 @@ public sealed class UnspentOutputRecordConfiguration : IEntityTypeConfiguration<
 {
     public void Configure(EntityTypeBuilder<UnspentOutputRecord> builder)
     {
-        builder.ToTable("Economy_UnspentOutputs");
+        builder.ToTable("Economy_UnspentOutputs", table =>
+        {
+            table.HasCheckConstraint("CK_Economy_Utxo_MainNonNegative", "\"MainAmount\" >= 0");
+            table.HasCheckConstraint(
+                "CK_Economy_Utxo_TokenPair",
+                "(\"TokenId\" IS NULL AND \"TokenAmount\" IS NULL) OR (\"TokenId\" IS NOT NULL AND \"TokenAmount\" IS NOT NULL)");
+            table.HasCheckConstraint(
+                "CK_Economy_Utxo_TokenPositive",
+                "\"TokenAmount\" IS NULL OR \"TokenAmount\" > 0");
+            table.HasCheckConstraint(
+                "CK_Economy_Utxo_AssetSeparation",
+                "NOT (\"MainAmount\" > 0 AND \"TokenId\" IS NOT NULL)");
+            table.HasCheckConstraint(
+                "CK_Economy_Utxo_HasValue",
+                "\"MainAmount\" > 0 OR \"TokenId\" IS NOT NULL");
+        });
         builder.HasKey(x => x.OutPointKey);
         builder.Property(x => x.OutPointKey).HasMaxLength(128);
         builder.Property(x => x.LedgerId).HasMaxLength(128).IsRequired();

@@ -44,6 +44,21 @@ public sealed class AccountAppUiSourceContractTests
         Assert.DoesNotContain("FormSection Title=\"Reset local vault\"", home, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Account_setup_fields_update_before_navigation_click()
+    {
+        string home = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor");
+
+        Assert.Contains("@bind=\"Session.ImportBackupJson\"", home, StringComparison.Ordinal);
+        Assert.Contains("@bind=\"Session.ImportBackupPassword\"", home, StringComparison.Ordinal);
+        Assert.Contains("@bind=\"Session.ImportNewPassword\"", home, StringComparison.Ordinal);
+        Assert.Contains("@bind=\"Session.ImportConfirmPassword\"", home, StringComparison.Ordinal);
+        Assert.Contains("@bind=\"Session.UnlockPassword\"", home, StringComparison.Ordinal);
+        Assert.Contains("@bind=\"Session.CreatePassword\"", home, StringComparison.Ordinal);
+        Assert.Contains("@bind=\"Session.PastedKeyPassword\"", home, StringComparison.Ordinal);
+        Assert.Equal(14, home.Split("@bind:event=\"oninput\"", StringSplitOptions.None).Length - 1);
+    }
+
     private static string ReadRepoFile(params string[] segments)
     {
         DirectoryInfo? directory = new(Directory.GetCurrentDirectory());

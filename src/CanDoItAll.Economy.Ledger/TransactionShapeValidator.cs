@@ -117,6 +117,19 @@ public sealed class TransactionShapeValidator
             {
                 errors.Add(new ValidationError(ValidationErrorCodes.NegativeAmount, $"Output {output.OutputIndex} has negative token amount."));
             }
+            else if (output.Token is not null && output.Token.Amount.Value == 0m)
+            {
+                errors.Add(new ValidationError(
+                    ValidationErrorCodes.InvalidTransactionShape,
+                    $"Output {output.OutputIndex} token amount must be positive."));
+            }
+
+            if (output.MainAmount.Value == 0m && output.Token is null)
+            {
+                errors.Add(new ValidationError(
+                    ValidationErrorCodes.InvalidTransactionShape,
+                    $"Output {output.OutputIndex} carries no spendable value. Use a positive main amount or positive token amount."));
+            }
 
             ValidateTokenOutputSeparation(errors, output);
             ValidateNormalBusinessObjectCarrier(errors, transaction.Data, output);

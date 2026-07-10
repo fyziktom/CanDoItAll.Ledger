@@ -1129,9 +1129,9 @@ public sealed class BusinessObjectAdvancedTransactionTests
         ITransactionHasher hasher = new TransactionHasher(new DefaultTransactionCanonicalizer());
         var store = new InMemoryLedgerStore(hasher);
         var timeProvider = new ManualTimeProvider(utcNow);
-        ITokenCreationPolicy? tokenCreationPolicy = enforceTokenPolicy
+        ITokenCreationPolicy tokenCreationPolicy = enforceTokenPolicy
             ? new TokenCreationPolicy(new TokenCreationPolicyOptions { TreasuryAdminAddress = Bootstrap })
-            : null;
+            : DisabledTokenCreationPolicy.Instance;
         var gateway = new InProcessLedgerGateway(
             new LedgerExecutor(
                 store,
@@ -1157,7 +1157,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
     {
         var outputs = new List<TransactionOutput>
         {
-            new(0, Bootstrap, Amount.Zero)
+            new(0, Bootstrap, Amount.FromInt64(1_000_000))
         };
         if (includeRootPermission)
         {
@@ -1207,7 +1207,23 @@ public sealed class BusinessObjectAdvancedTransactionTests
                 .First(output => output.Token is null && output.BusinessObject is null);
 
             var allOutputs = outputs.ToList();
-            allOutputs.Add(new TransactionOutput(allOutputs.Count, Bootstrap, selected.MainAmount, selected.Token, selected.BusinessObject));
+            decimal requestedMain = outputs.Aggregate(0m, (sum, output) => checked(sum + output.MainAmount.Value));
+            decimal mainChange = selected.MainAmount.Value - requestedMain;
+            if (mainChange < 0m)
+            {
+                throw new InvalidOperationException(
+                    $"Bootstrap funding has {selected.MainAmount.Value} main but the fixture requested {requestedMain}.");
+            }
+
+            if (mainChange > 0m)
+            {
+                allOutputs.Add(new TransactionOutput(
+                    allOutputs.Count,
+                    Bootstrap,
+                    new Amount(mainChange),
+                    selected.Token,
+                    selected.BusinessObject));
+            }
 
             var unsigned = new LedgerTransaction(
                 LedgerId,

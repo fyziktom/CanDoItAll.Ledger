@@ -17,6 +17,8 @@ public static class LedgerValidationLimits
     public const int MaxSignaturesPerInput = 8;
     public const int MaxSignatureBytes = 8192;
     public const int MaxPublicKeyMaterialBytes = 8192;
+    public const int MaxTransactionSignatureBytes = 1_048_576;
+    public const int MaxTransactionPublicKeyMaterialBytes = 1_048_576;
     public const int MaxInlineJsonBytes = 262_144;
     public const int MaxExternalRefLength = 2048;
     public const int MaxContentTypeLength = 128;

@@ -47,12 +47,14 @@ public static class ValidationErrorCodes
     public const string MissingInput = "missing_input";
     public const string AddressMismatch = "address_mismatch";
     public const string AssetImbalance = "asset_imbalance";
+    public const string AmountOverflow = "amount_overflow";
     public const string NegativeAmount = "negative_amount";
     public const string UnknownAddress = "unknown_address";
     public const string InvalidBusinessObjectTransition = "invalid_business_object_transition";
     public const string InvalidTokenId = "invalid_token_id";
     public const string DuplicateTokenType = "duplicate_token_type";
     public const string UnauthorizedTokenCreation = "unauthorized_token_creation";
+    public const string UnauthorizedMainCurrencyIssuance = "unauthorized_main_currency_issuance";
     public const string UnauthorizedTokenAuthorityGrant = "unauthorized_token_authority_grant";
     public const string UnauthorizedRuleTokenCreation = "unauthorized_rule_token_creation";
 }

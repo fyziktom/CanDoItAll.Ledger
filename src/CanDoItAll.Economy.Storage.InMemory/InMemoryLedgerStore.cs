@@ -4,9 +4,10 @@ using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.Storage.InMemory;
 
-public sealed class InMemoryLedgerStore : ILedgerStore
+public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
 {
     private readonly object gate = new();
+    private readonly SemaphoreSlim confirmationGate = new(1, 1);
     private readonly ITransactionHasher? hasher;
     private readonly Dictionary<string, LedgerState> states = new(StringComparer.Ordinal);
     private readonly Dictionary<string, LedgerTransaction> transactions = new(StringComparer.Ordinal);
@@ -112,7 +113,77 @@ public sealed class InMemoryLedgerStore : ILedgerStore
         }
     }
 
-    public Task AppendConfirmedTransactionAsync(ConfirmedTransaction confirmedTransaction, CancellationToken cancellationToken)
+    public async Task<LedgerSubmitResult> ConfirmTransactionAsync(
+        LedgerTransaction normalizedTransaction,
+        IReadOnlyList<OutPointKey> inputKeys,
+        Func<LedgerConfirmationContext, CancellationToken, Task<LedgerConfirmationDecision>> confirm,
+        CancellationToken cancellationToken)
+    {
+        await confirmationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            LedgerConfirmationContext context;
+            lock (gate)
+            {
+                TxId txId = normalizedTransaction.TxId
+                    ?? throw new InvalidOperationException("Normalized transaction must have a transaction id.");
+                states.TryGetValue(
+                    StateKey(normalizedTransaction.LedgerId, normalizedTransaction.ScenarioId),
+                    out LedgerState? state);
+                transactions.TryGetValue(
+                    TxKey(normalizedTransaction.LedgerId, normalizedTransaction.ScenarioId, txId),
+                    out LedgerTransaction? existing);
+                IReadOnlyDictionary<OutPointKey, UnspentOutput> unspent = inputKeys
+                    .Where(unspentOutputs.ContainsKey)
+                    .ToDictionary(key => key, key => unspentOutputs[key]);
+                IReadOnlyDictionary<OutPointKey, SpentOutput> spent = inputKeys
+                    .Where(spentOutputs.ContainsKey)
+                    .ToDictionary(key => key, key => spentOutputs[key]);
+                context = new LedgerConfirmationContext(state, existing, unspent, spent);
+            }
+
+            LedgerConfirmationDecision decision = await confirm(context, cancellationToken).ConfigureAwait(false);
+            if (!decision.Accepted)
+            {
+                return LedgerSubmitResult.Rejected(decision.Errors);
+            }
+
+            ConfirmedTransaction confirmed = decision.ConfirmedTransaction!;
+            try
+            {
+                AppendConfirmedTransactionCore(confirmed);
+            }
+            catch (LedgerStoreConflictException ex)
+            {
+                return LedgerSubmitResult.Rejected(new[] { new ValidationError(ex.Code, ex.Message) });
+            }
+
+            return LedgerSubmitResult.Confirmed(
+                confirmed.Transaction.TxId!.Value,
+                confirmed.LedgerSequence);
+        }
+        finally
+        {
+            confirmationGate.Release();
+        }
+    }
+
+    public async Task AppendConfirmedTransactionAsync(
+        ConfirmedTransaction confirmedTransaction,
+        CancellationToken cancellationToken)
+    {
+        await confirmationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            AppendConfirmedTransactionCore(confirmedTransaction);
+        }
+        finally
+        {
+            confirmationGate.Release();
+        }
+    }
+
+    private void AppendConfirmedTransactionCore(ConfirmedTransaction confirmedTransaction)
     {
         lock (gate)
         {
@@ -203,7 +274,6 @@ public sealed class InMemoryLedgerStore : ILedgerStore
             states[stateKey] = new LedgerState(tx.LedgerId, tx.ScenarioId, confirmedTransaction.LedgerSequence, confirmedTransaction.LedgerEntryHash, confirmedTransaction.ConfirmedAt);
         }
 
-        return Task.CompletedTask;
     }
 
     private void ValidateBusinessObjectProjectionState(LedgerTransaction tx, IReadOnlyList<UnspentOutput> consumedOutputs)
