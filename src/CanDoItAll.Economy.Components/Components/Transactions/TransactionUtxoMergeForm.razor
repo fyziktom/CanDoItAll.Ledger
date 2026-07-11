@@ -1,30 +1,36 @@
 @namespace CanDoItAll.Economy.Components
 
-<UtxoSelectionList Outputs="SpendableOutputs"
-                   SelectedOutPoints="Draft.SelectedUtxosOrEmpty"
-                   SelectedOutPointsChanged="SetSelectedUtxosAsync"
-                   Label="Merge inputs"
-                   TestId="cda-merge-utxo-selector" />
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="utxo-merge-form">
+    <Grid ColumnTemplateLg="minmax(24rem,1fr) minmax(22rem,1fr)" Gap="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+        <UtxoSelectionDialogLauncher Outputs="SpendableOutputs"
+                                     SelectedOutPoints="Draft.SelectedUtxosOrEmpty"
+                                     SelectedOutPointsChanged="SetSelectedUtxosAsync"
+                                     Label="Merge inputs"
+                                     MinimumSelections="2"
+                                     TestId="cda-merge-utxo-selector" />
 
-<TransactionAddressInput Label="Output address"
-                         Value="@Draft.PaymentReceiverAddress.Value"
-                         ValueChanged="SetReceiverAddressAsync"
-                         Placeholder="@Draft.OwnerAddress.Value"
-                         ContainerClass="cda-economy-field cda-economy-field--wide"
-                         Bookmarks="Bookmarks"
-                         AccountScope="@AccountScope"
-                         DialogSubtitle="Merge"
-                         TestId="cda-merge-output-address" />
+        <TransactionAddressInput Label="Output address"
+                                 Value="@Draft.PaymentReceiverAddress.Value"
+                                 ValueChanged="SetReceiverAddressAsync"
+                                 Placeholder="@Draft.OwnerAddress.Value"
+                                 ContainerClass="cda-economy-field cda-economy-field--wide cda-transaction-address-surface"
+                                 Bookmarks="Bookmarks"
+                                 AccountScope="@AccountScope"
+                                 DialogSubtitle="Merge"
+                                 TestId="cda-merge-output-address" />
+    </Grid>
 
-<div class="cda-economy-fact" data-testid="cda-merge-selected-total">
-    <span>Selected total</span>
-    <strong>@SelectedTotal</strong>
-</div>
-
-<div class="cda-economy-fact" data-testid="cda-merge-output-count">
-    <span>Outputs</span>
-    <strong>1</strong>
-</div>
+    <div class="cda-transaction-inline-facts">
+        <div class="cda-economy-fact" data-testid="cda-merge-selected-total">
+            <span>Selected total</span>
+            <strong>@SelectedTotal</strong>
+        </div>
+        <div class="cda-economy-fact" data-testid="cda-merge-output-count">
+            <span>Resulting outputs</span>
+            <strong>1</strong>
+        </div>
+    </div>
+</Stack>
 
 @code {
     [Parameter, EditorRequired]

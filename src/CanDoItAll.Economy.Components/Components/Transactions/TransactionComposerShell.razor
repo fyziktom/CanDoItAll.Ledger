@@ -1,144 +1,154 @@
 @using System.Globalization
 @namespace CanDoItAll.Economy.Components
-@inject DialogService DialogService
-@inject NotificationService Notifications
 
 <SectionCard Title="@ComposerTitle" Description="@ComposerDescription">
-    <Stack GapScale="LayoutGap.Large">
-        <SecondaryTabs Items="ModeItems"
-                       SelectedKey="@selectedModeKey"
-                       SelectedKeyChanged="SelectModeAsync"
-                       Dense="true" />
-
-        <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-economy-tab-panel">
-            @switch (SelectedMode)
-            {
-                case BusinessObjectTransactionMode.Create:
-                    @RenderObjectId("Object id", "Create object id")
-                    @RenderText("Object type", ActiveDraft.ObjectType, SetObjectTypeAsync, "purchase-order")
-                    @RenderText("Schema version", ActiveDraft.SchemaVersion, SetSchemaVersionAsync, "1.0")
-                    @RenderAddress("Owner address", ActiveDraft.OwnerAddress.Value, SetOwnerAddressAsync, "acct:operations:primary")
-                    @RenderAmount("Main amount", ActiveDraft.MainAmount, SetMainAmountAsync, "100")
-                    <div class="cda-economy-field cda-economy-field--wide">
-                        <AvailableTokenSelector Options="TokenOptions"
-                                                SelectedKey="@CreateAssetKey"
-                                                SelectedKeyChanged="SetCreateAssetKeyAsync"
-                                                Label="Asset to attach"
-                                                DataTestId="composer-create-token-selector" />
-                    </div>
-                    @if (CreateAssetKey != EconomyTokenOption.MainKey)
-                    {
-                        @RenderNullableAmount("Token amount", ActiveDraft.TokenAmount, SetTokenAmountAsync, "1")
-                    }
-                    @RenderText("External reference", ActiveDraft.ExternalRef, SetExternalRefAsync, "erp://purchase-orders/1043")
-                    @RenderStateJson("State JSON", "Create state JSON", 7)
-                    break;
-
-                case BusinessObjectTransactionMode.TransferObject:
-                    @RenderObjectId("Object id", "Transfer object id")
-                    @RenderAddress("Receiver address", ActiveDraft.ReceiverAddress.Value, SetReceiverAddressAsync, "acct:operations:approval")
-                    @RenderAmount("Main amount", ActiveDraft.MainAmount, SetMainAmountAsync, "25")
-                    @RenderText("External reference", ActiveDraft.ExternalRef, SetExternalRefAsync, "ledger://transfer")
-                    @RenderStateJson("State after transfer", "Transfer state JSON", 6)
-                    break;
-
-                case BusinessObjectTransactionMode.UpdateObject:
-                    @RenderObjectId("Object id", "Update object id")
-                    @RenderText("External reference", ActiveDraft.ExternalRef, SetExternalRefAsync, "erp://purchase-orders/1043")
-                    @RenderStateJson("Next state JSON", "Update state JSON", 8)
-                    break;
-
-                case BusinessObjectTransactionMode.CloseObject:
-                    @RenderObjectId("Object id", "Close object id")
-                    @RenderText("External reference", ActiveDraft.ExternalRef, SetExternalRefAsync, "erp://purchase-orders/1043")
-                    @RenderStateJson("Closing state JSON", "Close state JSON", 7)
-                    break;
-
-                case BusinessObjectTransactionMode.CloneObject:
-                    @RenderOptionalObjectId("Source object id", ActiveDraft.SourceObjectId, SetSourceObjectIdAsync, "bo:purchase-order:1042")
-                    @RenderOptionalObjectId("Target object id", ActiveDraft.TargetObjectId, SetTargetObjectIdAsync, "bo:purchase-order:1043-copy")
-                    @RenderText("Object type", ActiveDraft.ObjectType, SetObjectTypeAsync, "purchase-order")
-                    @RenderText("Schema version", ActiveDraft.SchemaVersion, SetSchemaVersionAsync, "1.0")
-                    @RenderStateJson("Cloned state JSON", "Clone state JSON", 7)
-                    break;
-
-                case BusinessObjectTransactionMode.MainPayment:
-                    <TransactionSendForm Draft="ActiveDraft"
-                                         DraftChanged="UpdateDraftAsync"
-                                         Bookmarks="Bookmarks"
-                                         AccountScope="@AccountScope" />
-                    break;
-
-                case BusinessObjectTransactionMode.UtxoMerge:
-                    <TransactionUtxoMergeForm Draft="ActiveDraft"
-                                              DraftChanged="UpdateDraftAsync"
-                                              SpendableOutputs="SpendableOutputs"
-                                              Bookmarks="Bookmarks"
-                                              AccountScope="@AccountScope" />
-                    break;
-
-                case BusinessObjectTransactionMode.UtxoSplit:
-                    <TransactionUtxoSplitForm Draft="ActiveDraft"
-                                              DraftChanged="UpdateDraftAsync"
-                                              SpendableOutputs="SpendableOutputs"
-                                              Bookmarks="Bookmarks"
-                                              AccountScope="@AccountScope" />
-                    break;
-
-                case BusinessObjectTransactionMode.TokenTransfer:
-                    <div class="cda-economy-field cda-economy-field--wide">
-                        <AvailableTokenSelector Options="TransferTokenOptions"
-                                                SelectedKey="@SelectedTokenKey"
-                                                SelectedKeyChanged="SetSelectedTokenKeyAsync"
-                                                Label="Token to send"
-                                                DataTestId="composer-token-selector" />
-                    </div>
-                    @RenderNullableAmount("Token amount", ActiveDraft.TokenAmount, SetTokenAmountAsync, "25")
-                    @RenderAddress("Payment receiver", ActiveDraft.PaymentReceiverAddress.Value, SetPaymentReceiverAddressAsync, "acct:supplier:acme")
-                    @RenderAmount("Main amount", ActiveDraft.MainAmount, SetMainAmountAsync, "1")
-                    break;
-            }
-        </Grid>
-
-        <Grid ColumnsLg="3" Gap="LayoutGap.Small">
-            <div class="cda-economy-fact">
-                <span>Mode</span>
-                <strong>@ModeLabel</strong>
+    <Stack GapScale="LayoutGap.Medium"
+           AlignItems="AlignItems.Stretch"
+           Class="cda-transaction-composer">
+        @if (selectingMode)
+        {
+            <TransactionFlowChooser SelectedMode="SelectedMode"
+                                    SelectedModeChanged="SelectModeAsync" />
+        }
+        else
+        {
+            <div class="cda-transaction-config-header" data-testid="transaction-config-header">
+                <div class="cda-transaction-config-header__icon" aria-hidden="true">
+                    <Icon Name="@SelectedDefinition.Icon" />
+                </div>
+                <div>
+                    <span>Selected @FamilyLabel transaction</span>
+                    <h2>@SelectedDefinition.Label</h2>
+                    <p>@SelectedDefinition.Description</p>
+                </div>
+                <Button Text="Change transaction type"
+                        Icon="swap_horiz"
+                        ButtonStyle="ButtonStyle.Secondary"
+                        Variant="Variant.Outlined"
+                        Click="ChooseAnotherMode"
+                        data-testid="transaction-change-mode" />
             </div>
-            <div class="cda-economy-fact">
-                <span>Receiver</span>
-                <strong>@PreviewReceiver</strong>
-            </div>
-            <div class="cda-economy-fact">
-                <span>Amount</span>
-                <strong>@PreviewAmount</strong>
-            </div>
-        </Grid>
 
-        <Cluster Gap="LayoutGap.Small">
-            <Button Text="Submit transaction" Icon="send" Click="SubmitAsync" />
-            <Button Text="Assemble" Icon="build" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="AssembleRequested" />
-            <Button Text="Refresh after broadcast" Icon="refresh" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Text" Click="BroadcastRequested" />
-        </Cluster>
+            <div class="cda-transaction-workbench" data-testid="transaction-workbench">
+                <main class="cda-economy-tab-panel cda-transaction-flow-panel cda-transaction-workbench__canvas">
+                @switch (SelectedMode)
+                {
+                    case BusinessObjectTransactionMode.Create:
+                        <BusinessObjectCreateTransactionForm Draft="ActiveDraft"
+                                                             DraftChanged="UpdateDraftAsync"
+                                                             TokenOptions="TokenOptions"
+                                                             Bookmarks="Bookmarks"
+                                                             AccountScope="@AccountScope"
+                                                             Balance="Balance"
+                                                             ReviewReadyChanged="SetReviewReady" />
+                        break;
+
+                    case BusinessObjectTransactionMode.TransferObject:
+                    case BusinessObjectTransactionMode.UpdateObject:
+                    case BusinessObjectTransactionMode.CloseObject:
+                    case BusinessObjectTransactionMode.CloneObject:
+                    case BusinessObjectTransactionMode.MergeObjects:
+                    case BusinessObjectTransactionMode.SplitBusinessObjectPayment:
+                        <BusinessObjectOperationWizard Mode="SelectedMode"
+                                                       Draft="ActiveDraft"
+                                                       DraftChanged="UpdateDraftAsync"
+                                                       BusinessObjects="BusinessObjects"
+                                                       LookupAsync="BusinessObjectLookupAsync"
+                                                       Bookmarks="Bookmarks"
+                                                       AccountScope="@AccountScope"
+                                                       Balance="Balance"
+                                                       ReviewReadyChanged="SetReviewReady" />
+                        break;
+
+                    case BusinessObjectTransactionMode.MainPayment:
+                        <TransactionDetailsReviewWizard Mode="SelectedMode"
+                                                        Draft="ActiveDraft"
+                                                        Validation="Validation"
+                                                        ReviewReadyChanged="SetReviewReady">
+                            <TransactionSendForm Draft="ActiveDraft"
+                                                 DraftChanged="UpdateDraftAsync"
+                                                 Bookmarks="Bookmarks"
+                                                 AccountScope="@AccountScope"
+                                                 Balance="Balance" />
+                        </TransactionDetailsReviewWizard>
+                        break;
+
+                    case BusinessObjectTransactionMode.UtxoMerge:
+                        <TransactionDetailsReviewWizard Mode="SelectedMode"
+                                                        Draft="ActiveDraft"
+                                                        Validation="Validation"
+                                                        ReviewReadyChanged="SetReviewReady">
+                            <TransactionUtxoMergeForm Draft="ActiveDraft"
+                                                      DraftChanged="UpdateDraftAsync"
+                                                      SpendableOutputs="SpendableOutputs"
+                                                      Bookmarks="Bookmarks"
+                                                      AccountScope="@AccountScope" />
+                        </TransactionDetailsReviewWizard>
+                        break;
+
+                    case BusinessObjectTransactionMode.UtxoSplit:
+                        <TransactionDetailsReviewWizard Mode="SelectedMode"
+                                                        Draft="ActiveDraft"
+                                                        Validation="Validation"
+                                                        ReviewReadyChanged="SetReviewReady">
+                            <TransactionUtxoSplitForm Draft="ActiveDraft"
+                                                      DraftChanged="UpdateDraftAsync"
+                                                      SpendableOutputs="SpendableOutputs"
+                                                      Bookmarks="Bookmarks"
+                                                      AccountScope="@AccountScope" />
+                        </TransactionDetailsReviewWizard>
+                        break;
+
+                    case BusinessObjectTransactionMode.TokenTransfer:
+                        <TransactionDetailsReviewWizard Mode="SelectedMode"
+                                                        Draft="ActiveDraft"
+                                                        Validation="Validation"
+                                                        ReviewReadyChanged="SetReviewReady">
+                            <TransactionTokenTransferForm Draft="ActiveDraft"
+                                                          DraftChanged="UpdateDraftAsync"
+                                                          Options="TokenOptions"
+                                                          Bookmarks="Bookmarks"
+                                                          AccountScope="@AccountScope"
+                                                          Balance="Balance" />
+                        </TransactionDetailsReviewWizard>
+                        break;
+
+                    case BusinessObjectTransactionMode.CreateRuleToken:
+                        <div class="cda-transaction-delegated-flow">
+                            <EmptyState Eyebrow="Token authority"
+                                        Title="Continue in the guided token creator"
+                                        Description="Configure authority, rules, supply, and review in the specialized token workflow." />
+                            <Button Text="Open Create token"
+                                    Icon="open_in_new"
+                                    Click="CreateTokenRequested"
+                                    data-testid="transaction-open-token-creator" />
+                        </div>
+                        break;
+                }
+                </main>
+
+                <TransactionContextRail ModeLabel="@ModeLabel"
+                                        Receiver="@PreviewReceiver"
+                                        Amount="@PreviewAmount"
+                                        Validation="Validation"
+                                        Delegated="@(SelectedDefinition.Disposition == TransactionFlowDisposition.Delegated)"
+                                        ReviewRequired="RequiresReview"
+                                        SubmissionEnabled="CanSubmit"
+                                        SubmitRequested="SubmitAsync"
+                                        AssembleRequested="AssembleRequested"
+                                        BroadcastRequested="BroadcastRequested" />
+            </div>
+        }
     </Stack>
 </SectionCard>
 
 @code {
-    private static readonly IReadOnlyList<SecondaryTabItem> ModeItems =
-    [
-        new(nameof(BusinessObjectTransactionMode.Create), "Create", Description: "Create a business object UTXO with owner, schema, and state."),
-        new(nameof(BusinessObjectTransactionMode.TransferObject), "Transfer", Description: "Move a business object to another account while carrying updated state."),
-        new(nameof(BusinessObjectTransactionMode.UpdateObject), "Update", Description: "Write a new state version for a held business object."),
-        new(nameof(BusinessObjectTransactionMode.CloseObject), "Close", Description: "Close a business object and record the final state."),
-        new(nameof(BusinessObjectTransactionMode.CloneObject), "Clone", Description: "Create a new object from an existing source object."),
-        new(nameof(BusinessObjectTransactionMode.MainPayment), "Payment", Description: "Send a plain main-currency payment from the account."),
-        new(nameof(BusinessObjectTransactionMode.UtxoMerge), "Merge", Description: "Combine selected plain UTXOs into one output."),
-        new(nameof(BusinessObjectTransactionMode.UtxoSplit), "Split", Description: "Prepare multiple plain UTXO outputs from selected inputs."),
-        new(nameof(BusinessObjectTransactionMode.TokenTransfer), "Token", Description: "Transfer a token balance with the required main amount.")
-    ];
-
     private BusinessObjectTransactionDraft? localDraft;
-    private string selectedModeKey = nameof(BusinessObjectTransactionMode.Create);
+    private BusinessObjectTransactionDraft? observedDraft;
+    private BusinessObjectTransactionDraft? modeResetDraft;
+    private BusinessObjectTransactionDraft? lastEmittedDraft;
+    private bool selectingMode = true;
+    private bool reviewReady;
 
     [Parameter, EditorRequired]
     public BusinessObjectTransactionDraft Draft { get; set; } = default!;
@@ -156,6 +166,9 @@
     public EventCallback BroadcastRequested { get; set; }
 
     [Parameter]
+    public EventCallback CreateTokenRequested { get; set; }
+
+    [Parameter]
     public bool Dense { get; set; }
 
     [Parameter]
@@ -170,6 +183,15 @@
     [Parameter]
     public IReadOnlyList<LedgerSpendableOutput> SpendableOutputs { get; set; } = [];
 
+    [Parameter]
+    public LedgerAccountBalance? Balance { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<IBusinessObjectView> BusinessObjects { get; set; } = [];
+
+    [Parameter]
+    public Func<BusinessObjectLookupRequest, Task<IReadOnlyList<IBusinessObjectView>>>? BusinessObjectLookupAsync { get; set; }
+
     private BusinessObjectTransactionDraft ActiveDraft => localDraft ?? Draft;
 
     private string? ComposerTitle => Dense ? null : "Transaction composer";
@@ -177,12 +199,32 @@
     private string? ComposerDescription
         => Dense ? null : "Compose and submit the ledger operations covered by the SDK account client";
 
-    private BusinessObjectTransactionMode SelectedMode
-        => Enum.TryParse<BusinessObjectTransactionMode>(selectedModeKey, out var mode)
-            ? mode
-            : BusinessObjectTransactionMode.Create;
+    private BusinessObjectTransactionMode SelectedMode => ActiveDraft.SelectedMode;
 
-    private string ModeLabel => ModeItems.First(item => item.Key == selectedModeKey).Label;
+    private TransactionFlowDefinition SelectedDefinition => TransactionFlowCatalog.Get(SelectedMode);
+
+    private string FamilyLabel => SelectedDefinition.Family switch
+    {
+        TransactionFlowFamily.Payment => "Payment",
+        TransactionFlowFamily.Token => "Token",
+        TransactionFlowFamily.Utxo => "UTXO",
+        _ => "Business object"
+    };
+
+    private string ModeLabel => TransactionFlowCatalog.Get(SelectedMode).Label;
+
+    private bool RequiresReview
+        => SelectedDefinition.Disposition == TransactionFlowDisposition.Direct;
+
+    private TransactionFlowValidation Validation
+        => TransactionDraftValidator.Validate(
+            ActiveDraft with { SelectedMode = SelectedMode },
+            new TransactionDraftValidationContext(Balance, SpendableOutputs, BusinessObjects));
+
+    private bool CanSubmit
+        => SelectedDefinition.Disposition != TransactionFlowDisposition.Delegated
+           && Validation.IsValid
+           && (!RequiresReview || reviewReady);
 
     private string PreviewReceiver
         => SelectedMode switch
@@ -200,242 +242,141 @@
         => SelectedMode switch
         {
             BusinessObjectTransactionMode.MainPayment => ActiveDraft.PaymentAmount.ToString(),
-            BusinessObjectTransactionMode.TokenTransfer => $"{ActiveDraft.TokenAmount?.ToString() ?? "0"} {ActiveDraft.TokenId?.Value ?? "token"}",
+            BusinessObjectTransactionMode.TokenTransfer => TokenTransferAmountSummary,
             BusinessObjectTransactionMode.UtxoMerge => SelectedUtxoTotal.ToString(CultureInfo.InvariantCulture),
             BusinessObjectTransactionMode.UtxoSplit => ActiveDraft.UtxoSplitOutputsOrEmpty.Sum(output => output.Amount.Value).ToString(CultureInfo.InvariantCulture),
             BusinessObjectTransactionMode.SplitBusinessObjectPayment => $"{ActiveDraft.PaymentAmount} + {ActiveDraft.SecondaryPaymentAmount?.ToString() ?? "0"}",
             _ => ActiveDraft.MainAmount.ToString()
         };
 
+    private string TokenTransferAmountSummary
+    {
+        get
+        {
+            string token = $"{ActiveDraft.TokenAmount?.ToString() ?? "0"} {ActiveDraft.TokenId?.Value ?? "token"}";
+            return ActiveDraft.MainAmount.Value > 0m
+                ? $"{token} + {ActiveDraft.MainAmount} main"
+                : token;
+        }
+    }
+
     private decimal SelectedUtxoTotal
         => SpendableOutputs
             .Where(output => ActiveDraft.SelectedUtxosOrEmpty.Contains(output.OutPoint))
             .Sum(output => output.MainAmount.Value);
 
-    private string? SelectedTokenKey
-        => ActiveDraft.TokenId?.Value
-            ?? TransferTokenOptions.FirstOrDefault()?.Key;
-
-    private string? CreateAssetKey
-        => ActiveDraft.TokenId?.Value ?? EconomyTokenOption.MainKey;
-
-    private IReadOnlyList<EconomyTokenOption> TransferTokenOptions
-        => TokenOptions.Where(option => !option.IsMain).ToArray();
-
     protected override void OnParametersSet()
     {
-        localDraft = Draft;
-        selectedModeKey = Draft.SelectedMode.ToString();
+        if (localDraft is null || !EqualityComparer<BusinessObjectTransactionDraft>.Default.Equals(observedDraft, Draft))
+        {
+            bool isChildEcho = lastEmittedDraft is not null
+                               && EqualityComparer<BusinessObjectTransactionDraft>.Default.Equals(lastEmittedDraft, Draft);
+            if (isChildEcho)
+            {
+                lastEmittedDraft = null;
+            }
+            else
+            {
+                modeResetDraft = Draft;
+                lastEmittedDraft = null;
+                reviewReady = false;
+                selectingMode = true;
+            }
+
+            localDraft = Draft;
+            observedDraft = Draft;
+        }
     }
 
-    private async Task SelectModeAsync(string key)
+    private async Task SelectModeAsync(BusinessObjectTransactionMode mode)
     {
-        selectedModeKey = key;
-        BusinessObjectTransactionMode mode = SelectedMode;
         BusinessObjectTransactionDraft nextDraft = ActiveDraft with { SelectedMode = mode };
+        if (ActiveDraft.SelectedMode != mode)
+        {
+            BusinessObjectTransactionDraft resetDraft = modeResetDraft ?? ActiveDraft;
+            bool keepsTokenDefaults = mode is BusinessObjectTransactionMode.Create
+                or BusinessObjectTransactionMode.TokenTransfer;
+
+            nextDraft = resetDraft with
+            {
+                SelectedMode = mode,
+                SourceObjectId = null,
+                SecondObjectId = null,
+                TargetObjectId = null,
+                ExternalRef = mode == BusinessObjectTransactionMode.Create
+                    ? resetDraft.ExternalRef
+                    : string.Empty,
+                TokenId = keepsTokenDefaults ? resetDraft.TokenId : null,
+                TokenAmount = keepsTokenDefaults ? resetDraft.TokenAmount : null,
+                SecondaryPaymentAmount = null,
+                SelectedUtxos = null,
+                UtxoSplitOutputs = null
+            };
+        }
+
+        nextDraft = ApplyModeDefaults(nextDraft, mode);
+
         if (mode == BusinessObjectTransactionMode.UtxoMerge)
         {
-            nextDraft = nextDraft with { PaymentReceiverAddress = ActiveDraft.OwnerAddress };
+            nextDraft = nextDraft with { PaymentReceiverAddress = nextDraft.OwnerAddress };
         }
 
         await UpdateDraftAsync(nextDraft);
+        reviewReady = false;
+        selectingMode = false;
+    }
+
+    private void ChooseAnotherMode()
+    {
+        reviewReady = false;
+        selectingMode = true;
     }
 
     private Task SubmitAsync()
-        => SubmitRequested.InvokeAsync(ActiveDraft with { SelectedMode = SelectedMode });
+        => CanSubmit
+            ? SubmitRequested.InvokeAsync(ActiveDraft with { SelectedMode = SelectedMode })
+            : Task.CompletedTask;
 
-    private Task SetObjectIdAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { ObjectId = new BusinessObjectId(value ?? string.Empty) });
-
-    private Task SetSourceObjectIdAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { SourceObjectId = ToNullableObjectId(value) });
-
-    private Task SetSecondObjectIdAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { SecondObjectId = ToNullableObjectId(value) });
-
-    private Task SetTargetObjectIdAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { TargetObjectId = ToNullableObjectId(value) });
-
-    private Task SetObjectTypeAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { ObjectType = value ?? string.Empty });
-
-    private Task SetSchemaVersionAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { SchemaVersion = value ?? string.Empty });
-
-    private Task SetOwnerAddressAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { OwnerAddress = new Address(value ?? string.Empty) });
-
-    private Task SetReceiverAddressAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { ReceiverAddress = new Address(value ?? string.Empty) });
-
-    private Task SetPaymentReceiverAddressAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { PaymentReceiverAddress = new Address(value ?? string.Empty) });
-
-    private Task SetMainAmountAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { MainAmount = ParseAmount(value) });
-
-    private Task SetPaymentAmountAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { PaymentAmount = ParseAmount(value) });
-
-    private Task SetTokenIdAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { TokenId = ToNullableTokenId(value) });
-
-    private Task SetSelectedTokenKeyAsync(string? value)
-    {
-        EconomyTokenOption? selected = TransferTokenOptions.FirstOrDefault(option => option.Key == value);
-        return UpdateDraftAsync(ActiveDraft with { TokenId = selected?.TokenId ?? ToNullableTokenId(value) });
-    }
-
-    private Task SetCreateAssetKeyAsync(string? value)
-    {
-        EconomyTokenOption? selected = TokenOptions.FirstOrDefault(option => option.Key == value);
-        return UpdateDraftAsync(ActiveDraft with
-        {
-            TokenId = selected?.IsMain == true ? null : selected?.TokenId ?? ToNullableTokenId(value),
-            TokenAmount = selected?.IsMain == true ? null : ActiveDraft.TokenAmount ?? Amount.FromInt64(1)
-        });
-    }
-
-    private Task SetTokenAmountAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { TokenAmount = ParseNullableAmount(value) });
-
-    private Task SetSecondaryPaymentAmountAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { SecondaryPaymentAmount = ParseNullableAmount(value) });
-
-    private Task SetStateJsonAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { StateJson = value ?? string.Empty });
-
-    private Task SetExternalRefAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { ExternalRef = value ?? string.Empty });
+    private void SetReviewReady(bool ready) => reviewReady = ready;
 
     private async Task UpdateDraftAsync(BusinessObjectTransactionDraft nextDraft)
     {
+        lastEmittedDraft = nextDraft;
         localDraft = nextDraft;
         await DraftChanged.InvokeAsync(nextDraft);
     }
 
-    private RenderFragment RenderObjectId(string label, string ariaLabel)
-        => RenderText(label, ActiveDraft.ObjectId.Value, SetObjectIdAsync, "bo:purchase-order:1043", ariaLabel);
-
-    private RenderFragment RenderOptionalObjectId(
-        string label,
-        BusinessObjectId? value,
-        Func<string?, Task> changed,
-        string placeholder)
-        => RenderText(label, value?.Value ?? string.Empty, changed, placeholder);
-
-    private RenderFragment RenderToken(string label, TokenId? value, Func<string?, Task> changed, string placeholder)
-        => RenderText(label, value?.Value ?? string.Empty, changed, placeholder);
-
-    private RenderFragment RenderAddress(
-        string label,
-        string value,
-        Func<string?, Task> changed,
-        string placeholder)
-        => @<FormField Text="@label" ContainerClass="cda-economy-field">
-            <div class="cda-address-input-row">
-                <TextBox Value="@value"
-                         ValueChanged="@(EventCallback.Factory.Create<string?>(this, changed))"
-                         Immediate="true"
-                         Placeholder="@placeholder"
-                         aria-label="@label" />
-                <PageHeaderActionButton Icon="contacts"
-                                        Label="Choose address"
-                                        TooltipText="Choose from address directory"
-                                        Variant="Variant.Outlined"
-                                        Click="@(() => OpenAddressDirectoryAsync(changed))"
-                                        TestId="cda-transaction-address-directory" />
-                <QrScanButton Label="Scan address"
-                              TooltipText="Scan address QR"
-                              Scanned="@((QrScanResult scan) => ApplyAddressScanAsync(scan, changed))"
-                              TestId="cda-transaction-scan-address" />
-            </div>
-        </FormField>;
-
-    private RenderFragment RenderAmount(
-        string label,
-        Amount value,
-        Func<string?, Task> changed,
-        string placeholder)
-        => RenderText(label, value.ToString(), changed, placeholder);
-
-    private RenderFragment RenderNullableAmount(
-        string label,
-        Amount? value,
-        Func<string?, Task> changed,
-        string placeholder)
-        => RenderText(label, value?.ToString() ?? string.Empty, changed, placeholder);
-
-    private RenderFragment RenderText(
-        string label,
-        string? value,
-        Func<string?, Task> changed,
-        string placeholder,
-        string? ariaLabel = null)
-        => @<FormField Text="@label" ContainerClass="cda-economy-field">
-            <TextBox Value="@value"
-                     ValueChanged="@(EventCallback.Factory.Create<string?>(this, changed))"
-                     Immediate="true"
-                     Placeholder="@placeholder"
-                     aria-label="@(ariaLabel ?? label)" />
-        </FormField>;
-
-    private RenderFragment RenderStateJson(string label, string ariaLabel, int rows)
-        => @<FormField Text="@label" ContainerClass="cda-economy-field cda-economy-field--wide">
-            <TextArea Value="@ActiveDraft.StateJson"
-                      ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetStateJsonAsync))"
-                      Immediate="true"
-                      Rows="@(Dense ? Math.Min(rows, 4) : rows)"
-                      aria-label="@ariaLabel" />
-        </FormField>;
-
-    private static BusinessObjectId? ToNullableObjectId(string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : new BusinessObjectId(value.Trim());
-
-    private static TokenId? ToNullableTokenId(string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : new TokenId(value.Trim());
-
-    private static Amount ParseAmount(string? value)
-        => decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed) && parsed >= 0m
-            ? new Amount(parsed)
-            : Amount.Zero;
-
-    private static Amount? ParseNullableAmount(string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : ParseAmount(value);
-
-    private async Task OpenAddressDirectoryAsync(Func<string?, Task> changed)
+    private BusinessObjectTransactionDraft ApplyModeDefaults(
+        BusinessObjectTransactionDraft draft,
+        BusinessObjectTransactionMode mode)
     {
-        object? result = await DialogService.OpenAsync<AddressDirectoryDialogContent>(
-            "Select Address",
-            new Dictionary<string, object?>
-            {
-                [nameof(AddressDirectoryDialogContent.Bookmarks)] = Bookmarks,
-                [nameof(AddressDirectoryDialogContent.AccountScope)] = AccountScope,
-                [nameof(AddressDirectoryDialogContent.Mode)] = AddressDirectoryDialogMode.Select
-            },
-            new DialogOptions
-            {
-                Subtitle = ModeLabel,
-                Size = ModalSize.Full,
-                DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
-                TestId = "cda-address-directory-dialog"
-            });
-
-        if (result is AddressDirectoryEntry entry)
+        if (mode != BusinessObjectTransactionMode.TokenTransfer)
         {
-            await changed(entry.Address);
-        }
-    }
-
-    private async Task ApplyAddressScanAsync(QrScanResult scan, Func<string?, Task> changed)
-    {
-        if (scan.IsValid)
-        {
-            await changed(scan.Text);
-            return;
+            return draft;
         }
 
-        Notifications.Warning("QR scan ignored", scan.Error ?? "Scanned address payload is invalid.", position: NotificationPosition.BottomCenter);
+        IReadOnlyList<EconomyTokenOption> spendableOptions = TokenOptions
+            .Where(option => !option.IsMain && option.TokenId is not null && option.AvailableAmount.Value > 0m)
+            .ToArray();
+        if (spendableOptions.Count == 0)
+        {
+            return draft;
+        }
+
+        EconomyTokenOption selected = spendableOptions.FirstOrDefault(option => option.TokenId == draft.TokenId)
+                                      ?? spendableOptions[0];
+
+        Amount normalizedAmount = draft.TokenAmount is { } requested
+                                  && requested.Value > 0m
+                                  && requested.Value <= selected.AvailableAmount.Value
+            ? requested
+            : Amount.FromDecimal(Math.Min(1m, selected.AvailableAmount.Value));
+
+        return draft with
+        {
+            TokenId = selected.TokenId,
+            TokenAmount = normalizedAmount
+        };
     }
+
 }

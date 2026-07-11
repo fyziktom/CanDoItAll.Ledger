@@ -237,6 +237,10 @@ else
                 [nameof(TransactionComposerDialogContent.Draft)] = workspace.TransactionDraft,
                 [nameof(TransactionComposerDialogContent.TokenOptions)] = workspace.TokenOptions,
                 [nameof(TransactionComposerDialogContent.SpendableOutputs)] = workspace.SpendableOutputsOrEmpty,
+                [nameof(TransactionComposerDialogContent.Balance)] = workspace.Balance,
+                [nameof(TransactionComposerDialogContent.BusinessObjects)] = workspace.BusinessObjects,
+                [nameof(TransactionComposerDialogContent.BusinessObjectLookupAsync)] =
+                    (Func<BusinessObjectLookupRequest, Task<IReadOnlyList<IBusinessObjectView>>>)LookupBusinessObjectsAsync,
                 [nameof(TransactionComposerDialogContent.Bookmarks)] = workspace.AddressBookmarks,
                 [nameof(TransactionComposerDialogContent.AccountScope)] = workspace.Address.Value,
                 [nameof(TransactionComposerDialogContent.SubmitRequested)] =
@@ -244,17 +248,23 @@ else
                 [nameof(TransactionComposerDialogContent.AssembleRequested)] =
                     EventCallback.Factory.Create(this, RefreshAsync),
                 [nameof(TransactionComposerDialogContent.BroadcastRequested)] =
-                    EventCallback.Factory.Create(this, RefreshAsync)
+                    EventCallback.Factory.Create(this, RefreshAsync),
+                [nameof(TransactionComposerDialogContent.CreateTokenRequested)] =
+                    EventCallback.Factory.Create(this, OpenTokenCreationDialogAsync)
             },
             new DialogOptions
             {
                 Subtitle = $"{workspace.AccountName} - {workspace.Address.Value}",
-                Size = ModalSize.Wide,
+                Size = ModalSize.Full,
                 DenseChrome = true,
+                CloseOnBackdrop = false,
                 Class = "cda-vef-dialog cda-vef-dialog--send",
                 TestId = "cda-send-transaction-dialog"
             });
     }
+
+    private Task<IReadOnlyList<IBusinessObjectView>> LookupBusinessObjectsAsync(BusinessObjectLookupRequest request)
+        => Adapter.LookupBusinessObjectsAsync(request);
 
     private async Task OpenSubAccountDialogAsync()
     {
@@ -412,8 +422,10 @@ else
             new DialogOptions
             {
                 Subtitle = "Authority-aware token mint",
-                Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Size = ModalSize.Wide,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-token-creation-modal",
                 TestId = "cda-token-create-dialog"
             });
     }

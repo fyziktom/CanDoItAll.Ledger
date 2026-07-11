@@ -148,11 +148,12 @@ public sealed class TransactionUiComponentTests : TestContext
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
             .Add(x => x.SpendableOutputs, workspace.SpendableOutputsOrEmpty.Append(extraPlain).ToArray()));
 
-        IReadOnlyList<IElement> rows = component.FindAll("[data-testid='cda-merge-utxo-selector-row']");
+        component.Find("[data-testid='transaction-mode-UtxoMerge']").Click();
 
-        Assert.Equal(2, rows.Count);
-        Assert.Contains("2 selected", component.Markup, StringComparison.Ordinal);
-        Assert.Contains("Combine selected plain UTXOs into one output.", component.Markup, StringComparison.Ordinal);
+        Assert.Empty(component.FindAll("[data-testid='cda-merge-utxo-selector-row']"));
+        Assert.Contains("2 selected", component.Find("[data-testid='cda-merge-utxo-selector']").TextContent, StringComparison.Ordinal);
+        Assert.Contains("Change selection", component.Find("[data-testid='cda-merge-utxo-selector']").TextContent, StringComparison.Ordinal);
+        Assert.Contains("Combine two or more plain main-currency outputs.", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-token-source", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-permission-source", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-rule-permission-source", component.Markup, StringComparison.Ordinal);

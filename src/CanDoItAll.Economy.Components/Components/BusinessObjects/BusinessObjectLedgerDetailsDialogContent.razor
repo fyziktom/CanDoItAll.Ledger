@@ -103,16 +103,41 @@ else
                                 <div class="cda-vef-bo-gallery-list">
                                     @foreach (BusinessObjectDataItem item in DataItems)
                                     {
-                                        <button type="button"
-                                                class="@GalleryItemClass(item)"
-                                                @onclick="@(() => SelectItem(item))">
-                                            <BusinessObjectDataItemPreview Item="item" />
-                                            <span>
-                                                <strong>@item.Name</strong>
-                                                <small>@item.Type / @FormatSize(item.Size)</small>
-                                                <em>@(item.Description ?? item.FileName ?? item.Hash)</em>
-                                            </span>
-                                        </button>
+                                        string? itemUri = ResolveDataItemUriString(item);
+                                        <article class="@GalleryItemClass(item)">
+                                            <button type="button"
+                                                    class="cda-vef-bo-gallery-item__select"
+                                                    aria-label="@($"Show {item.Name}")"
+                                                    @onclick="@(() => SelectItem(item))">
+                                                <BusinessObjectDataItemPreview Item="item" />
+                                                <span>
+                                                    <strong>@item.Name</strong>
+                                                    <small>@item.Type / @FormatSize(item.Size)</small>
+                                                    <em>@(item.Description ?? item.FileName ?? item.Hash)</em>
+                                                </span>
+                                            </button>
+                                            <Cluster Gap="LayoutGap.XSmall"
+                                                     Wrap="FlexWrap.NoWrap"
+                                                     Class="cda-vef-bo-gallery-item__actions"
+                                                     aria-label="@($"Copy actions for {item.Name}")">
+                                                <CopyButton Value="@item.Hash"
+                                                            Icon="tag"
+                                                            DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                                            Size="CopyButtonSize.ExtraSmall"
+                                                            AriaLabel="@($"Copy CID for {item.Name}")"
+                                                            Disabled="@(string.IsNullOrWhiteSpace(item.Hash))"
+                                                            title="Copy CID"
+                                                            data-testid="cda-bo-data-item-copy-cid" />
+                                                <CopyButton Value="@itemUri"
+                                                            Icon="link"
+                                                            DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                                            Size="CopyButtonSize.ExtraSmall"
+                                                            AriaLabel="@($"Copy IPFS link for {item.Name}")"
+                                                            Disabled="@(itemUri is null)"
+                                                            title="Copy IPFS link"
+                                                            data-testid="cda-bo-data-item-copy-link" />
+                                            </Cluster>
+                                        </article>
                                     }
                                 </div>
                             </section>

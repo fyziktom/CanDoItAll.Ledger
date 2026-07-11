@@ -3,49 +3,171 @@
 @inject DialogService DialogService
 @inject NotificationService Notifications
 
-<SectionCard Title="Create Token" Description="Mint a new token under an available authority namespace.">
-    <Stack GapScale="LayoutGap.Medium">
-        @if (Authorities.Count == 0)
+<Stack GapScale="LayoutGap.Medium"
+       AlignItems="AlignItems.Stretch"
+       Class="cda-transaction-wizard cda-token-creation-wizard"
+       data-testid="token-creation-wizard">
+    <Steps Value="currentStep"
+           CanSelect="false"
+           Linear="true"
+           ShowDescriptions="true"
+           class="cda-transaction-workflow-steps">
+        <StepsItem Text="Authority" Icon="verified_user" Description="Choose the issuing namespace">
+            @if (Authorities.Count == 0)
+            {
+                <EmptyState Eyebrow="Token authority"
+                            Title="No creation authority available"
+                            Description="This account needs a token creation authority before it can mint a new token." />
+            }
+            else
+            {
+                <Grid ColumnTemplateXl="minmax(22rem,.85fr) minmax(0,1.15fr)"
+                      Gap="LayoutGap.Medium"
+                      AlignItems="AlignItems.Stretch">
+                    <FormSection Title="Issuing authority" Description="The namespace controls which token identifiers this account may create.">
+                        <FormField Text="Namespace" ContainerClass="cda-economy-field">
+                            <DropDown TValue="string"
+                                      Data="AuthorityOptions"
+                                      TextProperty="Text"
+                                      ValueProperty="Value"
+                                      Value="@selectedNamespace"
+                                      ValueChanged="@(value => selectedNamespace = value)"
+                                      Placeholder="Select namespace"
+                                      aria-label="Token namespace"
+                                      data-testid="token-creation-namespace" />
+                        </FormField>
+                    </FormSection>
+
+                    <div class="cda-transaction-guidance-surface">
+                        <span class="cda-eyebrow">What this controls</span>
+                        <h3>Authority is checked before minting</h3>
+                        <p>The ledger verifies the selected namespace and the account's current permission before it accepts the token definition.</p>
+                        <div class="cda-transaction-inline-facts">
+                            <div class="cda-economy-fact">
+                                <span>Available namespaces</span>
+                                <strong>@Authorities.Count</strong>
+                            </div>
+                            <div class="cda-economy-fact">
+                                <span>Selected</span>
+                                <strong>@(selectedNamespace ?? "None")</strong>
+                            </div>
+                        </div>
+                    </div>
+                </Grid>
+            }
+        </StepsItem>
+
+        <StepsItem Text="Definition" Icon="tune" Description="Name the token and set supply">
+            <Grid ColumnTemplateXl="minmax(0,1.25fr) minmax(22rem,.75fr)"
+                  Gap="LayoutGap.Medium"
+                  AlignItems="AlignItems.Stretch">
+                <FormSection Title="Token definition" Description="Use a concise name and enter the initial supply to mint.">
+                    <Grid ColumnTemplateLg="minmax(14rem,1fr) minmax(10rem,.55fr)" Gap="LayoutGap.Medium">
+                        <FormField Text="Token name" ContainerClass="cda-economy-field">
+                            <TextBox Value="@tokenName"
+                                     ValueChanged="@(value => tokenName = value ?? string.Empty)"
+                                     Immediate="true"
+                                     Placeholder="voucher"
+                                     aria-label="Token name"
+                                     data-testid="token-creation-name" />
+                        </FormField>
+                        <FormField Text="Initial supply" ContainerClass="cda-economy-field">
+                            <TextBox Value="@tokenAmount"
+                                     ValueChanged="@(value => tokenAmount = value ?? string.Empty)"
+                                     Immediate="true"
+                                     Placeholder="1000"
+                                     aria-label="Token amount"
+                                     data-testid="token-creation-amount" />
+                        </FormField>
+                        <FormField Text="Description" ContainerClass="cda-economy-field cda-economy-field--wide">
+                            <TextArea Value="@description"
+                                      ValueChanged="@(value => description = value ?? string.Empty)"
+                                      Immediate="true"
+                                      Rows="4"
+                                      aria-label="Token description"
+                                      data-testid="token-creation-description" />
+                        </FormField>
+                    </Grid>
+                </FormSection>
+
+                <div class="cda-transaction-guidance-surface">
+                    <span class="cda-eyebrow">Identifier preview</span>
+                    <h3>@TokenIdentifierPreview</h3>
+                    <p>The namespace and token name form the identifier shown to users in balances and transfer screens.</p>
+                    @if (!DefinitionIsValid)
+                    {
+                        <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
+                            Enter a token name and a positive initial supply to continue.
+                        </Alert>
+                    }
+                </div>
+            </Grid>
+        </StepsItem>
+
+        <StepsItem Text="Review" Icon="fact_check" Description="Verify authority and supply">
+            <Grid ColumnTemplateXl="minmax(0,1.2fr) minmax(22rem,.8fr)"
+                  Gap="LayoutGap.Medium"
+                  AlignItems="AlignItems.Stretch">
+                <FormSection Title="Token to be created" Description="Confirm the values that will be sent to the ledger.">
+                    <div class="cda-token-creation-review">
+                        <div><span>Namespace</span><strong>@selectedNamespace</strong></div>
+                        <div><span>Token</span><strong>@TokenIdentifierPreview</strong></div>
+                        <div><span>Initial supply</span><strong>@tokenAmount</strong></div>
+                        <div><span>Description</span><strong>@description</strong></div>
+                    </div>
+                </FormSection>
+
+                <div class="cda-transaction-guidance-surface cda-transaction-guidance-surface--accent">
+                    <span class="cda-eyebrow">Ready to create</span>
+                    <h3>Authority and definition are complete</h3>
+                    <p>Creating the token submits a mint request. Review the namespace and supply once more before continuing.</p>
+                    <Pill Text="Ready" Tone="PillTone.Ok" />
+                </div>
+            </Grid>
+        </StepsItem>
+    </Steps>
+
+    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Class="cda-transaction-wizard-nav">
+        <Cluster Gap="LayoutGap.Small">
+            <Button Text="Cancel"
+                    Icon="close"
+                    Variant="Variant.Outlined"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Click="CancelAsync"
+                    data-testid="token-creation-cancel" />
+            <Button Text="Back"
+                    Icon="arrow_back"
+                    Disabled="@(currentStep == 0)"
+                    Variant="Variant.Outlined"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Click="PreviousStep"
+                    data-testid="token-creation-back" />
+        </Cluster>
+
+        @if (currentStep < 2)
         {
-            <Alert AlertStyle="AlertStyle.Warning">This account has no token creation authority.</Alert>
+            <Button Text="@(currentStep == 0 ? "Define token" : "Review token")"
+                    Icon="arrow_forward"
+                    Disabled="@(!CanContinue)"
+                    Click="NextStep"
+                    data-testid="token-creation-next" />
         }
         else
         {
-            <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-                <FormField Text="Namespace" ContainerClass="cda-economy-field">
-                    <DropDown TValue="string"
-                              Data="AuthorityOptions"
-                              TextProperty="Text"
-                              ValueProperty="Value"
-                              Value="@selectedNamespace"
-                              ValueChanged="@(value => selectedNamespace = value)"
-                              Placeholder="Select namespace"
-                              aria-label="Token namespace" />
-                </FormField>
-                <FormField Text="Token name" ContainerClass="cda-economy-field">
-                    <TextBox Value="@tokenName" ValueChanged="@(value => tokenName = value ?? string.Empty)" Immediate="true" Placeholder="voucher" aria-label="Token name" />
-                </FormField>
-                <FormField Text="Token amount" ContainerClass="cda-economy-field">
-                    <TextBox Value="@tokenAmount" ValueChanged="@(value => tokenAmount = value ?? string.Empty)" Immediate="true" Placeholder="1000" aria-label="Token amount" />
-                </FormField>
-                <FormField Text="Description" ContainerClass="cda-economy-field cda-economy-field--wide">
-                    <TextArea Value="@description" ValueChanged="@(value => description = value ?? string.Empty)" Immediate="true" Rows="3" aria-label="Token description" />
-                </FormField>
-            </Grid>
+            <Button Text="Create token"
+                    Icon="add_circle"
+                    Click="SubmitAsync"
+                    data-testid="token-creation-submit" />
         }
-
-        <Cluster Gap="LayoutGap.Small">
-            <Button Text="Create Token" Icon="add_circle" Disabled="@(Authorities.Count == 0)" Click="SubmitAsync" />
-            <Button Text="Cancel" Icon="close" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="CancelAsync" />
-        </Cluster>
-    </Stack>
-</SectionCard>
+    </Split>
+</Stack>
 
 @code {
+    private int currentStep;
     private string? selectedNamespace;
     private string tokenName = "voucher";
     private string tokenAmount = "1000";
-    private string description = "Created from the SSR economy UI.";
+    private string description = "Created from the economy account app.";
 
     [Parameter]
     public IReadOnlyList<EconomyTokenCreationAuthority> Authorities { get; set; } = [];
@@ -56,20 +178,43 @@
     private IReadOnlyList<AuthorityOption> AuthorityOptions
         => Authorities.Select(authority => new AuthorityOption(authority.Namespace, authority.Namespace)).ToArray();
 
+    private bool DefinitionIsValid
+        => !string.IsNullOrWhiteSpace(tokenName) && TryParseAmount(out _);
+
+    private bool CanContinue
+        => currentStep switch
+        {
+            0 => !string.IsNullOrWhiteSpace(selectedNamespace),
+            1 => DefinitionIsValid,
+            _ => true
+        };
+
+    private string TokenIdentifierPreview
+        => $"{(selectedNamespace ?? "namespace")}:{(string.IsNullOrWhiteSpace(tokenName) ? "token" : tokenName.Trim())}";
+
     protected override void OnParametersSet()
     {
         selectedNamespace ??= Authorities.FirstOrDefault()?.Namespace;
     }
 
+    private void PreviousStep() => currentStep = Math.Max(0, currentStep - 1);
+
+    private void NextStep()
+    {
+        if (CanContinue)
+        {
+            currentStep = Math.Min(2, currentStep + 1);
+        }
+    }
+
     private async Task SubmitAsync()
     {
-        if (string.IsNullOrWhiteSpace(selectedNamespace))
+        if (currentStep != 2 || string.IsNullOrWhiteSpace(selectedNamespace))
         {
-            Notifications.Warning("Namespace required", "Select a token creation namespace.", position: NotificationPosition.BottomCenter);
             return;
         }
 
-        if (!decimal.TryParse(tokenAmount, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsedTokens) || parsedTokens <= 0m)
+        if (!TryParseAmount(out decimal parsedTokens))
         {
             Notifications.Warning("Token amount required", "Enter a positive token amount.", position: NotificationPosition.BottomCenter);
             return;
@@ -77,14 +222,18 @@
 
         var request = new EconomyTokenCreationRequest(
             selectedNamespace,
-            tokenName,
+            tokenName.Trim(),
             new Amount(parsedTokens),
             Amount.Zero,
-            description);
+            description.Trim());
 
         await SubmitRequested.InvokeAsync(request);
         await DialogService.CloseAsync(request);
     }
+
+    private bool TryParseAmount(out decimal parsedTokens)
+        => decimal.TryParse(tokenAmount, NumberStyles.Number, CultureInfo.InvariantCulture, out parsedTokens)
+           && parsedTokens > 0m;
 
     private Task CancelAsync() => DialogService.CloseAsync();
 

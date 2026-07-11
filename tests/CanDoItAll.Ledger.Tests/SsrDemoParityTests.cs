@@ -96,12 +96,13 @@ public sealed class SsrDemoParityTests
     [Fact]
     public void SsrTransactionComposer_ExposesDistinctUtxoMergeAndSplitModes()
     {
-        string source = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionComposerShell.razor");
+        string composerSource = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionComposerShell.razor");
+        string catalogSource = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Models", "TransactionFlowFoundation.cs");
 
-        Assert.Contains("new(nameof(BusinessObjectTransactionMode.UtxoMerge), \"Merge\"", source, StringComparison.Ordinal);
-        Assert.Contains("new(nameof(BusinessObjectTransactionMode.UtxoSplit), \"Split\"", source, StringComparison.Ordinal);
-        Assert.Contains("case BusinessObjectTransactionMode.UtxoMerge:", source, StringComparison.Ordinal);
-        Assert.Contains("case BusinessObjectTransactionMode.UtxoSplit:", source, StringComparison.Ordinal);
+        Assert.Contains("new(BusinessObjectTransactionMode.UtxoMerge, TransactionFlowFamily.Utxo, \"Merge UTXOs\"", catalogSource, StringComparison.Ordinal);
+        Assert.Contains("new(BusinessObjectTransactionMode.UtxoSplit, TransactionFlowFamily.Utxo, \"Split UTXOs\"", catalogSource, StringComparison.Ordinal);
+        Assert.Contains("case BusinessObjectTransactionMode.UtxoMerge:", composerSource, StringComparison.Ordinal);
+        Assert.Contains("case BusinessObjectTransactionMode.UtxoSplit:", composerSource, StringComparison.Ordinal);
     }
 
     private static ServiceProvider CreateDevelopmentProvider()

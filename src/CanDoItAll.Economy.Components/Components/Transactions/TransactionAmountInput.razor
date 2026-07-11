@@ -1,0 +1,103 @@
+@using System.Globalization
+@namespace CanDoItAll.Economy.Components
+
+<FormField Text="@Label" ContainerClass="@ContainerClass">
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBox Value="@amountText"
+                 ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetAmountAsync))"
+                 Immediate="true"
+                 Placeholder="@Placeholder"
+                 aria-label="@Label"
+                 data-testid="@TestId" />
+        @if (MaxAmount is not null)
+        {
+            <Split Breakpoint="LayoutBreakpoint.None" AlignItems="AlignItems.Center" Gap="LayoutGap.Small">
+                <small>@AvailableLabel: @MaxAmount.Value</small>
+                <Cluster Gap="LayoutGap.Tiny">
+                    <Button Text="Half" Size="ButtonSize.Small" Variant="Variant.Text" Click="@(() => ApplyFractionAsync(0.5m))" />
+                    <Button Text="Max" Size="ButtonSize.Small" Variant="Variant.Text" Click="@(() => ApplyFractionAsync(1m))" />
+                </Cluster>
+            </Split>
+        }
+        @if (!string.IsNullOrWhiteSpace(localError))
+        {
+            <small class="cda-transaction-field-error" role="alert">@localError</small>
+        }
+    </Stack>
+</FormField>
+
+@code {
+    private string amountText = string.Empty;
+    private string? localError;
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = "Amount";
+
+    [Parameter]
+    public Amount? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<Amount?> ValueChanged { get; set; }
+
+    [Parameter]
+    public Amount? MaxAmount { get; set; }
+
+    [Parameter]
+    public bool AllowEmpty { get; set; }
+
+    [Parameter]
+    public string AvailableLabel { get; set; } = "Available";
+
+    [Parameter]
+    public string Placeholder { get; set; } = "0";
+
+    [Parameter]
+    public string ContainerClass { get; set; } = "cda-economy-field";
+
+    [Parameter]
+    public string? TestId { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        string next = Value?.ToString() ?? string.Empty;
+        if (!string.Equals(next, amountText, StringComparison.Ordinal))
+        {
+            amountText = next;
+        }
+    }
+
+    private async Task SetAmountAsync(string? value)
+    {
+        amountText = value?.Trim() ?? string.Empty;
+        if (AllowEmpty && amountText.Length == 0)
+        {
+            localError = null;
+            await ValueChanged.InvokeAsync(null);
+            return;
+        }
+
+        if (!decimal.TryParse(amountText, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed) || parsed < 0m)
+        {
+            localError = "Enter a non-negative number.";
+            return;
+        }
+
+        localError = MaxAmount is not null && parsed > MaxAmount.Value.Value
+            ? $"Amount exceeds the available {MaxAmount.Value}."
+            : null;
+        await ValueChanged.InvokeAsync(new Amount(parsed));
+    }
+
+    private Task ApplyFractionAsync(decimal fraction)
+    {
+        if (MaxAmount is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        Amount amount = Amount.FromDecimal(MaxAmount.Value.Value * fraction);
+        amountText = amount.ToString();
+        localError = null;
+        return ValueChanged.InvokeAsync(amount);
+    }
+}

@@ -1,0 +1,85 @@
+@namespace CanDoItAll.Economy.Components
+
+<Stack GapScale="LayoutGap.Medium"
+       AlignItems="AlignItems.Stretch"
+       Class="cda-transaction-wizard"
+       data-testid="transaction-details-review-wizard">
+    <Steps Value="currentStep"
+           CanSelect="false"
+           Linear="true"
+           ShowDescriptions="true"
+           class="cda-transaction-workflow-steps">
+        <StepsItem Text="Details" Icon="tune" Description="Configure the transaction">
+            @ChildContent
+        </StepsItem>
+        <StepsItem Text="Review" Icon="fact_check" Description="Verify effects before submission">
+            <TransactionReviewPanel Draft="Draft" />
+        </StepsItem>
+    </Steps>
+
+    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Class="cda-transaction-wizard-nav">
+        <Button Text="Back"
+                Icon="arrow_back"
+                Disabled="@(currentStep == 0)"
+                ButtonStyle="ButtonStyle.Secondary"
+                Variant="Variant.Outlined"
+                Click="PreviousStep"
+                data-testid="transaction-details-back" />
+        @if (currentStep == 0)
+        {
+            <Button Text="Review transaction"
+                    Icon="arrow_forward"
+                    Disabled="@(!Validation.IsValid)"
+                    Click="NextStep"
+                    data-testid="transaction-details-next" />
+        }
+    </Split>
+</Stack>
+
+@code {
+    private int currentStep;
+    private BusinessObjectTransactionMode? observedMode;
+
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionMode Mode { get; set; }
+
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionDraft Draft { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public TransactionFlowValidation Validation { get; set; } = TransactionFlowValidation.Valid;
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<bool> ReviewReadyChanged { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (observedMode == Mode)
+        {
+            return;
+        }
+
+        observedMode = Mode;
+        currentStep = 0;
+    }
+
+    private async Task PreviousStep()
+    {
+        currentStep = 0;
+        await ReviewReadyChanged.InvokeAsync(false);
+    }
+
+    private async Task NextStep()
+    {
+        if (!Validation.IsValid)
+        {
+            return;
+        }
+
+        currentStep = 1;
+        await ReviewReadyChanged.InvokeAsync(true);
+    }
+}

@@ -3689,7 +3689,7 @@ button.cda-economy-list-item:focus-visible {
 }
 
 .cda-vef-dialog--send {
-  max-width: min(58rem, 100%) !important;
+  max-width: min(112rem, calc(100vw - 1rem)) !important;
 }
 
 .cda-vef-dialog--send .cda-section-card {
@@ -5364,21 +5364,20 @@ button.cda-economy-list-item:focus-visible {
 
 .cda-vef-bo-gallery-item {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
-  gap: 0.65rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem;
   align-items: center;
   min-width: 0;
   border: 1px solid #dfe5ee;
   border-radius: 0.28rem;
   background: #ffffff;
   color: #1f2735;
-  cursor: pointer;
   padding: 0.45rem;
   text-align: left;
 }
 
 .cda-vef-bo-gallery-item:hover,
-.cda-vef-bo-gallery-item:focus-visible,
+.cda-vef-bo-gallery-item:focus-within,
 .cda-vef-bo-gallery-item.is-selected {
   border-color: #0f766e;
   background: #f0fdfa;
@@ -5386,7 +5385,25 @@ button.cda-economy-list-item:focus-visible {
   outline-offset: 1px;
 }
 
-.cda-vef-bo-gallery-item > .cda-venft-dataitem-preview {
+.cda-vef-bo-gallery-item__select {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.cda-vef-bo-gallery-item__select:focus-visible {
+  outline: none;
+}
+
+.cda-vef-bo-gallery-item__select > .cda-venft-dataitem-preview {
   width: 5.5rem;
   height: 4.25rem;
   min-height: 4.25rem;
@@ -5396,10 +5413,14 @@ button.cda-economy-list-item:focus-visible {
   background: #f3f6fa;
 }
 
-.cda-vef-bo-gallery-item > span {
+.cda-vef-bo-gallery-item__select > span {
   display: grid;
   gap: 0.12rem;
   min-width: 0;
+}
+
+.cda-vef-bo-gallery-item__actions {
+  flex: 0 0 auto;
 }
 
 .cda-vef-bo-gallery-item strong,
@@ -5536,6 +5557,119 @@ button.cda-economy-list-item:focus-visible {
   padding: 0.85rem;
   white-space: pre-wrap;
   scrollbar-width: thin;
+}
+
+.cda-split-output-empty {
+  display: grid;
+  place-items: center;
+  gap: 0.2rem;
+  min-height: 5rem;
+  border: 1px dashed #d7dee8;
+  border-radius: 0.65rem;
+  background: #f8fafc;
+  padding: 0.7rem;
+  text-align: center;
+}
+
+.cda-split-output-empty span {
+  color: #243247;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.cda-split-output-empty p {
+  margin: 0;
+  color: #68768a;
+  font-size: 0.75rem;
+}
+
+.cda-action-review-panel {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  border: 1px solid #dfe5ec;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.9rem;
+}
+
+.cda-action-review-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.cda-action-review-panel__header > .material-icons {
+  display: grid;
+  flex: 0 0 2.15rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border-radius: 0.6rem;
+  background: #ece7ff;
+  color: #7048d7;
+  font-size: 1.15rem;
+}
+
+.cda-action-review-panel__header > div {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.cda-action-review-panel__header span:not(.material-icons),
+.cda-action-review-panel__facts dt {
+  color: #6b778b;
+  font-size: 0.66rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cda-action-review-panel__header h4,
+.cda-action-review-panel > p {
+  margin: 0;
+}
+
+.cda-action-review-panel__header h4 {
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.cda-action-review-panel > p {
+  color: #617086;
+  font-size: 0.8rem;
+}
+
+.cda-action-review-panel__facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid #e0e6ed;
+  border-radius: 0.65rem;
+  background: #e7ebf0;
+  overflow: hidden;
+}
+
+.cda-action-review-panel__facts > div {
+  display: grid;
+  align-content: start;
+  gap: 0.2rem;
+  min-width: 0;
+  background: #ffffff;
+  padding: 0.68rem 0.75rem;
+}
+
+.cda-action-review-panel__facts dd {
+  min-width: 0;
+  margin: 0;
+  color: #253247;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .cda-ticket-qr-mock {
@@ -7042,4 +7176,852 @@ button.cda-economy-list-item:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Transaction workflow foundation: compact chooser, guided BO selection, and clear validation. */
+.cda-transaction-flow-chooser,
+.cda-transaction-flow-panel,
+.cda-transaction-validation__warnings,
+.cda-transaction-advanced,
+.cda-transaction-bo-card__preview,
+.cda-transaction-bo-card__facts {
+  min-width: 0;
+}
+
+.cda-transaction-flow-chooser .cda-card-grid,
+.cda-transaction-operation-grid,
+.cda-transaction-bo-grid {
+  align-items: stretch;
+}
+
+.cda-transaction-flow-chooser .cda-selection-list-item,
+.cda-transaction-bo-grid .cda-selection-list-item {
+  height: 100%;
+}
+
+.cda-transaction-flow-chooser .cda-selection-list-item__button,
+.cda-transaction-bo-grid .cda-selection-list-item__button {
+  min-height: 100%;
+}
+
+.cda-transaction-validation__list,
+.cda-transaction-validation__warnings ul {
+  display: grid;
+  gap: 0.28rem;
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.cda-transaction-validation__warnings {
+  margin-top: 0.5rem;
+  color: #56665c;
+  font-size: 0.86rem;
+}
+
+.cda-transaction-advanced {
+  border: 1px solid #d8e0d9;
+  border-radius: 0.75rem;
+  background: #fbfdfc;
+  padding: 0.7rem 0.8rem;
+}
+
+.cda-transaction-advanced summary {
+  cursor: pointer;
+  color: #34463a;
+  font-weight: 750;
+}
+
+.cda-transaction-advanced[open] summary {
+  margin-bottom: 0.7rem;
+}
+
+.cda-transaction-field-error {
+  color: #b42318;
+  font-weight: 650;
+}
+
+.cda-transaction-bo-card__preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, #e8f6f0, #eef4ff);
+  color: #21614d;
+  font-size: 0.78rem;
+  font-weight: 750;
+  padding: 0.42rem 0.55rem;
+}
+
+.cda-transaction-bo-card__preview .material-icons {
+  font-size: 1.15rem;
+}
+
+.cda-transaction-bo-card__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0.55rem 0 0;
+}
+
+.cda-transaction-bo-card__facts div {
+  min-width: 0;
+}
+
+.cda-transaction-bo-card__facts dt {
+  color: #647067;
+  font-size: 0.66rem;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cda-transaction-bo-card__facts dd {
+  margin: 0.12rem 0 0;
+  color: #243229;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-vef-dialog--send .cda-transaction-flow-panel .cda-steps {
+  border: 1px solid #e1e9e4;
+  border-radius: 0.9rem;
+  background: #fff;
+  padding: clamp(0.7rem, 2vw, 1rem);
+}
+
+/* Desktop transaction workbench: the catalog is its own step and large collections use nested pickers. */
+.cda-transaction-step-heading,
+.cda-transaction-config-header {
+  min-width: 0;
+}
+
+.cda-transaction-step-heading span,
+.cda-transaction-config-header > div:nth-child(2) > span {
+  display: block;
+  color: #6f42e8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cda-transaction-step-heading h2,
+.cda-transaction-config-header h2 {
+  margin: 0.18rem 0 0;
+  color: #172033;
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.cda-transaction-step-heading p,
+.cda-transaction-config-header p {
+  margin: 0.28rem 0 0;
+  color: #607085;
+  font-size: 0.88rem;
+}
+
+.cda-transaction-config-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  border: 1px solid #dbe4ef;
+  border-radius: 0.8rem;
+  background: linear-gradient(110deg, #f8faff, #ffffff 55%);
+  padding: 0.78rem 0.9rem;
+}
+
+.cda-transaction-config-header__icon {
+  display: grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.72rem;
+  background: #ede8ff;
+  color: #6539d8;
+}
+
+.cda-transaction-operation-grid,
+.cda-transaction-flow-chooser .cda-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.cda-transaction-flow-chooser .cda-selection-list-item__button {
+  min-height: 8.25rem;
+}
+
+.cda-transaction-picker-modal {
+  max-width: min(112rem, calc(100vw - 1rem)) !important;
+}
+
+.cda-transaction-picker-dialog {
+  height: 100%;
+  min-height: 0;
+}
+
+.cda-transaction-picker-dialog__summary,
+.cda-transaction-picker-dialog__actions,
+.cda-transaction-selection-launcher,
+.cda-transaction-selected-source {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  border: 1px solid #dce4ec;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.72rem 0.85rem;
+}
+
+.cda-transaction-picker-dialog__summary > div,
+.cda-transaction-selection-launcher > div,
+.cda-transaction-selected-source > div {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.cda-transaction-picker-dialog__summary span,
+.cda-transaction-selection-launcher span,
+.cda-transaction-selected-source span {
+  color: #68768a;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cda-transaction-picker-dialog__summary strong,
+.cda-transaction-selection-launcher strong,
+.cda-transaction-selected-source strong {
+  color: #1f2a3b;
+  font-size: 0.95rem;
+}
+
+.cda-transaction-picker-dialog__summary small,
+.cda-transaction-selection-launcher small,
+.cda-transaction-selected-source small {
+  overflow: hidden;
+  color: #6b7789;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-transaction-picker-dialog__actions {
+  justify-content: flex-end;
+  border: 0;
+  border-top: 1px solid #e1e7ee;
+  border-radius: 0;
+  background: #ffffff;
+  padding: 0.8rem 0 0;
+}
+
+.cda-transaction-bo-search {
+  min-height: 0;
+}
+
+.cda-transaction-bo-search__toolbar {
+  align-items: end;
+}
+
+.cda-transaction-bo-search__selection-count {
+  display: grid;
+  align-content: center;
+  gap: 0.12rem;
+  min-height: 4.25rem;
+  border: 1px solid #dbe3ec;
+  border-radius: 0.68rem;
+  background: #f8fafc;
+  padding: 0.62rem 0.78rem;
+}
+
+.cda-transaction-bo-search__selection-count span,
+.cda-transaction-bo-search__selection-count small {
+  color: #6c7889;
+  font-size: 0.72rem;
+}
+
+.cda-transaction-bo-search__selection-count strong {
+  color: #243149;
+  font-size: 0.92rem;
+}
+
+.cda-transaction-bo-search__tags {
+  display: flex;
+  gap: 0.38rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.cda-transaction-bo-search__tags button {
+  flex: 0 0 auto;
+  border: 1px solid #dce3eb;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #536176;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.62rem;
+}
+
+.cda-transaction-bo-search__tags button:hover,
+.cda-transaction-bo-search__tags button.is-active {
+  border-color: #8865e8;
+  background: #f1edff;
+  color: #5630bf;
+}
+
+.cda-transaction-bo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.72rem;
+  max-height: min(52vh, 34rem);
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.12rem 0.2rem 0.2rem 0.12rem;
+}
+
+.cda-transaction-bo-grid--review {
+  grid-template-columns: repeat(2, minmax(0, 17rem));
+  max-height: none;
+  overflow: visible;
+}
+
+.cda-transaction-bo-picker-card.is-readonly .cda-transaction-bo-picker-card__select {
+  cursor: default;
+  opacity: 1;
+}
+
+.cda-transaction-bo-picker-card.is-readonly .cda-transaction-bo-picker-card__select:hover {
+  transform: none;
+  border-color: inherit;
+  box-shadow: none;
+}
+
+.cda-transaction-bo-picker-card.is-incompatible {
+  opacity: 0.62;
+}
+
+.cda-transaction-bo-picker-card__restriction {
+  color: #9a3412;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.cda-token-creation-modal {
+  max-width: min(82rem, calc(100vw - 2rem)) !important;
+}
+
+.cda-token-creation-wizard,
+.cda-token-creation-wizard .cda-transaction-workflow-steps {
+  width: 100%;
+}
+
+.cda-transaction-guidance-surface {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-width: 0;
+  height: 100%;
+  border: 1px solid #dce4ee;
+  border-radius: 0.8rem;
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.cda-transaction-guidance-surface--accent {
+  border-color: #d8cbff;
+  background: #faf8ff;
+}
+
+.cda-transaction-guidance-surface h3,
+.cda-transaction-guidance-surface p {
+  margin: 0;
+}
+
+.cda-transaction-guidance-surface h3 {
+  color: #1f2937;
+  font-size: 1.02rem;
+}
+
+.cda-transaction-guidance-surface p {
+  color: #5d6b7e;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.cda-token-creation-review {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid #e0e6ed;
+  border-radius: 0.7rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.cda-token-creation-review > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.8rem;
+}
+
+.cda-token-creation-review > div:nth-child(2n) {
+  border-left: 1px solid #e7ebf0;
+}
+
+.cda-token-creation-review > div:nth-child(n + 3) {
+  border-top: 1px solid #e7ebf0;
+}
+
+.cda-token-creation-review span {
+  color: #69768a;
+  font-size: 0.68rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cda-token-creation-review strong {
+  min-width: 0;
+  color: #263247;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.cda-transaction-bo-picker-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dce3eb;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(28, 39, 58, 0.06);
+}
+
+.cda-transaction-bo-picker-card.is-selected {
+  border-color: #7952df;
+  box-shadow: 0 0 0 2px rgba(121, 82, 223, 0.16), 0 7px 18px rgba(59, 40, 112, 0.13);
+}
+
+.cda-transaction-bo-picker-card__select {
+  display: grid;
+  grid-template-rows: 6.25rem minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.cda-transaction-bo-picker-card__preview {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  overflow: hidden;
+  border-bottom: 1px solid #e3e8ef;
+  background: linear-gradient(135deg, #5f58cf, #659bd8);
+  color: #ffffff;
+}
+
+.cda-transaction-bo-picker-card__preview .material-icons {
+  font-size: 2rem;
+}
+
+.cda-transaction-bo-picker-card__preview--media .cda-venft-dataitem-preview,
+.cda-transaction-bo-picker-card__preview--media img,
+.cda-transaction-bo-picker-card__preview--media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cda-transaction-bo-picker-card__body {
+  display: grid;
+  align-content: start;
+  gap: 0.38rem;
+  min-width: 0;
+  padding: 0.58rem 0.64rem 0.64rem;
+}
+
+.cda-transaction-bo-picker-card__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.cda-transaction-bo-picker-card__heading strong {
+  overflow: hidden;
+  color: #263247;
+  font-size: 0.83rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-transaction-bo-picker-card__heading .material-icons {
+  flex: 0 0 auto;
+  color: #7952df;
+  font-size: 1.05rem;
+}
+
+.cda-transaction-bo-picker-card__description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #6a7688;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.cda-transaction-bo-picker-card__meta,
+.cda-transaction-bo-picker-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.cda-transaction-bo-picker-card__meta span,
+.cda-transaction-bo-picker-card__tags span {
+  border: 1px solid #e0e5ec;
+  border-radius: 999px;
+  background: #f7f9fb;
+  color: #5d6879;
+  font-size: 0.62rem;
+  line-height: 1.25;
+  padding: 0.16rem 0.34rem;
+}
+
+.cda-transaction-bo-picker-card__tags span {
+  border-color: #ddd5fa;
+  background: #f5f2ff;
+  color: #6747c4;
+}
+
+.cda-transaction-picker-modal .cda-utxo-selector__list {
+  max-height: min(56vh, 38rem);
+  overflow-y: auto;
+}
+
+.cda-utxo-selector__search {
+  margin: 0.7rem 0;
+}
+
+/* Desktop transaction workbench: wide canvas, compact progress, persistent context and actions. */
+.cda-transaction-composer,
+.cda-transaction-flow-panel,
+.cda-transaction-wizard,
+.cda-transaction-workflow-steps,
+.cda-transaction-picker-dialog,
+.cda-transaction-bo-search {
+  width: 100%;
+}
+
+.cda-transaction-composer .cda-material-icon,
+.cda-transaction-picker-dialog .cda-material-icon,
+.cda-token-creation-wizard .cda-material-icon {
+  /* Material Icons are case-sensitive ligatures. Compact button typography
+     may uppercase descendants, which otherwise exposes names such as
+     `checklist` or `view_module` instead of the intended glyph. */
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+.cda-transaction-config-header {
+  width: 100%;
+  border-color: #dce3ec;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+}
+
+.cda-transaction-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem);
+  gap: 1rem;
+  align-items: start;
+  min-width: 0;
+  width: 100%;
+}
+
+.cda-transaction-workbench__canvas {
+  width: 100%;
+  overflow: visible;
+  padding-top: 0 !important;
+}
+
+.cda-transaction-context-rail {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-self: start;
+  min-width: 0;
+  max-height: calc(94vh - 10rem);
+  overflow: hidden;
+  border: 1px solid #dce3ec;
+  border-radius: 0.8rem;
+  background: #f8fafc;
+  padding: 0.85rem;
+  scrollbar-width: thin;
+}
+
+.cda-transaction-context-rail__body {
+  grid-row: 3;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.cda-transaction-context-rail__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.cda-transaction-context-rail__heading > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cda-transaction-context-rail__heading span,
+.cda-transaction-context-rail__facts dt {
+  color: #69768a;
+  font-size: 0.68rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cda-transaction-context-rail__heading strong {
+  color: #1e293b;
+  font-size: 1rem;
+}
+
+.cda-transaction-context-rail__facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-block: 1px solid #e1e7ee;
+}
+
+.cda-transaction-context-rail__facts > div {
+  display: grid;
+  grid-template-columns: 5.4rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: baseline;
+  min-width: 0;
+  padding: 0.55rem 0;
+}
+
+.cda-transaction-context-rail__facts > div + div {
+  border-top: 1px solid #e7ebf0;
+}
+
+.cda-transaction-context-rail__facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #263247;
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cda-transaction-context-rail__actions {
+  grid-row: 4;
+  position: sticky;
+  bottom: -0.85rem;
+  z-index: 2;
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 -0.85rem -0.85rem;
+  border-top: 1px solid #dce3ec;
+  background: rgba(248, 250, 252, 0.97);
+  padding: 0.75rem 0.85rem 0.85rem;
+  backdrop-filter: blur(8px);
+}
+
+.cda-transaction-context-rail__actions .cda-button,
+.cda-transaction-context-rail__actions .rz-button {
+  justify-content: center;
+  width: 100%;
+}
+
+.cda-transaction-workflow-steps {
+  gap: 0.75rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.cda-transaction-workflow-steps > ol {
+  width: min(100%, 40rem);
+  padding: 0.15rem 0.35rem 0.35rem;
+}
+
+.cda-transaction-workflow-steps > div:last-child {
+  width: 100%;
+  border: 1px solid #dfe5ec !important;
+  border-radius: 0.8rem !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  padding: 0.9rem !important;
+}
+
+.cda-transaction-workflow-steps > div:last-child > .rz-stack {
+  align-items: stretch !important;
+  gap: 0.9rem !important;
+  width: 100%;
+}
+
+.cda-transaction-workflow-steps > div:last-child > .rz-stack > div:first-child {
+  /* The progress rail already names the active step. Removing the repeated
+     eyebrow/title/description block gives the desktop workbench its form
+     space back and prevents the outer modal from becoming a scroll surface. */
+  display: none;
+}
+
+.cda-transaction-workflow-steps section.rz-stack.w-full {
+  gap: 0.85rem !important;
+  height: auto;
+  border-radius: 0.75rem !important;
+  background: #f8fafc !important;
+  padding: 0.95rem !important;
+}
+
+.cda-transaction-detail-grid > section,
+.cda-transaction-detail-grid > .rz-stack {
+  height: 100%;
+}
+
+.cda-transaction-template-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.cda-transaction-template-grid .cda-selection-list-item__button {
+  min-height: 7.25rem;
+}
+
+.cda-transaction-wizard-nav {
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border-top: 1px solid #e5e9ef;
+  padding-top: 0.75rem;
+}
+
+.cda-transaction-selected-source {
+  border-radius: 0.65rem;
+  background: #f8fafc;
+  padding: 0.6rem 0.75rem;
+}
+
+.cda-transaction-selected-source .cda-button,
+.cda-transaction-selected-source .rz-button {
+  white-space: nowrap;
+}
+
+.cda-transaction-inline-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 12rem));
+  gap: 0.65rem;
+}
+
+.cda-transaction-address-surface,
+.cda-transaction-selection-launcher {
+  height: 100%;
+  border: 1px solid #dce4ec;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.72rem 0.85rem;
+}
+
+.cda-transaction-split-controls {
+  border: 1px solid #e0e6ed;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.8rem;
+}
+
+.cda-split-output-grid {
+  overflow: hidden;
+  border: 1px solid #e0e6ed;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0.8rem;
+}
+
+.cda-split-output-grid__items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  max-height: min(20rem, calc(100vh - 36rem));
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+  scrollbar-width: thin;
+}
+
+.cda-split-output-grid__items .cda-split-output-row {
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.4fr) auto;
+}
+
+.cda-transaction-delegated-flow {
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  min-height: 22rem;
+  border: 1px dashed #cfd7e3;
+  border-radius: 0.8rem;
+  background: #fbfcfe;
+  padding: 2rem;
+  text-align: center;
+}
+
+.cda-transaction-picker-dialog__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: auto;
+  background: rgba(255, 255, 255, 0.96);
+  padding-bottom: 0.15rem;
+}
+
+.cda-transaction-bo-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  max-height: min(58vh, 39rem);
+}
+
+.cda-transaction-bo-grid--review {
+  grid-template-columns: repeat(2, minmax(0, 17rem));
+  max-height: none;
+  overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .cda-transaction-bo-card__facts {
+    grid-template-columns: 1fr;
+  }
 }

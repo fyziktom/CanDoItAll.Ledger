@@ -287,8 +287,10 @@ else
             new DialogOptions
             {
                 Subtitle = "Authority-aware token mint",
-                Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Size = ModalSize.Wide,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-token-creation-modal",
                 TestId = "cda-token-create-dialog"
             });
     }

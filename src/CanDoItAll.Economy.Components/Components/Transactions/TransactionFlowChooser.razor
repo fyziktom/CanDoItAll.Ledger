@@ -1,0 +1,87 @@
+@namespace CanDoItAll.Economy.Components
+
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="cda-transaction-flow-chooser" data-testid="transaction-type-step">
+    <div class="cda-transaction-step-heading">
+        <div>
+            <span>Step 1</span>
+            <h2>Choose a transaction type</h2>
+            <p>Select the ledger operation you want to prepare. Its required steps will be assembled next.</p>
+        </div>
+    </div>
+
+    <SecondaryTabs Items="FamilyItems"
+                   SelectedKey="@selectedFamilyKey"
+                   SelectedKeyChanged="SelectFamilyAsync"
+                   Dense="true" />
+
+    <CardGrid Class="cda-transaction-operation-grid" data-testid="transaction-operation-chooser">
+        @foreach (TransactionFlowDefinition definition in VisibleDefinitions)
+        {
+            <SelectionListItem Title="@definition.Label"
+                               Eyebrow="@FamilyLabel(definition.Family)"
+                               Summary="@definition.Description"
+                               IsSelected="@(definition.Mode == SelectedMode)"
+                               Dense="true"
+                               OnSelect="@(() => SelectModeAsync(definition.Mode))"
+                               DataTestId="@($"transaction-mode-{definition.Mode}")">
+                <Status>
+                    <Icon Name="@definition.Icon" />
+                </Status>
+            </SelectionListItem>
+        }
+    </CardGrid>
+</Stack>
+
+@code {
+    private static readonly IReadOnlyList<SecondaryTabItem> FamilyItems =
+    [
+        new(nameof(TransactionFlowFamily.Payment), "Payments", Description: "Main-currency transfers"),
+        new(nameof(TransactionFlowFamily.Token), "Tokens", Description: "Token transfers and creation"),
+        new(nameof(TransactionFlowFamily.Utxo), "UTXOs", Description: "Explicit output management"),
+        new(nameof(TransactionFlowFamily.BusinessObject), "Business objects", Description: "Create, change, and combine objects")
+    ];
+
+    private string selectedFamilyKey = nameof(TransactionFlowFamily.Payment);
+    private BusinessObjectTransactionMode? observedMode;
+
+    [Parameter]
+    public BusinessObjectTransactionMode SelectedMode { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionMode> SelectedModeChanged { get; set; }
+
+    private TransactionFlowFamily SelectedFamily
+        => Enum.TryParse(selectedFamilyKey, out TransactionFlowFamily family)
+            ? family
+            : TransactionFlowFamily.Payment;
+
+    private IReadOnlyList<TransactionFlowDefinition> VisibleDefinitions
+        => TransactionFlowCatalog.ForFamily(SelectedFamily);
+
+    protected override void OnParametersSet()
+    {
+        if (observedMode != SelectedMode)
+        {
+            selectedFamilyKey = TransactionFlowCatalog.Get(SelectedMode).Family.ToString();
+            observedMode = SelectedMode;
+        }
+    }
+
+    private Task SelectFamilyAsync(string key)
+    {
+        selectedFamilyKey = key;
+        return Task.CompletedTask;
+    }
+
+    private Task SelectModeAsync(BusinessObjectTransactionMode mode)
+        => SelectedModeChanged.InvokeAsync(mode);
+
+    private static string FamilyLabel(TransactionFlowFamily family)
+        => family switch
+        {
+            TransactionFlowFamily.Payment => "Payment",
+            TransactionFlowFamily.Token => "Token",
+            TransactionFlowFamily.Utxo => "UTXO",
+            _ => "Business object"
+        };
+}

@@ -8,6 +8,7 @@ using CanDoItAll.Economy.Components.Services;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
 using CanDoItAll.Economy.Ledger;
+using Microsoft.AspNetCore.Components;
 using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
@@ -84,6 +85,53 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
         Assert.Single(component.FindAll(".cda-vef-bo-selected-preview"));
         Assert.Single(component.FindAll(".cda-vef-bo-gallery-rail"));
         Assert.Contains("Main photo", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DetailsDialog_DataItemCopyActionsUseCidAndConfiguredGatewayLink()
+    {
+        const string cid = "QmCopyActions";
+        ITypedBusinessObjectView mediaObject = CreateTypedObject(
+            "post",
+            "IPFS-backed post",
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            [
+                new BusinessObjectDataItem(
+                    "IPFS photo",
+                    BusinessObjectDataItemType.Image,
+                    BusinessObjectDataItemStorage.Ipfs,
+                    cid,
+                    new Uri($"http://localhost:5081/ipfs-api/cat?arg={cid}"),
+                    "image/png",
+                    "ipfs-photo.png",
+                    128,
+                    IsMain: true)
+            ]);
+        var resolver = new IpfsGatewayDataItemUriResolver(
+            new Uri("https://gateway.example/", UriKind.Absolute));
+
+        IRenderedComponent<CascadingValue<IBusinessObjectDataItemUriResolver>> component =
+            RenderComponent<CascadingValue<IBusinessObjectDataItemUriResolver>>(parameters => parameters
+                .Add(x => x.Value, resolver)
+                .AddChildContent<BusinessObjectLedgerDetailsDialogContent>(child => child
+                    .Add(x => x.Object, mediaObject)));
+
+        Assert.Single(component.FindAll("[data-testid='cda-bo-data-item-copy-cid']"));
+        Assert.Single(component.FindAll("[data-testid='cda-bo-data-item-copy-link']"));
+        Assert.Empty(component.FindAll(".cda-vef-bo-gallery-item__select button"));
+
+        IReadOnlyList<IRenderedComponent<CopyButton>> copyButtons = component.FindComponents<CopyButton>();
+        CopyButton cidButton = Assert.Single(copyButtons
+            .Where(button => button.Instance.AriaLabel == "Copy CID for IPFS photo"))
+            .Instance;
+        CopyButton linkButton = Assert.Single(copyButtons
+            .Where(button => button.Instance.AriaLabel == "Copy IPFS link for IPFS photo"))
+            .Instance;
+
+        Assert.Equal(cid, cidButton.Value);
+        Assert.Equal("https://gateway.example/ipfs/QmCopyActions", linkButton.Value);
+        Assert.Equal(CopyButtonDisplayMode.IconOnly, cidButton.DisplayMode);
+        Assert.Equal(CopyButtonSize.ExtraSmall, linkButton.Size);
     }
 
     [Fact]

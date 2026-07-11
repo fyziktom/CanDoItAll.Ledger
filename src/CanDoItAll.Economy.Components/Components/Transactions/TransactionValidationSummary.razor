@@ -1,0 +1,48 @@
+@namespace CanDoItAll.Economy.Components
+
+<div data-testid="transaction-validation" aria-live="polite">
+    @if (Validation.Errors.Count > 0)
+    {
+        <Alert AlertStyle="AlertStyle.Danger" Variant="Variant.Outlined">
+            <Stack GapScale="LayoutGap.Tiny">
+                <strong>Complete these details before submitting</strong>
+                <ul class="cda-transaction-validation__list">
+                    @foreach (TransactionFlowIssue issue in DistinctErrors)
+                    {
+                        <li data-validation-code="@issue.Code">@issue.Message</li>
+                    }
+                </ul>
+            </Stack>
+        </Alert>
+    }
+    else
+    {
+        <Alert AlertStyle="AlertStyle.Success" Variant="Variant.Outlined">
+            Required details are complete. Review the transaction before submitting.
+        </Alert>
+    }
+
+    @if (Validation.Warnings.Count > 0)
+    {
+        <details class="cda-transaction-validation__warnings">
+            <summary>@DistinctWarnings.Count recommendation(s)</summary>
+            <ul>
+                @foreach (TransactionFlowIssue issue in DistinctWarnings)
+                {
+                    <li data-validation-code="@issue.Code">@issue.Message</li>
+                }
+            </ul>
+        </details>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TransactionFlowValidation Validation { get; set; } = TransactionFlowValidation.Valid;
+
+    private IReadOnlyList<TransactionFlowIssue> DistinctErrors
+        => Validation.Errors.DistinctBy(issue => issue.Message, StringComparer.Ordinal).ToArray();
+
+    private IReadOnlyList<TransactionFlowIssue> DistinctWarnings
+        => Validation.Warnings.DistinctBy(issue => issue.Message, StringComparer.Ordinal).ToArray();
+}

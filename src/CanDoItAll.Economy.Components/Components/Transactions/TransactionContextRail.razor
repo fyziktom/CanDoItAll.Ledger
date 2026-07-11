@@ -1,0 +1,113 @@
+@namespace CanDoItAll.Economy.Components
+
+<aside class="cda-transaction-context-rail" data-testid="transaction-context-rail">
+    <div class="cda-transaction-context-rail__heading">
+        <div>
+            <span>Transaction summary</span>
+            <strong>@ModeLabel</strong>
+        </div>
+        <Pill Text="@StatusText"
+              Tone="@(SubmissionEnabled ? PillTone.Ok : PillTone.Label)" />
+    </div>
+
+    @if (!Delegated)
+    {
+        <dl class="cda-transaction-context-rail__facts">
+            <div>
+                <dt>Receiver</dt>
+                <dd title="@Receiver">@Receiver</dd>
+            </div>
+            <div>
+                <dt>Amount</dt>
+                <dd>@Amount</dd>
+            </div>
+        </dl>
+    }
+
+    <div class="cda-transaction-context-rail__body">
+        @if (Delegated)
+        {
+            <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                This operation continues in its specialized guided dialog.
+            </Alert>
+        }
+        else if (ReviewRequired && Validation.IsValid && !SubmissionEnabled)
+        {
+            <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                Complete the guided steps and open Review before submitting this transaction.
+            </Alert>
+        }
+        else
+        {
+            <TransactionValidationSummary Validation="Validation" />
+        }
+    </div>
+
+    <div class="cda-transaction-context-rail__actions">
+        @if (!Delegated)
+        {
+            <Button Text="Submit transaction"
+                    Icon="send"
+                    Click="SubmitRequested"
+                    Disabled="@(!SubmissionEnabled)"
+                    data-testid="transaction-submit" />
+            <Button Text="Assemble draft"
+                    Icon="build"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Variant="Variant.Outlined"
+                    Click="AssembleRequested" />
+        }
+        <Button Text="Refresh account"
+                Icon="refresh"
+                ButtonStyle="ButtonStyle.Secondary"
+                Variant="Variant.Text"
+                Click="BroadcastRequested" />
+    </div>
+</aside>
+
+@code {
+    [Parameter, EditorRequired]
+    public string ModeLabel { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Receiver { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Amount { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public TransactionFlowValidation Validation { get; set; } = TransactionFlowValidation.Valid;
+
+    [Parameter]
+    public bool Delegated { get; set; }
+
+    [Parameter]
+    public bool ReviewRequired { get; set; }
+
+    [Parameter]
+    public bool SubmissionEnabled { get; set; }
+
+    [Parameter]
+    public EventCallback SubmitRequested { get; set; }
+
+    [Parameter]
+    public EventCallback AssembleRequested { get; set; }
+
+    [Parameter]
+    public EventCallback BroadcastRequested { get; set; }
+
+    private string StatusText
+        => Delegated
+            ? "Guided dialog"
+            : !Validation.IsValid
+            ? $"{RequiredCount} required"
+            : ReviewRequired && !SubmissionEnabled
+                ? "Review required"
+                : "Ready";
+
+    private int RequiredCount
+        => Validation.Errors
+            .Select(issue => issue.Message)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+}

@@ -1,33 +1,37 @@
-@using System.Globalization
 @namespace CanDoItAll.Economy.Components
 
-<TransactionAddressInput Label="Payment receiver"
-                         Value="@Draft.PaymentReceiverAddress.Value"
-                         ValueChanged="SetPaymentReceiverAddressAsync"
-                         Placeholder="cdia1..."
-                         ContainerClass="cda-economy-field cda-economy-field--wide"
-                         Bookmarks="Bookmarks"
-                         AccountScope="@AccountScope"
-                         DialogSubtitle="Send"
-                         TestId="cda-send-payment-receiver" />
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="payment-transaction-form">
+    <FormSection Title="Send main currency" Description="Choose a receiver, then use the available balance shortcuts or enter an exact amount.">
+        <Grid ColumnTemplateLg="minmax(20rem,1.35fr) minmax(12rem,.65fr) minmax(18rem,1fr)" Gap="LayoutGap.Medium" AlignItems="AlignItems.Start">
+            <TransactionAddressInput Label="Payment receiver"
+                                     Value="@Draft.PaymentReceiverAddress.Value"
+                                     ValueChanged="SetPaymentReceiverAddressAsync"
+                                     Placeholder="cdia1…"
+                                     ContainerClass="cda-economy-field"
+                                     Bookmarks="Bookmarks"
+                                     AccountScope="@AccountScope"
+                                     DialogSubtitle="Send"
+                                     TestId="cda-send-payment-receiver" />
 
-<FormField Text="Payment amount" ContainerClass="cda-economy-field">
-    <TextBox Value="@Draft.PaymentAmount.ToString()"
-             ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetPaymentAmountAsync))"
-             Immediate="true"
-             Placeholder="250"
-             aria-label="Payment amount"
-             data-testid="cda-send-payment-amount" />
-</FormField>
+            <TransactionAmountInput Label="Payment amount"
+                                    Value="Draft.PaymentAmount"
+                                    ValueChanged="SetPaymentAmountAsync"
+                                    MaxAmount="Balance?.MainBalance"
+                                    ContainerClass="cda-economy-field"
+                                    Placeholder="250"
+                                    TestId="cda-send-payment-amount" />
 
-<FormField Text="Memo" ContainerClass="cda-economy-field cda-economy-field--wide">
-    <TextBox Value="@Draft.ExternalRef"
-             ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetExternalRefAsync))"
-             Immediate="true"
-             Placeholder="operations payment"
-             aria-label="Memo"
-             data-testid="cda-send-payment-memo" />
-</FormField>
+            <FormField Text="Memo" ContainerClass="cda-economy-field">
+                <TextBox Value="@Draft.ExternalRef"
+                         ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetExternalRefAsync))"
+                         Immediate="true"
+                         Placeholder="What is this payment for?"
+                         aria-label="Memo"
+                         data-testid="cda-send-payment-memo" />
+            </FormField>
+        </Grid>
+    </FormSection>
+</Stack>
 
 @code {
     [Parameter, EditorRequired]
@@ -42,11 +46,14 @@
     [Parameter]
     public string AccountScope { get; set; } = "transaction-composer";
 
+    [Parameter]
+    public LedgerAccountBalance? Balance { get; set; }
+
     private Task SetPaymentReceiverAddressAsync(string? value)
         => UpdateDraftAsync(Draft with { PaymentReceiverAddress = new Address(value ?? string.Empty) });
 
-    private Task SetPaymentAmountAsync(string? value)
-        => UpdateDraftAsync(Draft with { PaymentAmount = ParseAmount(value) });
+    private Task SetPaymentAmountAsync(Amount? value)
+        => UpdateDraftAsync(Draft with { PaymentAmount = value ?? Amount.Zero });
 
     private Task SetExternalRefAsync(string? value)
         => UpdateDraftAsync(Draft with { ExternalRef = value ?? string.Empty });
@@ -54,8 +61,4 @@
     private Task UpdateDraftAsync(BusinessObjectTransactionDraft nextDraft)
         => DraftChanged.InvokeAsync(nextDraft);
 
-    private static Amount ParseAmount(string? value)
-        => decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed) && parsed >= 0m
-            ? new Amount(parsed)
-            : Amount.Zero;
 }

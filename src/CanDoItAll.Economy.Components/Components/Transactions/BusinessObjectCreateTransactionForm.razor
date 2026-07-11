@@ -1,0 +1,239 @@
+@namespace CanDoItAll.Economy.Components
+
+<Stack GapScale="LayoutGap.Medium"
+       AlignItems="AlignItems.Stretch"
+       Class="cda-transaction-wizard"
+       data-testid="bo-create-wizard">
+    <Steps Value="currentStep" CanSelect="false" Linear="true" ShowDescriptions="true" class="cda-transaction-workflow-steps">
+        <StepsItem Text="Template" Icon="dashboard_customize" Description="Choose a useful starting point">
+            <FormSection Title="What are you creating?" Description="Templates preload type, schema, and a valid starter payload; every value remains editable.">
+                <CardGrid Class="cda-transaction-template-grid">
+                    @foreach (ObjectTemplate template in Templates)
+                    {
+                        <SelectionListItem Title="@template.Label"
+                                           Eyebrow="@template.ObjectType"
+                                           Summary="@template.Description"
+                                           IsSelected="@(template.ObjectType == ActiveDraft.ObjectType)"
+                                           OnSelect="@(() => ApplyTemplateAsync(template))"
+                                           DataTestId="@($"bo-create-template-{template.Key}")">
+                            <Status><Icon Name="@template.Icon" /></Status>
+                        </SelectionListItem>
+                    }
+                </CardGrid>
+            </FormSection>
+        </StepsItem>
+        <StepsItem Text="Details" Icon="edit_note" Description="Identity, owner, and state">
+            <Grid ColumnTemplateXl="minmax(0,1.25fr) minmax(24rem,.75fr)"
+                  Gap="LayoutGap.Medium"
+                  AlignItems="AlignItems.Start"
+                  Class="cda-transaction-detail-grid">
+            <FormSection Title="Object identity" Description="The generated object ID is preloaded and can be replaced with your naming convention.">
+                <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+                    @RenderTextField("Object ID", ActiveDraft.ObjectId.Value, SetObjectIdAsync, "bo:purchase-order:1043", "bo-create-object-id")
+                    @RenderTextField("Object type", ActiveDraft.ObjectType, SetObjectTypeAsync, "purchase-order", "bo-create-object-type")
+                    @RenderTextField("Schema version", ActiveDraft.SchemaVersion, SetSchemaVersionAsync, "1.0", "bo-create-schema")
+                    <TransactionAddressInput Label="Owner address"
+                                             Value="@ActiveDraft.OwnerAddress.Value"
+                                             ValueChanged="SetOwnerAddressAsync"
+                                             Placeholder="cdia1…"
+                                             Bookmarks="Bookmarks"
+                                             AccountScope="@AccountScope"
+                                             DialogSubtitle="Create owner"
+                                             TestId="bo-create-owner" />
+                    <TransactionAmountInput Label="Attached main amount"
+                                            Value="ActiveDraft.MainAmount"
+                                            ValueChanged="SetMainAmountAsync"
+                                            MaxAmount="Balance?.MainBalance"
+                                            TestId="bo-create-main-amount" />
+                    <AvailableTokenSelector Options="TokenOptions"
+                                            SelectedKey="@SelectedAssetKey"
+                                            SelectedKeyChanged="SetAssetAsync"
+                                            Label="Asset to attach"
+                                            DataTestId="bo-create-asset" />
+                    @if (ActiveDraft.TokenId is not null)
+                    {
+                        <TransactionAmountInput Label="Token amount"
+                                                Value="ActiveDraft.TokenAmount"
+                                                ValueChanged="SetTokenAmountAsync"
+                                                TestId="bo-create-token-amount" />
+                    }
+                </Grid>
+            </FormSection>
+            <FormSection Title="State and audit" Description="The template provides valid JSON. Expand the advanced editor only when the payload needs changing.">
+                @RenderTextField("External reference", ActiveDraft.ExternalRef, SetExternalRefAsync, "erp://purchase-orders/1043", "bo-create-external-ref")
+                <details class="cda-transaction-advanced">
+                    <summary>Advanced state JSON</summary>
+                    <FormField Text="State JSON" ContainerClass="cda-economy-field cda-economy-field--wide">
+                        <TextArea Value="@ActiveDraft.StateJson"
+                                  ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetStateJsonAsync))"
+                                  Immediate="true"
+                                  Rows="5"
+                                  aria-label="Create state JSON"
+                                  data-testid="bo-create-state-json" />
+                    </FormField>
+                </details>
+            </FormSection>
+            </Grid>
+        </StepsItem>
+        <StepsItem Text="Review" Icon="fact_check" Description="Validate before signing">
+            <TransactionReviewPanel Draft="ActiveDraft" />
+        </StepsItem>
+    </Steps>
+
+    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Class="cda-transaction-wizard-nav">
+        <Button Text="Back"
+                Icon="arrow_back"
+                Disabled="@(currentStep == 0)"
+                ButtonStyle="ButtonStyle.Secondary"
+                Variant="Variant.Outlined"
+                Click="PreviousStep"
+                data-testid="bo-create-back" />
+        @if (currentStep < 2)
+        {
+            <Button Text="@(currentStep == 1 ? "Review object" : "Continue")"
+                    Icon="arrow_forward"
+                    Disabled="@(!CanContinue)"
+                    Click="NextStep"
+                    data-testid="bo-create-next" />
+        }
+    </Split>
+</Stack>
+
+@code {
+    private static readonly IReadOnlyList<ObjectTemplate> Templates =
+    [
+        new("order", "Purchase order", "purchase-order", "A structured order with status and line items.", "receipt_long", "{\"status\":\"draft\",\"items\":[]}"),
+        new("ticket", "Ticket", "ticket", "An event or entitlement ticket ready for metadata.", "confirmation_number", "{\"status\":\"active\",\"uses\":1}"),
+        new("message", "Account message", "account-app-message", "A simple account-app message object.", "mail", "{\"source\":\"account-app\",\"message\":\"\"}"),
+        new("generic", "Custom object", "business-object", "A minimal valid object for custom schemas.", "inventory_2", "{}")
+    ];
+
+    private BusinessObjectTransactionDraft? localDraft;
+    private int currentStep;
+
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> DraftChanged { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<EconomyTokenOption> TokenOptions { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string AccountScope { get; set; } = "transaction-composer";
+
+    [Parameter]
+    public LedgerAccountBalance? Balance { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ReviewReadyChanged { get; set; }
+
+    private BusinessObjectTransactionDraft ActiveDraft => localDraft ?? Draft;
+
+    private string SelectedAssetKey => ActiveDraft.TokenId?.Value ?? EconomyTokenOption.MainKey;
+
+    private TransactionFlowValidation Validation
+        => TransactionDraftValidator.Validate(
+            ActiveDraft with { SelectedMode = BusinessObjectTransactionMode.Create },
+            new TransactionDraftValidationContext(Balance));
+
+    private bool CanContinue => currentStep == 0 || Validation.IsValid;
+
+    protected override void OnParametersSet()
+    {
+        localDraft = Draft with { SelectedMode = BusinessObjectTransactionMode.Create };
+    }
+
+    private Task ApplyTemplateAsync(ObjectTemplate template)
+        => UpdateDraftAsync(ActiveDraft with
+        {
+            ObjectType = template.ObjectType,
+            SchemaVersion = "1.0",
+            StateJson = template.StateJson
+        });
+
+    private async Task PreviousStep()
+    {
+        currentStep = Math.Max(0, currentStep - 1);
+        await NotifyReviewReadyAsync();
+    }
+
+    private async Task NextStep()
+    {
+        if (CanContinue)
+        {
+            currentStep = Math.Min(2, currentStep + 1);
+            await NotifyReviewReadyAsync();
+        }
+    }
+
+    private Task NotifyReviewReadyAsync()
+        => ReviewReadyChanged.InvokeAsync(currentStep == 2);
+
+    private Task SetObjectIdAsync(string? value)
+        => UpdateDraftAsync(ActiveDraft with { ObjectId = new BusinessObjectId(value?.Trim() ?? string.Empty) });
+
+    private Task SetObjectTypeAsync(string? value)
+        => UpdateDraftAsync(ActiveDraft with { ObjectType = value ?? string.Empty });
+
+    private Task SetSchemaVersionAsync(string? value)
+        => UpdateDraftAsync(ActiveDraft with { SchemaVersion = value ?? string.Empty });
+
+    private Task SetOwnerAddressAsync(string? value)
+        => UpdateDraftAsync(ActiveDraft with { OwnerAddress = new Address(value ?? string.Empty) });
+
+    private Task SetMainAmountAsync(Amount? value)
+        => UpdateDraftAsync(ActiveDraft with { MainAmount = value ?? Amount.Zero });
+
+    private Task SetTokenAmountAsync(Amount? value)
+        => UpdateDraftAsync(ActiveDraft with { TokenAmount = value });
+
+    private Task SetStateJsonAsync(string? value)
+        => UpdateDraftAsync(ActiveDraft with { StateJson = value ?? string.Empty });
+
+    private Task SetExternalRefAsync(string? value)
+        => UpdateDraftAsync(ActiveDraft with { ExternalRef = value ?? string.Empty });
+
+    private Task SetAssetAsync(string? key)
+    {
+        EconomyTokenOption? selected = TokenOptions.FirstOrDefault(option => option.Key == key);
+        return UpdateDraftAsync(ActiveDraft with
+        {
+            TokenId = selected?.IsMain == true ? null : selected?.TokenId,
+            TokenAmount = selected?.IsMain == true ? null : ActiveDraft.TokenAmount ?? Amount.FromInt64(1)
+        });
+    }
+
+    private async Task UpdateDraftAsync(BusinessObjectTransactionDraft next)
+    {
+        localDraft = next;
+        await DraftChanged.InvokeAsync(next);
+    }
+
+    private RenderFragment RenderTextField(
+        string label,
+        string? value,
+        Func<string?, Task> changed,
+        string placeholder,
+        string testId)
+        => @<FormField Text="@label" ContainerClass="cda-economy-field">
+            <TextBox Value="@value"
+                     ValueChanged="@(EventCallback.Factory.Create<string?>(this, changed))"
+                     Immediate="true"
+                     Placeholder="@placeholder"
+                     aria-label="@label"
+                     data-testid="@testId" />
+        </FormField>;
+
+    private sealed record ObjectTemplate(
+        string Key,
+        string Label,
+        string ObjectType,
+        string Description,
+        string Icon,
+        string StateJson);
+}

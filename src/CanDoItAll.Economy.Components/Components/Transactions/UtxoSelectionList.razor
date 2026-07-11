@@ -5,13 +5,22 @@
         <div>
             <span>@Label</span>
             <strong>@SelectedCount selected</strong>
-            <small>@EligibleOutputs.Count eligible plain UTXO(s)</small>
+            <small>@EligibleOutputs.Count matching of @AllEligibleOutputs.Count eligible plain UTXO(s)</small>
         </div>
         <Cluster Gap="LayoutGap.XSmall">
             <StatusBadge Text="@($"{SelectedTotal} selected")" Tone="info" />
-            <StatusBadge Text="@($"{EligibleTotal} available")" Tone="neutral" />
+            <StatusBadge Text="@($"{AllEligibleTotal} available")" Tone="neutral" />
         </Cluster>
     </div>
+
+    <FormField Text="Search UTXOs" ContainerClass="cda-economy-field cda-economy-field--wide cda-utxo-selector__search">
+        <TextBox Value="@filter"
+                 ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => filter = value ?? string.Empty))"
+                 Immediate="true"
+                 Placeholder="Transaction ID, outpoint, address, or amount"
+                 aria-label="Search UTXOs"
+                 data-testid="@($"{TestId}-filter")" />
+    </FormField>
 
     @if (EligibleOutputs.Count == 0)
     {
@@ -27,7 +36,8 @@
                          data-testid="@($"{TestId}-row")">
                     <CheckBox TValue="bool"
                               Value="@selected"
-                              ValueChanged="@((bool value) => ToggleAsync(output.OutPoint, value))" />
+                              ValueChanged="@((bool value) => ToggleAsync(output.OutPoint, value))"
+                              aria-label="@($"Select UTXO {output.OutPoint}")" />
                     <span class="material-icons" aria-hidden="true">receipt_long</span>
                     <div>
                         <strong>@output.OutPoint</strong>
@@ -42,6 +52,8 @@
 </section>
 
 @code {
+    private string filter = string.Empty;
+
     [Parameter]
     public string Label { get; set; } = "Selected inputs";
 
@@ -57,7 +69,7 @@
     [Parameter]
     public string TestId { get; set; } = "cda-utxo-selector";
 
-    private IReadOnlyList<LedgerSpendableOutput> EligibleOutputs
+    private IReadOnlyList<LedgerSpendableOutput> AllEligibleOutputs
         => Outputs
             .Where(output => output.BusinessObject is null && output.Token is null)
             .OrderBy(output => output.CreatedAt)
@@ -65,23 +77,40 @@
             .ThenBy(output => output.OutPoint.OutputIndex)
             .ToArray();
 
-    private decimal EligibleTotal
-        => EligibleOutputs.Sum(output => output.MainAmount.Value);
+    private IReadOnlyList<LedgerSpendableOutput> EligibleOutputs
+        => AllEligibleOutputs.Where(MatchesFilter).ToArray();
+
+    private decimal AllEligibleTotal
+        => AllEligibleOutputs.Sum(output => output.MainAmount.Value);
 
     private decimal SelectedTotal
-        => EligibleOutputs
+        => AllEligibleOutputs
             .Where(output => IsSelected(output.OutPoint))
             .Sum(output => output.MainAmount.Value);
 
     private int SelectedCount
-        => SelectedOutPoints.Count;
+        => AllEligibleOutputs.Count(output => IsSelected(output.OutPoint));
+
+    private bool MatchesFilter(LedgerSpendableOutput output)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return true;
+        }
+
+        string probe = $"{output.OutPoint} {output.OutPoint.TxId.Value} {output.OutPoint.OutputIndex} {output.Address.Value} {output.MainAmount}";
+        return probe.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
 
     private bool IsSelected(OutPoint outPoint)
         => SelectedOutPoints.Contains(outPoint);
 
     private async Task ToggleAsync(OutPoint outPoint, bool selected)
     {
-        var next = SelectedOutPoints.ToList();
+        var next = SelectedOutPoints
+            .Where(IsEligible)
+            .Distinct()
+            .ToList();
         if (selected)
         {
             if (!next.Contains(outPoint))
@@ -96,6 +125,9 @@
 
         await SelectedOutPointsChanged.InvokeAsync(next);
     }
+
+    private bool IsEligible(OutPoint outPoint)
+        => AllEligibleOutputs.Any(output => output.OutPoint == outPoint);
 
     private static string Short(string value)
         => value.Length > 18 ? $"{value[..10]}...{value[^6..]}" : value;

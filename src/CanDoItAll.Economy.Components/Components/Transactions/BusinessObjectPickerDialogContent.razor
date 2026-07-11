@@ -1,0 +1,104 @@
+@namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
+
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="cda-transaction-picker-dialog" data-testid="bo-picker-dialog-content">
+    <div class="cda-transaction-picker-dialog__summary">
+        <div>
+            <span>Available business objects</span>
+            <strong>@Items.Count</strong>
+            <small>@SelectionInstruction</small>
+        </div>
+        <Pill Text="@($"{selected.Count}/{MaximumSelections} selected")" Tone="PillTone.Label" />
+    </div>
+
+    <BusinessObjectSelectionGrid Items="Items"
+                                 Selected="selected"
+                                 SelectedChanged="SetSelected"
+                                 RequireCompatibleSelection="RequireCompatibleSelection"
+                                 MaximumSelections="MaximumSelections" />
+
+    <div class="cda-transaction-picker-dialog__actions">
+        <Button Text="Cancel"
+                ButtonStyle="ButtonStyle.Secondary"
+                Variant="Variant.Outlined"
+                Click="CancelAsync"
+                data-testid="bo-picker-cancel" />
+        <Button Text="@ConfirmLabel"
+                Icon="check"
+                Disabled="@(selected.Count < MinimumSelections)"
+                Click="ConfirmAsync"
+                data-testid="bo-picker-confirm" />
+    </div>
+</Stack>
+
+@code {
+    private IReadOnlyList<IBusinessObjectView> selected = [];
+    private bool initialized;
+
+    [Parameter]
+    public IReadOnlyList<IBusinessObjectView> Items { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<IBusinessObjectView> InitialSelected { get; set; } = [];
+
+    [Parameter]
+    public int MinimumSelections { get; set; } = 1;
+
+    [Parameter]
+    public int MaximumSelections { get; set; } = 1;
+
+    [Parameter]
+    public bool RequireCompatibleSelection { get; set; }
+
+    private string SelectionInstruction
+        => MinimumSelections == MaximumSelections
+            ? $"Select {MinimumSelections} object{(MinimumSelections == 1 ? string.Empty : "s")} to continue."
+            : $"Select between {MinimumSelections} and {MaximumSelections} objects.";
+
+    private string ConfirmLabel
+        => selected.Count == 0
+            ? "Use selection"
+            : $"Use {selected.Count} selected";
+
+    protected override void OnParametersSet()
+    {
+        if (initialized)
+        {
+            return;
+        }
+
+        IReadOnlyList<IBusinessObjectView> initial = InitialSelected
+            .Where(candidate => Items.Any(item => item.ObjectId == candidate.ObjectId))
+            .Take(MaximumSelections)
+            .ToArray();
+        selected = RequireCompatibleSelection ? CompatibleSelection(initial) : initial;
+        initialized = true;
+    }
+
+    private Task SetSelected(IReadOnlyList<IBusinessObjectView> value)
+    {
+        selected = RequireCompatibleSelection
+            ? CompatibleSelection(value)
+            : value.Take(MaximumSelections).ToArray();
+        return Task.CompletedTask;
+    }
+
+    private IReadOnlyList<IBusinessObjectView> CompatibleSelection(IReadOnlyList<IBusinessObjectView> value)
+    {
+        IBusinessObjectView? anchor = value.FirstOrDefault();
+        return anchor is null
+            ? []
+            : value
+                .Where(item => anchor.ObjectType.Equals(item.ObjectType, StringComparison.OrdinalIgnoreCase)
+                    && anchor.SchemaVersion.Equals(item.SchemaVersion, StringComparison.OrdinalIgnoreCase))
+                .Take(MaximumSelections)
+                .ToArray();
+    }
+
+    private Task ConfirmAsync()
+        => selected.Count < MinimumSelections
+            ? Task.CompletedTask
+            : DialogService.CloseAsync(selected.ToArray());
+
+    private Task CancelAsync() => DialogService.CloseAsync();
+}

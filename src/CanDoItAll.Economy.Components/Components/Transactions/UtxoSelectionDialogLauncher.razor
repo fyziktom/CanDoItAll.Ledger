@@ -1,0 +1,77 @@
+@namespace CanDoItAll.Economy.Components
+@inject DialogService DialogService
+
+<section class="cda-transaction-selection-launcher cda-economy-field--wide" data-testid="@TestId">
+    <div>
+        <span>@Label</span>
+        <strong>@SelectionSummary</strong>
+        <small>@AvailableSummary</small>
+    </div>
+    <Button Text="@(SelectedOutPoints.Count == 0 ? "Select UTXOs" : "Change selection")"
+            Icon="checklist"
+            ButtonStyle="ButtonStyle.Secondary"
+            Variant="Variant.Outlined"
+            Click="OpenPickerAsync"
+            data-testid="@($"{TestId}-open")" />
+</section>
+
+@code {
+    [Parameter]
+    public string Label { get; set; } = "Transaction inputs";
+
+    [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> Outputs { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<OutPoint> SelectedOutPoints { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<IReadOnlyList<OutPoint>> SelectedOutPointsChanged { get; set; }
+
+    [Parameter]
+    public int MinimumSelections { get; set; } = 1;
+
+    [Parameter]
+    public string TestId { get; set; } = "utxo-selection-launcher";
+
+    private IReadOnlyList<LedgerSpendableOutput> EligibleOutputs
+        => Outputs.Where(output => output.BusinessObject is null && output.Token is null).ToArray();
+
+    private IReadOnlyList<LedgerSpendableOutput> SelectedOutputs
+        => EligibleOutputs.Where(output => SelectedOutPoints.Contains(output.OutPoint)).ToArray();
+
+    private string SelectionSummary
+        => SelectedOutputs.Count == 0
+            ? "No UTXOs selected"
+            : $"{SelectedOutputs.Count} selected · {SelectedOutputs.Sum(output => output.MainAmount.Value)} main";
+
+    private string AvailableSummary
+        => $"{EligibleOutputs.Count} eligible · {EligibleOutputs.Sum(output => output.MainAmount.Value)} main available";
+
+    private async Task OpenPickerAsync()
+    {
+        object? result = await DialogService.OpenAsync<UtxoPickerDialogContent>(
+            Label,
+            new Dictionary<string, object?>
+            {
+                [nameof(UtxoPickerDialogContent.Label)] = Label,
+                [nameof(UtxoPickerDialogContent.Outputs)] = Outputs,
+                [nameof(UtxoPickerDialogContent.InitialSelected)] = SelectedOutPoints,
+                [nameof(UtxoPickerDialogContent.MinimumSelections)] = MinimumSelections
+            },
+            new DialogOptions
+            {
+                Subtitle = "Search and select plain main-currency outputs.",
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-transaction-picker-modal",
+                TestId = "utxo-selection-dialog"
+            });
+
+        if (result is IEnumerable<OutPoint> selected)
+        {
+            await SelectedOutPointsChanged.InvokeAsync(selected.ToArray());
+        }
+    }
+}

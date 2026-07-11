@@ -19,6 +19,24 @@ public interface IEconomyAccountWorkspaceAdapter
 
     Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default);
 
+    async Task<IReadOnlyList<IBusinessObjectView>> LookupBusinessObjectsAsync(
+        BusinessObjectLookupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        BusinessObjectWorkspaceModel workspace = await GetWorkspaceAsync(cancellationToken).ConfigureAwait(false);
+        IEnumerable<IBusinessObjectView> query = workspace.BusinessObjects;
+        query = request.SourceMode switch
+        {
+            BusinessObjectSourceMode.Mine => query,
+            BusinessObjectSourceMode.Address => query.Where(item => item.OwnerAddress.Value.Equals(request.Query, StringComparison.Ordinal)),
+            BusinessObjectSourceMode.DirectReference => query.Where(item =>
+                item.ObjectId.Value.Equals(request.Query, StringComparison.Ordinal)
+                || item.DataHash.Value.Equals(request.Query, StringComparison.OrdinalIgnoreCase)),
+            _ => []
+        };
+        return query.Take(Math.Clamp(request.Take, 1, 100)).ToArray();
+    }
+
     Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
         int maxTransactions = 10,
         CancellationToken cancellationToken = default);
@@ -229,6 +247,61 @@ public sealed class WasmAccountWorkspaceAdapter(
             SpendableOutputs: spendableOutputs,
             TokenTypes: tokenTypes,
             PermissionSources: permissionSources);
+    }
+
+    public async Task<IReadOnlyList<IBusinessObjectView>> LookupBusinessObjectsAsync(
+        BusinessObjectLookupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        int take = Math.Clamp(request.Take, 1, 100);
+        LedgerBusinessObjectQuery query = request.SourceMode switch
+        {
+            BusinessObjectSourceMode.Mine => new LedgerBusinessObjectQuery(Context, OwnerAddress: RequiredKeySource.Address, Take: take),
+            BusinessObjectSourceMode.Address when Address.TryParse(request.Query, out Address owner) =>
+                new LedgerBusinessObjectQuery(Context, OwnerAddress: owner, Take: take),
+            BusinessObjectSourceMode.DirectReference =>
+                new LedgerBusinessObjectQuery(Context, ObjectId: new BusinessObjectId(request.Query.Trim()), Take: take),
+            _ => new LedgerBusinessObjectQuery(Context, Take: take)
+        };
+
+        IReadOnlyList<LedgerBusinessObjectHolding> holdings = await ledgerReadClient
+            .QueryBusinessObjectsAsync(query, cancellationToken)
+            .ConfigureAwait(false);
+        if (request.SourceMode == BusinessObjectSourceMode.DirectReference && holdings.Count == 0)
+        {
+            holdings = await ledgerReadClient
+                .QueryBusinessObjectsAsync(new LedgerBusinessObjectQuery(Context, Take: 100), cancellationToken)
+                .ConfigureAwait(false);
+            holdings = holdings
+                .Where(item => item.ObjectId.Value.Equals(request.Query, StringComparison.Ordinal)
+                    || item.DataHash.Value.Equals(request.Query, StringComparison.OrdinalIgnoreCase))
+                .Take(take)
+                .ToArray();
+        }
+
+        var views = new List<IBusinessObjectView>(holdings.Count);
+        foreach (LedgerBusinessObjectHolding holding in holdings)
+        {
+            views.Add(await castRegistry.CastAsync(
+                new BusinessObjectCastSource(
+                    Context,
+                    holding.ObjectId,
+                    holding.ObjectType,
+                    holding.SchemaVersion,
+                    holding.Version,
+                    holding.OwnerAddress,
+                    holding.Operation,
+                    holding.DataHash,
+                    holding.CurrentOutPoint,
+                    holding.StateJson,
+                    holding.ExternalRef,
+                    holding.ItemType,
+                    holding.CreatedAt),
+                cancellationToken).ConfigureAwait(false));
+        }
+
+        return views;
     }
 
     public async Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(
