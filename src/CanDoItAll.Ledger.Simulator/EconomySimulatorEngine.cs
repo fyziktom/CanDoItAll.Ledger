@@ -62,7 +62,7 @@ public sealed class EconomyProjectionService : IEconomyProjectionService
                         "error",
                         eventState.EconomicDate,
                         eventState.SourceBusinessUnitId,
-                        new BusinessObjectId(eventState.EventId),
+                        new SimulationObjectReference(eventState.EventId),
                         null,
                         Amount.FromDecimal(Math.Abs(balance.Value)),
                         "Cash balance falls below zero after this event.",
@@ -208,8 +208,8 @@ public sealed class EconomyScenarioRunner(
 
         var drafts = new[]
         {
-            serializer.CreateDraft(new BusinessObjectId(runState.RunId), EconomySimulatorObjectTypes.ScenarioRun, runState),
-            serializer.CreateDraft(new BusinessObjectId(resultState.RunId.Replace("run:", "simres:", StringComparison.Ordinal)), EconomySimulatorObjectTypes.SimulationResult, resultState)
+            serializer.CreateDraft(EconomySimulatorObjectTypes.ScenarioRun, runState),
+            serializer.CreateDraft(EconomySimulatorObjectTypes.SimulationResult, resultState)
         };
 
         return ValueTask.FromResult(new ScenarioRunResult(runState, resultState, drafts));

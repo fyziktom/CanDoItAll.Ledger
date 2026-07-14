@@ -27,10 +27,12 @@ public sealed class BusinessObjectAccountRuleTests
             CreateCashpoolRule(rig.CashpoolAddress));
 
         Assert.True(createRule.Accepted, string.Join("; ", createRule.Errors));
+        BusinessObjectId ruleObjectId = CreatedObjectId(createRule);
         IReadOnlyList<LedgerSpendableOutput> outputs = await alice.GetSpendableOutputsAsync(CancellationToken.None);
         Assert.Contains(outputs, output =>
             RuleTokenAuthority.IsRuleToken(output.Token)
-            && output.BusinessObject?.ObjectId == RuleTokenAuthority.CreateRuleObjectId("cashpool-sweep"));
+            && output.BusinessObject is not null
+            && BusinessObjectId.FromOutPoint(output.OutPoint) == ruleObjectId);
         Assert.Contains(outputs, output =>
             PermissionTokenAuthority.IsPermissionToken(output.Token)
             && output.BusinessObject is not null
@@ -98,15 +100,14 @@ public sealed class BusinessObjectAccountRuleTests
         BusinessObjectAccount admin = rig.CreateAccount("treasury-admin");
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         await IssuePermissionAndCreateRuleAsync(admin, alice, CreatePurchaseApprovalRule());
-        var requestId = new BusinessObjectId("purchase-request-1");
         LedgerSubmitResult createRequest = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                requestId,
                 "purchase-request",
                 "{\"price\":150,\"processed\":false}",
                 MainAmount: Amount.Zero),
             CancellationToken.None);
         Assert.True(createRequest.Accepted, string.Join("; ", createRequest.Errors));
+        BusinessObjectId requestId = CreatedObjectId(createRequest);
 
         var options = new AccountRefreshOptions
         {
@@ -115,13 +116,14 @@ public sealed class BusinessObjectAccountRuleTests
         };
         AccountRefreshResult firstRefresh = await alice.RefreshAsync(options, CancellationToken.None);
         IReadOnlyList<LedgerBusinessObjectHolding> afterFirst = await alice.GetBusinessObjectsAsync(CancellationToken.None);
-        LedgerBusinessObjectHolding requestAfterFirst = afterFirst.Single(holding => holding.ObjectId == requestId);
+        LedgerBusinessObjectHolding requestAfterFirst = afterFirst.Single(holding => holding.ObjectType == "purchase-request");
 
         AccountRefreshResult secondRefresh = await alice.RefreshAsync(options, CancellationToken.None);
 
         AccountRuleExecutionResult execution = Assert.Single(firstRefresh.RuleExecutions);
         Assert.Equal(AccountRuleExecutionStatus.Executed, execution.Status);
         Assert.Equal(AccountRuleActionKind.MarkProcessed, execution.ActionKind);
+        Assert.NotEqual(requestId, requestAfterFirst.ObjectId);
         Assert.Contains("\"processed\":true", requestAfterFirst.StateJson);
         Assert.Empty(secondRefresh.RuleExecutions);
     }
@@ -133,15 +135,14 @@ public sealed class BusinessObjectAccountRuleTests
         BusinessObjectAccount admin = rig.CreateAccount("treasury-admin");
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         await IssuePermissionAndCreateRuleAsync(admin, alice, CreatePurchaseApprovalRule());
-        var requestId = new BusinessObjectId("purchase-request-close-1");
         LedgerSubmitResult createRequest = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                requestId,
                 "purchase-request",
                 "{\"price\":150,\"processed\":false}",
                 MainAmount: Amount.Zero),
             CancellationToken.None);
         Assert.True(createRequest.Accepted, string.Join("; ", createRequest.Errors));
+        BusinessObjectId requestId = CreatedObjectId(createRequest);
 
         AccountRefreshResult refresh = await alice.RefreshAsync(
             new AccountRefreshOptions
@@ -170,21 +171,20 @@ public sealed class BusinessObjectAccountRuleTests
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         BusinessObjectAccount supplier = rig.CreateAccount("bob");
         await IssuePermissionAndCreateRuleAsync(admin, alice, CreatePayablePaymentRule());
-        var payableId = new BusinessObjectId("payable-1");
         LedgerSubmitResult createPayable = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                payableId,
                 "payable",
                 $"{{\"amount\":125,\"approved\":true,\"paid\":false,\"supplierAddress\":\"{supplier.Address.Value}\",\"processed\":false,\"source\":\"invoice-1\"}}",
                 MainAmount: Amount.Zero),
             CancellationToken.None);
         Assert.True(createPayable.Accepted, string.Join("; ", createPayable.Errors));
+        BusinessObjectId payableId = CreatedObjectId(createPayable);
 
         AccountRefreshOptions options = CreateActiveRuleOptions(maxActions: 5);
         AccountRefreshResult firstRefresh = await alice.RefreshAsync(options, CancellationToken.None);
         LedgerAccountBalance supplierBalance = await supplier.GetBalanceAsync(CancellationToken.None);
         LedgerBusinessObjectHolding payableAfterFirst = (await alice.GetBusinessObjectsAsync(CancellationToken.None))
-            .Single(holding => holding.ObjectId == payableId);
+            .Single(holding => holding.ObjectType == "payable");
         AccountRefreshResult secondRefresh = await alice.RefreshAsync(options, CancellationToken.None);
 
         Assert.Collection(
@@ -205,7 +205,7 @@ public sealed class BusinessObjectAccountRuleTests
         Assert.Contains("\"paid\":true", payableAfterFirst.StateJson);
         Assert.Contains("\"processed\":true", payableAfterFirst.StateJson);
         Assert.Contains("\"processedByRuleId\":\"payable-payment\"", payableAfterFirst.StateJson);
-        Assert.Contains("\"ruleExecutionId\":\"payable-payment:payable-1:", payableAfterFirst.StateJson);
+        Assert.Contains($"\"ruleExecutionId\":\"payable-payment:{payableId.Value}:", payableAfterFirst.StateJson);
         Assert.Empty(secondRefresh.RuleExecutions);
     }
 
@@ -216,10 +216,8 @@ public sealed class BusinessObjectAccountRuleTests
         BusinessObjectAccount admin = rig.CreateAccount("treasury-admin");
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         await IssuePermissionAndCreateRuleAsync(admin, alice, CreatePayablePaymentRule());
-        var payableId = new BusinessObjectId("payable-missing-receiver");
         LedgerSubmitResult createPayable = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                payableId,
                 "payable",
                 "{\"amount\":125,\"approved\":true,\"paid\":false,\"processed\":false}",
                 MainAmount: Amount.Zero),
@@ -228,7 +226,7 @@ public sealed class BusinessObjectAccountRuleTests
 
         AccountRefreshResult refresh = await alice.RefreshAsync(CreateActiveRuleOptions(maxActions: 5), CancellationToken.None);
         LedgerBusinessObjectHolding payableAfterRefresh = (await alice.GetBusinessObjectsAsync(CancellationToken.None))
-            .Single(holding => holding.ObjectId == payableId);
+            .Single(holding => holding.ObjectType == "payable");
 
         AccountRuleExecutionResult execution = Assert.Single(refresh.RuleExecutions);
         Assert.Equal(AccountRuleExecutionStatus.Failed, execution.Status);
@@ -270,20 +268,19 @@ public sealed class BusinessObjectAccountRuleTests
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-14T17:00:00Z"));
         BusinessObjectAccount admin = rig.CreateAccount("treasury-admin");
         BusinessObjectAccount alice = rig.CreateAccount("alice");
-        await IssuePermissionAndCreateRuleAsync(admin, alice, CreateSnapshotStateUpdateRule());
-        var stateObjectId = new BusinessObjectId("cash-sweep-state");
         LedgerSubmitResult createState = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                stateObjectId,
                 "rule-state",
                 "{\"lastSweepUnix\":0,\"note\":\"cadence\"}",
                 MainAmount: Amount.Zero),
             CancellationToken.None);
         Assert.True(createState.Accepted, string.Join("; ", createState.Errors));
+        BusinessObjectId stateObjectId = CreatedObjectId(createState);
+        await IssuePermissionAndCreateRuleAsync(admin, alice, CreateSnapshotStateUpdateRule(stateObjectId));
 
         AccountRefreshResult refresh = await alice.RefreshAsync(CreateActiveRuleOptions(maxActions: 5), CancellationToken.None);
         LedgerBusinessObjectHolding stateAfterRefresh = (await alice.GetBusinessObjectsAsync(CancellationToken.None))
-            .Single(holding => holding.ObjectId == stateObjectId);
+            .Single(holding => holding.ObjectType == "rule-state");
 
         AccountRuleExecutionResult execution = Assert.Single(refresh.RuleExecutions);
         Assert.Equal(AccountRuleExecutionStatus.Executed, execution.Status);
@@ -375,7 +372,7 @@ public sealed class BusinessObjectAccountRuleTests
             },
             AccountRuleProcessingOptions.Default);
 
-    private static AccountRuleDefinition CreateSnapshotStateUpdateRule()
+    private static AccountRuleDefinition CreateSnapshotStateUpdateRule(BusinessObjectId stateObjectId)
         => new(
             "snapshot-state-update",
             "rules.company",
@@ -383,7 +380,7 @@ public sealed class BusinessObjectAccountRuleTests
             new AccountRuleTrigger(AccountRuleTriggerKind.AccountSnapshot),
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["state_object_id"] = "cash-sweep-state"
+                ["state_object_id"] = stateObjectId.Value
             },
             new[] { "account_main > 100" },
             new[]
@@ -402,6 +399,11 @@ public sealed class BusinessObjectAccountRuleTests
             IncludeTransactionData = true,
             RuleExecution = new AccountRuleExecutionOptions { Enabled = true, MaxActionsPerRefresh = maxActions }
         };
+
+    private static BusinessObjectId CreatedObjectId(LedgerSubmitResult result)
+        => BusinessObjectId.FromOutPoint(
+            result.TxId ?? throw new InvalidOperationException("Accepted BusinessObject transaction must have a transaction id."),
+            0);
 
     private static async Task<LedgerSubmitResult> IssuePermissionAndCreateRuleAsync(
         BusinessObjectAccount admin,

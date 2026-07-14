@@ -193,7 +193,6 @@
 
     private static bool IsHiddenGalleryObject(IBusinessObjectView item)
         => IsHiddenGalleryObjectType(item.ObjectType)
-            || IsSecureMessageObjectId(item.ObjectId)
             || StateDeclaresSecureMessage(item.StateJson);
 
     private static bool IsHiddenGalleryObjectType(string objectType)
@@ -201,9 +200,6 @@
             || string.Equals(objectType, "purchase", StringComparison.OrdinalIgnoreCase)
             || string.Equals(objectType, "receipt", StringComparison.OrdinalIgnoreCase)
             || string.Equals(objectType, SecureLedgerMessages.ObjectType, StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsSecureMessageObjectId(BusinessObjectId objectId)
-        => objectId.Value.StartsWith($"bo:{SecureLedgerMessages.ObjectType}:", StringComparison.OrdinalIgnoreCase);
 
     private static bool StateDeclaresSecureMessage(string? stateJson)
     {

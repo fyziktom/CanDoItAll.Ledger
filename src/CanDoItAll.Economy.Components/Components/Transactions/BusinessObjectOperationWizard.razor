@@ -74,9 +74,12 @@
                     break;
 
                 case BusinessObjectTransactionMode.CloneObject:
-                    <FormSection Title="Clone identity" Description="Source metadata and state were preloaded. Give the clone a unique identity.">
-                        <Grid ColumnTemplateLg="minmax(16rem,1.5fr) minmax(10rem,.75fr) minmax(7rem,.45fr)" Gap="LayoutGap.Medium">
-                            @RenderTextField("Target object ID", ActiveDraft.TargetObjectId?.Value, SetTargetObjectIdAsync, "bo:purchase-order:copy", "bo-clone-target-id")
+                    <FormSection Title="Clone definition" Description="Source metadata and state were preloaded. The clone receives its canonical ID after confirmation.">
+                        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                            <div class="cda-economy-fact cda-economy-fact--wide" data-testid="bo-clone-object-id-pending">
+                                <span>Clone object ID</span>
+                                <strong>Assigned after confirmation</strong>
+                            </div>
                             @RenderTextField("Object type", ActiveDraft.ObjectType, SetObjectTypeAsync, "purchase-order", "bo-clone-object-type")
                             @RenderTextField("Schema version", ActiveDraft.SchemaVersion, SetSchemaVersionAsync, "1.0", "bo-clone-schema")
                         </Grid>
@@ -85,8 +88,11 @@
                     break;
 
                 case BusinessObjectTransactionMode.MergeObjects:
-                    <FormSection Title="Merge identity" Description="The selected pair will be consumed and replaced by this target object.">
-                        @RenderTextField("Target object ID", ActiveDraft.TargetObjectId?.Value, SetTargetObjectIdAsync, "bo:purchase-order:merged", "bo-merge-target-id")
+                    <FormSection Title="Merge result" Description="The selected pair will be consumed. The result receives its canonical ID after confirmation.">
+                        <div class="cda-economy-fact cda-economy-fact--wide" data-testid="bo-merge-object-id-pending">
+                            <span>Result object ID</span>
+                            <strong>Assigned after confirmation</strong>
+                        </div>
                     </FormSection>
                     @RenderCommonStateFields("Merged object state", true, false)
                     break;
@@ -214,7 +220,7 @@
                 Balance,
                 BusinessObjects: BusinessObjects
                     .Concat(selectedObjects)
-                    .DistinctBy(item => item.ObjectId)
+                    .DistinctBy(item => item.CurrentOutPoint)
                     .ToArray()));
 
     private string SelectedSourceSummary
@@ -226,7 +232,7 @@
         };
 
     private string SelectedSourceDetail
-        => string.Join(" · ", selectedObjects.Select(item => $"{item.ObjectType} / v{item.Version}"));
+        => string.Join(" · ", selectedObjects.Select(item => $"{item.ObjectType} / v{item.Version} / {ShortOutPoint(item.CurrentOutPoint)}"));
 
     protected override void OnParametersSet()
     {
@@ -295,10 +301,11 @@
         }
 
         IBusinessObjectView first = selected[0];
+        BusinessObjectId firstId = BusinessObjectId.FromOutPoint(first.CurrentOutPoint);
         BusinessObjectTransactionDraft next = ActiveDraft with
         {
             SelectedMode = Mode,
-            ObjectId = first.ObjectId,
+            ObjectId = firstId,
             ObjectType = first.ObjectType,
             SchemaVersion = first.SchemaVersion,
             StateJson = first.StateJson ?? "{}"
@@ -308,14 +315,12 @@
         {
             BusinessObjectTransactionMode.CloneObject => next with
             {
-                SourceObjectId = first.ObjectId,
-                TargetObjectId = new BusinessObjectId($"{first.ObjectId.Value}:copy")
+                SourceObjectId = firstId
             },
             BusinessObjectTransactionMode.MergeObjects when selected.Count == 2 => next with
             {
-                SourceObjectId = first.ObjectId,
-                SecondObjectId = selected[1].ObjectId,
-                TargetObjectId = new BusinessObjectId($"{first.ObjectId.Value}:merged")
+                SourceObjectId = firstId,
+                SecondObjectId = BusinessObjectId.FromOutPoint(selected[1].CurrentOutPoint)
             },
             _ => next
         };
@@ -355,12 +360,6 @@
 
     private Task SetSecondaryAmountAsync(Amount? value)
         => UpdateDraftAsync(ActiveDraft with { SecondaryPaymentAmount = value });
-
-    private Task SetTargetObjectIdAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with
-        {
-            TargetObjectId = string.IsNullOrWhiteSpace(value) ? null : new BusinessObjectId(value.Trim())
-        });
 
     private Task SetObjectTypeAsync(string? value)
         => UpdateDraftAsync(ActiveDraft with { ObjectType = value ?? string.Empty });
@@ -410,4 +409,10 @@
                      aria-label="@label"
                      data-testid="@testId" />
         </FormField>;
+
+    private static string ShortOutPoint(OutPoint outPoint)
+    {
+        string value = outPoint.ToString();
+        return value.Length <= 22 ? value : $"{value[..11]}...{value[^7..]}";
+    }
 }

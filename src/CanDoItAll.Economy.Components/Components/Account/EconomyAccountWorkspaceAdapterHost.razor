@@ -183,9 +183,15 @@ else
         var results = new List<EconomyTransactionExecutionResult>(request.Drafts.Count);
         try
         {
-            foreach (BusinessObjectTransactionDraft draft in request.Drafts)
+            for (int draftIndex = 0; draftIndex < request.Drafts.Count; draftIndex++)
             {
-                EconomyTransactionExecutionResult result = await Adapter.SubmitTransactionAsync(draft).ConfigureAwait(false);
+                BusinessObjectTransactionDraft draft = request.Drafts[draftIndex];
+                (int correlationIndex, string? correlationExternalRef) = request.CorrelationFor(draftIndex);
+                EconomyTransactionExecutionResult result = (await Adapter.SubmitTransactionAsync(draft).ConfigureAwait(false)) with
+                {
+                    BatchIndex = correlationIndex,
+                    CorrelationExternalRef = correlationExternalRef
+                };
                 results.Add(result);
                 lastResult = result;
                 await TransactionSubmitted.InvokeAsync(result).ConfigureAwait(false);

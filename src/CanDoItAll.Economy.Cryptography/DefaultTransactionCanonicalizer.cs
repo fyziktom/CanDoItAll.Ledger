@@ -49,7 +49,7 @@ public sealed class DefaultTransactionCanonicalizer : ITransactionCanonicalizer
                     },
                     BusinessObject = x.BusinessObject is null ? null : new
                     {
-                        ObjectId = x.BusinessObject.ObjectId.Value,
+                        ObjectId = x.BusinessObject.LineageKey.Value,
                         x.BusinessObject.Version,
                         Operation = x.BusinessObject.Operation.ToString(),
                         DataHash = x.BusinessObject.DataHash.Value
@@ -104,7 +104,7 @@ public sealed class DefaultTransactionCanonicalizer : ITransactionCanonicalizer
                     },
                     BusinessObject = x.BusinessObject is null ? null : new
                     {
-                        ObjectId = x.BusinessObject.ObjectId.Value,
+                        ObjectId = x.BusinessObject.LineageKey.Value,
                         x.BusinessObject.Version,
                         Operation = x.BusinessObject.Operation.ToString(),
                         DataHash = x.BusinessObject.DataHash.Value

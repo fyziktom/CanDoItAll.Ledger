@@ -430,7 +430,7 @@ public sealed record SimulationIssue(
     string Severity,
     DateOnly Date,
     BusinessUnitId? BusinessUnitId,
-    BusinessObjectId? RelatedObjectId,
+    SimulationObjectReference? RelatedObjectReference,
     TxId? FailedTransactionId,
     Amount? Amount,
     string Message,
@@ -468,7 +468,6 @@ public sealed record CalibrationRecommendationState(
     IReadOnlyDictionary<string, string> Metadata);
 
 public sealed record EconomySimulatorBusinessObjectCommandDraft(
-    BusinessObjectId ObjectId,
     string ObjectType,
     string SchemaVersion,
     string StateJson,

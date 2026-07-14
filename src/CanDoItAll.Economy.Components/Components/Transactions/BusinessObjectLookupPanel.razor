@@ -20,7 +20,7 @@
                                    DataTestId="bo-source-address" />
                 <SelectionListItem Title="Direct reference"
                                    Eyebrow="Exact lookup"
-                                   Summary="Find one business object by object ID or data hash."
+                                   Summary="Find one business object by current outpoint or data hash."
                                    IsSelected="@(sourceMode == BusinessObjectSourceMode.DirectReference)"
                                    OnSelect="@(() => SetMode(BusinessObjectSourceMode.DirectReference))"
                                    DataTestId="bo-source-direct" />
@@ -76,9 +76,9 @@
     [Parameter]
     public EventCallback<IReadOnlyList<IBusinessObjectView>> ResultsLoaded { get; set; }
 
-    private string QueryLabel => sourceMode == BusinessObjectSourceMode.Address ? "Owner address" : "Object ID or data hash";
+    private string QueryLabel => sourceMode == BusinessObjectSourceMode.Address ? "Owner address" : "Current outpoint or data hash";
 
-    private string QueryPlaceholder => sourceMode == BusinessObjectSourceMode.Address ? "cdia1…" : "bo:purchase-order:1042 or hash";
+    private string QueryPlaceholder => sourceMode == BusinessObjectSourceMode.Address ? "cdia1…" : "transaction-id:0 or data hash";
 
     private string LoadLabel => sourceMode == BusinessObjectSourceMode.Mine ? $"Use my objects ({Mine.Count})" : "Load matching objects";
 

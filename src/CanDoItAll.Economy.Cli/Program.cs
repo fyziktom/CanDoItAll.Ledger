@@ -280,7 +280,7 @@ public static class Program
                     commandLine.GetOptional("data-item-type"),
                     commandLine.GetOptional("data-json"),
                     commandLine.GetOptional("external-ref"),
-                    commandLine.GetOptional("business-object-id"),
+                    null,
                     commandLine.GetOptional("scenario")),
                 cancellationToken)
             .ConfigureAwait(false);
@@ -302,7 +302,7 @@ public static class Program
                     commandLine.GetOptional("data-item-type"),
                     commandLine.GetOptional("data-json"),
                     commandLine.GetOptional("external-ref"),
-                    commandLine.GetOptional("business-object-id"),
+                    null,
                     commandLine.GetOptional("scenario")),
                 cancellationToken)
             .ConfigureAwait(false);

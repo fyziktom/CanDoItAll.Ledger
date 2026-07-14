@@ -68,7 +68,7 @@
         }
 
         IReadOnlyList<IBusinessObjectView> initial = InitialSelected
-            .Where(candidate => Items.Any(item => item.ObjectId == candidate.ObjectId))
+            .Where(candidate => Items.Any(item => item.CurrentOutPoint == candidate.CurrentOutPoint))
             .Take(MaximumSelections)
             .ToArray();
         selected = RequireCompatibleSelection ? CompatibleSelection(initial) : initial;

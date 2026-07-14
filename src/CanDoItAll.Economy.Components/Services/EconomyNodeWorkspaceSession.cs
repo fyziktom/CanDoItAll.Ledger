@@ -112,10 +112,9 @@ public sealed class EconomyNodeWorkspaceSession(
         EconomyTokenOption? defaultToken = BusinessObjectCarrierTokenPolicy.SelectDefaultCarrierToken(tokenOptions);
         Address peerAddress = bookmarks.FirstOrDefault()?.Address ?? account.Address;
         DateTimeOffset viewedAt = DateTimeOffset.UtcNow;
-        BusinessObjectId draftObjectId = BusinessObjectCreateIdFactory.CreateNewObjectId("ui-message", $"Message from {normalizedAccount}");
 
         var draft = new BusinessObjectTransactionDraft(
-            draftObjectId,
+            default,
             "message",
             "1.0",
             account.Address,
@@ -130,7 +129,7 @@ public sealed class EconomyNodeWorkspaceSession(
                 account = account.Address.Value,
                 viewedAtUtc = viewedAt
             }),
-            $"venft://{normalizedAccount}/message/{draftObjectId.Value}",
+            $"venft://{normalizedAccount}/message/draft",
             TokenId: defaultToken?.TokenId,
             TokenAmount: defaultToken is null ? null : Amount.FromInt64(1));
 
@@ -194,7 +193,7 @@ public sealed class EconomyNodeWorkspaceSession(
                 new Address(input.Address),
                 previousOutput is null ? null : new Amount(previousOutput.MainAmount),
                 CreateToken(previousOutput?.TokenId, previousOutput?.TokenAmount),
-                CreateBusinessObjectRef(previousOutput),
+                CreateBusinessObjectDetails(previousOutput),
                 input.SignatureBundle ?? SignatureBundle.Empty,
                 ToHash(input.SignaturePayloadHash),
                 ToOutPointKey(input.OutPointKey)));
@@ -207,7 +206,7 @@ public sealed class EconomyNodeWorkspaceSession(
                 new Address(output.Address),
                 new Amount(output.MainAmount),
                 CreateToken(output.TokenId, output.TokenAmount),
-                CreateBusinessObjectRef(output),
+                CreateBusinessObjectDetails(output),
                 ToHash(output.BusinessObjectDataHash)))
             .ToArray();
 
@@ -368,7 +367,6 @@ public sealed class EconomyNodeWorkspaceSession(
         {
             BusinessObjectTransactionMode.Create => await account.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    draft.ObjectId,
                     SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
@@ -406,7 +404,6 @@ public sealed class EconomyNodeWorkspaceSession(
             BusinessObjectTransactionMode.CloneObject => await account.CloneBusinessObjectAsync(
                 new CloneBusinessObjectRequest(
                     draft.SourceObjectId ?? draft.ObjectId,
-                    draft.TargetObjectId ?? UniqueObjectId(draft.ObjectId),
                     SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
@@ -457,7 +454,6 @@ public sealed class EconomyNodeWorkspaceSession(
             ? await account.CloneBusinessObjectAsync(
                 new CloneBusinessObjectRequest(
                     request.ObjectId,
-                    UniqueObjectId(request.ObjectId),
                     SafeText(request.ObjectType, "business-object"),
                     SafeJson(request.StateJson),
                     SafeText(request.SchemaVersion, "1.0"),
@@ -510,14 +506,16 @@ public sealed class EconomyNodeWorkspaceSession(
         LedgerSubmitResult result = request.CreateNew
             ? await driver.Account.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    request.ObjectId,
                     "profile",
                     nextState,
                     MainAmount: Amount.Zero,
                     ExternalRef: SafeNullable(request.ExternalRef)),
                 cancellationToken).ConfigureAwait(false)
             : await driver.Account.UpdateBusinessObjectAsync(
-                new UpdateBusinessObjectRequest(request.ObjectId, nextState, SafeNullable(request.ExternalRef)),
+                new UpdateBusinessObjectRequest(
+                    request.ObjectId ?? throw new InvalidOperationException("Existing profile BusinessObject id is required for update."),
+                    nextState,
+                    SafeNullable(request.ExternalRef)),
                 cancellationToken).ConfigureAwait(false);
 
         return ToExecutionResult(BusinessObjectTransactionMode.UpdateObject, result, "Profile update");
@@ -844,7 +842,7 @@ public sealed class EconomyNodeWorkspaceSession(
                 && source.Output.BusinessObject is not null)
             .Select(source => new EconomyTokenCreationAuthority(
                 source.Grant.Namespace,
-                source.Output.BusinessObject!.ObjectId,
+                BusinessObjectId.FromOutPoint(source.Output.OutPoint),
                 source.Output.Address))
             .OrderBy(authority => authority.Namespace, StringComparer.Ordinal)
             .ToArray();
@@ -939,15 +937,15 @@ public sealed class EconomyNodeWorkspaceSession(
             ParseEnum(details.DataItemType, TransactionDataItemType.Generic));
     }
 
-    private static BusinessObjectRef? CreateBusinessObjectRef(EconomyNodeTransactionOutputDetails? output)
+    private static EconomyTransactionBusinessObjectDetails? CreateBusinessObjectDetails(
+        EconomyNodeTransactionOutputDetails? output)
     {
         if (output is null || string.IsNullOrWhiteSpace(output.BusinessObjectId))
         {
             return null;
         }
 
-        return new BusinessObjectRef(
-            new BusinessObjectId(output.BusinessObjectId),
+        return new EconomyTransactionBusinessObjectDetails(
             output.BusinessObjectVersion ?? 0,
             ParseEnum(output.BusinessObjectOperation, BusinessObjectOperation.Create),
             ToHash(output.BusinessObjectDataHash) ?? new HashHex(new string('0', 64)));
@@ -970,9 +968,6 @@ public sealed class EconomyNodeWorkspaceSession(
     private static TEnum ParseEnum<TEnum>(string? value, TEnum fallback)
         where TEnum : struct
         => Enum.TryParse(value, ignoreCase: true, out TEnum parsed) ? parsed : fallback;
-
-    private static BusinessObjectId UniqueObjectId(BusinessObjectId objectId)
-        => new($"{objectId.Value}:{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}");
 
     private static Amount PositiveOrDefault(Amount amount, long fallback)
         => amount.Value > 0m ? amount : Amount.FromInt64(fallback);
@@ -1033,7 +1028,7 @@ public sealed class EconomyNodeWorkspaceSession(
     {
         if (request.ClearSale)
         {
-            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, request.ObjectId.Value);
+            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, "Untitled BusinessObject");
         }
 
         BusinessObjectSaleTerms terms = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
@@ -1044,7 +1039,7 @@ public sealed class EconomyNodeWorkspaceSession(
             request.SaleMode == BusinessObjectSaleMode.Copy ? request.MaxClones : null,
             request.TokenId,
             request.SharePath);
-        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, request.ObjectId.Value, terms);
+        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, "Untitled BusinessObject", terms);
     }
 
     private static SignatureAlgorithmId ReadAlgorithm(JsonElement root)

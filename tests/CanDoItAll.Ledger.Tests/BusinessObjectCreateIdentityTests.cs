@@ -27,47 +27,7 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
     }
 
     [Fact]
-    public void Factory_CreatesValidDistinctIdsForSameTypeAndName()
-    {
-        BusinessObjectId first = BusinessObjectCreateIdFactory.CreateNewObjectId("image", "New Image BO");
-        BusinessObjectId second = BusinessObjectCreateIdFactory.CreateNewObjectId("image", "New Image BO");
-
-        Assert.NotEqual(first, second);
-        Assert.StartsWith("bo:image:new-image-bo:", first.Value, StringComparison.Ordinal);
-        Assert.StartsWith("bo:image:new-image-bo:", second.Value, StringComparison.Ordinal);
-        Assert.True(LedgerValueValidation.IsValidIdentifier(first.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-        Assert.True(LedgerValueValidation.IsValidIdentifier(second.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-    }
-
-    [Fact]
-    public void Factory_StaysInsideLedgerIdentifierLimitsForLongNames()
-    {
-        string longName = string.Join('-', Enumerable.Repeat("Long Image Name", 20));
-
-        BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateNewObjectId("image", longName);
-
-        Assert.True(objectId.Value.Length <= LedgerValidationLimits.MaxBusinessObjectIdLength);
-        Assert.True(LedgerValueValidation.IsValidIdentifier(objectId.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-        Assert.StartsWith("bo:image:long-image-name", objectId.Value, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Factory_CreatesOpaqueIdsWithoutDisplayNameSegment()
-    {
-        BusinessObjectId first = BusinessObjectCreateIdFactory.CreateOpaqueObjectId("secure-message");
-        BusinessObjectId second = BusinessObjectCreateIdFactory.CreateOpaqueObjectId("secure-message");
-
-        Assert.NotEqual(first, second);
-        Assert.StartsWith("bo:secure-message:", first.Value, StringComparison.Ordinal);
-        Assert.StartsWith("bo:secure-message:", second.Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("hello", first.Value, StringComparison.OrdinalIgnoreCase);
-        Assert.True(LedgerValueValidation.IsValidIdentifier(first.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-        Assert.True(LedgerValueValidation.IsValidIdentifier(second.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-    }
-
-
-    [Fact]
-    public void ProductionCreateDrafts_DoNotUseNameOnlyOrTimestampOnlyObjectIds()
+    public void ProductionCreateDrafts_DoNotManufacturePublicObjectIds()
     {
         string root = FindRepositoryRoot();
         string wizard = File.ReadAllText(Path.Combine(
@@ -89,24 +49,53 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
             "CanDoItAll.Economy.Components",
             "Services",
             "EconomyNodeWorkspaceSession.cs")).ReplaceLineEndings("\n");
+        string eventLookup = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CanDoItAll.Economy.Components",
+            "Services",
+            "BusinessObjectEventLookup.cs")).ReplaceLineEndings("\n");
+        string rawFormatter = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CanDoItAll.Economy.Components",
+            "Services",
+            "TransactionRawJsonFormatter.cs")).ReplaceLineEndings("\n");
+        string nodeWorkspace = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CanDoItAll.Economy.Node",
+            "Components",
+            "Shared",
+            "NodeWorkspace.razor")).ReplaceLineEndings("\n");
+        string cli = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CanDoItAll.Economy.Cli",
+            "Program.cs")).ReplaceLineEndings("\n");
 
-        Assert.DoesNotContain("new BusinessObjectId($\"bo:{selectedObjectType}:{", wizard, StringComparison.Ordinal);
-        Assert.DoesNotContain("new BusinessObjectId($\"bo:account-app:{now:yyyyMMddHHmmss}\")", wasmAdapter, StringComparison.Ordinal);
-        Assert.DoesNotContain("new BusinessObjectId($\"bo:ui-message:{normalizedAccount}:{viewedAt:yyyyMMddHHmmss}\")", nodeSession, StringComparison.Ordinal);
-        Assert.DoesNotContain("new CreateBusinessObjectRequest(\n                    UniqueObjectId(draft.ObjectId)", nodeSession, StringComparison.Ordinal);
-
-        Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(selectedObjectType, payload.Name)", wizard, StringComparison.Ordinal);
-        Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(\"account-app\", \"account app message\")", wasmAdapter, StringComparison.Ordinal);
-        Assert.Contains("BusinessObjectCreateIdFactory.CreateOpaqueObjectId(\"secure-message\")", wasmAdapter, StringComparison.Ordinal);
-        Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(\"ui-message\", $\"Message from {normalizedAccount}\")", nodeSession, StringComparison.Ordinal);
-        Assert.Contains("new CreateBusinessObjectRequest(\n                    draft.ObjectId", wasmAdapter, StringComparison.Ordinal);
-        Assert.Contains("new CreateBusinessObjectRequest(\n                    draft.ObjectId", nodeSession, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateNewObjectId", wizard, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateNewObjectId", wasmAdapter, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateOpaqueObjectId", wasmAdapter, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateNewObjectId", nodeSession, StringComparison.Ordinal);
+        Assert.DoesNotContain("UniqueObjectId(", wasmAdapter, StringComparison.Ordinal);
+        Assert.DoesNotContain("UniqueObjectId(", nodeSession, StringComparison.Ordinal);
+        Assert.DoesNotContain("new CreateBusinessObjectRequest(\n                    draft.ObjectId", wasmAdapter, StringComparison.Ordinal);
+        Assert.DoesNotContain("new CreateBusinessObjectRequest(\n                    draft.ObjectId", nodeSession, StringComparison.Ordinal);
         Assert.Contains("draft.OwnerAddress,\n                    draft.MainAmount", wasmAdapter, StringComparison.Ordinal);
         Assert.Contains("draft.OwnerAddress,\n                    draft.MainAmount", nodeSession, StringComparison.Ordinal);
+        Assert.Contains("directObjectId.IsCanonicalOutPointId()", wasmAdapter, StringComparison.Ordinal);
+        Assert.Contains("requestedObjectId.IsCanonicalOutPointId()", eventLookup, StringComparison.Ordinal);
+        Assert.Contains("BusinessObjectId.FromOutPoint(input.PreviousOutPoint)", rawFormatter, StringComparison.Ordinal);
+        Assert.Contains("BusinessObjectId.FromOutPoint(transactionId, output.OutputIndex)", rawFormatter, StringComparison.Ordinal);
+        Assert.DoesNotContain("businessObject.ObjectId", rawFormatter, StringComparison.Ordinal);
+        Assert.DoesNotContain("mintForm.BusinessObjectId", nodeWorkspace, StringComparison.Ordinal);
+        Assert.DoesNotContain("Text=\"Business object id\"", nodeWorkspace, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetOptional(\"business-object-id\")", cli, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Wizard_StagesDistinctCreateIdsForRepeatedSameNameWithoutChangingPayload()
+    public async Task Wizard_StagesPendingIdentityForRepeatedSameNameWithoutChangingPayload()
     {
         var stagedDrafts = new List<BusinessObjectTransactionDraft>();
         BusinessObjectCreationWizardModel model = new(
@@ -140,11 +129,10 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
         await stageButton.ClickAsync(new MouseEventArgs());
 
         Assert.Equal(2, stagedDrafts.Count);
-        Assert.NotEqual(stagedDrafts[0].ObjectId, stagedDrafts[1].ObjectId);
         Assert.All(stagedDrafts, draft =>
         {
-            Assert.StartsWith("bo:image:new-image-bo:", draft.ObjectId.Value, StringComparison.Ordinal);
-            Assert.True(LedgerValueValidation.IsValidIdentifier(draft.ObjectId.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
+            Assert.Equal(default(BusinessObjectId), draft.ObjectId);
+            Assert.DoesNotContain("bo:", draft.ExternalRef, StringComparison.OrdinalIgnoreCase);
 
             BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(draft.StateJson, "fallback");
             Assert.Equal("New Image BO", payload.Name);
@@ -162,8 +150,9 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
             new Dictionary<TokenId, Amount>(),
             UtxoCount: 0,
             ViewedAtUtc);
+        BusinessObjectId existingObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('c', 64)), 0);
         BusinessObjectTransactionDraft draft = new(
-            new BusinessObjectId("bo:post:draft"),
+            existingObjectId,
             "post",
             "1.0",
             Alice,
@@ -174,7 +163,7 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
             "{}",
             string.Empty);
         BusinessObjectEditorModel editor = new(
-            new BusinessObjectId("bo:post:draft"),
+            existingObjectId,
             "post",
             "1.0",
             Alice,

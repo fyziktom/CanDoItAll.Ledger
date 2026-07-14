@@ -19,7 +19,7 @@ public static class RuleTokenAuthority
 
     public const string CreateRuleTokenAction = "create_rule_token";
 
-    public const string RuleObjectIdPrefix = "rule:";
+    public const string RuleLineageKeyPrefix = "rule:";
 
     public static PermissionGrant CreateRuleTokenPermissionGrant(string ruleNamespace, bool repeatable)
         => new(CreateRuleTokenAction, PermissionTokenAuthority.NormalizeNamespace(ruleNamespace), repeatable);
@@ -27,8 +27,12 @@ public static class RuleTokenAuthority
     public static bool IsRuleToken(TokenTransfer? token)
         => token?.TokenId == RuleTokenId;
 
+    public static BusinessObjectLineageKey CreateRuleLineageKey(string ruleId)
+        => new($"{RuleLineageKeyPrefix}{NormalizeRuleId(ruleId)}");
+
+    [Obsolete("This returns an internal legacy lineage marker, not a public BusinessObject id. Use CreateRuleLineageKey.")]
     public static BusinessObjectId CreateRuleObjectId(string ruleId)
-        => new($"{RuleObjectIdPrefix}{NormalizeRuleId(ruleId)}");
+        => new(CreateRuleLineageKey(ruleId).Value);
 
     public static TransactionData CreateData(AccountRuleDefinition rule)
     {
@@ -152,7 +156,7 @@ public static class RuleTokenAuthority
     public static string NormalizeRuleId(string ruleId)
     {
         string normalized = ruleId.Trim();
-        if (!LedgerValueValidation.IsValidIdentifier(normalized, LedgerValidationLimits.MaxBusinessObjectIdLength - RuleObjectIdPrefix.Length))
+        if (!LedgerValueValidation.IsValidIdentifier(normalized, LedgerValidationLimits.MaxBusinessObjectIdLength - RuleLineageKeyPrefix.Length))
         {
             throw new ArgumentException("Rule id must be a non-empty safe identifier.", nameof(ruleId));
         }

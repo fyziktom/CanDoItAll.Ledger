@@ -389,7 +389,7 @@ public sealed class LedgerSimulationAndPersistenceTests
                     Alice,
                     Amount.FromInt64(50),
                     new TokenTransfer(new TokenId("token|ambiguous"), Amount.FromInt64(1)),
-                    new BusinessObjectRef(new BusinessObjectId("bo|ambiguous"), 1, BusinessObjectOperation.Create, new HashHex("not-hex")))
+                    new BusinessObjectRef(new BusinessObjectLineageKey("lineage|ambiguous"), 1, BusinessObjectOperation.Create, new HashHex("not-hex")))
             },
             Data = new TransactionData("application/json", Hex.Sha256Hex("oversized"u8.ToArray()), oversizedJson, null)
         };
@@ -400,7 +400,7 @@ public sealed class LedgerSimulationAndPersistenceTests
         Assert.Contains(result.Errors, x => x.Code == ValidationErrorCodes.InvalidIdentifier && x.Message.Contains("ledger id", StringComparison.Ordinal));
         Assert.Contains(result.Errors, x => x.Code == ValidationErrorCodes.InvalidIdentifier && x.Message.Contains("scenario id", StringComparison.Ordinal));
         Assert.Contains(result.Errors, x => x.Code == ValidationErrorCodes.InvalidIdentifier && x.Message.Contains("token id", StringComparison.Ordinal));
-        Assert.Contains(result.Errors, x => x.Code == ValidationErrorCodes.InvalidIdentifier && x.Message.Contains("business object id", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, x => x.Code == ValidationErrorCodes.InvalidIdentifier && x.Message.Contains("business object lineage key", StringComparison.Ordinal));
         Assert.Contains(result.Errors, x => x.Code == ValidationErrorCodes.InvalidHash);
         Assert.Contains(result.Errors, x => x.Code == ValidationErrorCodes.ResourceLimitExceeded);
     }

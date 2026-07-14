@@ -35,7 +35,6 @@ public sealed class BusinessObjectAccountTests
 
         LedgerSubmitResult create = await account.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                new BusinessObjectId("settings"),
                 "settings",
                 "{\"theme\":\"dense\"}",
                 MainAmount: Amount.FromInt64(100),
@@ -43,12 +42,22 @@ public sealed class BusinessObjectAccountTests
             CancellationToken.None);
 
         Assert.True(create.Accepted);
+        Assert.True(create.TxId.HasValue);
+        BusinessObjectId createdObjectId = BusinessObjectId.FromOutPoint(
+            new OutPoint(create.TxId.Value, 0));
         Assert.Equal("100", (await account.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
 
         timeProvider.Advance(TimeSpan.FromDays(1));
         LedgerTransaction transfer = await account.BuildTransferBusinessObjectTransactionAsync(
-            new TransferBusinessObjectRequest(new BusinessObjectId("settings"), Bob, Amount.FromInt64(40)),
+            new TransferBusinessObjectRequest(createdObjectId, Bob, Amount.FromInt64(40)),
             CancellationToken.None);
+
+        Assert.True(BusinessObjectPayloadEnvelopeReader.TryRead(
+            transfer.Data?.InlineJson,
+            out BusinessObjectPayloadEnvelope transferEnvelope));
+        BusinessObjectDataReference transferSource = Assert.Single(transferEnvelope.References);
+        Assert.Equal(BusinessObjectReferenceRelationships.PreviousVersion, transferSource.Relationship);
+        Assert.Equal(createdObjectId, transferSource.ObjectId);
 
         Assert.Equal(2, transfer.Inputs.Count);
         TransactionInput input = transfer.Inputs[0];
@@ -69,8 +78,75 @@ public sealed class BusinessObjectAccountTests
         Assert.Equal("60", (await account.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
         IReadOnlyList<LedgerBusinessObjectHolding> bobObjects = await gateway.GetBusinessObjectsAsync(new LedgerAddressQuery(Context, Bob), CancellationToken.None);
         LedgerBusinessObjectHolding bobObject = Assert.Single(bobObjects);
-        Assert.Equal(new BusinessObjectId("settings"), bobObject.ObjectId);
+        Assert.True(transferResult.TxId.HasValue);
+        Assert.Equal(
+            BusinessObjectId.FromOutPoint(new OutPoint(transferResult.TxId.Value, 0)),
+            bobObject.ObjectId);
+        Assert.NotEqual(createdObjectId, bobObject.ObjectId);
+        Assert.Equal(bobObject.ObjectId, BusinessObjectId.FromOutPoint(bobObject.CurrentOutPoint));
         Assert.Equal(2, bobObject.Version);
+    }
+
+    [Fact]
+    public async Task Clone_ReferencesAnotherOwnersOutPointWithoutConsumingSource()
+    {
+        ITransactionHasher hasher = CreateHasher();
+        var store = new InMemoryLedgerStore(hasher);
+        var timeProvider = new ManualTimeProvider(DateTimeOffset.Parse("2026-05-04T00:00:00Z"));
+        var gateway = new InProcessLedgerGateway(CreateExecutor(store, hasher, timeProvider), hasher, timeProvider);
+        Assert.True((await gateway.SubmitTransactionAsync(
+            CreateBootstrapGenesis(timeProvider.UtcNow),
+            CancellationToken.None)).Accepted);
+
+        var signer = new AccountInputSigner(new SignatureProviderRegistry(new ISignatureProvider[] { new EchoSignatureProvider() }));
+        var builder = new BusinessObjectTransactionBuilder(gateway, hasher, new SignaturePayloadBuilder(hasher), signer, timeProvider);
+        IAccountKeySource aliceKey = new InMemoryAccountKeySource(
+            SignatureAlgorithmId.EcdsaP256Sha256,
+            "alice-key",
+            Hex.Utf8("alice-public"),
+            Hex.Utf8("alice-private"));
+        var alice = new BusinessObjectAccount(Context, aliceKey, gateway, gateway, builder);
+
+        LedgerSubmitResult sourceCreate = await alice.CreateBusinessObjectAsync(
+            new CreateBusinessObjectRequest(
+                "post",
+                "{\"name\":\"Source post\",\"body\":\"original\"}",
+                OwnerAddress: Bob),
+            CancellationToken.None);
+        Assert.True(sourceCreate.Accepted, string.Join("; ", sourceCreate.Errors));
+        Assert.True(sourceCreate.TxId.HasValue);
+        BusinessObjectId sourceId = BusinessObjectId.FromOutPoint(sourceCreate.TxId.Value, 0);
+
+        timeProvider.Advance(TimeSpan.FromMinutes(1));
+        LedgerTransaction clone = await alice.BuildCloneBusinessObjectTransactionAsync(
+            new CloneBusinessObjectRequest(
+                sourceId,
+                "post",
+                "{\"name\":\"Cloned post\",\"body\":\"copy\"}"),
+            CancellationToken.None);
+
+        Assert.DoesNotContain(clone.Inputs, input => input.PreviousOutPoint == sourceId.RequireOutPoint());
+        Assert.True(BusinessObjectPayloadEnvelopeReader.TryRead(
+            clone.Data?.InlineJson,
+            out BusinessObjectPayloadEnvelope cloneEnvelope));
+        BusinessObjectDataReference sourceReference = Assert.Single(cloneEnvelope.References);
+        Assert.Equal(BusinessObjectReferenceRelationships.CloneSource, sourceReference.Relationship);
+        Assert.Equal(sourceId, sourceReference.ObjectId);
+
+        LedgerSubmitResult cloneResult = await alice.SubmitTransactionAsync(clone, CancellationToken.None);
+        Assert.True(cloneResult.Accepted, string.Join("; ", cloneResult.Errors));
+        Assert.True(cloneResult.TxId.HasValue);
+
+        LedgerBusinessObjectHolding bobSource = Assert.Single(await gateway.GetBusinessObjectsAsync(
+            new LedgerAddressQuery(Context, Bob),
+            CancellationToken.None));
+        Assert.Equal(sourceId, bobSource.ObjectId);
+        Assert.Equal(1, bobSource.Version);
+
+        LedgerBusinessObjectHolding aliceClone = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
+        Assert.Equal(BusinessObjectId.FromOutPoint(cloneResult.TxId.Value, 0), aliceClone.ObjectId);
+        Assert.Equal("post", aliceClone.ObjectType);
+        Assert.Equal(sourceId, Assert.Single(aliceClone.References!).ObjectId);
     }
 
     private static LedgerExecutor CreateExecutor(ILedgerStore store, ITransactionHasher hasher, ITimeProvider timeProvider)

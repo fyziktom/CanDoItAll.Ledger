@@ -223,7 +223,7 @@ public sealed class TokenDefinitionProtocolTests
             Repeatable: true);
         TransactionData grantData = PermissionTokenAuthority.CreateData(grant);
         var permissionRef = new BusinessObjectRef(
-            PermissionTokenAuthority.CreatePermissionObjectId(grant.Action, grant.Namespace),
+            PermissionTokenAuthority.CreatePermissionLineageKey(grant.Action, grant.Namespace),
             1,
             BusinessObjectOperation.Create,
             grantData.DataHash!.Value);

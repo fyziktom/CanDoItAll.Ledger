@@ -1056,10 +1056,9 @@
     {
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
         Amount mainAmount = Amount.Zero;
-        string normalizedName = BusinessObjectCreateIdFactory.NormalizeName(payload.Name);
-        BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateNewObjectId(selectedObjectType, payload.Name);
+        string normalizedName = BusinessObjectDisplaySlug.Normalize(payload.Name);
         return new BusinessObjectTransactionDraft(
-            objectId,
+            default,
             selectedObjectType,
             "1.0",
             ownerAddress,
@@ -1068,7 +1067,7 @@
             mainAmount,
             Amount.Zero,
             stateJson,
-            $"preview://{selectedObjectType}/{normalizedName}/{objectId.Value}",
+            $"preview://{selectedObjectType}/{normalizedName}",
             BusinessObjectTransactionMode.Create,
             TokenId: selectedToken?.IsMain == true ? null : selectedToken?.TokenId,
             TokenAmount: selectedToken?.IsMain == true || selectedToken?.TokenId is null ? null : Amount.FromInt64(1));
@@ -1179,17 +1178,18 @@
         BusinessObjectMediaPayload payload = CreatePayload();
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
         IReadOnlyDictionary<string, string> fields = BusinessObjectPayloadBuilder.NormalizeFields(SelectedDefinition, payload.Fields);
+        var previewOutPoint = new OutPoint(new TxId("preview"), 0);
 
         return new GenericTypedBusinessObjectView(
             Workspace?.Context ?? new LedgerAccountContext(new LedgerId("preview"), null),
-            editSource?.ObjectId ?? new BusinessObjectId($"bo:preview:{selectedObjectType}:{BusinessObjectCreateIdFactory.NormalizeName(payload.Name)}"),
+            editSource?.ObjectId ?? BusinessObjectId.FromOutPoint(previewOutPoint),
             selectedObjectType,
             editSource?.SchemaVersion ?? "1.0",
             1,
             owner,
             IsEditMode ? BusinessObjectOperation.Update : BusinessObjectOperation.Create,
             new HashHex(new string('0', 64)),
-            new OutPoint(new TxId("preview"), 0),
+            previewOutPoint,
             stateJson,
             "preview://business-object",
             TransactionDataItemType.BusinessObject,

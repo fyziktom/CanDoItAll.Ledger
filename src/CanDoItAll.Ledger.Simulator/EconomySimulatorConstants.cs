@@ -245,12 +245,6 @@ public static partial class EconomySimulatorIdentifiers
     public static BusinessUnitId BusinessUnitId(string projectId, string path)
         => new($"bu:{NormalizeSegment(projectId)}:{NormalizePath(path)}");
 
-    public static BusinessObjectId BusinessUnitObjectId(BusinessUnitId businessUnitId)
-        => new(businessUnitId.Value);
-
-    public static BusinessObjectId EventObjectId(EconomicEventId eventId)
-        => new(eventId.Value);
-
     public static EconomicEventId EventId(string projectId, string correlationId, int sequence)
         => new($"evt:{NormalizeSegment(projectId)}:{NormalizeSegment(correlationId)}:{sequence:0000}");
 

@@ -15,7 +15,7 @@ public sealed class AccountRuleExpressionTests
         AccountRuleDefinition rule = CreateCashpoolRule(Address.FromPublicKey(Hex.Utf8("cashpool-public")));
         TransactionData data = RuleTokenAuthority.CreateData(rule);
         var businessObject = new BusinessObjectRef(
-            RuleTokenAuthority.CreateRuleObjectId(rule.RuleId),
+            RuleTokenAuthority.CreateRuleLineageKey(rule.RuleId),
             1,
             BusinessObjectOperation.Create,
             data.DataHash!.Value);
@@ -36,7 +36,7 @@ public sealed class AccountRuleExpressionTests
         AccountRuleDefinition rule = CreateCashpoolRule(Address.FromPublicKey(Hex.Utf8("cashpool-public")));
         TransactionData data = RuleTokenAuthority.CreateData(rule);
         var businessObject = new BusinessObjectRef(
-            RuleTokenAuthority.CreateRuleObjectId(rule.RuleId),
+            RuleTokenAuthority.CreateRuleLineageKey(rule.RuleId),
             1,
             BusinessObjectOperation.Create,
             new HashHex(new string('a', 64)));

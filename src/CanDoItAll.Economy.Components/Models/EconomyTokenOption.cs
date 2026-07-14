@@ -66,7 +66,7 @@ public sealed record BusinessObjectPriceRequest(
     string? SharePath = null);
 
 public sealed record ProfileEditRequest(
-    BusinessObjectId ObjectId,
+    BusinessObjectId? ObjectId,
     string Currency,
     string ApprovalMode,
     string DisplayName,

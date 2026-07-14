@@ -177,6 +177,76 @@ public readonly record struct TokenId(string Value)
 
 public readonly record struct BusinessObjectId(string Value)
 {
+    public static BusinessObjectId FromOutPoint(TxId txId, int outputIndex)
+        => FromOutPoint(new OutPoint(txId, outputIndex));
+
+    public static BusinessObjectId FromOutPoint(OutPoint outPoint)
+    {
+        ArgumentNullException.ThrowIfNull(outPoint);
+        if (string.IsNullOrWhiteSpace(outPoint.TxId.Value))
+        {
+            throw new ArgumentException("BusinessObject outpoint transaction id is required.", nameof(outPoint));
+        }
+
+        if (outPoint.OutputIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(outPoint), "BusinessObject output index must be non-negative.");
+        }
+
+        return new BusinessObjectId(outPoint.ToString());
+    }
+
+    public bool TryGetOutPoint(out OutPoint outPoint)
+    {
+        outPoint = default!;
+        if (string.IsNullOrWhiteSpace(Value))
+        {
+            return false;
+        }
+
+        int separator = Value.LastIndexOf(':');
+        if (separator <= 0
+            || separator == Value.Length - 1
+            || !int.TryParse(
+                Value.AsSpan(separator + 1),
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out int outputIndex)
+            || outputIndex < 0)
+        {
+            return false;
+        }
+
+        string txId = Value[..separator];
+        if (string.IsNullOrWhiteSpace(txId))
+        {
+            return false;
+        }
+
+        outPoint = new OutPoint(new TxId(txId), outputIndex);
+        return true;
+    }
+
+    public OutPoint RequireOutPoint()
+        => TryGetOutPoint(out OutPoint outPoint)
+            ? outPoint
+            : throw new FormatException($"BusinessObject id must be a UTXO id in 'txid:outputIndex' format: '{Value}'.");
+
+    public bool IsCanonicalOutPointId()
+        => TryGetOutPoint(out OutPoint outPoint)
+            && outPoint.OutputIndex < LedgerValidationLimits.MaxTransactionOutputs
+            && outPoint.TxId.Value.Length == 64
+            && LedgerValueValidation.IsValidHashHex(outPoint.TxId.Value);
+
+    public override string ToString() => Value;
+}
+
+/// <summary>
+/// Stable correlation key serialized by the V1/V2 BusinessObject protocol.
+/// This is internal lineage state, not the public BusinessObject id.
+/// </summary>
+public readonly record struct BusinessObjectLineageKey(string Value)
+{
     public override string ToString() => Value;
 }
 

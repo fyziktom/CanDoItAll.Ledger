@@ -73,14 +73,14 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
             cancellationToken).ConfigureAwait(false);
         Dictionary<string, LedgerTransactionRecord> transactions = transactionRows
             .ToDictionary(x => x.TxId, StringComparer.Ordinal);
-        string[] objectIds = rows
+        string[] lineageKeys = rows
             .Select(x => x.BusinessObjectId)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x!)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
         List<BusinessObjectPayloadProjection> payloads = await EfLedgerQueryBatcher.ToListByBatchedKeysAsync(
-            objectIds,
+            lineageKeys,
             batch => db.TransactionOutputs
                 .AsNoTracking()
                 .Join(
@@ -92,6 +92,9 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
                     && row.transaction.ScenarioId == scenarioValue
                     && row.output.BusinessObjectId != null
                     && batch.Contains(row.output.BusinessObjectId)
+                    && row.transaction.DataHash != null
+                    && row.transaction.DataHash != string.Empty
+                    && row.output.BusinessObjectDataHash == row.transaction.DataHash
                     && row.transaction.InlineJson != null)
                 .Select(row => new BusinessObjectPayloadProjection(
                     row.output.BusinessObjectId!,
@@ -100,19 +103,19 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
                     row.transaction.ExternalRef,
                     row.transaction.DataItemType)),
             cancellationToken).ConfigureAwait(false);
-        Dictionary<string, BusinessObjectPayloadProjection[]> payloadsByObjectId = payloads
-            .GroupBy(x => x.ObjectId, StringComparer.Ordinal)
+        Dictionary<string, BusinessObjectPayloadProjection[]> payloadsByLineageKey = payloads
+            .GroupBy(x => x.LineageKey, StringComparer.Ordinal)
             .ToDictionary(
                 group => group.Key,
                 group => group.OrderByDescending(x => x.Version).ToArray(),
                 StringComparer.Ordinal);
         List<BusinessObjectRecord> currentRows = await EfLedgerQueryBatcher.ToListByBatchedKeysAsync(
-            objectIds,
+            lineageKeys,
             batch => db.BusinessObjects.AsNoTracking().Where(x => x.LedgerId == query.Context.LedgerId.Value
                 && x.ScenarioId == scenarioValue
                 && batch.Contains(x.ObjectId)),
             cancellationToken).ConfigureAwait(false);
-        Dictionary<string, BusinessObjectRecord> currentByObjectId = currentRows
+        Dictionary<string, BusinessObjectRecord> currentByLineageKey = currentRows
             .ToDictionary(x => x.ObjectId, StringComparer.Ordinal);
 
         return rows
@@ -122,12 +125,12 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
                 BusinessObjectRecord? currentProjection = null;
                 if (row.BusinessObjectId is not null)
                 {
-                    currentByObjectId.TryGetValue(row.BusinessObjectId, out currentProjection);
+                    currentByLineageKey.TryGetValue(row.BusinessObjectId, out currentProjection);
                 }
 
                 BusinessObjectPayloadProjection? fallbackPayload = null;
                 if (row.BusinessObjectId is not null
-                    && payloadsByObjectId.TryGetValue(row.BusinessObjectId, out BusinessObjectPayloadProjection[]? objectPayloads))
+                    && payloadsByLineageKey.TryGetValue(row.BusinessObjectId, out BusinessObjectPayloadProjection[]? objectPayloads))
                 {
                     fallbackPayload = objectPayloads.FirstOrDefault(x => x.Version <= (row.BusinessObjectVersion ?? 0));
                 }
@@ -325,7 +328,12 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
 
         if (query.ObjectId is { } objectId)
         {
-            current = current.Where(x => x.ObjectId == objectId.Value);
+            OutPoint currentOutPoint = objectId.RequireOutPoint();
+            string currentTxId = currentOutPoint.TxId.Value;
+            int currentOutputIndex = currentOutPoint.OutputIndex;
+            current = current.Where(x =>
+                x.CurrentOutPointTxId == currentTxId
+                && x.CurrentOutPointIndex == currentOutputIndex);
         }
 
         if (!string.IsNullOrWhiteSpace(query.ObjectType))
@@ -348,9 +356,9 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
             return Array.Empty<LedgerBusinessObjectHolding>();
         }
 
-        string[] objectIds = currentRows.Select(x => x.ObjectId).ToArray();
+        string[] lineageKeys = currentRows.Select(x => x.ObjectId).ToArray();
         List<BusinessObjectVersionRecord> versionRows = await EfLedgerQueryBatcher.ToListByBatchedKeysAsync(
-            objectIds,
+            lineageKeys,
             batch => db.BusinessObjectVersions
                 .AsNoTracking()
                 .Where(x => x.LedgerId == query.Context.LedgerId.Value
@@ -364,8 +372,26 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
                 x => x.OrderByDescending(row => row.Version).First(),
                 StringComparer.Ordinal);
 
+        string[] currentVersionTxIds = currentVersions.Values
+            .Select(x => x.TxId)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        List<LedgerTransactionRecord> currentVersionTransactions = await EfLedgerQueryBatcher.ToListByBatchedKeysAsync(
+            currentVersionTxIds,
+            batch => db.Transactions.AsNoTracking().Where(x => batch.Contains(x.TxId)),
+            cancellationToken).ConfigureAwait(false);
+        Dictionary<string, LedgerTransactionRecord> currentVersionTransactionsById = currentVersionTransactions
+            .ToDictionary(x => x.TxId, StringComparer.Ordinal);
+
         IEnumerable<LedgerBusinessObjectHolding> mapped = currentRows
-            .Select(row => ToBusinessObjectHolding(row, currentVersions.GetValueOrDefault(row.ObjectId)))
+            .Select(row =>
+            {
+                BusinessObjectVersionRecord? version = currentVersions.GetValueOrDefault(row.ObjectId);
+                LedgerTransactionRecord? transaction = version is null
+                    ? null
+                    : currentVersionTransactionsById.GetValueOrDefault(version.TxId);
+                return ToBusinessObjectHolding(row, version, transaction);
+            })
             .Where(x => string.IsNullOrWhiteSpace(query.SchemaVersion)
                 || string.Equals(x.SchemaVersion, query.SchemaVersion, StringComparison.Ordinal))
             .Where(x => query.StateProperties is not { Count: > 0 }
@@ -409,10 +435,26 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
 
         if (query.BusinessObjectId is { } businessObjectId)
         {
-            string value = businessObjectId.Value;
+            OutPoint objectOutPoint = businessObjectId.RequireOutPoint();
+            string objectTxId = objectOutPoint.TxId.Value;
+            int objectOutputIndex = objectOutPoint.OutputIndex;
+            string? lineageKey = await db.TransactionOutputs
+                .AsNoTracking()
+                .Where(x => x.TxId == objectTxId
+                    && x.OutputIndex == objectOutputIndex
+                    && x.BusinessObjectId != null
+                    && x.BusinessObjectId != string.Empty)
+                .Select(x => x.BusinessObjectId)
+                .SingleOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(lineageKey))
+            {
+                return Array.Empty<LedgerTransactionSummary>();
+            }
+
             IQueryable<string> objectTxIds = db.TransactionOutputs
                 .AsNoTracking()
-                .Where(x => x.BusinessObjectId == value)
+                .Where(x => x.BusinessObjectId == lineageKey)
                 .Select(x => x.TxId);
             txQuery = txQuery.Where(x => objectTxIds.Contains(x.TxId));
         }
@@ -610,7 +652,7 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
                 x.MainAmount,
                 x.TokenId,
                 x.TokenAmount,
-                x.BusinessObjectId,
+                PublicBusinessObjectId(x),
                 x.BusinessObjectVersion,
                 x.BusinessObjectOperation.HasValue ? ((BusinessObjectOperation)x.BusinessObjectOperation.Value).ToString() : null,
                 x.BusinessObjectDataHash)).ToArray());
@@ -636,20 +678,46 @@ public sealed class EconomyLedgerReadModelService(IDbContextFactory<EconomyDbCon
 
     private static LedgerBusinessObjectHolding ToBusinessObjectHolding(
         BusinessObjectRecord current,
-        BusinessObjectVersionRecord? version)
-        => new(
-            new BusinessObjectId(current.ObjectId),
+        BusinessObjectVersionRecord? version,
+        LedgerTransactionRecord? transaction)
+    {
+        var currentOutPoint = new OutPoint(new TxId(current.CurrentOutPointTxId), current.CurrentOutPointIndex);
+        bool transactionPayloadMatches = HashMatches(current.CurrentHash, transaction?.DataHash);
+        BusinessObjectPayloadEnvelope? envelope = transactionPayloadMatches
+            ? TryReadPayloadEnvelope(transaction?.InlineJson)
+            : null;
+
+        return new LedgerBusinessObjectHolding(
+            BusinessObjectId.FromOutPoint(currentOutPoint),
             current.CurrentVersion,
             new Address(current.CurrentOwnerAddress),
             BusinessObjectOperation.Update,
             new HashHex(current.CurrentHash),
-            new OutPoint(new TxId(current.CurrentOutPointTxId), current.CurrentOutPointIndex),
+            currentOutPoint,
             version?.CreatedAt ?? DateTimeOffset.MinValue,
             current.ObjectType,
-            version?.SchemaVersion ?? "1.0",
+            envelope?.SchemaVersion ?? version?.SchemaVersion ?? "1.0",
             current.CurrentState,
-            null,
-            TransactionDataItemType.BusinessObject);
+            transactionPayloadMatches ? transaction?.ExternalRef : null,
+            !transactionPayloadMatches || transaction?.DataItemType is null
+                ? TransactionDataItemType.BusinessObject
+                : (TransactionDataItemType)transaction.DataItemType.Value,
+            envelope?.References);
+    }
+
+    private static string? PublicBusinessObjectId(LedgerTransactionOutputRecord output)
+        => string.IsNullOrWhiteSpace(output.BusinessObjectId)
+            ? null
+            : BusinessObjectId.FromOutPoint(new OutPoint(new TxId(output.TxId), output.OutputIndex)).Value;
+
+    private static bool HashMatches(string? businessObjectDataHash, string? transactionDataHash)
+        => !string.IsNullOrWhiteSpace(businessObjectDataHash)
+            && string.Equals(businessObjectDataHash, transactionDataHash, StringComparison.Ordinal);
+
+    private static BusinessObjectPayloadEnvelope? TryReadPayloadEnvelope(string? inlineJson)
+        => BusinessObjectPayloadEnvelopeReader.TryRead(inlineJson, out BusinessObjectPayloadEnvelope envelope)
+            ? envelope
+            : null;
 
     private static bool StatePropertiesMatch(string? stateJson, IReadOnlyDictionary<string, string> expected)
     {
@@ -748,24 +816,29 @@ internal static class EconomyNodeRecordMapper
         BusinessObjectPayloadProjection? fallbackPayload,
         BusinessObjectRecord? currentProjection = null)
     {
-        BusinessObjectPayloadEnvelope? envelope =
-            TryReadPayloadEnvelope(transaction?.InlineJson)
+        bool transactionPayloadMatches = HashMatches(row.BusinessObjectDataHash, transaction?.DataHash);
+        string? matchedInlineJson = transactionPayloadMatches ? transaction?.InlineJson : null;
+        string? matchedExternalRef = transactionPayloadMatches ? transaction?.ExternalRef : null;
+        int? matchedDataItemType = transactionPayloadMatches ? transaction?.DataItemType : null;
+        BusinessObjectPayloadEnvelope? envelope = TryReadPayloadEnvelope(matchedInlineJson)
             ?? TryReadPayloadEnvelope(fallbackPayload?.InlineJson);
+        var currentOutPoint = new OutPoint(new TxId(row.TxId), row.OutputIndex);
         return new LedgerBusinessObjectHolding(
-            new BusinessObjectId(row.BusinessObjectId ?? string.Empty),
+            BusinessObjectId.FromOutPoint(currentOutPoint),
             row.BusinessObjectVersion ?? 0,
             new Address(row.Address),
             (BusinessObjectOperation)(row.BusinessObjectOperation ?? (int)BusinessObjectOperation.Create),
             new HashHex(row.BusinessObjectDataHash ?? currentProjection?.CurrentHash ?? transaction?.DataHash ?? string.Empty),
-            new OutPoint(new TxId(row.TxId), row.OutputIndex),
+            currentOutPoint,
             row.CreatedAt,
             currentProjection?.ObjectType ?? envelope?.ObjectType ?? "business-object",
             envelope?.SchemaVersion ?? "1.0",
-            currentProjection?.CurrentState ?? envelope?.StateJson ?? transaction?.InlineJson ?? fallbackPayload?.InlineJson,
-            transaction?.ExternalRef ?? fallbackPayload?.ExternalRef,
-            (transaction?.DataItemType ?? fallbackPayload?.DataItemType) is null
+            currentProjection?.CurrentState ?? envelope?.StateJson ?? matchedInlineJson ?? fallbackPayload?.InlineJson,
+            matchedExternalRef ?? fallbackPayload?.ExternalRef,
+            (matchedDataItemType ?? fallbackPayload?.DataItemType) is null
                 ? TransactionDataItemType.BusinessObject
-                : (TransactionDataItemType)(transaction?.DataItemType ?? fallbackPayload!.DataItemType)!.Value);
+                : (TransactionDataItemType)(matchedDataItemType ?? fallbackPayload!.DataItemType)!.Value,
+            envelope?.References);
     }
 
     public static TokenTransfer? ToTokenTransfer(UnspentOutputRecord row)
@@ -782,7 +855,7 @@ internal static class EconomyNodeRecordMapper
         => string.IsNullOrWhiteSpace(row.BusinessObjectId)
             ? null
             : new BusinessObjectRef(
-                new BusinessObjectId(row.BusinessObjectId),
+                new BusinessObjectLineageKey(row.BusinessObjectId),
                 row.BusinessObjectVersion ?? 0,
                 (BusinessObjectOperation)(row.BusinessObjectOperation ?? (int)BusinessObjectOperation.Create),
                 new HashHex(row.BusinessObjectDataHash ?? string.Empty));
@@ -791,7 +864,7 @@ internal static class EconomyNodeRecordMapper
         => string.IsNullOrWhiteSpace(row.BusinessObjectId)
             ? null
             : new BusinessObjectRef(
-                new BusinessObjectId(row.BusinessObjectId),
+                new BusinessObjectLineageKey(row.BusinessObjectId),
                 row.BusinessObjectVersion ?? 0,
                 (BusinessObjectOperation)(row.BusinessObjectOperation ?? (int)BusinessObjectOperation.Create),
                 new HashHex(row.BusinessObjectDataHash ?? string.Empty));
@@ -822,7 +895,18 @@ internal static class EconomyNodeRecordMapper
             new Amount(row.MainAmount),
             ToTokenTransfer(row),
             ToBusinessObjectRef(row),
-            string.IsNullOrWhiteSpace(row.MetadataHash) ? null : new HashHex(row.MetadataHash));
+            string.IsNullOrWhiteSpace(row.MetadataHash) ? null : new HashHex(row.MetadataHash),
+            ToLedgerBusinessObjectOutputDetails(row));
+
+    private static LedgerBusinessObjectOutputDetails? ToLedgerBusinessObjectOutputDetails(
+        LedgerTransactionOutputRecord row)
+        => string.IsNullOrWhiteSpace(row.BusinessObjectId)
+            ? null
+            : new LedgerBusinessObjectOutputDetails(
+                BusinessObjectId.FromOutPoint(new OutPoint(new TxId(row.TxId), row.OutputIndex)),
+                row.BusinessObjectVersion ?? 0,
+                (BusinessObjectOperation)(row.BusinessObjectOperation ?? (int)BusinessObjectOperation.Create),
+                new HashHex(row.BusinessObjectDataHash ?? string.Empty));
 
     public static TransactionData? ToTransactionData(LedgerTransactionRecord row)
     {
@@ -878,6 +962,10 @@ internal static class EconomyNodeRecordMapper
             ? envelope
             : null;
 
+    private static bool HashMatches(string? businessObjectDataHash, string? transactionDataHash)
+        => !string.IsNullOrWhiteSpace(businessObjectDataHash)
+            && string.Equals(businessObjectDataHash, transactionDataHash, StringComparison.Ordinal);
+
     private static IReadOnlyDictionary<string, string> FormatTokenBalances(IReadOnlyDictionary<string, decimal> tokenBalances)
         => tokenBalances.ToDictionary(
             item => item.Key,
@@ -910,7 +998,7 @@ internal static class EconomyNodeRecordMapper
 }
 
 internal sealed record BusinessObjectPayloadProjection(
-    string ObjectId,
+    string LineageKey,
     int Version,
     string InlineJson,
     string? ExternalRef,

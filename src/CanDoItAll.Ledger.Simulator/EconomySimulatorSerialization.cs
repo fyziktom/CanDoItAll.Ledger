@@ -13,7 +13,6 @@ public interface IEconomySimulatorJsonSerializer
     string HashJson<T>(T value);
 
     EconomySimulatorBusinessObjectCommandDraft CreateDraft<T>(
-        BusinessObjectId objectId,
         string objectType,
         T state,
         Address? ownerAddress = null,
@@ -40,7 +39,6 @@ public sealed class EconomySimulatorJsonSerializer : IEconomySimulatorJsonSerial
         => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Serialize(value)))).ToLowerInvariant();
 
     public EconomySimulatorBusinessObjectCommandDraft CreateDraft<T>(
-        BusinessObjectId objectId,
         string objectType,
         T state,
         Address? ownerAddress = null,
@@ -55,7 +53,6 @@ public sealed class EconomySimulatorJsonSerializer : IEconomySimulatorJsonSerial
         }
 
         return new EconomySimulatorBusinessObjectCommandDraft(
-            objectId,
             objectType,
             EconomySimulatorSchema.Version,
             Serialize(state),
@@ -190,7 +187,6 @@ public static class EconomySimulatorCommandDraftExtensions
 {
     public static CreateBusinessObjectRequest ToCreateBusinessObjectRequest(this EconomySimulatorBusinessObjectCommandDraft draft)
         => new(
-            draft.ObjectId,
             draft.ObjectType,
             draft.StateJson,
             draft.SchemaVersion,

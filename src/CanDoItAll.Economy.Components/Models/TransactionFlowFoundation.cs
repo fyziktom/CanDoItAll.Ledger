@@ -104,7 +104,6 @@ public static class TransactionDraftValidator
         switch (draft.SelectedMode)
         {
             case BusinessObjectTransactionMode.Create:
-                RequireObjectId(draft.ObjectId, "objectId", errors);
                 RequireText(draft.ObjectType, "objectType.required", "Object type is required.", "objectType", errors);
                 RequireText(draft.SchemaVersion, "schema.required", "Schema version is required.", "schemaVersion", errors);
                 RequireAddress(draft.OwnerAddress, "owner", errors);
@@ -133,20 +132,14 @@ public static class TransactionDraftValidator
 
             case BusinessObjectTransactionMode.CloneObject:
                 RequireObjectId(draft.SourceObjectId, "sourceObjectId", errors);
-                RequireObjectId(draft.TargetObjectId, "targetObjectId", errors);
                 RequireText(draft.ObjectType, "objectType.required", "Object type is required.", "objectType", errors);
                 RequireText(draft.SchemaVersion, "schema.required", "Schema version is required.", "schemaVersion", errors);
                 RequireJson(draft.StateJson, required: true, "stateJson", errors);
-                if (draft.SourceObjectId == draft.TargetObjectId && draft.SourceObjectId is not null)
-                {
-                    errors.Add(new("object.clone.distinct", "The clone target must use a different object id.", "targetObjectId"));
-                }
                 break;
 
             case BusinessObjectTransactionMode.MergeObjects:
                 RequireObjectId(draft.SourceObjectId, "sourceObjectId", errors);
                 RequireObjectId(draft.SecondObjectId, "secondObjectId", errors);
-                RequireObjectId(draft.TargetObjectId, "targetObjectId", errors);
                 RequireWorkspaceObject(draft.SourceObjectId, context, "sourceObjectId", errors);
                 RequireWorkspaceObject(draft.SecondObjectId, context, "secondObjectId", errors);
                 RequireJson(draft.StateJson, required: true, "stateJson", errors);
@@ -315,11 +308,11 @@ public static class TransactionDraftValidator
         BusinessObjectTransactionDraft draft,
         ICollection<TransactionFlowIssue> errors)
     {
-        string?[] ids = [draft.SourceObjectId?.Value, draft.SecondObjectId?.Value, draft.TargetObjectId?.Value];
+        string?[] ids = [draft.SourceObjectId?.Value, draft.SecondObjectId?.Value];
         string[] populated = ids.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!).ToArray();
         if (populated.Distinct(StringComparer.Ordinal).Count() != populated.Length)
         {
-            errors.Add(new("object.merge.distinct", "First, second, and target object ids must be different."));
+            errors.Add(new("object.merge.distinct", "Merge sources must be different."));
         }
     }
 
@@ -334,7 +327,7 @@ public static class TransactionDraftValidator
             return;
         }
 
-        if (!context.BusinessObjectsOrEmpty.Any(item => item.ObjectId == value.Value))
+        if (!context.BusinessObjectsOrEmpty.Any(item => BusinessObjectId.FromOutPoint(item.CurrentOutPoint) == value.Value))
         {
             errors.Add(new("object.unavailable", "Select a business object available in this account.", field));
         }
@@ -350,8 +343,10 @@ public static class TransactionDraftValidator
             return;
         }
 
-        IBusinessObjectView? first = context.BusinessObjectsOrEmpty.FirstOrDefault(item => item.ObjectId == draft.SourceObjectId.Value);
-        IBusinessObjectView? second = context.BusinessObjectsOrEmpty.FirstOrDefault(item => item.ObjectId == draft.SecondObjectId.Value);
+        IBusinessObjectView? first = context.BusinessObjectsOrEmpty.FirstOrDefault(
+            item => BusinessObjectId.FromOutPoint(item.CurrentOutPoint) == draft.SourceObjectId.Value);
+        IBusinessObjectView? second = context.BusinessObjectsOrEmpty.FirstOrDefault(
+            item => BusinessObjectId.FromOutPoint(item.CurrentOutPoint) == draft.SecondObjectId.Value);
         if (first is null || second is null)
         {
             return;

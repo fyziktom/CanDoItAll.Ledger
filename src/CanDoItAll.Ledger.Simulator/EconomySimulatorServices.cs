@@ -98,7 +98,6 @@ public sealed class BusinessUnitRegistry(IEconomySimulatorJsonSerializer seriali
         }
 
         return serializer.CreateDraft(
-            EconomySimulatorIdentifiers.BusinessUnitObjectId(state.BusinessUnitId),
             EconomySimulatorObjectTypes.BusinessUnit,
             state,
             state.PrimaryAddress);
@@ -106,7 +105,6 @@ public sealed class BusinessUnitRegistry(IEconomySimulatorJsonSerializer seriali
 
     public EconomySimulatorBusinessObjectCommandDraft CreateAddressBindingDraft(BusinessUnitAddressBindingState state)
         => serializer.CreateDraft(
-            new BusinessObjectId($"buaddr:{EconomySimulatorIdentifiers.NormalizeSegment(state.ProjectId)}:{EconomySimulatorIdentifiers.NormalizeSegment(state.BusinessUnitId.Value)}:{EconomySimulatorIdentifiers.NormalizeSegment(state.Role.ToString())}:{EconomySimulatorIdentifiers.NormalizeSegment(state.Address.Value[^Math.Min(8, state.Address.Value.Length)..])}"),
             EconomySimulatorObjectTypes.BusinessUnitAddressBinding,
             state,
             state.Address);
@@ -383,7 +381,6 @@ public sealed class EconomicPostingService(IEconomySimulatorJsonSerializer seria
 {
     public EconomySimulatorBusinessObjectCommandDraft BuildEconomicEventDraft(EconomicEventState eventState)
         => serializer.CreateDraft(
-            EconomySimulatorIdentifiers.EventObjectId(new EconomicEventId(eventState.EventId)),
             EconomySimulatorObjectTypes.EconomicEvent,
             eventState,
             eventState.SourceAddress,
@@ -424,7 +421,6 @@ public sealed class ExternalBoundaryPostingService(IEconomySimulatorJsonSerializ
             request.Metadata ?? new Dictionary<string, string>());
 
         EconomySimulatorBusinessObjectCommandDraft draft = serializer.CreateDraft(
-            new BusinessObjectId($"settle:{EconomySimulatorIdentifiers.NormalizeSegment(request.ProjectId)}:{EconomySimulatorIdentifiers.NormalizeSegment(request.SettlementId)}"),
             EconomySimulatorObjectTypes.ExternalSettlement,
             state,
             request.IsInflow ? request.InternalAddress : request.BoundaryAddress,

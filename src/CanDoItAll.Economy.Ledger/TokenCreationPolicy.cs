@@ -580,7 +580,7 @@ public sealed class TokenCreationPolicy(
         return output.Address == permission.Address
             && output.Token.TokenId == PermissionTokenAuthority.PermissionTokenId
             && permission.Token.TokenId == PermissionTokenAuthority.PermissionTokenId
-            && output.BusinessObject.ObjectId == permission.BusinessObject.ObjectId
+            && output.BusinessObject.LineageKey == permission.BusinessObject.LineageKey
             && output.BusinessObject.DataHash == permission.BusinessObject.DataHash;
     }
 

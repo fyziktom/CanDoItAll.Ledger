@@ -58,7 +58,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
 
         IBusinessObjectView? selected = businessObjects.FirstOrDefault();
         var draft = new BusinessObjectTransactionDraft(
-            new BusinessObjectId("bo:purchase-order:1043"),
+            default,
             "purchase-order",
             "1.0",
             account.Address,
@@ -73,7 +73,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             SecondaryPaymentAmount: Amount.FromInt64(500));
 
         var editor = new BusinessObjectEditorModel(
-            selected?.ObjectId ?? new BusinessObjectId("bo:purchase-order:1042"),
+            selected?.ObjectId ?? default,
             selected?.ObjectType ?? "purchase-order",
             selected?.SchemaVersion ?? "1.0",
             account.Address,
@@ -107,14 +107,12 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     {
         await EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
         BusinessObjectAccount account = mainAccount ?? throw new InvalidOperationException("The development workspace was not initialized.");
-        int nonce = Interlocked.Increment(ref operationNonce);
         timeProvider.Advance(TimeSpan.FromMinutes(5));
 
         LedgerSubmitResult result = draft.SelectedMode switch
         {
             BusinessObjectTransactionMode.Create => await account.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    draft.ObjectId,
                     SafeText(draft.ObjectType, "purchase-order"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
@@ -126,12 +124,12 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                     ExternalRef: SafeNullable(draft.ExternalRef)),
                 cancellationToken).ConfigureAwait(false),
 
-            BusinessObjectTransactionMode.TransferObject => await TransferSeededObjectAsync(account, draft, nonce, cancellationToken).ConfigureAwait(false),
-            BusinessObjectTransactionMode.UpdateObject => await UpdateSeededObjectAsync(account, draft, nonce, cancellationToken).ConfigureAwait(false),
-            BusinessObjectTransactionMode.CloseObject => await CloseSeededObjectAsync(account, draft, nonce, cancellationToken).ConfigureAwait(false),
-            BusinessObjectTransactionMode.CloneObject => await CloneSeededObjectAsync(account, draft, nonce, cancellationToken).ConfigureAwait(false),
-            BusinessObjectTransactionMode.MergeObjects => await MergeSeededObjectsAsync(account, draft, nonce, cancellationToken).ConfigureAwait(false),
-            BusinessObjectTransactionMode.SplitBusinessObjectPayment => await SplitSeededObjectPaymentAsync(account, draft, nonce, cancellationToken).ConfigureAwait(false),
+            BusinessObjectTransactionMode.TransferObject => await TransferSeededObjectAsync(account, draft, cancellationToken).ConfigureAwait(false),
+            BusinessObjectTransactionMode.UpdateObject => await UpdateSeededObjectAsync(account, draft, cancellationToken).ConfigureAwait(false),
+            BusinessObjectTransactionMode.CloseObject => await CloseSeededObjectAsync(account, draft, cancellationToken).ConfigureAwait(false),
+            BusinessObjectTransactionMode.CloneObject => await CloneSeededObjectAsync(account, draft, cancellationToken).ConfigureAwait(false),
+            BusinessObjectTransactionMode.MergeObjects => await MergeSeededObjectsAsync(account, draft, cancellationToken).ConfigureAwait(false),
+            BusinessObjectTransactionMode.SplitBusinessObjectPayment => await SplitSeededObjectPaymentAsync(account, draft, cancellationToken).ConfigureAwait(false),
 
             BusinessObjectTransactionMode.MainPayment => await account.SendPaymentAsync(
                 new PaymentRequest(
@@ -239,7 +237,6 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             timeProvider.Advance(TimeSpan.FromMinutes(15));
             await mainAccount.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    new BusinessObjectId("bo:settings:ops"),
                     "settings",
                     "{\"currency\":\"USD\",\"approvalMode\":\"two-step\",\"simulationClock\":\"manual\"}",
                     MainAmount: Amount.FromInt64(5),
@@ -249,20 +246,20 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 .ConfigureAwait(false);
 
             timeProvider.Advance(TimeSpan.FromMinutes(15));
-            await mainAccount.CreateBusinessObjectAsync(
+            LedgerSubmitResult purchaseOrderCreate = await mainAccount.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    new BusinessObjectId("bo:purchase-order:1042"),
                     "purchase-order",
                     "{\"supplier\":\"Acme Metals\",\"amount\":42000,\"status\":\"draft\"}",
                     MainAmount: Amount.FromInt64(42000),
                     ExternalRef: "erp://purchase-orders/1042"),
                 cancellationToken)
                 .ConfigureAwait(false);
+            BusinessObjectId purchaseOrderId = RequireResultBusinessObjectId(purchaseOrderCreate, "Seed purchase order");
 
             timeProvider.Advance(TimeSpan.FromMinutes(15));
             await mainAccount.UpdateBusinessObjectAsync(
                 new UpdateBusinessObjectRequest(
-                    new BusinessObjectId("bo:purchase-order:1042"),
+                    purchaseOrderId,
                     "{\"supplier\":\"Acme Metals\",\"amount\":42000,\"status\":\"approved\"}",
                     "erp://purchase-orders/1042"),
                 cancellationToken)
@@ -271,7 +268,6 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             timeProvider.Advance(TimeSpan.FromMinutes(15));
             await warehouse.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    new BusinessObjectId("bo:inventory-lot:steel-77"),
                     "inventory-lot",
                     "{\"sku\":\"steel-sheet\",\"quantity\":900,\"uom\":\"kg\",\"reserved\":120}",
                     MainAmount: Amount.FromInt64(900),
@@ -343,7 +339,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 && source.Output.BusinessObject is not null)
             .Select(source => new EconomyTokenCreationAuthority(
                 source.Grant.Namespace,
-                source.Output.BusinessObject!.ObjectId,
+                BusinessObjectId.FromOutPoint(source.Output.OutPoint),
                 source.Output.Address))
             .OrderBy(authority => authority.Namespace, StringComparer.Ordinal)
             .ToArray();
@@ -417,11 +413,13 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     private async Task<LedgerSubmitResult> TransferSeededObjectAsync(
         BusinessObjectAccount account,
         BusinessObjectTransactionDraft draft,
-        int nonce,
         CancellationToken cancellationToken)
     {
-        BusinessObjectId objectId = new($"bo:ui-transfer-{nonce}");
-        await CreatePrerequisiteObjectAsync(account, objectId, draft, Amount.FromInt64(100), cancellationToken).ConfigureAwait(false);
+        BusinessObjectId objectId = await CreatePrerequisiteObjectAsync(
+            account,
+            draft,
+            Amount.FromInt64(100),
+            cancellationToken).ConfigureAwait(false);
         timeProvider.Advance(TimeSpan.FromMinutes(1));
         return await account.TransferBusinessObjectAsync(
             new TransferBusinessObjectRequest(
@@ -436,11 +434,13 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     private async Task<LedgerSubmitResult> UpdateSeededObjectAsync(
         BusinessObjectAccount account,
         BusinessObjectTransactionDraft draft,
-        int nonce,
         CancellationToken cancellationToken)
     {
-        BusinessObjectId objectId = new($"bo:ui-update-{nonce}");
-        await CreatePrerequisiteObjectAsync(account, objectId, draft, Amount.FromInt64(75), cancellationToken).ConfigureAwait(false);
+        BusinessObjectId objectId = await CreatePrerequisiteObjectAsync(
+            account,
+            draft,
+            Amount.FromInt64(75),
+            cancellationToken).ConfigureAwait(false);
         timeProvider.Advance(TimeSpan.FromMinutes(1));
         return await account.UpdateBusinessObjectAsync(
             new UpdateBusinessObjectRequest(
@@ -453,11 +453,13 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     private async Task<LedgerSubmitResult> CloseSeededObjectAsync(
         BusinessObjectAccount account,
         BusinessObjectTransactionDraft draft,
-        int nonce,
         CancellationToken cancellationToken)
     {
-        BusinessObjectId objectId = new($"bo:ui-close-{nonce}");
-        await CreatePrerequisiteObjectAsync(account, objectId, draft, Amount.FromInt64(60), cancellationToken).ConfigureAwait(false);
+        BusinessObjectId objectId = await CreatePrerequisiteObjectAsync(
+            account,
+            draft,
+            Amount.FromInt64(60),
+            cancellationToken).ConfigureAwait(false);
         timeProvider.Advance(TimeSpan.FromMinutes(1));
         return await account.CloseBusinessObjectAsync(
             new CloseBusinessObjectRequest(
@@ -470,16 +472,17 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     private async Task<LedgerSubmitResult> CloneSeededObjectAsync(
         BusinessObjectAccount account,
         BusinessObjectTransactionDraft draft,
-        int nonce,
         CancellationToken cancellationToken)
     {
-        BusinessObjectId sourceId = new($"bo:ui-clone-source-{nonce}");
-        await CreatePrerequisiteObjectAsync(account, sourceId, draft, Amount.FromInt64(50), cancellationToken).ConfigureAwait(false);
+        BusinessObjectId sourceId = await CreatePrerequisiteObjectAsync(
+            account,
+            draft,
+            Amount.FromInt64(50),
+            cancellationToken).ConfigureAwait(false);
         timeProvider.Advance(TimeSpan.FromMinutes(1));
         return await account.CloneBusinessObjectAsync(
             new CloneBusinessObjectRequest(
                 sourceId,
-                draft.TargetObjectId ?? new BusinessObjectId($"bo:ui-clone-target-{nonce}"),
                 SafeText(draft.ObjectType, "purchase-order"),
                 SafeJson(draft.StateJson),
                 SafeText(draft.SchemaVersion, "1.0"),
@@ -492,21 +495,27 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     private async Task<LedgerSubmitResult> MergeSeededObjectsAsync(
         BusinessObjectAccount account,
         BusinessObjectTransactionDraft draft,
-        int nonce,
         CancellationToken cancellationToken)
     {
-        BusinessObjectId firstId = new($"bo:ui-merge-a-{nonce}");
-        BusinessObjectId secondId = new($"bo:ui-merge-b-{nonce}");
-        await CreatePrerequisiteObjectAsync(account, firstId, draft, Amount.FromInt64(40), cancellationToken).ConfigureAwait(false);
+        BusinessObjectId firstId = await CreatePrerequisiteObjectAsync(
+            account,
+            draft,
+            Amount.FromInt64(40),
+            cancellationToken).ConfigureAwait(false);
         timeProvider.Advance(TimeSpan.FromMinutes(1));
-        await CreatePrerequisiteObjectAsync(account, secondId, draft, Amount.FromInt64(45), cancellationToken).ConfigureAwait(false);
+        BusinessObjectId secondId = await CreatePrerequisiteObjectAsync(
+            account,
+            draft,
+            Amount.FromInt64(45),
+            cancellationToken).ConfigureAwait(false);
         timeProvider.Advance(TimeSpan.FromMinutes(1));
         return await account.MergeBusinessObjectsAsync(
             new MergeBusinessObjectsRequest(
                 firstId,
                 secondId,
-                draft.TargetObjectId ?? new BusinessObjectId($"bo:ui-merged-{nonce}"),
+                SafeText(draft.ObjectType, "purchase-order"),
                 SafeJson(draft.StateJson),
+                SafeText(draft.SchemaVersion, "1.0"),
                 SafeNullable(draft.ExternalRef)),
             cancellationToken).ConfigureAwait(false);
     }
@@ -514,15 +523,17 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     private async Task<LedgerSubmitResult> SplitSeededObjectPaymentAsync(
         BusinessObjectAccount account,
         BusinessObjectTransactionDraft draft,
-        int nonce,
         CancellationToken cancellationToken)
     {
-        BusinessObjectId objectId = new($"bo:ui-split-{nonce}");
         Amount firstPayment = PositiveOrDefault(draft.PaymentAmount, 250);
         Amount secondPayment = PositiveOrDefault(draft.SecondaryPaymentAmount ?? Amount.Zero, 125);
         Amount fundingAmount = new(firstPayment.Value + secondPayment.Value + 50m);
 
-        await CreatePrerequisiteObjectAsync(account, objectId, draft, fundingAmount, cancellationToken).ConfigureAwait(false);
+        BusinessObjectId objectId = await CreatePrerequisiteObjectAsync(
+            account,
+            draft,
+            fundingAmount,
+            cancellationToken).ConfigureAwait(false);
         timeProvider.Advance(TimeSpan.FromMinutes(1));
 
         return await account.SplitBusinessObjectPaymentAsync(
@@ -538,16 +549,14 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task CreatePrerequisiteObjectAsync(
+    private async Task<BusinessObjectId> CreatePrerequisiteObjectAsync(
         BusinessObjectAccount account,
-        BusinessObjectId objectId,
         BusinessObjectTransactionDraft draft,
         Amount mainAmount,
         CancellationToken cancellationToken)
     {
         LedgerSubmitResult prerequisite = await account.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                objectId,
                 SafeText(draft.ObjectType, "purchase-order"),
                 SafeJson(draft.StateJson),
                 SafeText(draft.SchemaVersion, "1.0"),
@@ -559,6 +568,8 @@ public sealed class EconomyDevelopmentWorkspaceSession(
         {
             throw new InvalidOperationException(string.Join("; ", prerequisite.Errors.Select(error => $"{error.Code}: {error.Message}")));
         }
+
+        return RequireResultBusinessObjectId(prerequisite, "Prerequisite business object");
     }
 
     private static EconomyAccountKeyEnvelope CreateKey(string keyId)
@@ -576,10 +587,11 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     private static Address AddressForKey(string keyId)
         => Address.FromPublicKey(Encoding.UTF8.GetBytes($"{keyId}-public"));
 
-    private static BusinessObjectId ObjectIdFor(BusinessObjectId candidate, string prefix, int nonce)
-        => string.IsNullOrWhiteSpace(candidate.Value)
-            ? new BusinessObjectId($"{prefix}-{nonce}")
-            : new BusinessObjectId($"{candidate.Value}-{nonce}");
+    private static BusinessObjectId RequireResultBusinessObjectId(LedgerSubmitResult result, string label)
+        => result.Accepted && result.TxId is { } txId
+            ? BusinessObjectId.FromOutPoint(txId, 0)
+            : throw new InvalidOperationException(
+                $"{label} did not return an accepted transaction: {string.Join("; ", result.Errors.Select(error => $"{error.Code}: {error.Message}"))}");
 
     private static Address AddressOrDefault(Address candidate, Address fallback)
         => string.IsNullOrWhiteSpace(candidate.Value) ? fallback : candidate;
@@ -656,7 +668,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
     {
         if (request.ClearSale)
         {
-            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, request.ObjectId.Value);
+            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, "Untitled BusinessObject");
         }
 
         BusinessObjectSaleTerms terms = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
@@ -667,7 +679,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             request.SaleMode == BusinessObjectSaleMode.Copy ? request.MaxClones : null,
             request.TokenId,
             request.SharePath);
-        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, request.ObjectId.Value, terms);
+        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, "Untitled BusinessObject", terms);
     }
 
     public async Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(
@@ -698,7 +710,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 input.Address,
                 previousOutput?.MainAmount,
                 previousOutput?.Token,
-                previousOutput?.BusinessObject,
+                ToTransactionBusinessObjectDetails(previousOutput?.BusinessObject),
                 input.SignatureBundle,
                 input.SignaturePayloadHash,
                 OutPointKey: null));
@@ -711,7 +723,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 output.Address,
                 output.MainAmount,
                 output.Token,
-                output.BusinessObject,
+                ToTransactionBusinessObjectDetails(output.BusinessObject),
                 output.MetadataHash))
             .ToArray();
 
@@ -727,13 +739,21 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             outputs);
     }
 
+    private static EconomyTransactionBusinessObjectDetails? ToTransactionBusinessObjectDetails(
+        BusinessObjectRef? businessObject)
+        => businessObject is null
+            ? null
+            : new EconomyTransactionBusinessObjectDetails(
+                businessObject.Version,
+                businessObject.Operation,
+                businessObject.DataHash);
+
     public async Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
         BusinessObjectSendRequest request,
         CancellationToken cancellationToken = default)
     {
         await EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
         BusinessObjectAccount account = mainAccount ?? throw new InvalidOperationException("The development workspace was not initialized.");
-        int nonce = Interlocked.Increment(ref operationNonce);
         timeProvider.Advance(TimeSpan.FromMinutes(5));
 
         LedgerSubmitResult result = request.Mode switch
@@ -741,7 +761,6 @@ public sealed class EconomyDevelopmentWorkspaceSession(
             BusinessObjectSendMode.Clone => await account.CloneBusinessObjectAsync(
                 new CloneBusinessObjectRequest(
                     request.ObjectId,
-                    new BusinessObjectId($"{request.ObjectId.Value}:clone:{nonce}"),
                     SafeText(request.ObjectType, "business-object"),
                     SafeJson(request.StateJson),
                     SafeText(request.SchemaVersion, "1.0"),
@@ -797,7 +816,6 @@ public sealed class EconomyDevelopmentWorkspaceSession(
         LedgerSubmitResult result = request.CreateNew
             ? await account.CreateBusinessObjectAsync(
                 new CreateBusinessObjectRequest(
-                    request.ObjectId,
                     "profile",
                     nextState,
                     MainAmount: Amount.Zero,
@@ -805,7 +823,7 @@ public sealed class EconomyDevelopmentWorkspaceSession(
                 cancellationToken).ConfigureAwait(false)
             : await account.UpdateBusinessObjectAsync(
                 new UpdateBusinessObjectRequest(
-                    request.ObjectId,
+                    request.ObjectId ?? throw new InvalidOperationException("Existing profile BusinessObject id is required for update."),
                     nextState,
                     SafeNullable(request.ExternalRef)),
                 cancellationToken).ConfigureAwait(false);

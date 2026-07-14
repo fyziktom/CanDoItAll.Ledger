@@ -39,7 +39,6 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult subCreate = await subAccount.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                new BusinessObjectId("sub-settings"),
                 "settings",
                 "{\"theme\":\"field\"}",
                 MainAmount: Amount.FromInt64(25),
@@ -50,47 +49,49 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                new BusinessObjectId("work-order"),
                 "work-order",
                 "{\"status\":\"draft\"}",
                 MainAmount: Amount.FromInt64(100)),
             CancellationToken.None);
         Assert.True(create.Accepted);
+        BusinessObjectId workOrderId = CreatedObjectId(create);
 
         rig.Time.Advance(TimeSpan.FromHours(1));
         LedgerSubmitResult update = await alice.UpdateBusinessObjectAsync(
-            new UpdateBusinessObjectRequest(new BusinessObjectId("work-order"), "{\"status\":\"approved\"}"),
+            new UpdateBusinessObjectRequest(workOrderId, "{\"status\":\"approved\"}"),
             CancellationToken.None);
         Assert.True(update.Accepted);
+        BusinessObjectId updatedWorkOrderId = CreatedObjectId(update);
         Assert.Equal(2, Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None)).Version);
 
         rig.Time.Advance(TimeSpan.FromHours(1));
         LedgerSubmitResult clone = await alice.CloneBusinessObjectAsync(
             new CloneBusinessObjectRequest(
-                new BusinessObjectId("work-order"),
-                new BusinessObjectId("work-order-copy"),
+                updatedWorkOrderId,
                 "work-order",
                 "{\"status\":\"copy\"}"),
             CancellationToken.None);
         Assert.True(clone.Accepted);
+        BusinessObjectId clonedWorkOrderId = CreatedObjectId(clone);
         Assert.Equal(2, (await alice.GetBusinessObjectsAsync(CancellationToken.None)).Count);
 
         rig.Time.Advance(TimeSpan.FromHours(1));
         LedgerSubmitResult merge = await alice.MergeBusinessObjectsAsync(
             new MergeBusinessObjectsRequest(
-                new BusinessObjectId("work-order"),
-                new BusinessObjectId("work-order-copy"),
-                new BusinessObjectId("merged-work-order"),
+                updatedWorkOrderId,
+                clonedWorkOrderId,
+                "work-order",
                 "{\"status\":\"merged\"}"),
             CancellationToken.None);
         Assert.True(merge.Accepted);
+        BusinessObjectId mergedObjectId = CreatedObjectId(merge);
         LedgerBusinessObjectHolding merged = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
-        Assert.Equal(new BusinessObjectId("merged-work-order"), merged.ObjectId);
+        Assert.Equal(mergedObjectId, merged.ObjectId);
 
         rig.Time.Advance(TimeSpan.FromHours(1));
         LedgerTransaction splitTransaction = await alice.BuildSplitBusinessObjectPaymentTransactionAsync(
             new SplitBusinessObjectPaymentRequest(
-                new BusinessObjectId("merged-work-order"),
+                mergedObjectId,
                 new[]
                 {
                     new BusinessObjectPaymentOutput(Bob, Amount.FromInt64(40)),
@@ -114,17 +115,18 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult split = await alice.SubmitTransactionAsync(splitTransaction, CancellationToken.None);
         Assert.True(split.Accepted);
+        BusinessObjectId splitObjectId = CreatedObjectId(split);
         Assert.Empty(await alice.GetBusinessObjectsAsync(CancellationToken.None));
         Assert.Equal("50", (await alice.GetBalanceAsync(CancellationToken.None)).MainBalance.ToString());
 
         BusinessObjectAccount bob = rig.CreateAccount("bob");
         LedgerBusinessObjectHolding bobHolding = Assert.Single(await bob.GetBusinessObjectsAsync(CancellationToken.None));
-        Assert.Equal(new BusinessObjectId("merged-work-order"), bobHolding.ObjectId);
+        Assert.Equal(splitObjectId, bobHolding.ObjectId);
         Assert.Equal(2, bobHolding.Version);
 
         rig.Time.Advance(TimeSpan.FromHours(1));
         LedgerSubmitResult close = await bob.CloseBusinessObjectAsync(
-            new CloseBusinessObjectRequest(new BusinessObjectId("merged-work-order")),
+            new CloseBusinessObjectRequest(splitObjectId),
             CancellationToken.None);
         Assert.True(close.Accepted);
         Assert.Empty(await bob.GetBusinessObjectsAsync(CancellationToken.None));
@@ -136,7 +138,6 @@ public sealed class BusinessObjectAdvancedTransactionTests
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-08T06:00:00Z"));
         BusinessObjectAccount alice = rig.CreateAccount("alice");
-        BusinessObjectId objectId = new("self-updated-post");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
             new TransactionOutput(0, Alice, Amount.FromInt64(15)),
@@ -145,13 +146,13 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                objectId,
                 "post",
                 "{\"title\":\"draft\"}",
                 MainAmount: Amount.FromInt64(15)),
             CancellationToken.None);
         Assert.True(create.Accepted, string.Join("; ", create.Errors));
         LedgerBusinessObjectHolding current = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
+        BusinessObjectId objectId = current.ObjectId;
 
         rig.Time.Advance(TimeSpan.FromMinutes(10));
         const string nextStateJson = "{\"title\":\"edited\",\"longDescription\":\"BO edit persisted by ledger update.\"}";
@@ -163,11 +164,10 @@ public sealed class BusinessObjectAdvancedTransactionTests
             update,
             current,
             Alice,
-            objectId,
             Amount.Zero,
             expectedVersion: 2,
-            nextStateJson,
-            "bo-update://self-updated-post");
+            expectedStateJson: nextStateJson,
+            expectedExternalRef: "bo-update://self-updated-post");
 
         LedgerSubmitResult result = await alice.SubmitTransactionAsync(update, CancellationToken.None);
 
@@ -182,7 +182,6 @@ public sealed class BusinessObjectAdvancedTransactionTests
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-08T07:00:00Z"));
         BusinessObjectAccount alice = rig.CreateAccount("alice");
-        BusinessObjectId objectId = new("self-priced-post");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
             new TransactionOutput(0, Alice, Amount.FromInt64(20)),
@@ -199,13 +198,13 @@ public sealed class BusinessObjectAdvancedTransactionTests
         string initialStateJson = BusinessObjectPayloadBuilder.Serialize(payload);
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                objectId,
                 "post",
                 initialStateJson,
                 MainAmount: Amount.FromInt64(20)),
             CancellationToken.None);
         Assert.True(create.Accepted, string.Join("; ", create.Errors));
         LedgerBusinessObjectHolding current = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
+        BusinessObjectId objectId = current.ObjectId;
 
         rig.Time.Advance(TimeSpan.FromMinutes(5));
         Amount price = Amount.FromDecimal(12.5m);
@@ -217,7 +216,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
             sharePath: "/buy-bo/self-priced-post");
         string saleStateJson = BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(
             initialStateJson,
-            objectId.Value,
+            "Self priced post",
             saleTerms);
         LedgerTransaction priceUpdate = await alice.BuildSetBusinessObjectPriceTransactionAsync(
             new SetBusinessObjectPriceRequest(
@@ -232,11 +231,10 @@ public sealed class BusinessObjectAdvancedTransactionTests
             priceUpdate,
             current,
             Alice,
-            objectId,
             Amount.Zero,
             expectedVersion: 2,
-            saleStateJson,
-            "bo-commerce://sale/self-priced-post");
+            expectedStateJson: saleStateJson,
+            expectedExternalRef: "bo-commerce://sale/self-priced-post");
         Assert.True(BusinessObjectCommercePayloadBuilder.TryGetSaleTerms(
             priceUpdate.Data!.InlineJson,
             out BusinessObjectSaleTerms? transactionSaleTerms));
@@ -250,7 +248,12 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.True(result.Accepted, string.Join("; ", result.Errors));
         LedgerBusinessObjectHolding updated = Assert.Single(await alice.GetBusinessObjectsAsync(CancellationToken.None));
         Assert.Equal(2, updated.Version);
-        Assert.Equal(saleStateJson, updated.StateJson);
+        using (JsonDocument expectedSaleState = JsonDocument.Parse(saleStateJson))
+        using (JsonDocument actualSaleState = JsonDocument.Parse(
+            Assert.IsType<string>(updated.StateJson)))
+        {
+            Assert.True(JsonElement.DeepEquals(expectedSaleState.RootElement, actualSaleState.RootElement));
+        }
         Assert.True(BusinessObjectCommercePayloadBuilder.TryGetSaleTerms(updated.StateJson, out BusinessObjectSaleTerms? persistedSaleTerms));
         Assert.Equal(price.Value, persistedSaleTerms!.PriceAmount);
         Assert.Equal(Alice.Value, persistedSaleTerms.SellerAddress);
@@ -261,8 +264,6 @@ public sealed class BusinessObjectAdvancedTransactionTests
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-08T08:00:00Z"));
         BusinessObjectAccount alice = rig.CreateAccount("alice");
-        BusinessObjectId eventId = new("bo:event:ledger-conf-2026");
-        BusinessObjectId ticketId = new("bo:ticket:ledger-conf-2026-001");
         LedgerSubmitResult funding = await rig.SubmitMintAsync(
             CancellationToken.None,
             new TransactionOutput(0, Alice, Amount.FromInt64(30)),
@@ -271,21 +272,21 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult createEvent = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                eventId,
                 "event",
-                CreateEventStateJson(eventId),
+                CreateEventStateJson(),
                 MainAmount: Amount.FromInt64(10)),
             CancellationToken.None);
         Assert.True(createEvent.Accepted, string.Join("; ", createEvent.Errors));
+        BusinessObjectId eventId = CreatedObjectId(createEvent);
 
         LedgerSubmitResult createTicket = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                ticketId,
                 "ticket",
-                CreateTicketStateJson(ticketId, eventId, used: false),
+                CreateTicketStateJson(eventId, used: false),
                 MainAmount: Amount.FromInt64(20)),
             CancellationToken.None);
         Assert.True(createTicket.Accepted, string.Join("; ", createTicket.Errors));
+        BusinessObjectId ticketId = CreatedObjectId(createTicket);
 
         IReadOnlyList<LedgerTransactionSummary> historyBeforeUse = await rig.Gateway.QueryTransactionsAsync(
             new LedgerTransactionQuery(
@@ -314,16 +315,17 @@ public sealed class BusinessObjectAdvancedTransactionTests
             new UpdateBusinessObjectRequest(ticketId, usedStateJson, "ticket-used://ledger-conf-2026-001"),
             CancellationToken.None);
         Assert.True(useTicket.Accepted, string.Join("; ", useTicket.Errors));
+        BusinessObjectId usedTicketId = CreatedObjectId(useTicket);
 
         IReadOnlyList<LedgerTransactionSummary> historyAfterUse = await rig.Gateway.QueryTransactionsAsync(
             new LedgerTransactionQuery(
                 Context,
-                BusinessObjectId: ticketId,
+                BusinessObjectId: usedTicketId,
                 IncludeData: true),
             CancellationToken.None);
         BusinessObjectTicketHistoryValidation used = BusinessObjectTicketVerification.ValidateHistory(
             "ticket",
-            ticketId,
+            usedTicketId,
             historyAfterUse);
 
         Assert.False(used.IsValid);
@@ -656,7 +658,6 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerTransaction create = await alice.BuildCreateBusinessObjectTransactionAsync(
             new CreateBusinessObjectRequest(
-                new BusinessObjectId("payment-bo"),
                 "payment",
                 "{\"kind\":\"payment\"}",
                 OwnerAddress: Bob,
@@ -692,7 +693,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal("3", aliceBalance.MainBalance.ToString());
         Assert.Equal("4", aliceBalance.TokenBalances[OperatingToken].ToString());
         LedgerBusinessObjectHolding bobPayment = Assert.Single(await bob.GetBusinessObjectsAsync(CancellationToken.None));
-        Assert.Equal(new BusinessObjectId("payment-bo"), bobPayment.ObjectId);
+        Assert.Equal(CreatedObjectId(result), bobPayment.ObjectId);
         LedgerAccountBalance bobBalance = await bob.GetBalanceAsync(CancellationToken.None);
         Assert.Equal("7", bobBalance.MainBalance.ToString());
         Assert.Equal("1", bobBalance.TokenBalances[OperatingToken].ToString());
@@ -711,34 +712,35 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                new BusinessObjectId("token-backed-original"),
                 "post",
                 "{\"name\":\"original\"}",
                 Token: new TokenTransfer(OperatingToken, Amount.FromInt64(1))),
             CancellationToken.None);
         Assert.True(create.Accepted, string.Join("; ", create.Errors));
+        BusinessObjectId sourceObjectId = CreatedObjectId(create);
 
         LedgerTransaction clone = await alice.BuildCloneBusinessObjectTransactionAsync(
             new CloneBusinessObjectRequest(
-                new BusinessObjectId("token-backed-original"),
-                new BusinessObjectId("token-backed-clone"),
+                sourceObjectId,
                 "post",
                 "{\"name\":\"clone\"}",
                 OwnerAddress: Bob,
                 Token: new TokenTransfer(OperatingToken, Amount.FromInt64(1))),
             CancellationToken.None);
 
-        Assert.Equal(2, clone.Inputs.Count);
-        Assert.Equal(3, clone.Outputs.Count);
-        Assert.Equal(Alice, clone.Outputs[0].Address);
+        TransactionInput cloneInput = Assert.Single(clone.Inputs);
+        Assert.NotEqual(sourceObjectId.RequireOutPoint(), cloneInput.PreviousOutPoint);
+        Assert.Equal(2, clone.Outputs.Count);
+        Assert.Equal(Bob, clone.Outputs[0].Address);
         Assert.Equal("1", clone.Outputs[0].Token!.Amount.ToString());
-        Assert.Equal(BusinessObjectOperation.Update, clone.Outputs[0].BusinessObject!.Operation);
-        Assert.Equal(Bob, clone.Outputs[1].Address);
-        Assert.Equal("1", clone.Outputs[1].Token!.Amount.ToString());
-        Assert.Equal(new BusinessObjectId("token-backed-clone"), clone.Outputs[1].BusinessObject!.ObjectId);
-        Assert.Equal(Alice, clone.Outputs[2].Address);
-        Assert.Equal("6", clone.Outputs[2].Token!.Amount.ToString());
-        Assert.Null(clone.Outputs[2].BusinessObject);
+        Assert.Equal(BusinessObjectOperation.Create, clone.Outputs[0].BusinessObject!.Operation);
+        Assert.Equal(Alice, clone.Outputs[1].Address);
+        Assert.Equal("6", clone.Outputs[1].Token!.Amount.ToString());
+        Assert.Null(clone.Outputs[1].BusinessObject);
+        Assert.True(BusinessObjectPayloadEnvelopeReader.TryRead(
+            clone.Data?.InlineJson,
+            out BusinessObjectPayloadEnvelope cloneEnvelope));
+        Assert.Equal(sourceObjectId, Assert.Single(cloneEnvelope.References).ObjectId);
 
         LedgerSubmitResult result = await alice.SubmitTransactionAsync(clone, CancellationToken.None);
 
@@ -764,15 +766,15 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                new BusinessObjectId("token-backed-close"),
                 "post",
                 "{\"name\":\"close\"}",
                 Token: new TokenTransfer(OperatingToken, Amount.FromInt64(1))),
             CancellationToken.None);
         Assert.True(create.Accepted, string.Join("; ", create.Errors));
+        BusinessObjectId closeObjectId = CreatedObjectId(create);
 
         LedgerTransaction close = await alice.BuildCloseBusinessObjectTransactionAsync(
-            new CloseBusinessObjectRequest(new BusinessObjectId("token-backed-close")),
+            new CloseBusinessObjectRequest(closeObjectId),
             CancellationToken.None);
 
         Assert.Equal(2, close.Inputs.Count);
@@ -1005,17 +1007,17 @@ public sealed class BusinessObjectAdvancedTransactionTests
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                new BusinessObjectId("account-settings"),
                 "settings",
                 "{\"theme\":\"dense\"}",
                 MainAmount: Amount.FromInt64(10),
                 ItemType: TransactionDataItemType.AccountSettings),
             CancellationToken.None);
         Assert.True(create.Accepted);
+        BusinessObjectId settingsObjectId = CreatedObjectId(create);
 
         rig.Time.Advance(TimeSpan.FromMinutes(15));
         LedgerSubmitResult update = await alice.UpdateBusinessObjectAsync(
-            new UpdateBusinessObjectRequest(new BusinessObjectId("account-settings"), "{\"theme\":\"light\"}"),
+            new UpdateBusinessObjectRequest(settingsObjectId, "{\"theme\":\"light\"}"),
             CancellationToken.None);
         Assert.True(update.Accepted);
 
@@ -1023,7 +1025,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal("settings", holding.ObjectType);
         Assert.Equal("1.0", holding.SchemaVersion);
         Assert.Equal("{\"theme\":\"light\"}", holding.StateJson);
-        Assert.Equal(TransactionDataItemType.BusinessObject, holding.ItemType);
+        Assert.Equal(TransactionDataItemType.AccountSettings, holding.ItemType);
 
         IBusinessObjectView view = Assert.Single(await alice.GetBusinessObjectViewsAsync(registry, CancellationToken.None));
         var settings = Assert.IsType<AccountSettingsBusinessObjectView>(view);
@@ -1035,7 +1037,6 @@ public sealed class BusinessObjectAdvancedTransactionTests
         LedgerTransaction transaction,
         LedgerBusinessObjectHolding current,
         Address owner,
-        BusinessObjectId objectId,
         Amount expectedMainAmount,
         int expectedVersion,
         string expectedStateJson,
@@ -1054,25 +1055,40 @@ public sealed class BusinessObjectAdvancedTransactionTests
         Assert.Equal(OperatingToken, output.Token.TokenId);
         BusinessObjectRef? businessObject = output.BusinessObject;
         Assert.NotNull(businessObject);
-        Assert.Equal(objectId, businessObject!.ObjectId);
+        Assert.False(string.IsNullOrWhiteSpace(businessObject!.LineageKey.Value));
         Assert.Equal(expectedVersion, businessObject.Version);
         Assert.Equal(BusinessObjectOperation.Update, businessObject.Operation);
         Assert.NotEqual(current.DataHash, businessObject.DataHash);
 
         TransactionData? data = transaction.Data;
         Assert.NotNull(data);
-        Assert.Equal(TransactionDataItemType.BusinessObject, data!.ItemType);
-        Assert.Equal(expectedStateJson, data.InlineJson);
+        Assert.Equal(current.ItemType, data!.ItemType);
+        Assert.True(BusinessObjectPayloadEnvelopeReader.TryRead(
+            data.InlineJson,
+            out BusinessObjectPayloadEnvelope envelope));
+        using JsonDocument expectedState = JsonDocument.Parse(expectedStateJson);
+        using JsonDocument actualState = JsonDocument.Parse(envelope.StateJson);
+        Assert.True(
+            JsonElement.DeepEquals(expectedState.RootElement, actualState.RootElement),
+            $"Expected state {expectedStateJson}, actual state {envelope.StateJson}.");
+        BusinessObjectDataReference previousVersion = Assert.Single(envelope.References);
+        Assert.Equal(BusinessObjectReferenceRelationships.PreviousVersion, previousVersion.Relationship);
+        Assert.Equal(current.ObjectId, previousVersion.ObjectId);
         Assert.Equal(expectedExternalRef, data.ExternalRef);
         Assert.NotNull(data.DataHash);
         Assert.Equal(data.DataHash.Value, businessObject.DataHash);
     }
 
-    private static string CreateEventStateJson(BusinessObjectId objectId)
+    private static BusinessObjectId CreatedObjectId(LedgerSubmitResult result)
+        => BusinessObjectId.FromOutPoint(
+            result.TxId ?? throw new InvalidOperationException("Accepted BusinessObject transaction must have a transaction id."),
+            0);
+
+    private static string CreateEventStateJson()
     {
         var fields = new Dictionary<string, string>
         {
-            ["eventId"] = objectId.Value,
+            ["eventId"] = "ledger-conf-2026",
             ["eventDate"] = "2026-07-01T18:00:00Z",
             ["eventClass"] = "Conference",
             ["location"] = "Prague",
@@ -1092,7 +1108,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
         return BusinessObjectPayloadBuilder.Serialize(payload);
     }
 
-    private static string CreateTicketStateJson(BusinessObjectId ticketId, BusinessObjectId eventId, bool used)
+    private static string CreateTicketStateJson(BusinessObjectId eventId, bool used)
     {
         var fields = new Dictionary<string, string>
         {
@@ -1108,7 +1124,7 @@ public sealed class BusinessObjectAdvancedTransactionTests
             ["seat"] = "A1",
             ["used"] = used ? "true" : "false",
             ["status"] = used ? "Used" : "FreeToUse",
-            ["externalId"] = ticketId.Value
+            ["externalId"] = "ledger-conf-2026-001"
         };
         BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
             BusinessObjectFamilyCatalog.FindOrDefault("ticket"),

@@ -1370,7 +1370,7 @@ public sealed class InMemorySimulationRunLifecycleService(
                 "Error",
                 currentDate,
                 operations,
-                new BusinessObjectId("bo:project-alpha:inventory"),
+                new SimulationObjectReference("project-alpha:inventory"),
                 null,
                 Amount.FromInt64(18000),
                 "Inventory negative in 3 BUs.",
@@ -1388,7 +1388,7 @@ public sealed class InMemorySimulationRunLifecycleService(
                 "Warning",
                 currentDate.AddMonths(-3),
                 external,
-                new BusinessObjectId("bo:project-alpha:external-sector"),
+                new SimulationObjectReference("project-alpha:external-sector"),
                 null,
                 Amount.FromInt64(226500),
                 "Current account deficit above threshold.",
@@ -1434,7 +1434,7 @@ public sealed class InMemorySimulationRunLifecycleService(
                 status == SimulationRunLifecycleStatus.Failed && index == 0
                     ? AccountRuleExecutionStatus.Failed.ToString()
                     : AccountRuleExecutionStatus.Executed.ToString(),
-                new BusinessObjectId(definition.DefinitionId),
+                new SimulationObjectReference(definition.DefinitionId),
                 null,
                 status == SimulationRunLifecycleStatus.Failed && index == 0 ? null : new TxId($"tx:{EconomySimulatorIdentifiers.NormalizeSegment(runId)}:{index + 1:000}"),
                 observedAtUtc.AddSeconds(index + 1),

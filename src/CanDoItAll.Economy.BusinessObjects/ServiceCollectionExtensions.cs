@@ -25,6 +25,8 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<AccountVaultService>();
         services.TryAddScoped<IAccountInputSigner, AccountInputSigner>();
         services.TryAddScoped<IAccountTransactionSigner, AccountTransactionSigner>();
+        services.TryAddSingleton<IBusinessObjectLineageKeyFactory>(
+            RandomBusinessObjectLineageKeyFactory.Instance);
         services.TryAddScoped<IEconomyAccountHandler, EconomyAccountHandler>();
         services.TryAddScoped<IAccountBackupService, AccountBackupService>();
         services.TryAddScoped<IAccountSetupService, AccountSetupService>();

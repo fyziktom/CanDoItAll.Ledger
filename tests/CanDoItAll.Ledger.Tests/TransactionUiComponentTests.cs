@@ -79,8 +79,7 @@ public sealed class TransactionUiComponentTests : TestContext
                     Bob,
                     Amount.FromDecimal(1.5m),
                     null,
-                    new BusinessObjectRef(
-                        new BusinessObjectId("bo:secure-message:1"),
+                    new EconomyTransactionBusinessObjectDetails(
                         1,
                         BusinessObjectOperation.Create,
                         new HashHex("5555555555555555555555555555555555555555555555555555555555555555")),
@@ -103,6 +102,8 @@ public sealed class TransactionUiComponentTests : TestContext
         Assert.Contains("\"vout\":", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"signature\": \"010203\"", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"publicKey\": \"040506\"", rawJson, StringComparison.Ordinal);
+        Assert.Contains("\"objectId\": \"tx-raw-message:0\"", rawJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("bo:secure-message:1", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"objectType\": \"secure-message\"", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"stateJson\": {", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"format\": \"candoitall-secure-message-v1\"", rawJson, StringComparison.Ordinal);

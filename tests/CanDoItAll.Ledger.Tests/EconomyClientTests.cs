@@ -50,7 +50,6 @@ public sealed class EconomyClientTests
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                new BusinessObjectId("settings"),
                 "settings",
                 "{\"theme\":\"sdk\"}",
                 MainAmount: Amount.FromInt64(100),
@@ -58,10 +57,11 @@ public sealed class EconomyClientTests
             CancellationToken.None);
         Assert.True(create.Accepted);
         TxId createTxId = create.TxId ?? throw new InvalidOperationException("Accepted create must have a transaction id.");
+        BusinessObjectId createdObjectId = BusinessObjectId.FromOutPoint(createTxId, 0);
 
         rig.Time.Advance(TimeSpan.FromMinutes(30));
         LedgerTransaction transfer = await alice.BuildTransferBusinessObjectTransactionAsync(
-            new TransferBusinessObjectRequest(new BusinessObjectId("settings"), Bob, Amount.FromInt64(40)),
+            new TransferBusinessObjectRequest(createdObjectId, Bob, Amount.FromInt64(40)),
             CancellationToken.None);
 
         LedgerSubmitResult transferResult = await client.SubmitTransactionAsync(transfer, CancellationToken.None);
@@ -96,7 +96,12 @@ public sealed class EconomyClientTests
         Assert.NotNull(transferDetails);
         Assert.Equal(transferTxId, transferDetails.TxId);
         Assert.Equal(TransactionKind.BusinessObject, transferDetails.Kind);
-        Assert.Null(transferDetails.Data);
+        Assert.True(BusinessObjectPayloadEnvelopeReader.TryRead(
+            transferDetails.Data?.InlineJson,
+            out BusinessObjectPayloadEnvelope transferEnvelope));
+        BusinessObjectDataReference previousVersion = Assert.Single(transferEnvelope.References);
+        Assert.Equal(BusinessObjectReferenceRelationships.PreviousVersion, previousVersion.Relationship);
+        Assert.Equal(createdObjectId, previousVersion.ObjectId);
 
         LedgerTransactionSummary? createDetails = await client.GetTransactionAsync(Context, createTxId, includeData: true, CancellationToken.None);
         Assert.NotNull(createDetails);
@@ -108,8 +113,9 @@ public sealed class EconomyClientTests
         Assert.Equal("1.0", createEnvelope.SchemaVersion);
         Assert.Equal("{\"theme\":\"sdk\"}", createEnvelope.StateJson);
 
+        BusinessObjectId transferredObjectId = BusinessObjectId.FromOutPoint(transferTxId, 0);
         LedgerBusinessObjectHolding? currentSettings = await client.GetBusinessObjectAsync(
-            new LedgerBusinessObjectQuery(Context, ObjectId: new BusinessObjectId("settings")),
+            new LedgerBusinessObjectQuery(Context, ObjectId: transferredObjectId),
             CancellationToken.None);
         Assert.NotNull(currentSettings);
         Assert.Equal(Bob, currentSettings.OwnerAddress);
@@ -123,16 +129,26 @@ public sealed class EconomyClientTests
                 StateProperties: new Dictionary<string, string> { ["theme"] = "sdk" }),
             CancellationToken.None);
         LedgerBusinessObjectHolding queriedSettings = Assert.Single(settingsByState);
-        Assert.Equal(new BusinessObjectId("settings"), queriedSettings.ObjectId);
+        Assert.Equal(transferredObjectId, queriedSettings.ObjectId);
 
-        IReadOnlyList<LedgerTransactionSummary> businessObjectHistory = await client.QueryTransactionsAsync(
+        IReadOnlyList<LedgerTransactionSummary> creationTransaction = await client.QueryTransactionsAsync(
             new LedgerTransactionQuery(
                 Context,
-                BusinessObjectId: new BusinessObjectId("settings"),
+                BusinessObjectId: createdObjectId,
                 IncludeData: true),
             CancellationToken.None);
-        Assert.Contains(businessObjectHistory, x => x.TxId == createTxId && x.Data is not null);
-        Assert.Contains(businessObjectHistory, x => x.TxId == transferTxId);
+        IReadOnlyList<LedgerTransactionSummary> transferTransaction = await client.QueryTransactionsAsync(
+            new LedgerTransactionQuery(
+                Context,
+                BusinessObjectId: transferredObjectId,
+                IncludeData: true),
+            CancellationToken.None);
+        Assert.Equal(2, creationTransaction.Count);
+        Assert.Equal(2, transferTransaction.Count);
+        Assert.Contains(creationTransaction, transaction => transaction.TxId == createTxId);
+        Assert.Contains(creationTransaction, transaction => transaction.TxId == transferTxId);
+        Assert.Contains(transferTransaction, transaction => transaction.TxId == createTxId);
+        Assert.Contains(transferTransaction, transaction => transaction.TxId == transferTxId);
     }
 
     [Fact]
@@ -143,8 +159,6 @@ public sealed class EconomyClientTests
         EconomyAccountKeyEnvelope aliceKey = CreateKey("alice");
         var scenarioA = new LedgerAccountContext(Context.LedgerId, new ScenarioId("simulation-a"));
         var scenarioB = new LedgerAccountContext(Context.LedgerId, new ScenarioId("simulation-b"));
-        BusinessObjectId objectId = new("settings");
-
         await SeedGenesisAsync(rig, scenarioA, Amount.FromInt64(100), CancellationToken.None);
         await SeedGenesisAsync(rig, scenarioB, Amount.FromInt64(50), CancellationToken.None);
 
@@ -152,19 +166,22 @@ public sealed class EconomyClientTests
         BusinessObjectAccount aliceB = await client.LoadAccountAsync(scenarioB, aliceKey, CancellationToken.None);
 
         LedgerSubmitResult createA = await aliceA.CreateBusinessObjectAsync(
-            new CreateBusinessObjectRequest(objectId, "settings", "{\"scenario\":\"a\"}", MainAmount: Amount.FromInt64(100)),
+            new CreateBusinessObjectRequest("settings", "{\"scenario\":\"a\"}", MainAmount: Amount.FromInt64(100)),
             CancellationToken.None);
         Assert.True(createA.Accepted);
+        BusinessObjectId objectIdA = BusinessObjectId.FromOutPoint(
+            createA.TxId ?? throw new InvalidOperationException("Accepted create must have a transaction id."),
+            0);
 
         rig.Time.Advance(TimeSpan.FromDays(1));
         LedgerSubmitResult createB = await aliceB.CreateBusinessObjectAsync(
-            new CreateBusinessObjectRequest(objectId, "settings", "{\"scenario\":\"b\"}", MainAmount: Amount.FromInt64(50)),
+            new CreateBusinessObjectRequest("settings", "{\"scenario\":\"b\"}", MainAmount: Amount.FromInt64(50)),
             CancellationToken.None);
         Assert.True(createB.Accepted);
 
         rig.Time.Advance(TimeSpan.FromHours(2));
         LedgerTransaction transferA = await aliceA.BuildTransferBusinessObjectTransactionAsync(
-            new TransferBusinessObjectRequest(objectId, Bob, Amount.FromInt64(30)),
+            new TransferBusinessObjectRequest(objectIdA, Bob, Amount.FromInt64(30)),
             CancellationToken.None);
 
         Assert.Equal(scenarioA.ScenarioId, transferA.ScenarioId);

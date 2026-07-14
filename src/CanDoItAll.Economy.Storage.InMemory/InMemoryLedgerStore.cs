@@ -241,7 +241,7 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
                 unspentOutputs.Remove(key);
                 if (previous.BusinessObject is not null)
                 {
-                    string objectKey = BusinessObjectKey(previous.LedgerId, previous.ScenarioId, previous.BusinessObject.ObjectId);
+                    string objectKey = BusinessObjectKey(previous.LedgerId, previous.ScenarioId, previous.BusinessObject.LineageKey);
                     if (currentBusinessObjects.TryGetValue(objectKey, out UnspentOutput? current)
                         && current.OutPoint == previous.OutPoint)
                     {
@@ -293,8 +293,8 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
 
                 if (output.BusinessObject is not null)
                 {
-                    currentBusinessObjects[BusinessObjectKey(tx.LedgerId, tx.ScenarioId, output.BusinessObject.ObjectId)] = createdOutput;
-                    businessObjectVersionKeys.Add(BusinessObjectVersionKey(tx.LedgerId, tx.ScenarioId, output.BusinessObject.ObjectId, output.BusinessObject.Version));
+                    currentBusinessObjects[BusinessObjectKey(tx.LedgerId, tx.ScenarioId, output.BusinessObject.LineageKey)] = createdOutput;
+                    businessObjectVersionKeys.Add(BusinessObjectVersionKey(tx.LedgerId, tx.ScenarioId, output.BusinessObject.LineageKey, output.BusinessObject.Version));
                 }
             }
 
@@ -307,9 +307,9 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
     private void ValidateBusinessObjectProjectionState(LedgerTransaction tx, IReadOnlyList<UnspentOutput> consumedOutputs)
     {
         var seenVersionKeys = new HashSet<string>(StringComparer.Ordinal);
-        Dictionary<BusinessObjectId, UnspentOutput> consumedBusinessObjects = consumedOutputs
+        Dictionary<BusinessObjectLineageKey, UnspentOutput> consumedBusinessObjects = consumedOutputs
             .Where(x => x.BusinessObject is not null)
-            .GroupBy(x => x.BusinessObject!.ObjectId)
+            .GroupBy(x => x.BusinessObject!.LineageKey)
             .ToDictionary(x => x.Key, x => x.First());
 
         foreach (TransactionOutput output in tx.Outputs.Where(x => x.BusinessObject is not null))
@@ -319,12 +319,12 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
             {
                 throw new LedgerStoreConflictException(
                     ValidationErrorCodes.InvalidBusinessObjectTransition,
-                    $"BusinessObject {businessObject.ObjectId.Value} has an unknown operation value: {(int)businessObject.Operation}.");
+                    $"BusinessObject lineage {businessObject.LineageKey.Value} has an unknown operation value: {(int)businessObject.Operation}.");
             }
 
-            string objectKey = BusinessObjectKey(tx.LedgerId, tx.ScenarioId, businessObject.ObjectId);
+            string objectKey = BusinessObjectKey(tx.LedgerId, tx.ScenarioId, businessObject.LineageKey);
             currentBusinessObjects.TryGetValue(objectKey, out UnspentOutput? current);
-            consumedBusinessObjects.TryGetValue(businessObject.ObjectId, out UnspentOutput? consumedCurrent);
+            consumedBusinessObjects.TryGetValue(businessObject.LineageKey, out UnspentOutput? consumedCurrent);
             switch (businessObject.Operation)
             {
                 case BusinessObjectOperation.Create:
@@ -332,14 +332,14 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
                     {
                         throw new LedgerStoreConflictException(
                             ValidationErrorCodes.InvalidBusinessObjectTransition,
-                            $"BusinessObject {businessObject.ObjectId.Value} already exists. Create must not overwrite an existing current BusinessObject.");
+                            $"BusinessObject lineage {businessObject.LineageKey.Value} already exists. Create must not overwrite an existing current BusinessObject lineage.");
                     }
 
                     if (businessObject.Version != 1)
                     {
                         throw new LedgerStoreConflictException(
                             ValidationErrorCodes.InvalidBusinessObjectTransition,
-                            $"BusinessObject {businessObject.ObjectId.Value} create must start at version 1.");
+                            $"BusinessObject lineage {businessObject.LineageKey.Value} create must start at version 1.");
                     }
 
                     break;
@@ -349,7 +349,7 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
                     {
                         throw new LedgerStoreConflictException(
                             ValidationErrorCodes.InvalidBusinessObjectTransition,
-                            $"BusinessObject {businessObject.ObjectId.Value} {businessObject.Operation} must consume the current output for the same object id.");
+                            $"BusinessObject lineage {businessObject.LineageKey.Value} {businessObject.Operation} must consume the current output for the same lineage key.");
                     }
 
                     int expectedVersion = current.BusinessObject.Version + 1;
@@ -357,22 +357,22 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
                     {
                         throw new LedgerStoreConflictException(
                             ValidationErrorCodes.InvalidBusinessObjectTransition,
-                            $"BusinessObject {businessObject.ObjectId.Value} {businessObject.Operation} must advance from version {current.BusinessObject.Version} to {expectedVersion}, not {businessObject.Version}.");
+                            $"BusinessObject lineage {businessObject.LineageKey.Value} {businessObject.Operation} must advance from version {current.BusinessObject.Version} to {expectedVersion}, not {businessObject.Version}.");
                     }
 
                     break;
                 case BusinessObjectOperation.Close:
                     throw new LedgerStoreConflictException(
                         ValidationErrorCodes.InvalidBusinessObjectTransition,
-                        $"BusinessObject {businessObject.ObjectId.Value} close must consume the current output without emitting a next BusinessObject output.");
+                        $"BusinessObject lineage {businessObject.LineageKey.Value} close must consume the current output without emitting a next BusinessObject output.");
             }
 
-            string versionKey = BusinessObjectVersionKey(tx.LedgerId, tx.ScenarioId, businessObject.ObjectId, businessObject.Version);
+            string versionKey = BusinessObjectVersionKey(tx.LedgerId, tx.ScenarioId, businessObject.LineageKey, businessObject.Version);
             if (businessObjectVersionKeys.Contains(versionKey) || !seenVersionKeys.Add(versionKey))
             {
                 throw new LedgerStoreConflictException(
                     ValidationErrorCodes.InvalidBusinessObjectTransition,
-                    $"BusinessObject {businessObject.ObjectId.Value} version {businessObject.Version} already exists.");
+                    $"BusinessObject lineage {businessObject.LineageKey.Value} version {businessObject.Version} already exists.");
             }
         }
     }
@@ -433,9 +433,9 @@ public sealed class InMemoryLedgerStore : ILedgerConfirmationStore
 
     private static string TokenKey(LedgerId ledgerId, ScenarioId? scenarioId, TokenId tokenId) => $"{ledgerId.Value}|{scenarioId?.Value ?? string.Empty}|{tokenId.Value}";
 
-    private static string BusinessObjectKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectId objectId) => $"{ledgerId.Value}|{scenarioId?.Value ?? string.Empty}|{objectId.Value}";
+    private static string BusinessObjectKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectLineageKey lineageKey) => $"{ledgerId.Value}|{scenarioId?.Value ?? string.Empty}|{lineageKey.Value}";
 
-    private static string BusinessObjectVersionKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectId objectId, int version) => $"{BusinessObjectKey(ledgerId, scenarioId, objectId)}|{version.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+    private static string BusinessObjectVersionKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectLineageKey lineageKey, int version) => $"{BusinessObjectKey(ledgerId, scenarioId, lineageKey)}|{version.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
 
     private static RegisteredTokenDefinition CreateRegisteredTokenDefinition(
         LedgerTransaction transaction,

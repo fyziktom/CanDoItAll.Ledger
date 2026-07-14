@@ -36,6 +36,7 @@
                 <span>@Item.ObjectType</span>
                 <span>@($"v{Item.Version}")</span>
                 <span>@Item.Operation</span>
+                <span title="@Item.CurrentOutPoint.ToString()">@ShortOutPoint</span>
             </span>
             @if (Tags.Count > 0)
             {
@@ -86,7 +87,7 @@
     private string? RestrictionId
         => string.IsNullOrWhiteSpace(DisabledReason)
             ? null
-            : $"bo-card-restriction-{SafeId(Item.ObjectId.Value)}";
+            : $"bo-card-restriction-{SafeId(Item.CurrentOutPoint.ToString())}";
 
     private string PreviewClass
         => BusinessObjectCardDisplay.PreviewClass(Item)
@@ -98,12 +99,18 @@
     private IReadOnlyList<string> Tags
         => BusinessObjectCardDisplay.TagsFor(Item);
 
-    private string DisplayTitle
-        => string.IsNullOrWhiteSpace(Item.ObjectId.Value)
-            ? "Unnamed business object"
-            : BusinessObjectCardDisplay.DisplayName(Item);
+    private string DisplayTitle => BusinessObjectCardDisplay.DisplayName(Item);
 
     private string Summary => BusinessObjectCardDisplay.Description(Item);
+
+    private string ShortOutPoint
+    {
+        get
+        {
+            string value = Item.CurrentOutPoint.ToString();
+            return value.Length <= 22 ? value : $"{value[..11]}...{value[^7..]}";
+        }
+    }
 
     private static string SafeId(string value)
         => new(value.Select(character => char.IsLetterOrDigit(character) ? character : '-').ToArray());

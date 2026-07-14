@@ -169,7 +169,7 @@ public sealed class TokenCreationPolicyTests
                     Amount.Zero,
                     new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(1)),
                     new BusinessObjectRef(
-                        PermissionTokenAuthority.CreatePermissionObjectId(grant.Action, grant.Namespace, "forged"),
+                        PermissionTokenAuthority.CreatePermissionLineageKey(grant.Action, grant.Namespace, "forged"),
                         1,
                         BusinessObjectOperation.Create,
                         data.DataHash!.Value))
@@ -246,7 +246,7 @@ public sealed class TokenCreationPolicyTests
         IReadOnlyList<UnspentOutput> outputs = await rig.Store.GetUnspentOutputsByAddressAsync(LedgerId, null, Alice, CancellationToken.None);
         Assert.Contains(outputs, output =>
             RuleTokenAuthority.IsRuleToken(output.Token)
-            && output.BusinessObject?.ObjectId == RuleTokenAuthority.CreateRuleObjectId("cashpool-sweep"));
+            && output.BusinessObject?.LineageKey == RuleTokenAuthority.CreateRuleLineageKey("cashpool-sweep"));
         Assert.Contains(outputs, output =>
             PermissionTokenAuthority.IsPermissionToken(output.Token)
             && output.BusinessObject is not null
@@ -334,7 +334,7 @@ public sealed class TokenCreationPolicyTests
                 Amount.Zero,
                 new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(amount)),
                 new BusinessObjectRef(
-                    PermissionTokenAuthority.CreatePermissionObjectId(grant.Action, grant.Namespace, Guid.NewGuid().ToString("N")),
+                    PermissionTokenAuthority.CreatePermissionLineageKey(grant.Action, grant.Namespace, Guid.NewGuid().ToString("N")),
                     1,
                     BusinessObjectOperation.Create,
                     data.DataHash!.Value))
@@ -389,7 +389,7 @@ public sealed class TokenCreationPolicyTests
                 Amount.Zero,
                 new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(amount)),
                 new BusinessObjectRef(
-                    PermissionTokenAuthority.CreatePermissionObjectId(grant.Action, grant.Namespace, Guid.NewGuid().ToString("N")),
+                    PermissionTokenAuthority.CreatePermissionLineageKey(grant.Action, grant.Namespace, Guid.NewGuid().ToString("N")),
                     1,
                     BusinessObjectOperation.Create,
                     data.DataHash!.Value))
@@ -449,7 +449,7 @@ public sealed class TokenCreationPolicyTests
                     Amount.Zero,
                     new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, source.Token!.Amount),
                     new BusinessObjectRef(
-                        PermissionTokenAuthority.CreatePermissionObjectId(grant.Action, grant.Namespace, Guid.NewGuid().ToString("N")),
+                        PermissionTokenAuthority.CreatePermissionLineageKey(grant.Action, grant.Namespace, Guid.NewGuid().ToString("N")),
                         1,
                         BusinessObjectOperation.Create,
                         data.DataHash!.Value))
@@ -566,7 +566,7 @@ public sealed class TokenCreationPolicyTests
                     Amount.Zero,
                     new TokenTransfer(RuleTokenAuthority.RuleTokenId, Amount.FromInt64(1)),
                     new BusinessObjectRef(
-                        RuleTokenAuthority.CreateRuleObjectId(rule.RuleId),
+                        RuleTokenAuthority.CreateRuleLineageKey(rule.RuleId),
                         1,
                         BusinessObjectOperation.Create,
                         data.DataHash!.Value))
@@ -588,7 +588,7 @@ public sealed class TokenCreationPolicyTests
             ? PermissionTokenAuthority.CreateData(PermissionTokenAuthority.CreateMintNewTokenTypeGrant("rules.company", repeatable: true))
             : RuleTokenAuthority.CreateData(rule);
         BusinessObjectRef ruleRef = new(
-            RuleTokenAuthority.CreateRuleObjectId(rule.RuleId),
+            RuleTokenAuthority.CreateRuleLineageKey(rule.RuleId),
             1,
             BusinessObjectOperation.Create,
             data.DataHash!.Value);

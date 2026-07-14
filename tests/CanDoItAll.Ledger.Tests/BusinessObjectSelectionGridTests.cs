@@ -29,8 +29,8 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
             .Add(value => value.MaximumSelections, 2)
             .Add(value => value.RequireCompatibleSelection, true));
 
-        IElement selectedButton = component.Find("[data-testid='bo-select-bo-order-1'] button");
-        IElement unavailableCard = component.Find("[data-testid='bo-select-bo-order-3']");
+        IElement selectedButton = component.Find($"[data-testid='{SelectionTestId(first)}'] button");
+        IElement unavailableCard = component.Find($"[data-testid='{SelectionTestId(third)}']");
         IElement unavailableButton = unavailableCard.QuerySelector("button")!;
 
         Assert.False(selectedButton.HasAttribute("disabled"));
@@ -54,8 +54,8 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
             .Add(value => value.MaximumSelections, 2));
 
         IElement selectionGroup = component.Find(".cda-transaction-bo-grid");
-        IElement selectedButton = component.Find("[data-testid='bo-select-bo-order-1'] button");
-        IElement availableButton = component.Find("[data-testid='bo-select-bo-order-2'] button");
+        IElement selectedButton = component.Find($"[data-testid='{SelectionTestId(selected)}'] button");
+        IElement availableButton = component.Find($"[data-testid='{SelectionTestId(available)}'] button");
 
         Assert.Equal("group", selectionGroup.GetAttribute("role"));
         Assert.Null(selectionGroup.GetAttribute("aria-multiselectable"));
@@ -85,7 +85,27 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
         Assert.True(purchaseTag.ClassList.Contains("is-active"));
     }
 
-    private static IBusinessObjectView CreateBusinessObject(string objectId)
+    [Fact]
+    public void Objects_with_the_same_legacy_lineage_are_selected_by_current_outpoint()
+    {
+        IBusinessObjectView earlier = CreateBusinessObject("bo:order:shared", "tx-order-earlier");
+        IBusinessObjectView current = CreateBusinessObject("bo:order:shared", "tx-order-current");
+        IReadOnlyList<IBusinessObjectView>? captured = null;
+        IRenderedComponent<BusinessObjectSelectionGrid> component = RenderComponent<BusinessObjectSelectionGrid>(parameters => parameters
+            .Add(value => value.Items, new[] { earlier, current })
+            .Add(value => value.Selected, new[] { earlier })
+            .Add(value => value.MaximumSelections, 2)
+            .Add(value => value.SelectedChanged, value => captured = value));
+
+        component.Find($"[data-testid='{SelectionTestId(current)}'] button").Click();
+
+        Assert.NotNull(captured);
+        Assert.Equal(2, captured!.Count);
+        Assert.Contains(captured, item => item.CurrentOutPoint == earlier.CurrentOutPoint);
+        Assert.Contains(captured, item => item.CurrentOutPoint == current.CurrentOutPoint);
+    }
+
+    private static IBusinessObjectView CreateBusinessObject(string objectId, string? txId = null)
         => new GenericBusinessObjectView(
             new LedgerAccountContext(new LedgerId("test-ledger")),
             new BusinessObjectId(objectId),
@@ -95,10 +115,13 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
             Owner,
             BusinessObjectOperation.Create,
             new HashHex($"hash-{objectId}"),
-            new OutPoint(new TxId($"tx-{objectId}"), 0),
+            new OutPoint(new TxId(txId ?? $"tx-{objectId}"), 0),
             "{}",
             null,
             TransactionDataItemType.BusinessObject,
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow);
+
+    private static string SelectionTestId(IBusinessObjectView item)
+        => $"bo-select-{new string(item.CurrentOutPoint.ToString().Select(character => char.IsLetterOrDigit(character) ? character : '-').ToArray())}";
 }

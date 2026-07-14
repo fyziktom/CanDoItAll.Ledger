@@ -1099,7 +1099,7 @@ public sealed class EfLedgerStore : ILedgerConfirmationStore
             MainAmount = output.MainAmount.Value,
             TokenId = output.Token?.TokenId.Value,
             TokenAmount = output.Token?.Amount.Value,
-            BusinessObjectId = output.BusinessObject?.ObjectId.Value,
+            BusinessObjectId = output.BusinessObject?.LineageKey.Value,
             BusinessObjectVersion = output.BusinessObject?.Version,
             BusinessObjectOperation = output.BusinessObject is null ? null : (int)output.BusinessObject.Operation,
             BusinessObjectDataHash = output.BusinessObject?.DataHash.Value,
@@ -1118,7 +1118,7 @@ public sealed class EfLedgerStore : ILedgerConfirmationStore
             MainAmount = output.MainAmount.Value,
             TokenId = output.Token?.TokenId.Value,
             TokenAmount = output.Token?.Amount.Value,
-            BusinessObjectId = output.BusinessObject?.ObjectId.Value,
+            BusinessObjectId = output.BusinessObject?.LineageKey.Value,
             BusinessObjectVersion = output.BusinessObject?.Version,
             BusinessObjectOperation = output.BusinessObject is null ? null : (int)output.BusinessObject.Operation,
             BusinessObjectDataHash = output.BusinessObject?.DataHash.Value,
@@ -1235,7 +1235,7 @@ public sealed class EfLedgerStore : ILedgerConfirmationStore
             new Address(row.Address),
             ParseAmount(row.MainAmount),
             string.IsNullOrWhiteSpace(row.TokenId) ? null : new TokenTransfer(new TokenId(row.TokenId), ParseAmount(row.TokenAmount ?? 0m)),
-            string.IsNullOrWhiteSpace(row.BusinessObjectId) ? null : new BusinessObjectRef(new BusinessObjectId(row.BusinessObjectId), row.BusinessObjectVersion ?? 0, (BusinessObjectOperation)(row.BusinessObjectOperation ?? 0), new HashHex(row.BusinessObjectDataHash ?? string.Empty)),
+            string.IsNullOrWhiteSpace(row.BusinessObjectId) ? null : new BusinessObjectRef(new BusinessObjectLineageKey(row.BusinessObjectId), row.BusinessObjectVersion ?? 0, (BusinessObjectOperation)(row.BusinessObjectOperation ?? 0), new HashHex(row.BusinessObjectDataHash ?? string.Empty)),
             ToHashHex(row.MetadataHash));
 
     private static UnspentOutput MapUnspentOutput(UnspentOutputRecord row)
@@ -1247,7 +1247,7 @@ public sealed class EfLedgerStore : ILedgerConfirmationStore
             new Address(row.Address),
             ParseAmount(row.MainAmount),
             string.IsNullOrWhiteSpace(row.TokenId) ? null : new TokenTransfer(new TokenId(row.TokenId), ParseAmount(row.TokenAmount ?? 0m)),
-            string.IsNullOrWhiteSpace(row.BusinessObjectId) ? null : new BusinessObjectRef(new BusinessObjectId(row.BusinessObjectId), row.BusinessObjectVersion ?? 0, (BusinessObjectOperation)(row.BusinessObjectOperation ?? 0), new HashHex(row.BusinessObjectDataHash ?? string.Empty)),
+            string.IsNullOrWhiteSpace(row.BusinessObjectId) ? null : new BusinessObjectRef(new BusinessObjectLineageKey(row.BusinessObjectId), row.BusinessObjectVersion ?? 0, (BusinessObjectOperation)(row.BusinessObjectOperation ?? 0), new HashHex(row.BusinessObjectDataHash ?? string.Empty)),
             row.CreatedAt);
 
     private static SpentOutput MapSpentOutput(SpentOutputRecord row)

@@ -27,9 +27,12 @@
                   Gap="LayoutGap.Medium"
                   AlignItems="AlignItems.Start"
                   Class="cda-transaction-detail-grid">
-            <FormSection Title="Object identity" Description="The generated object ID is preloaded and can be replaced with your naming convention.">
+            <FormSection Title="Object definition" Description="Type and schema describe the payload. The canonical object ID comes from its confirmed output.">
                 <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-                    @RenderTextField("Object ID", ActiveDraft.ObjectId.Value, SetObjectIdAsync, "bo:purchase-order:1043", "bo-create-object-id")
+                    <div class="cda-economy-fact cda-economy-fact--wide" data-testid="bo-create-object-id-pending">
+                        <span>Business object ID</span>
+                        <strong>Assigned after confirmation</strong>
+                    </div>
                     @RenderTextField("Object type", ActiveDraft.ObjectType, SetObjectTypeAsync, "purchase-order", "bo-create-object-type")
                     @RenderTextField("Schema version", ActiveDraft.SchemaVersion, SetSchemaVersionAsync, "1.0", "bo-create-schema")
                     <TransactionAddressInput Label="Owner address"
@@ -173,9 +176,6 @@
 
     private Task NotifyReviewReadyAsync()
         => ReviewReadyChanged.InvokeAsync(currentStep == 2);
-
-    private Task SetObjectIdAsync(string? value)
-        => UpdateDraftAsync(ActiveDraft with { ObjectId = new BusinessObjectId(value?.Trim() ?? string.Empty) });
 
     private Task SetObjectTypeAsync(string? value)
         => UpdateDraftAsync(ActiveDraft with { ObjectType = value ?? string.Empty });

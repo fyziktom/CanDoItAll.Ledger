@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.BusinessObjects;
@@ -55,7 +56,8 @@ public sealed record LedgerBusinessObjectHolding(
     string SchemaVersion = "1.0",
     string? StateJson = null,
     string? ExternalRef = null,
-    TransactionDataItemType ItemType = TransactionDataItemType.BusinessObject);
+    TransactionDataItemType ItemType = TransactionDataItemType.BusinessObject,
+    IReadOnlyList<BusinessObjectDataReference>? References = null);
 
 public sealed record LedgerTokenType(
     TokenId TokenId,
@@ -118,13 +120,37 @@ public sealed record LedgerTransactionInputSummary
     public HashHex? SignaturePayloadHash { get; init; }
 }
 
+/// <summary>
+/// Public identity and immutable version metadata for a BusinessObject transaction output.
+/// The object id is always the containing transaction output's canonical outpoint.
+/// </summary>
+public sealed record LedgerBusinessObjectOutputDetails(
+    BusinessObjectId ObjectId,
+    int Version,
+    BusinessObjectOperation Operation,
+    HashHex DataHash);
+
 public sealed record LedgerTransactionOutputSummary(
     int OutputIndex,
     Address Address,
     Amount MainAmount,
     TokenTransfer? Token = null,
-    BusinessObjectRef? BusinessObject = null,
-    HashHex? MetadataHash = null);
+    [property: JsonIgnore] BusinessObjectRef? BusinessObject = null,
+    HashHex? MetadataHash = null,
+    [property: JsonPropertyName("businessObject")] LedgerBusinessObjectOutputDetails? BusinessObjectDetails = null)
+{
+    [JsonIgnore]
+    public bool HasBusinessObject => BusinessObject is not null || BusinessObjectDetails is not null;
+
+    [JsonIgnore]
+    public int? BusinessObjectVersion => BusinessObjectDetails?.Version ?? BusinessObject?.Version;
+
+    [JsonIgnore]
+    public BusinessObjectOperation? BusinessObjectOperation => BusinessObjectDetails?.Operation ?? BusinessObject?.Operation;
+
+    [JsonIgnore]
+    public HashHex? BusinessObjectDataHash => BusinessObjectDetails?.DataHash ?? BusinessObject?.DataHash;
+}
 
 public sealed record LedgerTransactionSummary(
     LedgerAccountContext Context,

@@ -584,7 +584,6 @@
                     <FormField Text="Main amount"><InputText class="@FieldInputClass" @bind-Value="mintForm.MainAmount" /></FormField>
                     <FormField Text="Token id"><InputText class="@FieldInputClass" @bind-Value="mintForm.TokenId" /></FormField>
                     <FormField Text="Token amount"><InputText class="@FieldInputClass" @bind-Value="mintForm.TokenAmount" /></FormField>
-                    <FormField Text="Business object id"><InputText class="@FieldInputClass" @bind-Value="mintForm.BusinessObjectId" /></FormField>
                 </Grid>
                 <Button Text="Submit mint" Icon="add_circle" Type="submit" />
             </Stack>
@@ -764,7 +763,7 @@
                     TransactionDataItemType.TokenMetadata.ToString(),
                     "{\"source\":\"node-console\",\"action\":\"mint\"}",
                     null,
-                    EmptyToNull(mintForm.BusinessObjectId),
+                    null,
                     null),
                 CancellationToken.None).ConfigureAwait(false);
             statusMessage = $"Mint accepted: {receipt.TxId}.";
@@ -973,7 +972,6 @@
         public string MainAmount { get; set; } = "0";
         public string TokenId { get; set; } = "messages.demo";
         public string TokenAmount { get; set; } = "25";
-        public string BusinessObjectId { get; set; } = string.Empty;
     }
 
     private sealed class TransferForm

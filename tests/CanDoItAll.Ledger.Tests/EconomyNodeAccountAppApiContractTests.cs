@@ -73,6 +73,137 @@ public sealed class EconomyNodeAccountAppApiContractTests
     }
 
     [Fact]
+    public async Task NodeClient_SpendableBoundary_PreservesExplicitLineageWithoutTreatingItAsPublicId()
+    {
+        var handler = new CapturingHandler();
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://node.example/") };
+        using var client = new EconomyNodeLedgerClient(httpClient);
+        var txId = new TxId(new string('a', 64));
+        var outPoint = new OutPoint(txId, 2);
+        BusinessObjectId objectId = BusinessObjectId.FromOutPoint(outPoint);
+        var lineageKey = new BusinessObjectLineageKey("lineage:client-required-correlation");
+        var dataHash = new HashHex(new string('b', 64));
+        var query = new LedgerAddressQuery(Context, AccountAddress);
+
+        handler.QueueJson(
+            HttpStatusCode.OK,
+            new[]
+            {
+                new EconomyNodeSpendableOutput(
+                    Context,
+                    new OutPointKey(new HashHex(new string('c', 64))),
+                    outPoint,
+                    AccountAddress,
+                    Amount.Zero,
+                    null,
+                    new EconomyNodeSpendableBusinessObjectDetails(
+                        objectId,
+                        lineageKey,
+                        3,
+                        BusinessObjectOperation.Update,
+                        dataHash),
+                    DateTimeOffset.Parse("2026-07-11T12:00:00Z"))
+            });
+
+        LedgerSpendableOutput output = Assert.Single(
+            await client.GetSpendableOutputsAsync(query, CancellationToken.None));
+
+        Assert.Equal(outPoint, output.OutPoint);
+        Assert.Equal(lineageKey, Assert.IsType<BusinessObjectRef>(output.BusinessObject).LineageKey);
+        Assert.Equal(3, output.BusinessObject!.Version);
+        Assert.Equal(dataHash, output.BusinessObject.DataHash);
+        Assert.DoesNotContain(
+            $"\"objectId\":{{\"value\":\"{lineageKey.Value}\"}}",
+            handler.Responses.Single(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task NodeClient_TransactionBoundary_MapsCanonicalDetailsWithoutInventingLineage()
+    {
+        var handler = new CapturingHandler();
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://node.example/") };
+        using var client = new EconomyNodeLedgerClient(httpClient);
+        var txId = new TxId(new string('d', 64));
+        BusinessObjectId objectId = BusinessObjectId.FromOutPoint(txId, 1);
+        var dataHash = new HashHex(new string('e', 64));
+        var publicSummary = new EconomyNodeLedgerTransactionSummary(
+            Context,
+            txId,
+            TransactionKind.BusinessObject,
+            TransactionStatus.Confirmed,
+            DateTimeOffset.Parse("2026-07-11T12:10:00Z"),
+            [],
+            [AccountAddress],
+            [],
+            [
+                new EconomyNodeLedgerTransactionOutputSummary(
+                    1,
+                    AccountAddress,
+                    Amount.Zero,
+                    null,
+                    new LedgerBusinessObjectOutputDetails(
+                        objectId,
+                        2,
+                        BusinessObjectOperation.Update,
+                        dataHash))
+            ]);
+        handler.QueueJson(HttpStatusCode.OK, publicSummary);
+
+        LedgerTransactionSummary summary = Assert.IsType<LedgerTransactionSummary>(
+            await client.GetTransactionAsync(Context, txId, includeData: true, CancellationToken.None));
+        LedgerTransactionOutputSummary output = Assert.Single(summary.Outputs);
+
+        Assert.Null(output.BusinessObject);
+        LedgerBusinessObjectOutputDetails details = Assert.IsType<LedgerBusinessObjectOutputDetails>(
+            output.BusinessObjectDetails);
+        Assert.Equal(objectId, details.ObjectId);
+        Assert.Equal(2, details.Version);
+        Assert.Equal(dataHash, details.DataHash);
+        Assert.DoesNotContain("lineage", handler.Responses.Single(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task NodeClient_TransactionBoundary_RejectsBusinessObjectIdFromAnotherOutput()
+    {
+        var handler = new CapturingHandler();
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://node.example/") };
+        using var client = new EconomyNodeLedgerClient(httpClient);
+        var txId = new TxId(new string('f', 64));
+        const int outputIndex = 1;
+        BusinessObjectId expectedObjectId = BusinessObjectId.FromOutPoint(txId, outputIndex);
+        var foreignObjectId = new BusinessObjectId($"{new string('0', 64)}:{outputIndex}");
+        var publicSummary = new EconomyNodeLedgerTransactionSummary(
+            Context,
+            txId,
+            TransactionKind.BusinessObject,
+            TransactionStatus.Confirmed,
+            DateTimeOffset.Parse("2026-07-11T12:15:00Z"),
+            [],
+            [AccountAddress],
+            [],
+            [
+                new EconomyNodeLedgerTransactionOutputSummary(
+                    outputIndex,
+                    AccountAddress,
+                    Amount.Zero,
+                    null,
+                    new LedgerBusinessObjectOutputDetails(
+                        foreignObjectId,
+                        1,
+                        BusinessObjectOperation.Create,
+                        new HashHex(new string('1', 64))))
+            ]);
+        handler.QueueJson(HttpStatusCode.OK, publicSummary);
+
+        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.GetTransactionAsync(Context, txId, includeData: true, CancellationToken.None));
+
+        Assert.Contains(foreignObjectId.Value, exception.Message, StringComparison.Ordinal);
+        Assert.Contains(expectedObjectId.Value, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserNodeDriverRegistration_ExposesLedgerClientsWithoutStaticSecrets()
     {
         var services = new ServiceCollection();
@@ -201,9 +332,12 @@ public sealed class EconomyNodeAccountAppApiContractTests
 
         public List<CapturedRequest> Requests { get; } = [];
 
+        public List<string> Responses { get; } = [];
+
         public void QueueJson<T>(HttpStatusCode statusCode, T value)
         {
             string json = JsonSerializer.Serialize(value, JsonOptions);
+            Responses.Add(json);
             responses.Enqueue(new HttpResponseMessage(statusCode)
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")

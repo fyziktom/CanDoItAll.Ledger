@@ -185,7 +185,7 @@ public abstract class MediaBusinessObjectCaster(ITimeProvider timeProvider) : IB
 
     public ValueTask<IBusinessObjectView> CastAsync(BusinessObjectCastSource source, CancellationToken cancellationToken)
     {
-        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, source.ObjectId.Value);
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, "Untitled");
         return ValueTask.FromResult<IBusinessObjectView>(CreateView(source, payload, timeProvider.UtcNow));
     }
 }

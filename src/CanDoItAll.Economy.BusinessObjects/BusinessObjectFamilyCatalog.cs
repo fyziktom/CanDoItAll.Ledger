@@ -547,7 +547,7 @@ public sealed class GenericTypedBusinessObjectCaster(ITimeProvider timeProvider)
     public ValueTask<IBusinessObjectView> CastAsync(BusinessObjectCastSource source, CancellationToken cancellationToken)
     {
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(source.ObjectType);
-        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, source.ObjectId.Value);
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, "Untitled");
         IReadOnlyDictionary<string, string> fields = BusinessObjectPayloadBuilder.NormalizeFields(definition, payload.Fields);
         IReadOnlyList<BusinessObjectDisplayFact> facts = BusinessObjectPayloadBuilder.CreateFacts(definition, fields);
 

@@ -106,7 +106,7 @@ public sealed class TransactionShapeValidator
 
             if (output.BusinessObject is not null)
             {
-                ValidateIdentifier(errors, output.BusinessObject.ObjectId.Value, LedgerValidationLimits.MaxBusinessObjectIdLength, $"output {output.OutputIndex} business object id");
+                ValidateIdentifier(errors, output.BusinessObject.LineageKey.Value, LedgerValidationLimits.MaxBusinessObjectIdLength, $"output {output.OutputIndex} business object lineage key");
                 ValidateHash(errors, output.BusinessObject.DataHash.Value, $"output {output.OutputIndex} business object data hash");
             }
 

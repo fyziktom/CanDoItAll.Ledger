@@ -113,11 +113,11 @@ public sealed class EconomyNodeLedgerClient : ILedgerGateway, ILedgerReadClient,
         LedgerAddressQuery query,
         CancellationToken cancellationToken)
     {
-        List<LedgerSpendableOutput> outputs = await GetRequiredAsync<List<LedgerSpendableOutput>>(
+        List<EconomyNodeSpendableOutput> outputs = await GetRequiredAsync<List<EconomyNodeSpendableOutput>>(
             BuildAccountPath(query, "spendable-outputs"),
             cancellationToken).ConfigureAwait(false);
 
-        return outputs;
+        return outputs.Select(ToLedgerSpendableOutput).ToArray();
     }
 
     public async Task<LedgerAccountBalance> GetBalanceAsync(
@@ -151,11 +151,11 @@ public sealed class EconomyNodeLedgerClient : ILedgerGateway, ILedgerReadClient,
         bool includeData,
         CancellationToken cancellationToken)
     {
-        List<LedgerTransactionSummary> transactions = await GetRequiredAsync<List<LedgerTransactionSummary>>(
+        List<EconomyNodeLedgerTransactionSummary> transactions = await GetRequiredAsync<List<EconomyNodeLedgerTransactionSummary>>(
             BuildAccountPath(query, "transactions", includeData),
             cancellationToken).ConfigureAwait(false);
 
-        return transactions;
+        return transactions.Select(ToLedgerTransactionSummary).ToArray();
     }
 
     public async Task<LedgerState?> GetLedgerStateAsync(
@@ -199,7 +199,10 @@ public sealed class EconomyNodeLedgerClient : ILedgerGateway, ILedgerReadClient,
             return null;
         }
 
-        return await ReadRequiredAsync<LedgerTransactionSummary>(response, cancellationToken).ConfigureAwait(false);
+        EconomyNodeLedgerTransactionSummary summary = await ReadRequiredAsync<EconomyNodeLedgerTransactionSummary>(
+            response,
+            cancellationToken).ConfigureAwait(false);
+        return ToLedgerTransactionSummary(summary);
     }
 
     public async Task<LedgerBusinessObjectHolding?> GetBusinessObjectAsync(
@@ -248,12 +251,14 @@ public sealed class EconomyNodeLedgerClient : ILedgerGateway, ILedgerReadClient,
             query.Skip,
             query.Take);
 
-        List<LedgerTransactionSummary> transactions = await PostRequiredAsync<LedgerTransactionQueryRequest, List<LedgerTransactionSummary>>(
+        List<EconomyNodeLedgerTransactionSummary> transactions = await PostRequiredAsync<
+            LedgerTransactionQueryRequest,
+            List<EconomyNodeLedgerTransactionSummary>>(
             BuildLedgerPath(query.Context, "transactions/query", includeScenario: false),
             request,
             cancellationToken).ConfigureAwait(false);
 
-        return transactions;
+        return transactions.Select(ToLedgerTransactionSummary).ToArray();
     }
 
     public async Task<EconomyNodeTransactionDetails?> GetTransactionAsync(
@@ -345,6 +350,80 @@ public sealed class EconomyNodeLedgerClient : ILedgerGateway, ILedgerReadClient,
         }
 
         return request;
+    }
+
+    private static LedgerSpendableOutput ToLedgerSpendableOutput(EconomyNodeSpendableOutput output)
+    {
+        BusinessObjectRef? businessObject = null;
+        if (output.BusinessObject is { } details)
+        {
+            BusinessObjectId expectedObjectId = BusinessObjectId.FromOutPoint(output.OutPoint);
+            if (details.ObjectId != expectedObjectId)
+            {
+                throw new InvalidOperationException(
+                    $"Economy node returned BusinessObject id {details.ObjectId.Value} for output {output.OutPoint}; expected {expectedObjectId.Value}.");
+            }
+
+            businessObject = new BusinessObjectRef(
+                details.LineageKey,
+                details.Version,
+                details.Operation,
+                details.DataHash);
+        }
+
+        return new LedgerSpendableOutput(
+            output.Context,
+            output.OutPointKey,
+            output.OutPoint,
+            output.Address,
+            output.MainAmount,
+            output.Token,
+            businessObject,
+            output.CreatedAt);
+    }
+
+    private static LedgerTransactionSummary ToLedgerTransactionSummary(
+        EconomyNodeLedgerTransactionSummary summary)
+        => new(
+            summary.Context,
+            summary.TxId,
+            summary.Kind,
+            summary.Status,
+            summary.Timestamp,
+            summary.InputAddresses,
+            summary.OutputAddresses,
+            summary.Inputs,
+            summary.Outputs
+                .Select(output => new LedgerTransactionOutputSummary(
+                    output.OutputIndex,
+                    output.Address,
+                    output.MainAmount,
+                     output.Token,
+                     BusinessObject: null,
+                     MetadataHash: output.MetadataHash,
+                     BusinessObjectDetails: ValidateTransactionBusinessObjectDetails(summary.TxId, output)))
+                .ToArray(),
+            summary.Data,
+            summary.LedgerSequence);
+
+    private static LedgerBusinessObjectOutputDetails? ValidateTransactionBusinessObjectDetails(
+        TxId transactionId,
+        EconomyNodeLedgerTransactionOutputSummary output)
+    {
+        if (output.BusinessObject is not { } details)
+        {
+            return null;
+        }
+
+        BusinessObjectId expectedObjectId = BusinessObjectId.FromOutPoint(transactionId, output.OutputIndex);
+        if (details.ObjectId != expectedObjectId)
+        {
+            throw new InvalidOperationException(
+                $"Economy node returned BusinessObject id {details.ObjectId.Value} for transaction output " +
+                $"{transactionId.Value}:{output.OutputIndex}; expected {expectedObjectId.Value}.");
+        }
+
+        return details;
     }
 
     private string BuildAccountPath(

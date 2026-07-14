@@ -125,9 +125,8 @@ public sealed class TransactionFlowFoundationTests : TestContext
         BusinessObjectTransactionDraft draft = CreateDraft() with
         {
             SelectedMode = BusinessObjectTransactionMode.MergeObjects,
-            SourceObjectId = first.ObjectId,
-            SecondObjectId = second.ObjectId,
-            TargetObjectId = new BusinessObjectId("bo:merged:1")
+            SourceObjectId = BusinessObjectId.FromOutPoint(first.CurrentOutPoint),
+            SecondObjectId = BusinessObjectId.FromOutPoint(second.CurrentOutPoint)
         };
 
         TransactionFlowValidation validation = TransactionDraftValidator.Validate(
@@ -363,7 +362,6 @@ public sealed class TransactionFlowFoundationTests : TestContext
             SelectedMode = BusinessObjectTransactionMode.CloneObject,
             SourceObjectId = new BusinessObjectId("bo:stale:source"),
             SecondObjectId = new BusinessObjectId("bo:stale:second"),
-            TargetObjectId = new BusinessObjectId("bo:stale:target"),
             ExternalRef = "clone://stale-source",
             SecondaryPaymentAmount = Amount.FromInt64(2),
             SelectedUtxos = [staleOutPoint],
@@ -382,7 +380,6 @@ public sealed class TransactionFlowFoundationTests : TestContext
         Assert.Equal(BusinessObjectTransactionMode.SplitBusinessObjectPayment, captured!.SelectedMode);
         Assert.Null(captured.SourceObjectId);
         Assert.Null(captured.SecondObjectId);
-        Assert.Null(captured.TargetObjectId);
         Assert.Equal(string.Empty, captured.ExternalRef);
         Assert.Null(captured.SecondaryPaymentAmount);
         Assert.Empty(captured.SelectedUtxosOrEmpty);
@@ -592,7 +589,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             .Add(value => value.Items, new[] { item })
             .Add(value => value.SelectedChanged, EventCallback.Factory.Create<IReadOnlyList<IBusinessObjectView>>(this, value => selected = value)));
 
-        IElement card = component.Find("[data-testid='bo-select-bo-order-1']");
+        IElement card = component.Find($"[data-testid='{SelectionTestId(item)}']");
         Assert.Contains("purchase-order", card.TextContent, StringComparison.Ordinal);
         Assert.Contains("v1", card.TextContent, StringComparison.Ordinal);
         Assert.DoesNotContain("v@Item.Version", card.TextContent, StringComparison.Ordinal);
@@ -600,7 +597,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
         card.QuerySelector("button")!.Click();
 
         Assert.NotNull(selected);
-        Assert.Equal(item.ObjectId, Assert.Single(selected).ObjectId);
+        Assert.Equal(item.CurrentOutPoint, Assert.Single(selected).CurrentOutPoint);
     }
 
     [Fact]
@@ -615,7 +612,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
 
         IReadOnlyList<IElement> cards = component.FindAll("[data-testid^='bo-select-']");
         Assert.Single(cards);
-        Assert.Contains("bo:ticket:1", cards[0].TextContent, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(ticket.CurrentOutPoint.ToString(), cards[0].TextContent, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -629,9 +626,9 @@ public sealed class TransactionFlowFoundationTests : TestContext
             .Add(value => value.MaximumSelections, 2)
             .Add(value => value.RequireCompatibleSelection, true));
 
-        component.Find("[data-testid='bo-select-bo-order-1'] button").Click();
+        component.Find($"[data-testid='{SelectionTestId(order)}'] button").Click();
 
-        IElement incompatible = component.Find("[data-testid='bo-select-bo-ticket-1']");
+        IElement incompatible = component.Find($"[data-testid='{SelectionTestId(ticket)}']");
         Assert.True(incompatible.QuerySelector("button")!.HasAttribute("disabled"));
         Assert.Contains("Different object type or schema", incompatible.TextContent, StringComparison.OrdinalIgnoreCase);
         Assert.True(component.Find("[data-testid='bo-picker-confirm']").HasAttribute("disabled"));
@@ -740,4 +737,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             TransactionDataItemType.BusinessObject,
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow);
+
+    private static string SelectionTestId(IBusinessObjectView item)
+        => $"bo-select-{new string(item.CurrentOutPoint.ToString().Select(character => char.IsLetterOrDigit(character) ? character : '-').ToArray())}";
 }

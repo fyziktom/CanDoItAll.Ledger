@@ -93,6 +93,7 @@ public static partial class EconomyNodeHost
             new MainCurrencyIssuancePolicyOptions { TreasuryAdminAddress = treasuryAdminAccount.Address }));
         services.AddScoped<InputReferenceValidator>();
         services.AddScoped<BusinessObjectTransitionValidator>();
+        services.AddScoped<BusinessObjectReferenceValidator>();
         services.AddScoped<InputSignatureValidator>();
         services.AddScoped<AssetConservationValidator>();
         services.AddScoped<LedgerTransactionValidationPipeline>();

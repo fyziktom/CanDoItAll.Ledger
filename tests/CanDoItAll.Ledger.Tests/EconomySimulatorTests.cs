@@ -124,7 +124,7 @@ public sealed class EconomySimulatorTests
             new Dictionary<string, string>());
 
         string json = serializer.Serialize(state);
-        EconomySimulatorBusinessObjectCommandDraft draft = serializer.CreateDraft(new BusinessObjectId("esm:project-alpha"), EconomySimulatorObjectTypes.Model, state);
+        EconomySimulatorBusinessObjectCommandDraft draft = serializer.CreateDraft(EconomySimulatorObjectTypes.Model, state);
 
         Assert.Contains(EconomySimulatorObjectTypes.Model, EconomySimulatorObjectTypeCatalog.Instance.ObjectTypes);
         Assert.Equal(EconomySimulatorObjectTypes.Model, draft.ObjectType);

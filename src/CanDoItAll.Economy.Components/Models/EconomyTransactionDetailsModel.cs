@@ -21,7 +21,7 @@ public sealed record EconomyTransactionInputDetails(
     Address Address,
     Amount? MainAmount,
     TokenTransfer? Token,
-    BusinessObjectRef? BusinessObject,
+    EconomyTransactionBusinessObjectDetails? BusinessObject,
     SignatureBundle SignatureBundle,
     HashHex? SignaturePayloadHash = null,
     OutPointKey? OutPointKey = null)
@@ -34,5 +34,15 @@ public sealed record EconomyTransactionOutputDetails(
     Address Address,
     Amount MainAmount,
     TokenTransfer? Token,
-    BusinessObjectRef? BusinessObject,
+    EconomyTransactionBusinessObjectDetails? BusinessObject,
     HashHex? MetadataHash);
+
+/// <summary>
+/// BusinessObject protocol metadata shown by transaction UI. Public identity is deliberately
+/// absent: an input BO id is its previous outpoint and an output BO id is the transaction
+/// outpoint, so UI adapters never need to reconstruct or expose the internal lineage key.
+/// </summary>
+public sealed record EconomyTransactionBusinessObjectDetails(
+    int Version,
+    BusinessObjectOperation Operation,
+    HashHex DataHash);

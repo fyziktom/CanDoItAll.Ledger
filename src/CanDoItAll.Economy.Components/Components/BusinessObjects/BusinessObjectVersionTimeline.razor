@@ -30,9 +30,10 @@
                     Icon = "inventory_2",
                     Tone = "success"
                 },
-                .. LedgerTransactionOrdering.NewestFirst(Transactions
-                    .Where(item => item.Outputs.Any(output => output.BusinessObject?.ObjectId == Object.ObjectId))
-                )
+                .. LedgerTransactionOrdering.NewestFirst(BusinessObjectTransactionHistory
+                    .SelectVersions(Object.ObjectId, Transactions)
+                    .Select(version => version.Transaction)
+                    .DistinctBy(transaction => transaction.TxId))
                     .Select(item => new TimelineItem
                     {
                         Label = item.TxId.Value,

@@ -46,7 +46,9 @@
         => Object is null
             ? []
             : LedgerTransactionOrdering
-                .NewestFirst(Transactions.Where(item => item.Outputs.Any(output => output.BusinessObject?.ObjectId == Object.ObjectId)
-                    || item.TxId.Equals(Object.CurrentOutPoint.TxId)))
+                .NewestFirst(BusinessObjectTransactionHistory
+                    .SelectVersions(Object.ObjectId, Transactions)
+                    .Select(version => version.Transaction)
+                    .DistinctBy(transaction => transaction.TxId))
                 .ToArray();
 }

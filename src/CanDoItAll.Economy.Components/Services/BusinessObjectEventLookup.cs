@@ -51,20 +51,24 @@ internal static class BusinessObjectEventLookup
 
         LedgerBusinessObjectHolding? holding = null;
         string lookupMode = "BusinessObject id";
+        var requestedObjectId = new BusinessObjectId(normalized);
 
-        try
+        if (requestedObjectId.IsCanonicalOutPointId())
         {
-            holding = await getBusinessObjectAsync(
-                new LedgerBusinessObjectQuery(
-                    context,
-                    ObjectId: new BusinessObjectId(normalized),
-                    ObjectType: "event",
-                    Take: 1),
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (IsLookupMiss(exception))
-        {
-            holding = null;
+            try
+            {
+                holding = await getBusinessObjectAsync(
+                    new LedgerBusinessObjectQuery(
+                        context,
+                        ObjectId: requestedObjectId,
+                        ObjectType: "event",
+                        Take: 1),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (IsLookupMiss(exception))
+            {
+                holding = null;
+            }
         }
 
         if (holding is null)
@@ -78,9 +82,9 @@ internal static class BusinessObjectEventLookup
                     true,
                     cancellationToken).ConfigureAwait(false);
                 BusinessObjectId? objectId = transaction?.Outputs
-                    .Where(output => output.BusinessObject is not null)
+                    .Where(output => output.HasBusinessObject)
                     .OrderBy(output => output.OutputIndex)
-                    .Select(output => output.BusinessObject!.ObjectId)
+                    .Select(output => BusinessObjectId.FromOutPoint(transaction.TxId, output.OutputIndex))
                     .FirstOrDefault();
 
                 if (objectId is not null)

@@ -34,7 +34,7 @@
     </div>
     @if (Output.BusinessObject is not null)
     {
-        <small class="cda-sdk-muted">BO <CopyableMonoValue Value="@Output.BusinessObject.ObjectId.Value" Truncate="false" AriaLabel="Copy business object id" /> v@(Output.BusinessObject.Version) (@Output.BusinessObject.Operation)</small>
+        <small class="cda-sdk-muted">BO <CopyableMonoValue Value="@OutputBusinessObjectId" Truncate="false" AriaLabel="Copy business object UTXO id" /> v@(Output.BusinessObject.Version) (@Output.BusinessObject.Operation)</small>
     }
     @if (!string.IsNullOrWhiteSpace(SupportingText))
     {
@@ -47,6 +47,9 @@
     public EconomyTransactionOutputDetails Output { get; set; } = default!;
 
     [Parameter]
+    public TxId? TransactionId { get; set; }
+
+    [Parameter]
     public string? RoleLabel { get; set; }
 
     [Parameter]
@@ -57,4 +60,9 @@
 
     private static string FormatToken(TokenTransfer? token)
         => token is null ? "none" : $"{token.Amount} {token.TokenId.Value}";
+
+    private string OutputBusinessObjectId
+        => TransactionId is { } txId
+            ? BusinessObjectId.FromOutPoint(txId, Output.OutputIndex).Value
+            : "Assigned after confirmation";
 }

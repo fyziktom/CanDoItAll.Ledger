@@ -284,7 +284,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             dataItems ?? [],
             fields);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
-        BusinessObjectId objectId = new($"bo:{objectType}:{BusinessObjectCreateIdFactory.NormalizeName(name)}");
+        BusinessObjectId objectId = ConfirmedObjectId($"{objectType}:{BusinessObjectDisplaySlug.Normalize(name)}");
 
         return new GenericTypedBusinessObjectView(
             Context,
@@ -295,7 +295,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             Alice,
             BusinessObjectOperation.Create,
             new HashHex(new string('8', 64)),
-            new OutPoint(new TxId($"tx-{objectType}-{BusinessObjectCreateIdFactory.NormalizeName(name)}"), 0),
+            objectId.RequireOutPoint(),
             stateJson,
             $"ledger://{objectId.Value}",
             TransactionDataItemType.BusinessObject,
@@ -316,9 +316,8 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
 
     private static async Task<ICommerceBusinessObjectView> CreatePaymentObjectAsync(IBusinessObjectView targetObject)
     {
-        BusinessObjectId paymentId = new("bo:payment:detail-layout");
+        BusinessObjectId paymentId = ConfirmedObjectId("payment:detail-layout");
         BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
-            paymentId,
             Bob,
             Alice,
             targetObject.ObjectId,
@@ -326,7 +325,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             targetOutPoint: targetObject.CurrentOutPoint,
             Amount.FromInt64(25),
             BusinessObjectSaleMode.Original,
-            new TxId("tx-payment-detail-layout"),
+            paymentId.RequireOutPoint().TxId,
             Now);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
             BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
@@ -352,11 +351,17 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             owner,
             BusinessObjectOperation.Create,
             new HashHex(new string('9', 64)),
-            new OutPoint(new TxId($"tx-{objectType}-{BusinessObjectCreateIdFactory.NormalizeName(objectId.Value)}"), 0),
+            objectId.RequireOutPoint(),
             stateJson,
             $"ledger://{objectId.Value}",
             TransactionDataItemType.BusinessObject,
             Now);
+
+    private static BusinessObjectId ConfirmedObjectId(string seed)
+    {
+        byte[] hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(seed));
+        return BusinessObjectId.FromOutPoint(new TxId(Convert.ToHexString(hash).ToLowerInvariant()), 0);
+    }
 
     private static BusinessObjectWorkspaceModel CreateWorkspace(params IBusinessObjectView[] businessObjects)
     {

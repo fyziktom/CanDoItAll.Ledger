@@ -62,6 +62,13 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     public async Task HomeBalances_ShowOnlyRealTokenSourcesInsideBalancesCard()
     {
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        LedgerSpendableOutput tokenSource = Assert.Single(
+            workspace.SpendableOutputsOrEmpty,
+            output => output.Token?.TokenId.Value == "USD-CREDIT"
+                && output.BusinessObject is null);
+        IReadOnlyList<LedgerSpendableOutput> businessObjectBackedSources = workspace.SpendableOutputsOrEmpty
+            .Where(output => output.BusinessObject is not null)
+            .ToArray();
 
         IRenderedComponent<EconomyAccountWorkspace> home =
             RenderComponent<EconomyAccountWorkspace>(parameters => parameters
@@ -72,10 +79,16 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
         Assert.Contains("Balances", home.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain(">Token Sources<", home.Markup, StringComparison.Ordinal);
         home.WaitForAssertion(() => Assert.Contains("Source UTXOs", home.Markup, StringComparison.Ordinal));
-        Assert.Contains("tx-token-source", home.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("tx-permission-source", home.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("tx-rule-permission-source", home.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("tx-rule-cashpool", home.Markup, StringComparison.Ordinal);
+        Assert.Contains(
+            FormatCopyableValue(tokenSource.OutPoint.ToString(), startChars: 8, endChars: 6),
+            home.Markup,
+            StringComparison.Ordinal);
+        Assert.All(
+            businessObjectBackedSources,
+            output => Assert.DoesNotContain(
+                FormatCopyableValue(output.OutPoint.ToString(), startChars: 8, endChars: 6),
+                home.Markup,
+                StringComparison.Ordinal));
     }
 
     [Fact]
@@ -148,4 +161,9 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
         string label = home.Find($"[data-testid='{testId}'] .rz-button-text").TextContent.Trim();
         Assert.Equal(expectedLabel, label);
     }
+
+    private static string FormatCopyableValue(string value, int startChars, int endChars)
+        => value.Length <= startChars + endChars + 3
+            ? value
+            : $"{value[..startChars]}...{value[^endChars..]}";
 }

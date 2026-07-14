@@ -98,7 +98,8 @@
         "Sample signature verified.",
         "{\"alg\":\"EcdsaP256Sha256\",\"kid\":\"operations-primary\"}");
 
-    private IBusinessObjectView selectedObject => workspace.BusinessObjects.First(item => item.ObjectId.Value == "bo:purchase-order:1042");
+    private IBusinessObjectView selectedObject => workspace.BusinessObjects.First(item =>
+        item.ObjectType.Equals("purchase-order", StringComparison.OrdinalIgnoreCase));
     private string selectedObjectState => selectedObject.StateJson ?? "{}";
     private const string previousObjectState = "{\"supplier\":\"Acme Metals\",\"amount\":42000,\"status\":\"draft\"}";
 

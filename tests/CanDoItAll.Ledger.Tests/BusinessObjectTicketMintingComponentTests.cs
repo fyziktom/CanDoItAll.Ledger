@@ -221,9 +221,12 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             Assert.Equal(SubAccount, draft.OwnerAddress);
             Assert.Equal(SubAccount, draft.ReceiverAddress);
             Assert.Equal(SubAccount, draft.PaymentReceiverAddress);
-            Assert.StartsWith("bo:ticket:new-ticket-", draft.ObjectId.Value, StringComparison.Ordinal);
+            Assert.Equal(default, draft.ObjectId);
         });
-        Assert.Equal(5, batch.Drafts.Select(draft => draft.ObjectId).Distinct().Count());
+        Assert.Equal(5, batch.Drafts.Select(draft => draft.ExternalRef).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(
+            Enumerable.Range(0, 5),
+            Enumerable.Range(0, 5).Select(index => batch.CorrelationFor(index).DraftIndex));
         Assert.Equal(
             ["ticket-001", "ticket-002", "ticket-003", "ticket-004", "ticket-005"],
             batch.Drafts
@@ -263,6 +266,8 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
         BusinessObjectBatchTransactionRequest batch = Assert.Single(stagedBatches);
         Assert.Equal(3, batch.Drafts.Count);
         Assert.All(batch.Drafts, draft => Assert.Equal(Bob, draft.OwnerAddress));
+        Assert.All(batch.Drafts, draft => Assert.Equal(default, draft.ObjectId));
+        Assert.Equal(3, batch.Drafts.Select(draft => draft.ExternalRef).Distinct(StringComparer.Ordinal).Count());
     }
 
     private static ITypedBusinessObjectView CreateEvent(string name)
@@ -293,7 +298,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             [],
             fields);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
-        var objectId = new BusinessObjectId($"bo:{objectType}:{BusinessObjectCreateIdFactory.NormalizeName(name)}");
+        var objectId = new BusinessObjectId($"bo:{objectType}:{BusinessObjectDisplaySlug.Normalize(name)}");
 
         return new GenericTypedBusinessObjectView(
             Context,
@@ -304,7 +309,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             Alice,
             BusinessObjectOperation.Create,
             new HashHex(new string('7', 64)),
-            new OutPoint(new TxId($"tx-{objectType}-{BusinessObjectCreateIdFactory.NormalizeName(name)}"), 0),
+            new OutPoint(new TxId($"tx-{objectType}-{BusinessObjectDisplaySlug.Normalize(name)}"), 0),
             stateJson,
             $"ledger://{objectId.Value}",
             TransactionDataItemType.BusinessObject,

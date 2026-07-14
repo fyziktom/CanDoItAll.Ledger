@@ -21,7 +21,7 @@
                 }
                 @foreach (EconomyTransactionOutputDetails output in Details.Outputs)
                 {
-                    <TxOutputCard Output="output" />
+                    <TxOutputCard Output="output" TransactionId="Details.TxId" />
                 }
             </div>
             <TxDataPayloadViewer Data="Details.Data" />

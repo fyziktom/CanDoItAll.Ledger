@@ -138,8 +138,6 @@ internal sealed class LearningScenarios(
         ConsoleUi.Section("5. BusinessObject DataItems and cast views");
         await EnsureMainBalanceAsync(alice, Amount.FromInt64(50), cancellationToken).ConfigureAwait(false);
 
-        BusinessObjectId objectId = new($"console-demo-post-{runId}");
-        dataItemObjectId = objectId;
         string initialJson = SerializePayload(CreatePostPayload(
             "Console SDK post",
             "Created with typed DataItems from the console learning kit.",
@@ -156,14 +154,13 @@ internal sealed class LearningScenarios(
                     Description: "Inline text item for learning.")
             ]));
 
-        ConsoleUi.PrintReceipt(
-            $"Create BO {objectId.Value} with one DataItem",
-            await alice.CreateBusinessObjectAsync(
-                objectId,
-                "post",
-                initialJson,
-                Amount.FromInt64(3),
-                cancellationToken).ConfigureAwait(false));
+        LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
+            "post",
+            initialJson,
+            Amount.FromInt64(3),
+            cancellationToken).ConfigureAwait(false);
+        ConsoleUi.PrintReceipt("Create post BO with one DataItem", create);
+        BusinessObjectId objectId = RequireBusinessObjectId(create, "DataItem BO create");
 
         string updatedJson = SerializePayload(CreatePostPayload(
             "Console SDK post",
@@ -190,9 +187,10 @@ internal sealed class LearningScenarios(
                     Description: "URL DataItem reference for learning.")
             ]));
 
-        ConsoleUi.PrintReceipt(
-            $"Update BO {objectId.Value} with a second DataItem",
-            await alice.UpdateBusinessObjectAsync(objectId, updatedJson, cancellationToken).ConfigureAwait(false));
+        LedgerSubmitResult update = await alice.UpdateBusinessObjectAsync(objectId, updatedJson, cancellationToken).ConfigureAwait(false);
+        ConsoleUi.PrintReceipt($"Update BO {objectId.Value} with a second DataItem", update);
+        objectId = RequireBusinessObjectId(update, "DataItem BO update");
+        dataItemObjectId = objectId;
 
         IReadOnlyList<IBusinessObjectView> views = await alice
             .GetBusinessObjectViewsAsync(CreateCastRegistry(), cancellationToken)
@@ -213,6 +211,7 @@ internal sealed class LearningScenarios(
 
         LedgerSubmitResult transfer = await alice.TransferBusinessObjectAsync(objectId, bob, cancellationToken).ConfigureAwait(false);
         ConsoleUi.PrintReceipt($"Alice transfers BO {objectId.Value} to Bob", transfer);
+        BusinessObjectId transferredObjectId = RequireBusinessObjectId(transfer, "BusinessObject transfer");
 
         if (transfer.Accepted && transfer.TxId is { } txId)
         {
@@ -226,10 +225,10 @@ internal sealed class LearningScenarios(
         }
 
         bool bobReceived = (await bob.GetBusinessObjectsAsync(cancellationToken).ConfigureAwait(false))
-            .Any(holding => holding.ObjectId == objectId);
+            .Any(holding => holding.ObjectId == transferredObjectId);
         ConsoleUi.Info(bobReceived
-            ? $"Bob now owns {objectId.Value}."
-            : $"Bob does not show {objectId.Value} yet.");
+            ? $"Bob now owns {transferredObjectId.Value}."
+            : $"Bob does not show {transferredObjectId.Value} yet.");
     }
 
     public async Task Learn07AdvancedBusinessObjectTransactionsAsync(CancellationToken cancellationToken)
@@ -279,25 +278,21 @@ internal sealed class LearningScenarios(
                 $$"""{"title":"Split payment BO","runId":"{{runId}}"}""").ConfigureAwait(false));
 
         BusinessObjectId cloneSourceId = await CreateSimpleBusinessObjectAsync("clone-source", Amount.FromInt64(1), cancellationToken).ConfigureAwait(false);
-        BusinessObjectId cloneId = new($"console-demo-clone-{runId}");
-        ConsoleUi.PrintReceipt(
-            $"Clone {cloneSourceId.Value} to {cloneId.Value}",
-            await alice.CloneBusinessObjectAsync(
-                cloneSourceId,
-                cloneId,
-                "demo-ticket",
-                $$"""{"title":"Cloned BO","runId":"{{runId}}"}""",
-                cancellationToken).ConfigureAwait(false));
+        LedgerSubmitResult clone = await alice.CloneBusinessObjectAsync(
+            cloneSourceId,
+            "demo-ticket",
+            $$"""{"title":"Cloned BO","runId":"{{runId}}"}""",
+            cancellationToken).ConfigureAwait(false);
+        ConsoleUi.PrintReceipt($"Clone {cloneSourceId.Value}; result ID is assigned by the confirmed output", clone);
 
         BusinessObjectId mergeLeftId = await CreateSimpleBusinessObjectAsync("merge-left", Amount.FromInt64(1), cancellationToken).ConfigureAwait(false);
         BusinessObjectId mergeRightId = await CreateSimpleBusinessObjectAsync("merge-right", Amount.FromInt64(1), cancellationToken).ConfigureAwait(false);
-        BusinessObjectId mergeTargetId = new($"console-demo-merge-target-{runId}");
         ConsoleUi.PrintReceipt(
             $"Merge {mergeLeftId.Value} and {mergeRightId.Value}",
             await alice.MergeBusinessObjectsAsync(
                 mergeLeftId,
                 mergeRightId,
-                mergeTargetId,
+                "demo-ticket",
                 $$"""{"title":"Merged BO","runId":"{{runId}}"}""",
                 cancellationToken).ConfigureAwait(false));
 
@@ -502,22 +497,22 @@ internal sealed class LearningScenarios(
         Amount mainAmount,
         CancellationToken cancellationToken)
     {
-        BusinessObjectId objectId = new($"console-demo-{label}-{runId}");
-        ConsoleUi.PrintReceipt(
-            $"Create BO {objectId.Value}",
-            await alice.CreateBusinessObjectAsync(
-                objectId,
-                "demo-ticket",
-                $$"""{"title":"{{label}} BO","runId":"{{runId}}"}""",
-                mainAmount,
-                cancellationToken).ConfigureAwait(false));
-        return objectId;
+        LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
+            "demo-ticket",
+            $$"""{"title":"{{label}} BO","runId":"{{runId}}"}""",
+            mainAmount,
+            cancellationToken).ConfigureAwait(false);
+        ConsoleUi.PrintReceipt($"Create {label} BO; result ID is assigned by the confirmed output", create);
+        return RequireBusinessObjectId(create, $"Create {label} BO");
     }
 
     private static TxId RequireTxId(LedgerSubmitResult result, string label)
         => result.Accepted && result.TxId is { } txId
             ? txId
             : throw new InvalidOperationException($"{label} did not return an accepted transaction id: {string.Join("; ", result.Errors.Select(error => $"{error.Code}: {error.Message}"))}");
+
+    private static BusinessObjectId RequireBusinessObjectId(LedgerSubmitResult result, string label)
+        => BusinessObjectId.FromOutPoint(RequireTxId(result, label), 0);
 
     private static async Task PrintTransactionShapeAsync(
         string label,

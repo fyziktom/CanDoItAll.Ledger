@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.BusinessObjects;
@@ -49,7 +50,7 @@ public sealed record BusinessObjectSaleTerms(
     string? SharePath = null);
 
 public sealed record BusinessObjectPaymentRecord(
-    string PaymentObjectId,
+    [property: JsonIgnore] string PaymentObjectId,
     string BuyerAddress,
     string SellerAddress,
     string TargetObjectId,
@@ -70,7 +71,7 @@ public sealed record BusinessObjectPaymentRecord(
     int? SaleMaxClones = null);
 
 public sealed record BusinessObjectPurchaseRecord(
-    string PurchaseObjectId,
+    [property: JsonIgnore] string PurchaseObjectId,
     string PaymentObjectId,
     string BuyerAddress,
     string SellerAddress,
@@ -87,7 +88,7 @@ public sealed record BusinessObjectPurchaseRecord(
     DateTimeOffset? UpdatedAtUtc = null);
 
 public sealed record BusinessObjectReceiptRecord(
-    string ReceiptObjectId,
+    [property: JsonIgnore] string ReceiptObjectId,
     string PaymentObjectId,
     string BuyerAddress,
     string SellerAddress,
@@ -197,6 +198,33 @@ public static class BusinessObjectCommercePayloadBuilder
     }
 
     public static BusinessObjectPaymentRecord CreatePaymentRecord(
+        Address buyerAddress,
+        Address sellerAddress,
+        BusinessObjectId targetObjectId,
+        int targetVersion,
+        OutPoint targetOutPoint,
+        Amount priceAmount,
+        BusinessObjectSaleMode saleMode,
+        TxId? paymentTxId,
+        DateTimeOffset createdAtUtc,
+        TokenId? tokenId = null,
+        int? saleMaxClones = null)
+        => CreatePaymentRecordCore(
+            string.Empty,
+            buyerAddress,
+            sellerAddress,
+            targetObjectId,
+            targetVersion,
+            targetOutPoint,
+            priceAmount,
+            saleMode,
+            paymentTxId,
+            createdAtUtc,
+            tokenId,
+            saleMaxClones);
+
+    [Obsolete("Payment BO self identity is assigned from the confirmed output; use the overload without paymentObjectId.")]
+    public static BusinessObjectPaymentRecord CreatePaymentRecord(
         BusinessObjectId paymentObjectId,
         Address buyerAddress,
         Address sellerAddress,
@@ -209,10 +237,37 @@ public static class BusinessObjectCommercePayloadBuilder
         DateTimeOffset createdAtUtc,
         TokenId? tokenId = null,
         int? saleMaxClones = null)
+        => CreatePaymentRecordCore(
+            paymentObjectId.Value,
+            buyerAddress,
+            sellerAddress,
+            targetObjectId,
+            targetVersion,
+            targetOutPoint,
+            priceAmount,
+            saleMode,
+            paymentTxId,
+            createdAtUtc,
+            tokenId,
+            saleMaxClones);
+
+    private static BusinessObjectPaymentRecord CreatePaymentRecordCore(
+        string paymentObjectId,
+        Address buyerAddress,
+        Address sellerAddress,
+        BusinessObjectId targetObjectId,
+        int targetVersion,
+        OutPoint targetOutPoint,
+        Amount priceAmount,
+        BusinessObjectSaleMode saleMode,
+        TxId? paymentTxId,
+        DateTimeOffset createdAtUtc,
+        TokenId? tokenId,
+        int? saleMaxClones)
     {
         priceAmount.EnsureNonNegative(nameof(priceAmount));
         return new BusinessObjectPaymentRecord(
-            paymentObjectId.Value,
+            paymentObjectId,
             buyerAddress.Value,
             sellerAddress.Value,
             targetObjectId.Value,
@@ -234,13 +289,25 @@ public static class BusinessObjectCommercePayloadBuilder
     }
 
     public static BusinessObjectPurchaseRecord CreatePurchaseRecord(
+        BusinessObjectPaymentRecord payment,
+        DateTimeOffset createdAtUtc)
+        => CreatePurchaseRecordCore(string.Empty, payment, createdAtUtc);
+
+    [Obsolete("Purchase BO self identity is assigned from the confirmed output; use the overload without purchaseObjectId.")]
+    public static BusinessObjectPurchaseRecord CreatePurchaseRecord(
         BusinessObjectId purchaseObjectId,
+        BusinessObjectPaymentRecord payment,
+        DateTimeOffset createdAtUtc)
+        => CreatePurchaseRecordCore(purchaseObjectId.Value, payment, createdAtUtc);
+
+    private static BusinessObjectPurchaseRecord CreatePurchaseRecordCore(
+        string purchaseObjectId,
         BusinessObjectPaymentRecord payment,
         DateTimeOffset createdAtUtc)
     {
         BusinessObjectCommerceValidator.ValidatePaymentRecord(payment).EnsureValid("BusinessObject payment record");
         return new BusinessObjectPurchaseRecord(
-            purchaseObjectId.Value,
+            purchaseObjectId,
             payment.PaymentObjectId,
             payment.BuyerAddress,
             payment.SellerAddress,
@@ -257,7 +324,33 @@ public static class BusinessObjectCommercePayloadBuilder
     }
 
     public static BusinessObjectReceiptRecord CreateReceiptRecord(
+        BusinessObjectPaymentRecord payment,
+        BusinessObjectId deliveredObjectId,
+        TxId dispatchTxId,
+        DateTimeOffset issuedAtUtc)
+        => CreateReceiptRecordCore(
+            string.Empty,
+            payment,
+            deliveredObjectId,
+            dispatchTxId,
+            issuedAtUtc);
+
+    [Obsolete("Receipt BO self identity is assigned from the confirmed output; use the overload without receiptObjectId.")]
+    public static BusinessObjectReceiptRecord CreateReceiptRecord(
         BusinessObjectId receiptObjectId,
+        BusinessObjectPaymentRecord payment,
+        BusinessObjectId deliveredObjectId,
+        TxId dispatchTxId,
+        DateTimeOffset issuedAtUtc)
+        => CreateReceiptRecordCore(
+            receiptObjectId.Value,
+            payment,
+            deliveredObjectId,
+            dispatchTxId,
+            issuedAtUtc);
+
+    private static BusinessObjectReceiptRecord CreateReceiptRecordCore(
+        string receiptObjectId,
         BusinessObjectPaymentRecord payment,
         BusinessObjectId deliveredObjectId,
         TxId dispatchTxId,
@@ -265,7 +358,7 @@ public static class BusinessObjectCommercePayloadBuilder
     {
         BusinessObjectCommerceValidator.ValidatePaymentRecord(payment).EnsureValid("BusinessObject payment record");
         return new BusinessObjectReceiptRecord(
-            receiptObjectId.Value,
+            receiptObjectId,
             payment.PaymentObjectId,
             payment.BuyerAddress,
             payment.SellerAddress,
@@ -283,69 +376,76 @@ public static class BusinessObjectCommercePayloadBuilder
     public static BusinessObjectMediaPayload CreatePaymentPayload(BusinessObjectPaymentRecord payment)
     {
         BusinessObjectCommerceValidator.ValidatePaymentRecord(payment).EnsureValid("BusinessObject payment record");
+        BusinessObjectPaymentRecord storedPayment = payment with { PaymentObjectId = string.Empty };
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("payment");
-        IReadOnlyDictionary<string, string> fields = CommerceFields(payment);
+        IReadOnlyDictionary<string, string> fields = CommerceFields(storedPayment);
         return BusinessObjectPayloadBuilder.CreatePayload(
             definition,
-            $"Payment for {payment.TargetObjectId}",
+            $"Payment for {storedPayment.TargetObjectId}",
             "Buyer payment record for BusinessObject commerce.",
-            $"Payment from {payment.BuyerAddress} to {payment.SellerAddress} for {payment.TargetObjectId}.",
+            $"Payment from {storedPayment.BuyerAddress} to {storedPayment.SellerAddress} for {storedPayment.TargetObjectId}.",
             "#commerce #payment",
             [],
             fields) with
         {
-            Commerce = new BusinessObjectCommerceEnvelope(Payment: payment)
+            Commerce = new BusinessObjectCommerceEnvelope(Payment: storedPayment)
         };
     }
 
     public static BusinessObjectMediaPayload CreatePurchasePayload(BusinessObjectPurchaseRecord purchase)
     {
         BusinessObjectCommerceValidator.ValidatePurchaseRecord(purchase).EnsureValid("BusinessObject purchase record");
+        BusinessObjectPurchaseRecord storedPurchase = purchase with { PurchaseObjectId = string.Empty };
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("purchase");
-        IReadOnlyDictionary<string, string> fields = CommerceFields(purchase);
+        IReadOnlyDictionary<string, string> fields = CommerceFields(storedPurchase);
         return BusinessObjectPayloadBuilder.CreatePayload(
             definition,
-            $"Purchase for {purchase.TargetObjectId}",
+            $"Purchase for {storedPurchase.TargetObjectId}",
             "Buyer-side BusinessObject purchase record.",
-            $"Purchase of {purchase.TargetObjectId} from {purchase.SellerAddress}.",
+            $"Purchase of {storedPurchase.TargetObjectId} from {storedPurchase.SellerAddress}.",
             "#commerce #purchase",
             [],
             fields) with
         {
-            Commerce = new BusinessObjectCommerceEnvelope(Purchase: purchase)
+            Commerce = new BusinessObjectCommerceEnvelope(Purchase: storedPurchase)
         };
     }
 
     public static BusinessObjectMediaPayload CreateReceiptPayload(BusinessObjectReceiptRecord receipt)
     {
         BusinessObjectCommerceValidator.ValidateReceiptRecord(receipt).EnsureValid("BusinessObject receipt record");
+        BusinessObjectReceiptRecord storedReceipt = receipt with { ReceiptObjectId = string.Empty };
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("receipt");
-        IReadOnlyDictionary<string, string> fields = CommerceFields(receipt);
+        IReadOnlyDictionary<string, string> fields = CommerceFields(storedReceipt);
         return BusinessObjectPayloadBuilder.CreatePayload(
             definition,
-            $"Receipt for {receipt.TargetObjectId}",
+            $"Receipt for {storedReceipt.TargetObjectId}",
             "Seller-side BusinessObject commerce receipt.",
-            $"Receipt for dispatch of {receipt.DeliveredObjectId} to {receipt.BuyerAddress}.",
+            $"Receipt for dispatch of {storedReceipt.DeliveredObjectId} to {storedReceipt.BuyerAddress}.",
             "#commerce #receipt",
             [],
             fields) with
         {
-            Commerce = new BusinessObjectCommerceEnvelope(Receipt: receipt)
+            Commerce = new BusinessObjectCommerceEnvelope(Receipt: storedReceipt)
         };
     }
 
+    [Obsolete("BusinessObject ids are confirmed output outpoints; do not precompute payment ids.")]
     public static BusinessObjectId CreatePaymentObjectId(
         BusinessObjectId targetObjectId,
         Address buyerAddress,
         DateTimeOffset requestedAtUtc)
         => CreateDerivedObjectId("bo:payment", targetObjectId.Value, buyerAddress.Value, requestedAtUtc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture));
 
+    [Obsolete("BusinessObject ids are confirmed output outpoints; do not precompute purchase ids.")]
     public static BusinessObjectId CreatePurchaseObjectId(BusinessObjectId paymentObjectId)
         => CreateDerivedObjectId("bo:purchase", paymentObjectId.Value);
 
+    [Obsolete("BusinessObject ids are confirmed output outpoints; do not precompute receipt ids.")]
     public static BusinessObjectId CreateReceiptObjectId(BusinessObjectId paymentObjectId)
         => CreateDerivedObjectId("bo:receipt", paymentObjectId.Value);
 
+    [Obsolete("BusinessObject ids are confirmed output outpoints; do not precompute clone ids.")]
     public static BusinessObjectId CreateCloneObjectId(BusinessObjectId targetObjectId, BusinessObjectId paymentObjectId)
         => CreateDerivedObjectId("bo:clone", targetObjectId.Value, paymentObjectId.Value);
 
@@ -427,7 +527,8 @@ public static class BusinessObjectCommercePayloadBuilder
     }
 
     private static IReadOnlyDictionary<string, string> CommerceFields(BusinessObjectPaymentRecord payment)
-        => new SortedDictionary<string, string>(StringComparer.Ordinal)
+    {
+        var fields = new SortedDictionary<string, string>(StringComparer.Ordinal)
         {
             ["amount"] = FormatDecimal(payment.PriceAmount),
             ["currency"] = FormatCurrency(payment.TokenId),
@@ -436,29 +537,34 @@ public static class BusinessObjectCommercePayloadBuilder
             ["reference"] = payment.TargetObjectId,
             ["status"] = payment.Status.ToString(),
             ["targetObjectId"] = payment.TargetObjectId,
-            ["paymentObjectId"] = payment.PaymentObjectId,
             ["buyerAddress"] = payment.BuyerAddress,
             ["sellerAddress"] = payment.SellerAddress,
             ["saleMode"] = payment.SaleMode.ToString()
         };
+        AddCurrentObjectField(fields, "paymentObjectId", payment.PaymentObjectId);
+        return fields;
+    }
 
     private static IReadOnlyDictionary<string, string> CommerceFields(BusinessObjectPurchaseRecord purchase)
-        => new SortedDictionary<string, string>(StringComparer.Ordinal)
+    {
+        var fields = new SortedDictionary<string, string>(StringComparer.Ordinal)
         {
             ["amount"] = FormatDecimal(purchase.PriceAmount),
             ["currency"] = FormatCurrency(purchase.TokenId),
             ["vendor"] = purchase.SellerAddress,
             ["buyer"] = purchase.BuyerAddress,
-            ["orderNumber"] = purchase.PurchaseObjectId,
             ["status"] = purchase.Status.ToString(),
             ["targetObjectId"] = purchase.TargetObjectId,
             ["paymentObjectId"] = purchase.PaymentObjectId
         };
+        AddCurrentObjectField(fields, "orderNumber", purchase.PurchaseObjectId);
+        return fields;
+    }
 
     private static IReadOnlyDictionary<string, string> CommerceFields(BusinessObjectReceiptRecord receipt)
-        => new SortedDictionary<string, string>(StringComparer.Ordinal)
+    {
+        var fields = new SortedDictionary<string, string>(StringComparer.Ordinal)
         {
-            ["receiptNumber"] = receipt.ReceiptObjectId,
             ["amount"] = FormatDecimal(receipt.PriceAmount),
             ["currency"] = FormatCurrency(receipt.TokenId),
             ["paidBy"] = receipt.BuyerAddress,
@@ -470,6 +576,20 @@ public static class BusinessObjectCommercePayloadBuilder
             ["dispatchTxId"] = receipt.DispatchTxId,
             ["status"] = receipt.Status.ToString()
         };
+        AddCurrentObjectField(fields, "receiptNumber", receipt.ReceiptObjectId);
+        return fields;
+    }
+
+    private static void AddCurrentObjectField(
+        IDictionary<string, string> fields,
+        string fieldName,
+        string? currentObjectId)
+    {
+        if (!string.IsNullOrWhiteSpace(currentObjectId))
+        {
+            fields[fieldName] = currentObjectId;
+        }
+    }
 
     private static void AddPaymentFacts(List<BusinessObjectDisplayFact> facts, BusinessObjectPaymentRecord payment)
     {
@@ -599,10 +719,12 @@ public static class BusinessObjectCommerceValidator
             return BusinessObjectCommerceValidationResult.FromErrors(["payment record is required"]);
         }
 
-        ValidateBusinessObjectId(errors, payment.PaymentObjectId, "payment object id");
         ValidateAddress(errors, payment.BuyerAddress, "buyer address");
         ValidateAddress(errors, payment.SellerAddress, "seller address");
         ValidateBusinessObjectId(errors, payment.TargetObjectId, "target object id");
+        ValidateOptionalBusinessObjectId(errors, payment.ReceiptObjectId, "receipt object id");
+        ValidateOptionalBusinessObjectId(errors, payment.PurchaseObjectId, "purchase object id");
+        ValidateOptionalBusinessObjectId(errors, payment.DeliveredObjectId, "delivered object id");
         ValidatePositiveAmount(errors, payment.PriceAmount, "payment amount");
         ValidateObjectToken(errors, payment.TokenId, "token id");
 
@@ -614,6 +736,10 @@ public static class BusinessObjectCommerceValidator
         if (string.IsNullOrWhiteSpace(payment.TargetOutPoint))
         {
             errors.Add("target outpoint is required");
+        }
+        else if (!string.Equals(payment.TargetOutPoint, payment.TargetObjectId, StringComparison.Ordinal))
+        {
+            errors.Add("target outpoint must match target object id");
         }
 
         ValidateDispatchedState(errors, payment.Status, payment.DispatchTxId, payment.DeliveredObjectId);
@@ -628,11 +754,12 @@ public static class BusinessObjectCommerceValidator
             return BusinessObjectCommerceValidationResult.FromErrors(["purchase record is required"]);
         }
 
-        ValidateBusinessObjectId(errors, purchase.PurchaseObjectId, "purchase object id");
         ValidateBusinessObjectId(errors, purchase.PaymentObjectId, "payment object id");
         ValidateAddress(errors, purchase.BuyerAddress, "buyer address");
         ValidateAddress(errors, purchase.SellerAddress, "seller address");
         ValidateBusinessObjectId(errors, purchase.TargetObjectId, "target object id");
+        ValidateOptionalBusinessObjectId(errors, purchase.DeliveredObjectId, "delivered object id");
+        ValidateOptionalBusinessObjectId(errors, purchase.ReceiptObjectId, "receipt object id");
         ValidatePositiveAmount(errors, purchase.PriceAmount, "purchase amount");
         ValidateObjectToken(errors, purchase.TokenId, "token id");
         ValidateDispatchedState(errors, purchase.Status, purchase.DispatchTxId, purchase.DeliveredObjectId);
@@ -647,7 +774,6 @@ public static class BusinessObjectCommerceValidator
             return BusinessObjectCommerceValidationResult.FromErrors(["receipt record is required"]);
         }
 
-        ValidateBusinessObjectId(errors, receipt.ReceiptObjectId, "receipt object id");
         ValidateBusinessObjectId(errors, receipt.PaymentObjectId, "payment object id");
         ValidateAddress(errors, receipt.BuyerAddress, "buyer address");
         ValidateAddress(errors, receipt.SellerAddress, "seller address");
@@ -710,9 +836,20 @@ public static class BusinessObjectCommerceValidator
             return;
         }
 
-        if (!LedgerValueValidation.IsValidIdentifier(value, LedgerValidationLimits.MaxBusinessObjectIdLength))
+        if (!new BusinessObjectId(value).IsCanonicalOutPointId())
         {
-            errors.Add($"{fieldName} is invalid");
+            errors.Add($"{fieldName} must be a canonical BusinessObject UTXO id");
+        }
+    }
+
+    private static void ValidateOptionalBusinessObjectId(
+        List<string> errors,
+        string? value,
+        string fieldName)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            ValidateBusinessObjectId(errors, value, fieldName);
         }
     }
 
@@ -774,8 +911,10 @@ public sealed class CommerceBusinessObjectCaster(ITimeProvider timeProvider) : I
     public ValueTask<IBusinessObjectView> CastAsync(BusinessObjectCastSource source, CancellationToken cancellationToken)
     {
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(source.ObjectType);
-        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, source.ObjectId.Value);
-        BusinessObjectCommerceEnvelope commerce = BusinessObjectCommercePayloadBuilder.NormalizeCommerce(payload.Commerce);
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(source.StateJson, "Untitled");
+        BusinessObjectCommerceEnvelope commerce = BindCurrentObjectIdentity(
+            BusinessObjectCommercePayloadBuilder.NormalizeCommerce(payload.Commerce),
+            source.ObjectId);
         IReadOnlyDictionary<string, string> fields = BusinessObjectCommercePayloadBuilder.MergeCommerceFields(payload.Fields, commerce);
         IReadOnlyList<BusinessObjectDisplayFact> facts = MergeFacts(
             BusinessObjectPayloadBuilder.CreateFacts(definition, fields),
@@ -809,6 +948,22 @@ public sealed class CommerceBusinessObjectCaster(ITimeProvider timeProvider) : I
             facts,
             commerce));
     }
+
+    private static BusinessObjectCommerceEnvelope BindCurrentObjectIdentity(
+        BusinessObjectCommerceEnvelope commerce,
+        BusinessObjectId currentObjectId)
+        => commerce with
+        {
+            Payment = commerce.Payment is null
+                ? null
+                : commerce.Payment with { PaymentObjectId = currentObjectId.Value },
+            Purchase = commerce.Purchase is null
+                ? null
+                : commerce.Purchase with { PurchaseObjectId = currentObjectId.Value },
+            Receipt = commerce.Receipt is null
+                ? null
+                : commerce.Receipt with { ReceiptObjectId = currentObjectId.Value }
+        };
 
     private static bool IsCommerceType(string objectType)
         => string.Equals(objectType, "payment", StringComparison.OrdinalIgnoreCase)

@@ -150,7 +150,7 @@ internal sealed class AccountRuleExecutor(IAccountRuleExpressionEvaluator evalua
             holding.ExternalRef,
             holding.ItemType);
         var businessObject = new BusinessObjectRef(
-            holding.ObjectId,
+            new BusinessObjectLineageKey("rule-discovery"),
             holding.Version,
             holding.Operation,
             holding.DataHash);

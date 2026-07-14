@@ -1,12 +1,34 @@
+using System.Text.Json.Serialization;
+
 namespace CanDoItAll.Economy.Core;
 
 public sealed record TokenTransfer(TokenId TokenId, Amount Amount);
 
 public sealed record BusinessObjectRef(
-    BusinessObjectId ObjectId,
+    [property: JsonPropertyName("objectId")] BusinessObjectLineageKey LineageKey,
     int Version,
     BusinessObjectOperation Operation,
-    HashHex DataHash);
+    HashHex DataHash)
+{
+    [Obsolete("The V1/V2 value is an internal lineage key, not a public BusinessObject id. Use the BusinessObjectLineageKey overload.")]
+    public BusinessObjectRef(
+        BusinessObjectId legacyLineageId,
+        int version,
+        BusinessObjectOperation operation,
+        HashHex dataHash)
+        : this(new BusinessObjectLineageKey(legacyLineageId.Value), version, operation, dataHash)
+    {
+    }
+
+    /// <summary>
+    /// Compatibility alias for code that still consumes the V1/V2 field as a BusinessObjectId.
+    /// New code must use <see cref="LineageKey"/> for protocol correlation and derive public
+    /// identity from the output <see cref="OutPoint"/>.
+    /// </summary>
+    [Obsolete("This is an internal lineage compatibility alias, not a public BusinessObject id. Use LineageKey.")]
+    [JsonIgnore]
+    public BusinessObjectId ObjectId => new(LineageKey.Value);
+}
 
 public sealed record TransactionInput(
     int InputIndex,

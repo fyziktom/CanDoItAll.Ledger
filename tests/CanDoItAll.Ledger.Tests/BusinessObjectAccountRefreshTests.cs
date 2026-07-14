@@ -52,20 +52,19 @@ public sealed class BusinessObjectAccountRefreshTests
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-13T11:00:00Z"));
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         BusinessObjectAccount bob = rig.CreateAccount("bob");
-        BusinessObjectId objectId = new("refresh-settings");
         var caster = new CountingBusinessObjectCaster(DateTimeOffset.Parse("2026-05-13T11:00:00Z"));
         var castRegistry = new BusinessObjectCastRegistry(new IBusinessObjectCaster[] { caster });
         var options = new AccountRefreshOptions { MaxTransactionCount = 20 };
 
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                objectId,
                 "settings",
                 "{\"theme\":\"refresh\"}",
                 MainAmount: Amount.FromInt64(100),
                 ItemType: TransactionDataItemType.AccountSettings),
             CancellationToken.None);
         Assert.True(create.Accepted);
+        BusinessObjectId objectId = CreatedObjectId(create);
 
         AccountRefreshResult first = await alice.RefreshAsync(castRegistry, options, CancellationToken.None);
         IBusinessObjectView firstView = Assert.Single(first.Snapshot.BusinessObjectViews);
@@ -81,6 +80,7 @@ public sealed class BusinessObjectAccountRefreshTests
             new TransferBusinessObjectRequest(objectId, bob.Address),
             CancellationToken.None);
         Assert.True(transfer.Accepted);
+        BusinessObjectId transferredObjectId = CreatedObjectId(transfer);
 
         AccountRefreshResult aliceAfterTransfer = await alice.RefreshAsync(castRegistry, options, CancellationToken.None);
         Assert.Empty(aliceAfterTransfer.Snapshot.BusinessObjectViews);
@@ -90,7 +90,7 @@ public sealed class BusinessObjectAccountRefreshTests
 
         AccountRefreshResult bobAfterTransfer = await bob.RefreshAsync(castRegistry, options, CancellationToken.None);
         IBusinessObjectView bobView = Assert.Single(bobAfterTransfer.Snapshot.BusinessObjectViews);
-        Assert.Equal(objectId, bobView.ObjectId);
+        Assert.Equal(transferredObjectId, bobView.ObjectId);
         Assert.Equal(bob.Address, bobView.OwnerAddress);
         Assert.Equal(2, caster.CastCount);
     }
@@ -147,17 +147,16 @@ public sealed class BusinessObjectAccountRefreshTests
         AccountRefreshResult bobAfterPayment = await handler.RefreshAsync(bob, castRegistry, options, CancellationToken.None);
         Assert.Equal(paymentTxId, Assert.Single(bobAfterPayment.Delta.NewTransactions).TxId);
 
-        BusinessObjectId objectId = new("multi-account-refresh-proof");
         rig.Time.Advance(TimeSpan.FromMinutes(1));
         LedgerSubmitResult create = await alice.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                objectId,
                 "asset",
                 "{\"name\":\"refresh proof\"}",
                 MainAmount: Amount.FromInt64(20),
                 ItemType: TransactionDataItemType.AccountSettings),
             CancellationToken.None);
         Assert.True(create.Accepted);
+        BusinessObjectId objectId = CreatedObjectId(create);
 
         AccountRefreshResult aliceAfterCreate = await handler.RefreshAsync(alice, castRegistry, options, CancellationToken.None);
         IBusinessObjectView aliceView = Assert.Single(aliceAfterCreate.Snapshot.BusinessObjectViews);
@@ -175,6 +174,7 @@ public sealed class BusinessObjectAccountRefreshTests
             CancellationToken.None);
         Assert.True(transfer.Accepted);
         TxId transferTxId = transfer.TxId ?? throw new InvalidOperationException("Transfer must have a transaction id.");
+        BusinessObjectId transferredObjectId = BusinessObjectId.FromOutPoint(transferTxId, 0);
 
         AccountRefreshResult aliceAfterTransfer = await handler.RefreshAsync(alice, castRegistry, options, CancellationToken.None);
         Assert.DoesNotContain(aliceAfterTransfer.Snapshot.BusinessObjects, holding => holding.ObjectId == objectId);
@@ -182,7 +182,7 @@ public sealed class BusinessObjectAccountRefreshTests
 
         AccountRefreshResult bobAfterTransfer = await handler.RefreshAsync(bob, castRegistry, options, CancellationToken.None);
         IBusinessObjectView bobView = Assert.Single(bobAfterTransfer.Snapshot.BusinessObjectViews);
-        Assert.Equal(objectId, bobView.ObjectId);
+        Assert.Equal(transferredObjectId, bobView.ObjectId);
         Assert.Equal(bob.Address, bobView.OwnerAddress);
         Assert.Equal(transferTxId, Assert.Single(bobAfterTransfer.Delta.NewTransactions).TxId);
         Assert.Equal(2, caster.CastCount);
@@ -216,6 +216,11 @@ public sealed class BusinessObjectAccountRefreshTests
             && args.SubAccount == operations
             && args.NewTransactions.Any(transaction => transaction.TxId == subAccountPaymentTxId));
     }
+
+    private static BusinessObjectId CreatedObjectId(LedgerSubmitResult result)
+        => BusinessObjectId.FromOutPoint(
+            result.TxId ?? throw new InvalidOperationException("Accepted BusinessObject transaction must have a transaction id."),
+            0);
 
     private static TestRig CreateRig(DateTimeOffset utcNow)
     {

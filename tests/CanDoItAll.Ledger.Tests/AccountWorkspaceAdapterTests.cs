@@ -96,7 +96,8 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
         Assert.Equal(4, adapter.SubmittedDrafts.Count);
         Assert.Equal(2, adapter.WorkspaceLoadCount);
         Assert.All(adapter.SubmittedDrafts, draft => Assert.Equal(adapter.Workspace.Address, draft.OwnerAddress));
-        Assert.Equal(4, adapter.SubmittedDrafts.Select(draft => draft.ObjectId).Distinct().Count());
+        Assert.All(adapter.SubmittedDrafts, draft => Assert.Equal(default, draft.ObjectId));
+        Assert.Equal(4, adapter.SubmittedDrafts.Select(draft => draft.ExternalRef).Distinct(StringComparer.Ordinal).Count());
     }
 
     [Fact]

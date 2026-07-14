@@ -59,6 +59,22 @@ public sealed class AccountAppUiSourceContractTests
         Assert.Equal(14, home.Split("@bind:event=\"oninput\"", StringSplitOptions.None).Length - 1);
     }
 
+    [Fact]
+    public void BuyBo_assigns_commerce_identity_from_confirmed_output_only()
+    {
+        string buyBo = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "BuyBo.razor");
+
+        Assert.Contains("BusinessObjectId.FromOutPoint(transaction.TxId, output.OutputIndex)", buyBo, StringComparison.Ordinal);
+        Assert.Contains("objectId.IsCanonicalOutPointId()", buyBo, StringComparison.Ordinal);
+        Assert.Contains("purchaseResult.ResultBusinessObjectId", buyBo, StringComparison.Ordinal);
+        Assert.Contains("$\"bo-commerce://payment/request/{paymentRequestId}\"", buyBo, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreatePaymentObjectId", buyBo, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreatePurchaseObjectId", buyBo, StringComparison.Ordinal);
+        Assert.DoesNotContain("StartsWith(\"bo:payment:\"", buyBo, StringComparison.Ordinal);
+        Assert.DoesNotContain("StartsWith(\"bo:purchase:\"", buyBo, StringComparison.Ordinal);
+        Assert.DoesNotContain("StartsWith(\"bo:receipt:\"", buyBo, StringComparison.Ordinal);
+    }
+
     private static string ReadRepoFile(params string[] segments)
     {
         DirectoryInfo? directory = new(Directory.GetCurrentDirectory());

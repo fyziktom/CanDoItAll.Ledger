@@ -42,7 +42,7 @@
             [
                 new("Receiver", Draft.PaymentReceiverAddress.Value),
                 new("Amount", Draft.PaymentAmount.ToString()),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.TokenTransfer =>
             [
@@ -50,14 +50,14 @@
                 new("Receiver", Draft.PaymentReceiverAddress.Value),
                 new("Token amount", Draft.TokenAmount?.ToString() ?? "0"),
                 new("Attached main amount", Draft.MainAmount.ToString()),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.UtxoMerge =>
             [
                 new("Inputs", $"{Draft.SelectedUtxosOrEmpty.Count} selected"),
                 new("Result", "1 plain output"),
                 new("Output address", Draft.PaymentReceiverAddress.Value),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.UtxoSplit =>
             [
@@ -65,18 +65,18 @@
                 new("Outputs", Draft.UtxoSplitOutputsOrEmpty.Count.ToString()),
                 new("Allocated", Draft.UtxoSplitOutputsOrEmpty.Sum(output => output.Amount.Value).ToString()),
                 new("Receivers", Draft.UtxoSplitOutputsOrEmpty.Select(output => output.ReceiverAddress).Distinct().Count().ToString()),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.Create =>
             [
-                new("Object ID", Draft.ObjectId.Value),
+                new("Object ID", "Assigned after confirmation"),
                 new("Type", Draft.ObjectType),
                 new("Schema", Draft.SchemaVersion),
                 new("Owner", Draft.OwnerAddress.Value),
                 new("Main amount", Draft.MainAmount.ToString()),
                 new("Token", TokenSummary),
                 new("State", StateSummary),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.TransferObject =>
             [
@@ -84,38 +84,38 @@
                 new("New owner", Draft.ReceiverAddress.Value),
                 new("Main amount", Draft.MainAmount.ToString()),
                 new("State", StateSummary),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.UpdateObject =>
             [
                 new("Object", Draft.ObjectId.Value),
                 new("Operation", "Publish next state"),
                 new("State", StateSummary),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.CloseObject =>
             [
                 new("Object", Draft.ObjectId.Value),
                 new("Operation", "Close permanently"),
                 new("Final state", StateSummary),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.CloneObject =>
             [
-                new("Source", Draft.SourceObjectId?.Value ?? "Not selected"),
-                new("New object", Draft.TargetObjectId?.Value ?? "Not set"),
+                new("Clone-source reference", Draft.SourceObjectId?.Value ?? "Not selected"),
+                new("New object", "Assigned after confirmation"),
                 new("Type", Draft.ObjectType),
                 new("Schema", Draft.SchemaVersion),
                 new("State", StateSummary),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.MergeObjects =>
             [
-                new("First object", Draft.SourceObjectId?.Value ?? "Not selected"),
-                new("Second object", Draft.SecondObjectId?.Value ?? "Not selected"),
-                new("Result object", Draft.TargetObjectId?.Value ?? "Not set"),
+                new("First merge-source reference", Draft.SourceObjectId?.Value ?? "Not selected"),
+                new("Second merge-source reference", Draft.SecondObjectId?.Value ?? "Not selected"),
+                new("Result object", "Assigned after confirmation"),
                 new("Result state", StateSummary),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             BusinessObjectTransactionMode.SplitBusinessObjectPayment =>
             [
@@ -125,16 +125,16 @@
                 new("Secondary receiver", Draft.ReceiverAddress.Value),
                 new("Secondary amount", Draft.SecondaryPaymentAmount?.ToString() ?? "0"),
                 new("Total allocation", (Draft.PaymentAmount.Value + (Draft.SecondaryPaymentAmount?.Value ?? 0m)).ToString()),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ],
             _ =>
             [
                 new("Mode", Draft.SelectedMode.ToString()),
-                new("Reference", Reference)
+                new("External reference", ExternalReference)
             ]
         };
 
-    private string Reference
+    private string ExternalReference
         => string.IsNullOrWhiteSpace(Draft.ExternalRef) ? "Not provided" : Draft.ExternalRef;
 
     private string StateSummary

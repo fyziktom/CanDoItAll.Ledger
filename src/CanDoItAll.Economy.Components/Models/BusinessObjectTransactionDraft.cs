@@ -33,7 +33,6 @@ public sealed record BusinessObjectTransactionDraft(
     BusinessObjectTransactionMode SelectedMode = BusinessObjectTransactionMode.Create,
     BusinessObjectId? SourceObjectId = null,
     BusinessObjectId? SecondObjectId = null,
-    BusinessObjectId? TargetObjectId = null,
     TokenId? TokenId = null,
     Amount? TokenAmount = null,
     Amount? SecondaryPaymentAmount = null,
@@ -50,13 +49,42 @@ public sealed record EconomyTransactionExecutionResult(
     bool Accepted,
     TxId? TxId,
     long? LedgerSequence,
-    string Message);
+    string Message,
+    int? BatchIndex = null,
+    string? CorrelationExternalRef = null)
+{
+    public BusinessObjectId? ResultBusinessObjectId
+        => Accepted && TxId is { } txId && Mode is
+            BusinessObjectTransactionMode.Create
+            or BusinessObjectTransactionMode.TransferObject
+            or BusinessObjectTransactionMode.UpdateObject
+            or BusinessObjectTransactionMode.CloneObject
+            or BusinessObjectTransactionMode.MergeObjects
+            or BusinessObjectTransactionMode.SplitBusinessObjectPayment
+            or BusinessObjectTransactionMode.CreateRuleToken
+                ? BusinessObjectId.FromOutPoint(txId, 0)
+                : null;
+}
 
 public sealed record BusinessObjectBatchTransactionRequest(
     string Label,
     IReadOnlyList<BusinessObjectTransactionDraft> Drafts,
     string Summary,
-    string RecipientMode);
+    string RecipientMode)
+{
+    public (int DraftIndex, string? ExternalRef) CorrelationFor(int draftIndex)
+    {
+        if (draftIndex < 0 || draftIndex >= Drafts.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(draftIndex));
+        }
+
+        string? externalRef = string.IsNullOrWhiteSpace(Drafts[draftIndex].ExternalRef)
+            ? null
+            : Drafts[draftIndex].ExternalRef;
+        return (draftIndex, externalRef);
+    }
+}
 
 public sealed record EconomyTransactionBatchExecutionResult(
     bool Accepted,

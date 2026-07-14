@@ -26,14 +26,14 @@ public static class EconomyComponentSampleData
         {
             new GenericBusinessObjectView(
                 context,
-                RuleTokenAuthority.CreateRuleObjectId(cashpoolRule.RuleId),
+                FixtureObjectId("rule-cashpool"),
                 "account-rule",
                 "1.0",
                 1,
                 primaryAddress,
                 BusinessObjectOperation.Create,
                 cashpoolRuleHash,
-                new OutPoint(new TxId("tx-rule-cashpool"), 0),
+                FixtureOutPoint("rule-cashpool"),
                 cashpoolRuleData.InlineJson,
                 null,
                 TransactionDataItemType.Rule,
@@ -41,14 +41,14 @@ public static class EconomyComponentSampleData
                 viewedAt),
             new GenericBusinessObjectView(
                 context,
-                new BusinessObjectId("bo:purchase-order:1042"),
+                FixtureObjectId("po-1042-v3"),
                 "purchase-order",
                 "1.0",
                 3,
                 primaryAddress,
                 BusinessObjectOperation.Update,
                 new HashHex("6ac9f112c0ffee9a58f399dba4e1841a101d93462d3a7b19f5032aebd9e90100"),
-                new OutPoint(new TxId("tx-po-1042-v3"), 0),
+                FixtureOutPoint("po-1042-v3"),
                 "{\"supplier\":\"Acme Metals\",\"amount\":42000,\"status\":\"approved\"}",
                 "erp://purchase-orders/1042",
                 TransactionDataItemType.BusinessObject,
@@ -56,14 +56,14 @@ public static class EconomyComponentSampleData
                 viewedAt),
             new AccountSettingsBusinessObjectView(
                 context,
-                new BusinessObjectId("bo:settings:ops"),
+                FixtureObjectId("settings-ops"),
                 "account-settings",
                 "1.0",
                 1,
                 primaryAddress,
                 BusinessObjectOperation.Create,
                 new HashHex("21b7a4c2b2bb74e63cfae2839116e81a11f4505230089a127a30cb6f19d01221"),
-                new OutPoint(new TxId("tx-settings-ops"), 0),
+                FixtureOutPoint("settings-ops"),
                 "{\"currency\":\"USD\",\"approvalMode\":\"two-step\",\"simulationClock\":\"manual\"}",
                 null,
                 new Dictionary<string, string>
@@ -76,14 +76,14 @@ public static class EconomyComponentSampleData
                 viewedAt),
             new GenericBusinessObjectView(
                 context,
-                new BusinessObjectId("bo:inventory-lot:steel-77"),
+                FixtureObjectId("steel-77-transfer", 1),
                 "inventory-lot",
                 "2.1",
                 5,
                 warehouseAddress,
                 BusinessObjectOperation.Transfer,
                 new HashHex("f8f744cc3d865fa7263caa9317d60f8a0ae03136ae189d8471c8c55462d22145"),
-                new OutPoint(new TxId("tx-steel-77-transfer"), 1),
+                FixtureOutPoint("steel-77-transfer", 1),
                 "{\"sku\":\"steel-sheet\",\"quantity\":900,\"uom\":\"kg\",\"reserved\":120}",
                 "wms://lots/steel-77",
                 TransactionDataItemType.BusinessObject,
@@ -114,27 +114,27 @@ public static class EconomyComponentSampleData
         [
             new(
                 context,
-                new TxId("tx-po-1042-v3"),
+                FixtureTxId("po-1042-v3"),
                 TransactionKind.BusinessObject,
                 TransactionStatus.Confirmed,
                 viewedAt.AddHours(-6),
                 [primaryAddress],
                 [primaryAddress],
-                [new LedgerTransactionInputSummary(0, new OutPoint(new TxId("tx-po-1042-v2"), 0), primaryAddress)],
+                [new LedgerTransactionInputSummary(0, FixtureOutPoint("po-1042-v2"), primaryAddress)],
                 [new LedgerTransactionOutputSummary(0, primaryAddress, Amount.Zero)]),
             new(
                 context,
-                new TxId("tx-steel-77-transfer"),
+                FixtureTxId("steel-77-transfer"),
                 TransactionKind.Transfer,
                 TransactionStatus.Confirmed,
                 viewedAt.AddHours(-18),
                 [primaryAddress],
                 [warehouseAddress],
-                [new LedgerTransactionInputSummary(0, new OutPoint(new TxId("tx-steel-77-create"), 1), primaryAddress)],
-                [new LedgerTransactionOutputSummary(0, warehouseAddress, Amount.FromInt64(0))]),
+                [new LedgerTransactionInputSummary(0, FixtureOutPoint("steel-77-create", 1), primaryAddress)],
+                [new LedgerTransactionOutputSummary(1, warehouseAddress, Amount.FromInt64(0))]),
             new(
                 context,
-                new TxId("tx-settings-ops"),
+                FixtureTxId("settings-ops"),
                 TransactionKind.Mint,
                 TransactionStatus.Confirmed,
                 viewedAt.AddDays(-1),
@@ -145,7 +145,7 @@ public static class EconomyComponentSampleData
         ];
 
         var draft = new BusinessObjectTransactionDraft(
-            new BusinessObjectId("bo:purchase-order:1043"),
+            default,
             "purchase-order",
             "1.0",
             primaryAddress,
@@ -157,7 +157,7 @@ public static class EconomyComponentSampleData
             "erp://purchase-orders/1043");
 
         var editor = new BusinessObjectEditorModel(
-            new BusinessObjectId("bo:purchase-order:1042"),
+            FixtureObjectId("po-1042-v3"),
             "purchase-order",
             "1.0",
             primaryAddress,
@@ -169,7 +169,7 @@ public static class EconomyComponentSampleData
             new(
                 context,
                 new OutPointKey(new HashHex("0f31b8f4cafe0101010101010101010101010101010101010101010101010101")),
-                new OutPoint(new TxId("tx-main-source"), 0),
+                FixtureOutPoint("main-source"),
                 primaryAddress,
                 Amount.FromInt64(40000),
                 null,
@@ -178,7 +178,7 @@ public static class EconomyComponentSampleData
             new(
                 context,
                 new OutPointKey(new HashHex("1f31b8f4cafe0202020202020202020202020202020202020202020202020202")),
-                new OutPoint(new TxId("tx-token-source"), 1),
+                FixtureOutPoint("token-source", 1),
                 primaryAddress,
                 Amount.Zero,
                 new TokenTransfer(new TokenId("USD-CREDIT"), Amount.FromInt64(39000)),
@@ -187,15 +187,12 @@ public static class EconomyComponentSampleData
             new(
                 context,
                 new OutPointKey(new HashHex("2f31b8f4cafe0303030303030303030303030303030303030303030303030303")),
-                new OutPoint(new TxId("tx-permission-source"), 0),
+                FixtureOutPoint("permission-source"),
                 primaryAddress,
                 Amount.Zero,
                 new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(1)),
                 new BusinessObjectRef(
-                    PermissionTokenAuthority.CreatePermissionObjectId(
-                        PermissionTokenAuthority.MintNewTokenTypeAction,
-                        "ops.credit",
-                        "sample"),
+                    new BusinessObjectLineageKey("sample:permission:ops-credit"),
                     1,
                     BusinessObjectOperation.Create,
                     new HashHex("3f31b8f4cafe0404040404040404040404040404040404040404040404040404")),
@@ -203,15 +200,12 @@ public static class EconomyComponentSampleData
             new(
                 context,
                 new OutPointKey(new HashHex("3f31b8f4cafe0303030303030303030303030303030303030303030303030303")),
-                new OutPoint(new TxId("tx-rule-permission-source"), 0),
+                FixtureOutPoint("rule-permission-source"),
                 primaryAddress,
                 Amount.Zero,
                 new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, Amount.FromInt64(5)),
                 new BusinessObjectRef(
-                    PermissionTokenAuthority.CreatePermissionObjectId(
-                        RuleTokenAuthority.CreateRuleTokenAction,
-                        "rules.company",
-                        "sample"),
+                    new BusinessObjectLineageKey("sample:permission:rules-company"),
                     1,
                     BusinessObjectOperation.Create,
                     new HashHex("4f31b8f4cafe0404040404040404040404040404040404040404040404040404")),
@@ -219,12 +213,12 @@ public static class EconomyComponentSampleData
             new(
                 context,
                 new OutPointKey(new HashHex("4f31b8f4cafe0303030303030303030303030303030303030303030303030303")),
-                new OutPoint(new TxId("tx-rule-cashpool"), 0),
+                FixtureOutPoint("rule-cashpool"),
                 primaryAddress,
                 Amount.Zero,
                 new TokenTransfer(RuleTokenAuthority.RuleTokenId, Amount.FromInt64(1)),
                 new BusinessObjectRef(
-                    RuleTokenAuthority.CreateRuleObjectId(cashpoolRule.RuleId),
+                    new BusinessObjectLineageKey("sample:rule:cashpool-sweep"),
                     1,
                     BusinessObjectOperation.Create,
                     cashpoolRuleHash),
@@ -253,10 +247,7 @@ public static class EconomyComponentSampleData
             CreateTokenOptions(balance),
             [new(
                 "ops.credit",
-                PermissionTokenAuthority.CreatePermissionObjectId(
-                    PermissionTokenAuthority.MintNewTokenTypeAction,
-                    "ops.credit",
-                    "sample"),
+                BusinessObjectId.FromOutPoint(spendableOutputs[2].OutPoint),
                 primaryAddress)],
             [
                 new("Operations approval", approvalAddress),
@@ -281,7 +272,7 @@ public static class EconomyComponentSampleData
     {
         BusinessObjectWorkspaceModel workspace = CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
-            .First(item => item.ObjectId.Value.Equals("bo:purchase-order:1042", StringComparison.Ordinal));
+            .First(item => item.ObjectType.Equals("purchase-order", StringComparison.Ordinal));
         DateTimeOffset timestamp = workspace.ViewedAtUtc.AddHours(-6);
         var payloadHash = new HashHex("4f31b8f4cafe0505050505050505050505050505050505050505050505050505");
         var signature = new SignatureEnvelope(
@@ -293,7 +284,7 @@ public static class EconomyComponentSampleData
             [34, 55, 89]);
 
         return new EconomyTransactionDetailsModel(
-            new TxId("tx-po-1042-v3"),
+            FixtureTxId("po-1042-v3"),
             new HashHex("6f31b8f4cafe0707070707070707070707070707070707070707070707070707"),
             TransactionKind.BusinessObject,
             TransactionStatus.Confirmed,
@@ -308,12 +299,11 @@ public static class EconomyComponentSampleData
             [
                 new EconomyTransactionInputDetails(
                     0,
-                    new OutPoint(new TxId("tx-po-1042-v2"), 0),
+                    FixtureOutPoint("po-1042-v2"),
                     workspace.Address,
                     Amount.Zero,
                     null,
-                    new BusinessObjectRef(
-                        businessObject.ObjectId,
+                    new EconomyTransactionBusinessObjectDetails(
                         businessObject.Version - 1,
                         BusinessObjectOperation.Update,
                         new HashHex("7f31b8f4cafe0808080808080808080808080808080808080808080808080808")),
@@ -327,8 +317,7 @@ public static class EconomyComponentSampleData
                     workspace.Address,
                     Amount.Zero,
                     null,
-                    new BusinessObjectRef(
-                        businessObject.ObjectId,
+                    new EconomyTransactionBusinessObjectDetails(
                         businessObject.Version,
                         businessObject.Operation,
                         businessObject.DataHash),
@@ -571,14 +560,14 @@ public static class EconomyComponentSampleData
         [
             new PostBusinessObjectView(
                 context,
-                new BusinessObjectId("bo:post:energy-balance"),
+                FixtureObjectId("post-energy-balance-v4"),
                 "post",
                 "1.0",
                 4,
                 primaryAddress,
                 BusinessObjectOperation.Update,
                 new HashHex("7ed0f112c0ffee9a58f399dba4e1841a101d93462d3a7b19f5032aebd9e90201"),
-                new OutPoint(new TxId("tx-post-energy-balance-v4"), 0),
+                FixtureOutPoint("post-energy-balance-v4"),
                 null,
                 viewedAt.AddDays(-3),
                 viewedAt,
@@ -592,14 +581,14 @@ public static class EconomyComponentSampleData
                 energyItems),
             new ImageBusinessObjectView(
                 context,
-                new BusinessObjectId("bo:image:warehouse-capacity"),
+                FixtureObjectId("image-warehouse-capacity-v2", 1),
                 "image",
                 "1.0",
                 2,
                 primaryAddress,
                 BusinessObjectOperation.Transfer,
                 new HashHex("8bd1f112c0ffee9a58f399dba4e1841a101d93462d3a7b19f5032aebd9e90202"),
-                new OutPoint(new TxId("tx-image-warehouse-capacity-v2"), 1),
+                FixtureOutPoint("image-warehouse-capacity-v2", 1),
                 null,
                 viewedAt.AddDays(-2),
                 viewedAt,
@@ -613,14 +602,14 @@ public static class EconomyComponentSampleData
                 warehouseItems),
             new PostBusinessObjectView(
                 context,
-                new BusinessObjectId("bo:post:maintenance-window"),
+                FixtureObjectId("post-maintenance-window-v1"),
                 "post",
                 "1.0",
                 1,
                 AddressForKey("maintenance-shared"),
                 BusinessObjectOperation.Create,
                 new HashHex("9ce2f112c0ffee9a58f399dba4e1841a101d93462d3a7b19f5032aebd9e90203"),
-                new OutPoint(new TxId("tx-post-maintenance-window-v1"), 0),
+                FixtureOutPoint("post-maintenance-window-v1"),
                 null,
                 viewedAt.AddHours(-10),
                 viewedAt,
@@ -655,6 +644,15 @@ public static class EconomyComponentSampleData
 
     private static Address AddressForKey(string keyId)
         => Address.FromPublicKey(Hex.Utf8($"{keyId}-public"));
+
+    private static TxId FixtureTxId(string label)
+        => new(Hex.Sha256Hex(Hex.Utf8($"economy-component-sample:{label}")).Value);
+
+    private static OutPoint FixtureOutPoint(string label, int outputIndex = 0)
+        => new(FixtureTxId(label), outputIndex);
+
+    private static BusinessObjectId FixtureObjectId(string label, int outputIndex = 0)
+        => BusinessObjectId.FromOutPoint(FixtureOutPoint(label, outputIndex));
 
     private static string ResolvePreview(IMediaBusinessObjectView item)
         => item.DataItems.FirstOrDefault(dataItem => dataItem.IsMain && dataItem.Uri is not null)?.Uri?.ToString()

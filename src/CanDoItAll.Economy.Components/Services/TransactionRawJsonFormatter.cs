@@ -48,7 +48,7 @@ internal static class TransactionRawJsonFormatter
                 .ToArray(),
             vout = details.Outputs
                 .OrderBy(output => output.OutputIndex)
-                .Select(CreateRawOutput)
+                .Select(output => CreateRawOutput(details.TxId, output))
                 .ToArray()
         };
 
@@ -75,21 +75,25 @@ internal static class TransactionRawJsonFormatter
             outPointKey = input.OutPointKey?.Value.Value,
             amount = input.MainAmount?.Value,
             token = CreateRawToken(input.Token),
-            businessObject = CreateRawBusinessObject(input.BusinessObject),
+            businessObject = CreateRawBusinessObject(
+                input.BusinessObject,
+                BusinessObjectId.FromOutPoint(input.PreviousOutPoint)),
             signaturePayloadHash = input.SignaturePayloadHash?.Value,
             signatures = input.SignatureBundle.Signatures
                 .Select(CreateRawSignature)
                 .ToArray()
         };
 
-    private static object CreateRawOutput(EconomyTransactionOutputDetails output)
+    private static object CreateRawOutput(TxId transactionId, EconomyTransactionOutputDetails output)
         => new
         {
             n = output.OutputIndex,
             value = output.MainAmount.Value,
             address = output.Address.Value,
             token = CreateRawToken(output.Token),
-            businessObject = CreateRawBusinessObject(output.BusinessObject),
+            businessObject = CreateRawBusinessObject(
+                output.BusinessObject,
+                BusinessObjectId.FromOutPoint(transactionId, output.OutputIndex)),
             metadataHash = output.MetadataHash?.Value
         };
 
@@ -102,12 +106,14 @@ internal static class TransactionRawJsonFormatter
                 amount = token.Amount.Value
             };
 
-    private static object? CreateRawBusinessObject(BusinessObjectRef? businessObject)
+    private static object? CreateRawBusinessObject(
+        EconomyTransactionBusinessObjectDetails? businessObject,
+        BusinessObjectId objectId)
         => businessObject is null
             ? null
             : new
             {
-                objectId = businessObject.ObjectId.Value,
+                objectId = objectId.Value,
                 version = businessObject.Version,
                 operation = businessObject.Operation.ToString(),
                 dataHash = businessObject.DataHash.Value

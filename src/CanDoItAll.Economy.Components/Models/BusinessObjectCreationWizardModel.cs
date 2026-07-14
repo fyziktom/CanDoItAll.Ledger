@@ -59,7 +59,7 @@ public sealed record BusinessObjectCreationWizardModel(
             ? media.Name
             : !string.IsNullOrWhiteSpace(payload?.Name)
                 ? payload!.Name
-                : source.ObjectId.Value;
+                : "Untitled";
 
     private static string DescriptionFor(IBusinessObjectView source, BusinessObjectMediaPayload? payload)
         => source is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Description)

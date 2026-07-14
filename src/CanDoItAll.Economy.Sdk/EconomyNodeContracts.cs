@@ -1,8 +1,14 @@
 using System.Text.Json.Serialization;
+using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.Sdk;
 
+/// <param name="LegacyBusinessObjectCreationMarker">
+/// Legacy compatibility marker serialized as <c>businessObjectId</c>. Its value never becomes
+/// a BusinessObject id or lineage key; when present, the node generates an opaque lineage key
+/// and the confirmed output outpoint becomes the public BusinessObject id.
+/// </param>
 public sealed record MintTransactionRequest(
     string Address,
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal MainAmount,
@@ -11,10 +17,15 @@ public sealed record MintTransactionRequest(
     string? DataItemType,
     string? DataJson,
     string? ExternalRef,
-    string? BusinessObjectId,
+    [property: JsonPropertyName("businessObjectId")] string? LegacyBusinessObjectCreationMarker,
     string? ScenarioId,
     TokenDefinitionEnvelope? TokenDefinition = null);
 
+/// <param name="LegacyBusinessObjectCreationMarker">
+/// Legacy compatibility marker serialized as <c>businessObjectId</c>. Its value never becomes
+/// a BusinessObject id or lineage key; when present, the node generates an opaque lineage key
+/// and the confirmed output outpoint becomes the public BusinessObject id.
+/// </param>
 public sealed record TransferTransactionRequest(
     string FromAddress,
     string ToAddress,
@@ -24,7 +35,7 @@ public sealed record TransferTransactionRequest(
     string? DataItemType,
     string? DataJson,
     string? ExternalRef,
-    string? BusinessObjectId,
+    [property: JsonPropertyName("businessObjectId")] string? LegacyBusinessObjectCreationMarker,
     string? ScenarioId);
 
 public sealed record TokenAuthorityGrantRequest(
@@ -58,6 +69,53 @@ public sealed record LedgerTransactionQueryRequest(
     bool IncludeData = false,
     int Skip = 0,
     int Take = 100);
+
+/// <summary>
+/// Public node representation of a spendable output. A BusinessObject exposes its current
+/// outpoint-derived id separately from the V1/V2 lineage key required to construct follow-up
+/// transactions.
+/// </summary>
+public sealed record EconomyNodeSpendableOutput(
+    LedgerAccountContext Context,
+    OutPointKey OutPointKey,
+    OutPoint OutPoint,
+    Address Address,
+    Amount MainAmount,
+    TokenTransfer? Token,
+    EconomyNodeSpendableBusinessObjectDetails? BusinessObject,
+    DateTimeOffset CreatedAt);
+
+public sealed record EconomyNodeSpendableBusinessObjectDetails(
+    BusinessObjectId ObjectId,
+    BusinessObjectLineageKey LineageKey,
+    int Version,
+    BusinessObjectOperation Operation,
+    HashHex DataHash);
+
+/// <summary>
+/// Public transaction read contract. Its output BusinessObject metadata intentionally omits
+/// the internal protocol lineage key and exposes only the canonical output-derived object id.
+/// </summary>
+public sealed record EconomyNodeLedgerTransactionSummary(
+    LedgerAccountContext Context,
+    TxId TxId,
+    TransactionKind Kind,
+    TransactionStatus Status,
+    DateTimeOffset Timestamp,
+    IReadOnlyList<Address> InputAddresses,
+    IReadOnlyList<Address> OutputAddresses,
+    IReadOnlyList<LedgerTransactionInputSummary> Inputs,
+    IReadOnlyList<EconomyNodeLedgerTransactionOutputSummary> Outputs,
+    TransactionData? Data = null,
+    long? LedgerSequence = null);
+
+public sealed record EconomyNodeLedgerTransactionOutputSummary(
+    int OutputIndex,
+    Address Address,
+    Amount MainAmount,
+    TokenTransfer? Token = null,
+    LedgerBusinessObjectOutputDetails? BusinessObject = null,
+    HashHex? MetadataHash = null);
 
 public sealed record AdvanceTimeRequest(double Days, double Hours);
 

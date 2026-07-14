@@ -56,6 +56,7 @@ public sealed class LedgerTransactionOutputRecord
     public decimal MainAmount { get; set; }
     public string? TokenId { get; set; }
     public decimal? TokenAmount { get; set; }
+    /// <summary>V1/V2 wire lineage key. Public BO identity is derived from TxId and OutputIndex.</summary>
     public string? BusinessObjectId { get; set; }
     public int? BusinessObjectVersion { get; set; }
     public int? BusinessObjectOperation { get; set; }
@@ -74,6 +75,7 @@ public sealed class UnspentOutputRecord
     public decimal MainAmount { get; set; }
     public string? TokenId { get; set; }
     public decimal? TokenAmount { get; set; }
+    /// <summary>V1/V2 wire lineage key. Public BO identity is derived from TxId and OutputIndex.</summary>
     public string? BusinessObjectId { get; set; }
     public int? BusinessObjectVersion { get; set; }
     public int? BusinessObjectOperation { get; set; }
@@ -153,6 +155,7 @@ public sealed class BusinessObjectRecord
     public string BusinessObjectKey { get; set; } = string.Empty;
     public string LedgerId { get; set; } = string.Empty;
     public string? ScenarioId { get; set; }
+    /// <summary>Stable legacy lineage key used to correlate projection versions internally.</summary>
     public string ObjectId { get; set; } = string.Empty;
     public string ObjectType { get; set; } = string.Empty;
     public int CurrentVersion { get; set; }
@@ -170,6 +173,7 @@ public sealed class BusinessObjectVersionRecord
     public long Id { get; set; }
     public string LedgerId { get; set; } = string.Empty;
     public string? ScenarioId { get; set; }
+    /// <summary>Stable legacy lineage key; the version's public BO ID comes from OutPointTxId and OutPointIndex.</summary>
     public string ObjectId { get; set; } = string.Empty;
     public int Version { get; set; }
     public string TxId { get; set; } = string.Empty;

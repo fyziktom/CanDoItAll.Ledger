@@ -56,6 +56,23 @@ public sealed class TransactionComposerLayoutContractTests
         Assert.Contains(".cda-token-creation-modal", css, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void New_object_wizards_never_offer_an_editable_target_identity()
+    {
+        string create = ReadRepoFile(
+            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "BusinessObjectCreateTransactionForm.razor");
+        string operations = ReadRepoFile(
+            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "BusinessObjectOperationWizard.razor");
+
+        Assert.Contains("bo-create-object-id-pending", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetObjectIdAsync", create, StringComparison.Ordinal);
+        Assert.Contains("bo-clone-object-id-pending", operations, StringComparison.Ordinal);
+        Assert.Contains("bo-merge-object-id-pending", operations, StringComparison.Ordinal);
+        Assert.DoesNotContain("bo-clone-target-id", operations, StringComparison.Ordinal);
+        Assert.DoesNotContain("bo-merge-target-id", operations, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetTargetObjectIdAsync", operations, StringComparison.Ordinal);
+    }
+
     private static string ReadRepoFile(params string[] relativeParts)
         => File.ReadAllText(Path.Combine([FindRepositoryRoot(), .. relativeParts]));
 

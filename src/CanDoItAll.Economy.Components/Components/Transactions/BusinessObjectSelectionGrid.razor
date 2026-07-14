@@ -6,7 +6,7 @@
             <TextBox Value="@filter"
                      ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => filter = value ?? string.Empty))"
                      Immediate="true"
-                     Placeholder="Name, ID, tag, type or state"
+                     Placeholder="Name, outpoint, tag, type or state"
                      aria-label="Filter business objects"
                      data-testid="bo-selection-filter" />
         </FormField>
@@ -69,7 +69,7 @@
                                              Interactive="@CanSelect(item)"
                                              DisabledReason="@DisabledReason(item)"
                                              SelectedChanged="@(() => ToggleAsync(item))"
-                                             TestId="@($"bo-select-{SafeTestId(item.ObjectId.Value)}")" />
+                                             TestId="@($"bo-select-{SafeTestId(item.CurrentOutPoint.ToString())}")" />
             }
         </div>
     }
@@ -141,7 +141,7 @@
         string probe = string.Join(
             ' ',
             BusinessObjectCardDisplay.DisplayName(item),
-            item.ObjectId.Value,
+            item.CurrentOutPoint.ToString(),
             item.ObjectType,
             item.Operation,
             item.StateJson,
@@ -152,7 +152,7 @@
     }
 
     private bool IsSelected(IBusinessObjectView item)
-        => Selected.Any(selected => selected.ObjectId == item.ObjectId);
+        => Selected.Any(selected => selected.CurrentOutPoint == item.CurrentOutPoint);
 
     private Task ToggleAsync(IBusinessObjectView item)
     {
@@ -162,7 +162,7 @@
         }
 
         List<IBusinessObjectView> next = Selected.ToList();
-        int existingIndex = next.FindIndex(selected => selected.ObjectId == item.ObjectId);
+        int existingIndex = next.FindIndex(selected => selected.CurrentOutPoint == item.CurrentOutPoint);
         if (existingIndex >= 0)
         {
             next.RemoveAt(existingIndex);

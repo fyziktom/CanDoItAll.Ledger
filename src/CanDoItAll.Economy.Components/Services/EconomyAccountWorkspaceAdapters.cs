@@ -30,7 +30,7 @@ public interface IEconomyAccountWorkspaceAdapter
             BusinessObjectSourceMode.Mine => query,
             BusinessObjectSourceMode.Address => query.Where(item => item.OwnerAddress.Value.Equals(request.Query, StringComparison.Ordinal)),
             BusinessObjectSourceMode.DirectReference => query.Where(item =>
-                item.ObjectId.Value.Equals(request.Query, StringComparison.Ordinal)
+                item.CurrentOutPoint.ToString().Equals(request.Query, StringComparison.Ordinal)
                 || item.DataHash.Value.Equals(request.Query, StringComparison.OrdinalIgnoreCase)),
             _ => []
         };
@@ -202,10 +202,9 @@ public sealed class WasmAccountWorkspaceAdapter(
         IReadOnlyList<EconomyAddressBookmark> bookmarks = CreateAddressBookmarks(account.Address, transactions);
         Address receiver = bookmarks.FirstOrDefault(bookmark => bookmark.Address != account.Address)?.Address ?? account.Address;
         DateTimeOffset now = timeProvider.UtcNow;
-        BusinessObjectId draftObjectId = BusinessObjectCreateIdFactory.CreateNewObjectId("account-app", "account app message");
 
         var draft = new BusinessObjectTransactionDraft(
-            draftObjectId,
+            default,
             "account-app-message",
             "1.0",
             account.Address,
@@ -214,7 +213,7 @@ public sealed class WasmAccountWorkspaceAdapter(
             Amount.Zero,
             Amount.FromInt64(1),
             "{\"source\":\"account-app\"}",
-            $"account-app://draft/{draftObjectId.Value}",
+            "account-app://draft",
             TokenId: defaultCarrierToken?.TokenId,
             TokenAmount: defaultCarrierToken is null ? null : Amount.FromInt64(1));
 
@@ -255,27 +254,34 @@ public sealed class WasmAccountWorkspaceAdapter(
     {
         ArgumentNullException.ThrowIfNull(request);
         int take = Math.Clamp(request.Take, 1, 100);
+        string normalizedQuery = request.Query.Trim();
+        var directObjectId = new BusinessObjectId(normalizedQuery);
+        bool hasCanonicalDirectId = request.SourceMode == BusinessObjectSourceMode.DirectReference
+            && directObjectId.IsCanonicalOutPointId();
         LedgerBusinessObjectQuery query = request.SourceMode switch
         {
             BusinessObjectSourceMode.Mine => new LedgerBusinessObjectQuery(Context, OwnerAddress: RequiredKeySource.Address, Take: take),
             BusinessObjectSourceMode.Address when Address.TryParse(request.Query, out Address owner) =>
                 new LedgerBusinessObjectQuery(Context, OwnerAddress: owner, Take: take),
-            BusinessObjectSourceMode.DirectReference =>
-                new LedgerBusinessObjectQuery(Context, ObjectId: new BusinessObjectId(request.Query.Trim()), Take: take),
+            BusinessObjectSourceMode.DirectReference when hasCanonicalDirectId =>
+                new LedgerBusinessObjectQuery(Context, ObjectId: directObjectId, Take: take),
             _ => new LedgerBusinessObjectQuery(Context, Take: take)
         };
 
-        IReadOnlyList<LedgerBusinessObjectHolding> holdings = await ledgerReadClient
-            .QueryBusinessObjectsAsync(query, cancellationToken)
-            .ConfigureAwait(false);
+        IReadOnlyList<LedgerBusinessObjectHolding> holdings = request.SourceMode == BusinessObjectSourceMode.DirectReference
+            && !hasCanonicalDirectId
+                ? []
+                : await ledgerReadClient
+                    .QueryBusinessObjectsAsync(query, cancellationToken)
+                    .ConfigureAwait(false);
         if (request.SourceMode == BusinessObjectSourceMode.DirectReference && holdings.Count == 0)
         {
             holdings = await ledgerReadClient
                 .QueryBusinessObjectsAsync(new LedgerBusinessObjectQuery(Context, Take: 100), cancellationToken)
                 .ConfigureAwait(false);
             holdings = holdings
-                .Where(item => item.ObjectId.Value.Equals(request.Query, StringComparison.Ordinal)
-                    || item.DataHash.Value.Equals(request.Query, StringComparison.OrdinalIgnoreCase))
+                .Where(item => item.ObjectId == directObjectId
+                    || item.DataHash.Value.Equals(normalizedQuery, StringComparison.OrdinalIgnoreCase))
                 .Take(take)
                 .ToArray();
         }
@@ -390,7 +396,6 @@ public sealed class WasmAccountWorkspaceAdapter(
             ? await account.BuildUnsignedCloneBusinessObjectTransactionAsync(
                 new CloneBusinessObjectRequest(
                     request.ObjectId,
-                    UniqueObjectId(request.ObjectId),
                     SafeText(request.ObjectType, "business-object"),
                     SafeJson(request.StateJson),
                     SafeText(request.SchemaVersion, "1.0"),
@@ -444,7 +449,6 @@ public sealed class WasmAccountWorkspaceAdapter(
         LedgerTransaction unsigned = request.CreateNew
             ? await account.BuildUnsignedCreateBusinessObjectTransactionAsync(
                 new CreateBusinessObjectRequest(
-                    request.ObjectId,
                     "profile",
                     nextState,
                     MainAmount: Amount.Zero,
@@ -452,7 +456,7 @@ public sealed class WasmAccountWorkspaceAdapter(
                 cancellationToken).ConfigureAwait(false)
             : await account.BuildUnsignedUpdateBusinessObjectTransactionAsync(
                 new UpdateBusinessObjectRequest(
-                    request.ObjectId,
+                    request.ObjectId ?? throw new InvalidOperationException("Existing profile BusinessObject id is required for update."),
                     nextState,
                     SafeNullable(request.ExternalRef)),
                 cancellationToken).ConfigureAwait(false);
@@ -846,17 +850,16 @@ public sealed class WasmAccountWorkspaceAdapter(
                     timeProvider.UtcNow,
                     cancellationToken)
                 .ConfigureAwait(false);
-            BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateOpaqueObjectId("secure-message");
             BusinessObjectAccount account = CreateAccount();
+            string secureMessageReference = $"secure-message://{Guid.NewGuid():N}";
             LedgerTransaction unsigned = await account.BuildUnsignedCreateBusinessObjectTransactionAsync(
                 new CreateBusinessObjectRequest(
-                    objectId,
                     SecureLedgerMessages.ObjectType,
                     secureMessage.StateJson,
                     SecureLedgerMessages.SchemaVersion,
                     OwnerAddress: receiverAddress,
                     MainAmount: Amount.Zero,
-                    ExternalRef: $"secure-message://{objectId.Value}"),
+                    ExternalRef: secureMessageReference),
                 cancellationToken).ConfigureAwait(false);
 
             return await SignAndSubmitAsync(
@@ -946,7 +949,6 @@ public sealed class WasmAccountWorkspaceAdapter(
         {
             BusinessObjectTransactionMode.Create => account.BuildUnsignedCreateBusinessObjectTransactionAsync(
                 new CreateBusinessObjectRequest(
-                    draft.ObjectId,
                     SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
@@ -978,7 +980,6 @@ public sealed class WasmAccountWorkspaceAdapter(
             BusinessObjectTransactionMode.CloneObject => account.BuildUnsignedCloneBusinessObjectTransactionAsync(
                 new CloneBusinessObjectRequest(
                     draft.SourceObjectId ?? draft.ObjectId,
-                    draft.TargetObjectId ?? new BusinessObjectId($"{draft.ObjectId.Value}:copy"),
                     SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
                     SafeText(draft.SchemaVersion, "1.0"),
@@ -992,8 +993,9 @@ public sealed class WasmAccountWorkspaceAdapter(
                 new MergeBusinessObjectsRequest(
                     draft.SourceObjectId ?? draft.ObjectId,
                     draft.SecondObjectId ?? draft.ObjectId,
-                    draft.TargetObjectId ?? new BusinessObjectId($"{draft.ObjectId.Value}:merged"),
+                    SafeText(draft.ObjectType, "business-object"),
                     SafeJson(draft.StateJson),
+                    SafeText(draft.SchemaVersion, "1.0"),
                     SafeNullable(draft.ExternalRef)),
                 cancellationToken),
 
@@ -1042,7 +1044,7 @@ public sealed class WasmAccountWorkspaceAdapter(
             .Where(source => source.Output.BusinessObject is not null)
             .Select(source => new EconomyTokenCreationAuthority(
                 source.Grant.Namespace,
-                source.Output.BusinessObject!.ObjectId,
+                BusinessObjectId.FromOutPoint(source.Output.OutPoint),
                 source.Output.Address))
             .Distinct()
             .ToArray();
@@ -1158,8 +1160,29 @@ public sealed class WasmAccountWorkspaceAdapter(
             output.Address,
             output.MainAmount,
             output.Token,
-            output.BusinessObject,
+            ToTransactionBusinessObjectDetails(output),
             output.MetadataHash);
+
+    private static EconomyTransactionBusinessObjectDetails? ToTransactionBusinessObjectDetails(
+        LedgerTransactionOutputSummary output)
+        => !output.HasBusinessObject
+            ? null
+            : new EconomyTransactionBusinessObjectDetails(
+                output.BusinessObjectVersion
+                    ?? throw new InvalidOperationException("BusinessObject output version is missing."),
+                output.BusinessObjectOperation
+                    ?? throw new InvalidOperationException("BusinessObject output operation is missing."),
+                output.BusinessObjectDataHash
+                    ?? throw new InvalidOperationException("BusinessObject output data hash is missing."));
+
+    private static EconomyTransactionBusinessObjectDetails? ToTransactionBusinessObjectDetails(
+        BusinessObjectRef? businessObject)
+        => businessObject is null
+            ? null
+            : new EconomyTransactionBusinessObjectDetails(
+                businessObject.Version,
+                businessObject.Operation,
+                businessObject.DataHash);
 
     private async Task<EconomyTransactionExecutionResult> SignAndSubmitAsync(
         BusinessObjectTransactionMode mode,
@@ -1253,9 +1276,6 @@ public sealed class WasmAccountWorkspaceAdapter(
             $"Receiver '{receiver}' is not a valid address and was not found as a unique saved contact for {accountAddress.Value}.");
     }
 
-    private static BusinessObjectId UniqueObjectId(BusinessObjectId objectId)
-        => new($"{objectId.Value}:{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}");
-
     private static string NormalizeTokenSegment(string value, string fallback)
     {
         string candidate = string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
@@ -1279,7 +1299,7 @@ public sealed class WasmAccountWorkspaceAdapter(
     {
         if (request.ClearSale)
         {
-            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, request.ObjectId.Value);
+            return BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(request.StateJson, "Untitled BusinessObject");
         }
 
         BusinessObjectSaleTerms terms = BusinessObjectCommercePayloadBuilder.CreateSaleTerms(
@@ -1290,7 +1310,7 @@ public sealed class WasmAccountWorkspaceAdapter(
             request.SaleMode == BusinessObjectSaleMode.Copy ? request.MaxClones : null,
             request.TokenId,
             request.SharePath);
-        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, request.ObjectId.Value, terms);
+        return BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(request.StateJson, "Untitled BusinessObject", terms);
     }
 
     internal static string BuildProfileStateJson(ProfileEditRequest request, string accountName)

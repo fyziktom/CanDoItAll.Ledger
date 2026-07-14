@@ -151,7 +151,7 @@
     private async Task SubmitAsync()
     {
         var request = new ProfileEditRequest(
-            ProfileObject?.ObjectId ?? BusinessObjectCreateIdFactory.CreateNewObjectId("profile", displayName),
+            ProfileObject?.ObjectId,
             currency,
             approvalMode,
             displayName,

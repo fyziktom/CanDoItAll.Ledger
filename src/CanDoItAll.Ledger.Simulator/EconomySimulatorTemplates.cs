@@ -248,7 +248,7 @@ public sealed class EconomySimulatorTemplateMaterializer(
                 new[] { request.PrimaryAddress },
                 new Dictionary<string, string> { ["templateId"] = template.TemplateId },
                 new Dictionary<string, string>());
-            drafts.Add(serializer.CreateDraft(EconomySimulatorIdentifiers.BusinessUnitObjectId(businessUnitId), EconomySimulatorObjectTypes.BusinessUnit, unit, request.PrimaryAddress));
+            drafts.Add(serializer.CreateDraft(EconomySimulatorObjectTypes.BusinessUnit, unit, request.PrimaryAddress));
 
             var binding = new BusinessUnitAddressBindingState(
                 request.ProjectId,
@@ -264,7 +264,7 @@ public sealed class EconomySimulatorTemplateMaterializer(
                 null,
                 displayName,
                 new Dictionary<string, string> { ["templateId"] = template.TemplateId });
-            drafts.Add(serializer.CreateDraft(BindingObjectId(request.ProjectId, path, role, request.PrimaryAddress), EconomySimulatorObjectTypes.BusinessUnitAddressBinding, binding, request.PrimaryAddress));
+            drafts.Add(serializer.CreateDraft(EconomySimulatorObjectTypes.BusinessUnitAddressBinding, binding, request.PrimaryAddress));
         }
         else
         {
@@ -309,9 +309,4 @@ public sealed class EconomySimulatorTemplateMaterializer(
             ? value
             : template.Parameters.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.Ordinal))?.DefaultValue ?? fallback;
 
-    private static BusinessObjectId BindingObjectId(string projectId, string path, BusinessUnitAddressRole role, Address address)
-    {
-        string suffix = address.Value.Length <= 8 ? address.Value : address.Value[^8..];
-        return new BusinessObjectId($"buaddr:{EconomySimulatorIdentifiers.NormalizeSegment(projectId)}:{EconomySimulatorIdentifiers.NormalizeSegment(path)}:{EconomySimulatorIdentifiers.NormalizeSegment(role.ToString())}:{EconomySimulatorIdentifiers.NormalizeSegment(suffix)}");
-    }
 }

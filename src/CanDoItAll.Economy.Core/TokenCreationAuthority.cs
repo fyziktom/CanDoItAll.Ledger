@@ -2,10 +2,14 @@ namespace CanDoItAll.Economy.Core;
 
 public static class TokenCreationAuthority
 {
-    public const string GrantObjectIdPrefix = "token-authority:";
+    public const string GrantLineageKeyPrefix = "token-authority:";
 
+    public static BusinessObjectLineageKey CreateGrantLineageKey(string tokenNamespace)
+        => new($"{GrantLineageKeyPrefix}{NormalizeNamespace(tokenNamespace)}");
+
+    [Obsolete("This returns an internal legacy lineage marker, not a public BusinessObject id. Use CreateGrantLineageKey.")]
     public static BusinessObjectId CreateGrantObjectId(string tokenNamespace)
-        => new($"{GrantObjectIdPrefix}{NormalizeNamespace(tokenNamespace)}");
+        => new(CreateGrantLineageKey(tokenNamespace).Value);
 
     public static string NormalizeNamespace(string tokenNamespace)
     {
@@ -21,12 +25,12 @@ public static class TokenCreationAuthority
     public static bool TryGetGrantNamespace(BusinessObjectRef? businessObject, out string tokenNamespace)
     {
         tokenNamespace = string.Empty;
-        if (businessObject is null || !businessObject.ObjectId.Value.StartsWith(GrantObjectIdPrefix, StringComparison.Ordinal))
+        if (businessObject is null || !businessObject.LineageKey.Value.StartsWith(GrantLineageKeyPrefix, StringComparison.Ordinal))
         {
             return false;
         }
 
-        string candidate = businessObject.ObjectId.Value[GrantObjectIdPrefix.Length..];
+        string candidate = businessObject.LineageKey.Value[GrantLineageKeyPrefix.Length..];
         if (!IsValidNamespace(candidate))
         {
             return false;

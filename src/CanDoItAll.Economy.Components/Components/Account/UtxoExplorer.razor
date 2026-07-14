@@ -26,7 +26,7 @@
                         <small>@output.MainAmount main @FormatToken(output.Token)</small>
                         @if (output.BusinessObject is not null)
                         {
-                            <small>BO @output.BusinessObject.ObjectId.Value v@output.BusinessObject.Version</small>
+                            <small>BO @BusinessObjectId.FromOutPoint(output.OutPoint).Value v@output.BusinessObject.Version</small>
                         }
                     </div>
                     <CopyableMonoValue Value="@output.OutPointKey.Value.Value" />

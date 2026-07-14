@@ -142,6 +142,7 @@ else
                                 @foreach (EconomyTransactionOutputDetails output in Details.Outputs)
                                 {
                                     <TxOutputCard Output="output"
+                                                  TransactionId="Details.TxId"
                                                   RoleLabel="@OutputRoleLabel(output)"
                                                   RoleTone="@OutputRoleTone(output)"
                                                   SupportingText="@OutputSupportingText(output)" />
@@ -168,8 +169,8 @@ else
                                 {
                                     <article class="cda-vef-io-card">
                                         <strong>Output #@output.OutputIndex</strong>
-                                        <CopyableMonoValue Value="@output.BusinessObject!.ObjectId.Value" Truncate="false" AriaLabel="Copy business object id" />
-                                        <small>@output.BusinessObject.Operation v@output.BusinessObject.Version</small>
+                                        <CopyableMonoValue Value="@BusinessObjectId.FromOutPoint(Details.TxId, output.OutputIndex).Value" Truncate="false" AriaLabel="Copy business object UTXO id" />
+                                        <small>@output.BusinessObject!.Operation v@output.BusinessObject.Version</small>
                                         <HashDisplay Value="@output.BusinessObject.DataHash.Value" />
                                     </article>
                                 }
@@ -334,42 +335,19 @@ else
         return null;
     }
 
-    private static bool IsPermissionBusinessObject(BusinessObjectRef? businessObject)
-        => businessObject?.ObjectId.Value.StartsWith("permission:", StringComparison.Ordinal) == true;
+    private static bool IsPermissionBusinessObject(EconomyTransactionBusinessObjectDetails? businessObject)
+        => businessObject is not null;
 
     private static string FormatToken(TokenTransfer? token)
         => token is null ? "none" : $"{token.Amount} {token.TokenId.Value}";
 
-    private static string PermissionObjectSummary(BusinessObjectRef? businessObject)
+    private static string PermissionObjectSummary(EconomyTransactionBusinessObjectDetails? businessObject)
     {
         if (businessObject is null)
         {
             return "Permission BO not attached";
         }
 
-        if (TryReadPermissionObject(businessObject, out string action, out string tokenNamespace))
-        {
-            return $"{action} / {tokenNamespace} / v{businessObject.Version}";
-        }
-
-        return $"{businessObject.ObjectId.Value} / v{businessObject.Version}";
-    }
-
-    private static bool TryReadPermissionObject(
-        BusinessObjectRef businessObject,
-        out string action,
-        out string tokenNamespace)
-    {
-        action = string.Empty;
-        tokenNamespace = string.Empty;
-        string[] parts = businessObject.ObjectId.Value.Split(':', 4, StringSplitOptions.TrimEntries);
-        if (parts.Length < 3 || !string.Equals(parts[0], "permission", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        action = parts[1];
-        tokenNamespace = parts[2];
-        return true;
+        return $"Permission authority / v{businessObject.Version}";
     }
 }

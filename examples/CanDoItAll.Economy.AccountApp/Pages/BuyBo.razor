@@ -138,6 +138,10 @@
             {
                 <p><strong>@purchaseResult.TxId.Value</strong></p>
             }
+            @if (purchaseResult.ResultBusinessObjectId is { } paymentObjectId)
+            {
+                <p><span>Payment BO</span> <strong>@paymentObjectId.Value</strong></p>
+            }
             @if (purchaseResult.Accepted)
             {
                 <div class="buy-bo-result-actions">
@@ -246,8 +250,15 @@
             throw new InvalidOperationException("BusinessObject id or transaction hash is required.");
         }
 
+        var objectId = new BusinessObjectId(Uri.UnescapeDataString(ObjectId).Trim());
+        if (!objectId.IsCanonicalOutPointId())
+        {
+            throw new InvalidOperationException(
+                "BusinessObject id must be a confirmed UTXO id in '64-character transaction-hash:output-index' format.");
+        }
+
         return await LedgerReadClient.GetBusinessObjectAsync(
-            new LedgerBusinessObjectQuery(Context, ObjectId: new BusinessObjectId(Uri.UnescapeDataString(ObjectId))),
+            new LedgerBusinessObjectQuery(Context, ObjectId: objectId),
             CancellationToken.None);
     }
 
@@ -270,8 +281,11 @@
         }
 
         LedgerTransactionOutputSummary output = ResolveBusinessObjectOutput(transaction);
-        BusinessObjectId objectId = output.BusinessObject?.ObjectId
-            ?? throw new InvalidOperationException("The requested transaction output does not contain a BusinessObject.");
+        if (!output.HasBusinessObject)
+        {
+            throw new InvalidOperationException("The requested transaction output does not contain a BusinessObject.");
+        }
+        BusinessObjectId objectId = BusinessObjectId.FromOutPoint(transaction.TxId, output.OutputIndex);
 
         return await LedgerReadClient.GetBusinessObjectAsync(
             new LedgerBusinessObjectQuery(Context, ObjectId: objectId),
@@ -289,7 +303,7 @@
                 throw new InvalidOperationException($"Transaction output {outputIndex} was not found.");
             }
 
-            if (output.BusinessObject is null)
+            if (!output.HasBusinessObject)
             {
                 throw new InvalidOperationException($"Transaction output {outputIndex} does not contain a BusinessObject.");
             }
@@ -298,19 +312,13 @@
         }
 
         LedgerTransactionOutputSummary? businessObjectOutput = transaction.Outputs
-            .Where(output => output.BusinessObject is not null)
-            .OrderBy(output => IsCommerceArtifact(output.BusinessObject!.ObjectId) ? 1 : 0)
-            .ThenBy(output => output.OutputIndex)
+            .Where(output => output.HasBusinessObject)
+            .OrderBy(output => output.OutputIndex)
             .FirstOrDefault();
 
         return businessObjectOutput
             ?? throw new InvalidOperationException("The requested transaction does not contain a BusinessObject output.");
     }
-
-    private static bool IsCommerceArtifact(BusinessObjectId objectId)
-        => objectId.Value.StartsWith("bo:payment:", StringComparison.OrdinalIgnoreCase)
-            || objectId.Value.StartsWith("bo:purchase:", StringComparison.OrdinalIgnoreCase)
-            || objectId.Value.StartsWith("bo:receipt:", StringComparison.OrdinalIgnoreCase);
 
     private async Task UnlockAccountAsync()
     {
@@ -345,12 +353,7 @@
             }
 
             DateTimeOffset now = DateTimeOffset.UtcNow;
-            BusinessObjectId paymentObjectId = BusinessObjectCommercePayloadBuilder.CreatePaymentObjectId(
-                targetHolding.ObjectId,
-                Session.Account.Address,
-                now);
             BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
-                paymentObjectId,
                 Session.Account.Address,
                 sellerAddress,
                 targetHolding.ObjectId,
@@ -362,15 +365,12 @@
                 now,
                 tokenId: null,
                 saleTerms.MaxClones);
-            payment = payment with
-            {
-                PurchaseObjectId = BusinessObjectCommercePayloadBuilder.CreatePurchaseObjectId(paymentObjectId).Value
-            };
 
             string paymentState = BusinessObjectPayloadBuilder.Serialize(
                 BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
+            string paymentRequestId = Guid.NewGuid().ToString("N");
             var draft = BusinessObjectCarrierTokenPolicy.WithDefaultCarrierToken(new BusinessObjectTransactionDraft(
-                paymentObjectId,
+                default,
                 "payment",
                 "1.0",
                 sellerAddress,
@@ -379,7 +379,7 @@
                 new Amount(saleTerms.PriceAmount),
                 new Amount(saleTerms.PriceAmount),
                 paymentState,
-                $"bo-commerce://payment/{paymentObjectId.Value}",
+                $"bo-commerce://payment/request/{paymentRequestId}",
                 BusinessObjectTransactionMode.Create),
                 Session.Workspace?.TokenOptions,
                 allowBalanceFallback: true);

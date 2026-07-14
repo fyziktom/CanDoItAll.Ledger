@@ -18,7 +18,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     private static readonly LedgerAccountContext Context = new(new LedgerId("test-ledger"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
     private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-public"));
-    private static readonly BusinessObjectId ListedObjectId = new("bo:post:listed-commerce-post");
+    private static readonly BusinessObjectId ListedObjectId = ConfirmedObjectId("post:listed-commerce-post");
     private static readonly DateTimeOffset ListedAtUtc = DateTimeOffset.Parse("2026-06-30T10:00:00Z");
 
     public BusinessObjectCommerceUiComponentTests()
@@ -199,7 +199,8 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             new BusinessObjectId("bo:secure-message:hidden-wrapped-gallery-message"),
             "Hidden wrapped secure message",
             ListedAtUtc.AddMinutes(6),
-            "business-object");
+            "business-object",
+            $$"""{"format":"{{SecureLedgerMessages.Format}}"}""");
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
             RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
@@ -308,18 +309,26 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     [Fact]
     public async Task CommerceDashboard_OrdersPaymentAndReceiptRecordsByCurrentTransactionTimestamp()
     {
+        BusinessObjectId olderPaymentId = ConfirmedObjectId("payment:older");
+        BusinessObjectId newerPaymentId = ConfirmedObjectId("payment:newer");
+        BusinessObjectId olderPaymentTargetId = ConfirmedObjectId("post:older-payment-target");
+        BusinessObjectId newerPaymentTargetId = ConfirmedObjectId("post:newer-payment-target");
+        BusinessObjectId olderReceiptPaymentId = ConfirmedObjectId("payment:older-receipt");
+        BusinessObjectId newerReceiptPaymentId = ConfirmedObjectId("payment:newer-receipt");
+        BusinessObjectId olderReceiptTargetId = ConfirmedObjectId("post:older-receipt-target");
+        BusinessObjectId newerReceiptTargetId = ConfirmedObjectId("post:newer-receipt-target");
         ICommerceBusinessObjectView olderPayment = await CreatePaymentViewAsync(
-            new BusinessObjectId("bo:payment:older"),
-            new BusinessObjectId("bo:post:older-payment-target"));
+            olderPaymentId,
+            olderPaymentTargetId);
         ICommerceBusinessObjectView newerPayment = await CreatePaymentViewAsync(
-            new BusinessObjectId("bo:payment:newer"),
-            new BusinessObjectId("bo:post:newer-payment-target"));
+            newerPaymentId,
+            newerPaymentTargetId);
         ICommerceBusinessObjectView olderReceipt = await CreateReceiptViewAsync(
-            new BusinessObjectId("bo:payment:older-receipt"),
-            new BusinessObjectId("bo:post:older-receipt-target"));
+            olderReceiptPaymentId,
+            olderReceiptTargetId);
         ICommerceBusinessObjectView newerReceipt = await CreateReceiptViewAsync(
-            new BusinessObjectId("bo:payment:newer-receipt"),
-            new BusinessObjectId("bo:post:newer-receipt-target"));
+            newerReceiptPaymentId,
+            newerReceiptTargetId);
 
         IRenderedComponent<BusinessObjectCommerceDashboard> component =
             RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
@@ -343,10 +352,10 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             .Select(row => row.TextContent)
             .ToArray();
 
-        Assert.Contains("bo:post:newer-payment-target", payments[0], StringComparison.Ordinal);
-        Assert.Contains("bo:post:older-payment-target", payments[1], StringComparison.Ordinal);
-        Assert.Contains("bo:post:newer-receipt-target", receipts[0], StringComparison.Ordinal);
-        Assert.Contains("bo:post:older-receipt-target", receipts[1], StringComparison.Ordinal);
+        Assert.Contains(newerPaymentTargetId.Value, payments[0], StringComparison.Ordinal);
+        Assert.Contains(olderPaymentTargetId.Value, payments[1], StringComparison.Ordinal);
+        Assert.Contains(newerReceiptTargetId.Value, receipts[0], StringComparison.Ordinal);
+        Assert.Contains(olderReceiptTargetId.Value, receipts[1], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -404,7 +413,8 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         BusinessObjectId objectId,
         string name,
         DateTimeOffset createdAt,
-        string objectType = "post")
+        string objectType = "post",
+        string? stateJsonOverride = null)
     {
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");
         BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
@@ -414,7 +424,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             $"{name} long description",
             "#commerce",
             []);
-        string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
+        string stateJson = stateJsonOverride ?? BusinessObjectPayloadBuilder.Serialize(payload);
         return CreateTypedView(objectId, objectType, stateJson, createdAt);
     }
 
@@ -423,7 +433,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         BusinessObjectId? targetObjectId = null,
         DateTimeOffset? createdAt = null)
     {
-        BusinessObjectId effectivePaymentId = paymentId ?? new BusinessObjectId("bo:payment:listed-commerce-post");
+        BusinessObjectId effectivePaymentId = paymentId ?? ConfirmedObjectId("payment:listed-commerce-post");
         DateTimeOffset effectiveCreatedAt = createdAt ?? ListedAtUtc;
         BusinessObjectPaymentRecord payment = CreatePaymentRecord(effectivePaymentId, targetObjectId, effectiveCreatedAt);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
@@ -441,10 +451,10 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         BusinessObjectId? targetObjectId = null,
         DateTimeOffset? createdAt = null)
     {
-        BusinessObjectId effectivePaymentId = paymentId ?? new BusinessObjectId("bo:payment:listed-commerce-post");
+        BusinessObjectId effectivePaymentId = paymentId ?? ConfirmedObjectId("payment:listed-commerce-post");
         BusinessObjectId effectiveTargetId = targetObjectId ?? ListedObjectId;
         DateTimeOffset effectiveCreatedAt = createdAt ?? ListedAtUtc.AddMinutes(4);
-        BusinessObjectId receiptId = BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(effectivePaymentId);
+        BusinessObjectId receiptId = ConfirmedObjectId($"receipt:{effectivePaymentId.Value}:{effectiveTargetId.Value}");
         BusinessObjectPaymentRecord payment = CreatePaymentRecord(effectivePaymentId, effectiveTargetId, effectiveCreatedAt) with
         {
             Status = BusinessObjectCommerceRecordStatus.Dispatched,
@@ -453,7 +463,6 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             ReceiptObjectId = receiptId.Value
         };
         BusinessObjectReceiptRecord receipt = BusinessObjectCommercePayloadBuilder.CreateReceiptRecord(
-            receiptId,
             payment,
             effectiveTargetId,
             new TxId("dispatch-tx"),
@@ -474,17 +483,17 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         DateTimeOffset? createdAt = null)
     {
         BusinessObjectId effectiveTargetId = targetObjectId ?? ListedObjectId;
-        return BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
-            paymentId,
+        BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
             Bob,
             Alice,
             effectiveTargetId,
             targetVersion: 1,
-            targetOutPoint: OutPointFor("post", effectiveTargetId),
+            targetOutPoint: effectiveTargetId.RequireOutPoint(),
             Amount.FromInt64(25),
             BusinessObjectSaleMode.Original,
             new TxId("payment-tx"),
             createdAt ?? ListedAtUtc);
+        return payment with { PaymentObjectId = paymentId.Value };
     }
 
     private static ITypedBusinessObjectView CreateTypedView(
@@ -621,6 +630,12 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
 
     private static OutPoint OutPointFor(string objectType, BusinessObjectId objectId)
         => new(new TxId($"tx-{objectType}-{objectId.Value.Replace(':', '-')}"), 0);
+
+    private static BusinessObjectId ConfirmedObjectId(string seed)
+    {
+        byte[] hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(seed));
+        return BusinessObjectId.FromOutPoint(new TxId(Convert.ToHexString(hash).ToLowerInvariant()), 0);
+    }
 
     private static string BuyPathFor(OutPoint outPoint)
         => $"/buy-bo/tx/{Uri.EscapeDataString(outPoint.TxId.Value)}/{outPoint.OutputIndex}";

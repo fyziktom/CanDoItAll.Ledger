@@ -85,7 +85,13 @@
             dataItems ?? [],
             fields);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
-        BusinessObjectId objectId = new($"bo:{objectType}:{BusinessObjectCreateIdFactory.NormalizeName(name)}");
+        string displaySlug = BusinessObjectDisplaySlug.Normalize(name);
+        string fixtureHash = Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes($"gallery-sample:{objectType}:{displaySlug}")))
+            .ToLowerInvariant();
+        var currentOutPoint = new OutPoint(new TxId(fixtureHash), 0);
+        BusinessObjectId objectId = BusinessObjectId.FromOutPoint(currentOutPoint);
 
         return new GenericTypedBusinessObjectView(
             context,
@@ -96,9 +102,9 @@
             owner,
             BusinessObjectOperation.Create,
             new HashHex(new string('7', 64)),
-            new OutPoint(new TxId($"tx-{objectType}-{BusinessObjectCreateIdFactory.NormalizeName(name)}"), 0),
+            currentOutPoint,
             stateJson,
-            $"ledger://{objectId.Value}",
+            $"sample://gallery/{objectType}/{displaySlug}",
             TransactionDataItemType.BusinessObject,
             SampleNow,
             SampleNow,

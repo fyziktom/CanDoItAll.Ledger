@@ -103,7 +103,6 @@ internal sealed class DemoAccountDriver : IDisposable
     }
 
     public Task<LedgerSubmitResult> CreateBusinessObjectAsync(
-        BusinessObjectId objectId,
         string objectType,
         string stateJson,
         Amount mainAmount,
@@ -112,7 +111,6 @@ internal sealed class DemoAccountDriver : IDisposable
         OutPoint? sourceOutPoint = null)
         => Account.CreateBusinessObjectAsync(
             new CreateBusinessObjectRequest(
-                objectId,
                 objectType,
                 stateJson,
                 MainAmount: mainAmount,
@@ -214,25 +212,25 @@ internal sealed class DemoAccountDriver : IDisposable
 
     public Task<LedgerSubmitResult> CloneBusinessObjectAsync(
         BusinessObjectId sourceObjectId,
-        BusinessObjectId newObjectId,
         string objectType,
         string stateJson,
         CancellationToken cancellationToken,
         string schemaVersion = "1.0",
         Address? ownerAddress = null)
         => Account.CloneBusinessObjectAsync(
-            new CloneBusinessObjectRequest(sourceObjectId, newObjectId, objectType, stateJson, schemaVersion, ownerAddress),
+            new CloneBusinessObjectRequest(sourceObjectId, objectType, stateJson, schemaVersion, ownerAddress),
             cancellationToken);
 
     public Task<LedgerSubmitResult> MergeBusinessObjectsAsync(
         BusinessObjectId firstObjectId,
         BusinessObjectId secondObjectId,
-        BusinessObjectId targetObjectId,
+        string objectType,
         string stateJson,
         CancellationToken cancellationToken,
+        string schemaVersion = "1.0",
         string? externalRef = null)
         => Account.MergeBusinessObjectsAsync(
-            new MergeBusinessObjectsRequest(firstObjectId, secondObjectId, targetObjectId, stateJson, externalRef),
+            new MergeBusinessObjectsRequest(firstObjectId, secondObjectId, objectType, stateJson, schemaVersion, externalRef),
             cancellationToken);
 
     public Task<LedgerSubmitResult> SplitBusinessObjectPaymentAsync(

@@ -12,8 +12,8 @@
         <FormField Text="Action">
             <DropDown TItem="string" Value="@mode" ValueChanged="@((string value) => mode = value)" Items="Modes" />
         </FormField>
-        <FormField Text="Target object">
-            <TextBox @bind-Value="targetObjectId" />
+        <FormField Text="Result business-object ID">
+            <div class="cda-vef-empty-line">Assigned after confirmation from the transaction output.</div>
         </FormField>
         <FormField Text="Payment amount">
             <TextBox @bind-Value="amount" />
@@ -26,7 +26,6 @@
 
 @code {
     private string mode = "Clone";
-    private string targetObjectId = "bo:purchase-order:1042-copy";
     private string amount = "1000";
     private string notes = "Create a reviewable branch before merging or splitting payment outputs.";
     private static readonly IReadOnlyList<string> Modes = ["Clone", "Merge", "Split payment"];
@@ -49,7 +48,7 @@
         {
             new ActionReviewFact("Action", mode),
             new ActionReviewFact("Source", Object?.ObjectId.Value ?? "none"),
-            new ActionReviewFact("Target", targetObjectId),
+            new ActionReviewFact("Result ID", "Assigned after confirmation"),
             new ActionReviewFact("Amount", amount)
         });
         builder.CloseComponent();

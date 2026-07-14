@@ -516,7 +516,10 @@ public sealed class BusinessObjectAccount(
             .Select(holding => holding.ObjectId)
             .ToHashSet();
         LedgerBusinessObjectHolding[] changedBusinessObjects = addedBusinessObjects
-            .Where(holding => previousObjectIds.Contains(holding.ObjectId))
+            .Where(holding => previousObjectIds.Contains(holding.ObjectId)
+                || holding.References?.Any(reference =>
+                    reference.Relationship == BusinessObjectReferenceRelationships.PreviousVersion
+                    && previousObjectIds.Contains(reference.ObjectId)) == true)
             .ToArray();
 
         Dictionary<BusinessObjectRefreshKey, IBusinessObjectView> nextViewsByKey = new();

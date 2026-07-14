@@ -8,11 +8,15 @@ public sealed class BusinessObjectTransactionBuilder(
     ISignaturePayloadBuilder signaturePayloadBuilder,
     IAccountInputSigner inputSigner,
     ITimeProvider timeProvider,
-    ITokenDefinitionHasher? providedTokenDefinitionHasher = null)
+    ITokenDefinitionHasher? providedTokenDefinitionHasher = null,
+    IBusinessObjectLineageKeyFactory? providedLineageKeyFactory = null)
 {
     private readonly ITokenDefinitionHasher tokenDefinitionHasher = providedTokenDefinitionHasher
         ?? new CanDoItAll.Economy.Cryptography.TokenDefinitionHasher(
             new CanDoItAll.Economy.Cryptography.DefaultTokenDefinitionCanonicalizer());
+
+    private readonly IBusinessObjectLineageKeyFactory lineageKeyFactory = providedLineageKeyFactory
+        ?? RandomBusinessObjectLineageKeyFactory.Instance;
 
     private readonly IAccountTransactionSigner transactionSigner = new AccountTransactionSigner(
         transactionHasher,
@@ -68,7 +72,11 @@ public sealed class BusinessObjectTransactionBuilder(
                 ownerAddress,
                 Amount.Zero,
                 carrierToken,
-                new BusinessObjectRef(request.ObjectId, 1, BusinessObjectOperation.Create, data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
+                new BusinessObjectRef(
+                    request.CompatibilityLineageKey ?? lineageKeyFactory.Create(),
+                    1,
+                    BusinessObjectOperation.Create,
+                    data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
         };
 
         AddMainOutputIfPositive(outputs, ownerAddress, mainAmount);
@@ -101,9 +109,12 @@ public sealed class BusinessObjectTransactionBuilder(
             .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
             .ConfigureAwait(false);
 
-        LedgerSpendableOutput selected = spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == request.ObjectId)
-            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {request.ObjectId.Value}.");
+        LedgerSpendableOutput selected = FindOwnedBusinessObject(
+            spendableOutputs,
+            request.ObjectId,
+            keySource.Address);
         EnsureBusinessObjectCarrier(selected);
+        BusinessObjectId sourceObjectId = BusinessObjectId.FromOutPoint(selected.OutPoint);
 
         Amount amountToReceiver = request.MainAmount ?? selected.MainAmount;
         var selectedInputs = new List<LedgerSpendableOutput> { selected };
@@ -119,13 +130,20 @@ public sealed class BusinessObjectTransactionBuilder(
             selectedMain = selectedInputs.Sum(output => output.MainAmount.Value);
         }
 
-        string stateJson = request.StateJson ?? "{}";
-        HashHex dataHash = request.StateJson is null && selected.BusinessObject is not null
-            ? selected.BusinessObject.DataHash
-            : BusinessObjectPayload.HashJson(stateJson);
-        TransactionData? data = request.StateJson is null && request.ExternalRef is null
-            ? null
-            : BusinessObjectPayload.CreateData(stateJson, TransactionDataItemType.BusinessObject, externalRef: request.ExternalRef);
+        BusinessObjectPayloadDescriptor descriptor = await ResolvePayloadDescriptorAsync(
+            context,
+            sourceObjectId,
+            request.ObjectType,
+            request.SchemaVersion,
+            request.StateJson,
+            cancellationToken).ConfigureAwait(false);
+        TransactionData data = BusinessObjectPayload.CreateStructuredData(
+            descriptor.ObjectType,
+            descriptor.SchemaVersion,
+            descriptor.StateJson,
+            [SourceReference(BusinessObjectReferenceRelationships.PreviousVersion, sourceObjectId)],
+            itemType: descriptor.ItemType,
+            externalRef: request.ExternalRef);
         var outputs = new List<TransactionOutput>
         {
             new(
@@ -133,11 +151,12 @@ public sealed class BusinessObjectTransactionBuilder(
                 request.ReceiverAddress,
                 Amount.Zero,
                 selected.Token,
-                new BusinessObjectRef(
-                    request.ObjectId,
-                    selected.BusinessObject!.Version + 1,
-                    BusinessObjectOperation.Transfer,
-                    dataHash))
+                selected.BusinessObject! with
+                {
+                    Version = selected.BusinessObject.Version + 1,
+                    Operation = BusinessObjectOperation.Transfer,
+                    DataHash = data.DataHash ?? BusinessObjectPayload.HashJson(descriptor.StateJson)
+                })
         };
 
         AddMainOutputIfPositive(outputs, request.ReceiverAddress, amountToReceiver);
@@ -497,7 +516,7 @@ public sealed class BusinessObjectTransactionBuilder(
                 Amount.Zero,
                 new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, request.Amount),
                 new BusinessObjectRef(
-                    PermissionTokenAuthority.CreatePermissionObjectId(grant.Action, grant.Namespace),
+                    lineageKeyFactory.Create(),
                     1,
                     BusinessObjectOperation.Create,
                     data.DataHash!.Value))
@@ -579,7 +598,7 @@ public sealed class BusinessObjectTransactionBuilder(
                 Amount.Zero,
                 new TokenTransfer(RuleTokenAuthority.RuleTokenId, Amount.FromInt64(1)),
                 new BusinessObjectRef(
-                    RuleTokenAuthority.CreateRuleObjectId(rule.RuleId),
+                    lineageKeyFactory.Create(),
                     1,
                     BusinessObjectOperation.Create,
                     data.DataHash!.Value))
@@ -636,7 +655,21 @@ public sealed class BusinessObjectTransactionBuilder(
     {
         LedgerSpendableOutput selected = await GetOwnedBusinessObjectAsync(context, keySource, request.ObjectId, cancellationToken).ConfigureAwait(false);
         EnsureBusinessObjectCarrier(selected);
-        TransactionData data = BusinessObjectPayload.CreateData(request.StateJson, TransactionDataItemType.BusinessObject, externalRef: request.ExternalRef);
+        BusinessObjectId sourceObjectId = BusinessObjectId.FromOutPoint(selected.OutPoint);
+        BusinessObjectPayloadDescriptor descriptor = await ResolvePayloadDescriptorAsync(
+            context,
+            sourceObjectId,
+            request.ObjectType,
+            request.SchemaVersion,
+            request.StateJson,
+            cancellationToken).ConfigureAwait(false);
+        TransactionData data = BusinessObjectPayload.CreateStructuredData(
+            descriptor.ObjectType,
+            descriptor.SchemaVersion,
+            descriptor.StateJson,
+            [SourceReference(BusinessObjectReferenceRelationships.PreviousVersion, sourceObjectId)],
+            itemType: descriptor.ItemType,
+            externalRef: request.ExternalRef);
         var outputs = new List<TransactionOutput>
         {
             new(
@@ -644,7 +677,12 @@ public sealed class BusinessObjectTransactionBuilder(
                 keySource.Address,
                 Amount.Zero,
                 selected.Token,
-                new BusinessObjectRef(request.ObjectId, selected.BusinessObject!.Version + 1, BusinessObjectOperation.Update, data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
+                selected.BusinessObject! with
+                {
+                    Version = selected.BusinessObject.Version + 1,
+                    Operation = BusinessObjectOperation.Update,
+                    DataHash = data.DataHash ?? BusinessObjectPayload.HashJson(descriptor.StateJson)
+                })
         };
         AddMainOutputIfPositive(outputs, keySource.Address, selected.MainAmount);
 
@@ -677,9 +715,25 @@ public sealed class BusinessObjectTransactionBuilder(
         IReadOnlyList<LedgerSpendableOutput> spendableOutputs = await ledgerReadClient
             .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
             .ConfigureAwait(false);
-        LedgerSpendableOutput selected = spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == request.ObjectId)
-            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {request.ObjectId.Value}.");
-        TransactionData data = BusinessObjectPayload.CreateData(request.StateJson, TransactionDataItemType.BusinessObject, externalRef: request.ExternalRef);
+        LedgerSpendableOutput selected = FindOwnedBusinessObject(
+            spendableOutputs,
+            request.ObjectId,
+            keySource.Address);
+        BusinessObjectId sourceObjectId = BusinessObjectId.FromOutPoint(selected.OutPoint);
+        BusinessObjectPayloadDescriptor descriptor = await ResolvePayloadDescriptorAsync(
+            context,
+            sourceObjectId,
+            request.ObjectType,
+            request.SchemaVersion,
+            request.StateJson,
+            cancellationToken).ConfigureAwait(false);
+        TransactionData data = BusinessObjectPayload.CreateStructuredData(
+            descriptor.ObjectType,
+            descriptor.SchemaVersion,
+            descriptor.StateJson,
+            [SourceReference(BusinessObjectReferenceRelationships.PreviousVersion, sourceObjectId)],
+            itemType: descriptor.ItemType,
+            externalRef: request.ExternalRef);
 
         LedgerSpendableOutput? mergeSource = selected.Token is null
             ? null
@@ -731,67 +785,62 @@ public sealed class BusinessObjectTransactionBuilder(
         CancellationToken cancellationToken)
     {
         request.Token?.Amount.EnsureNonNegative(nameof(request.Token));
-        if (request.SourceObjectId == request.NewObjectId)
-        {
-            throw new InvalidOperationException("Clone requires a new BusinessObject id.");
-        }
-
         IReadOnlyList<LedgerSpendableOutput> spendableOutputs = await ledgerReadClient
             .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
             .ConfigureAwait(false);
-        LedgerSpendableOutput source = spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == request.SourceObjectId)
-            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {request.SourceObjectId.Value}.");
-        EnsureBusinessObjectCarrier(source);
-        TransactionData data = BusinessObjectPayload.CreateData(new CreateBusinessObjectRequest(
-            request.NewObjectId,
-            request.ObjectType,
-            request.StateJson,
-            request.SchemaVersion,
-            request.OwnerAddress,
-            Amount.Zero,
-            request.Token,
-            TransactionDataItemType.BusinessObject));
-        var selected = new List<LedgerSpendableOutput> { source };
+        BusinessObjectId sourceObjectId = ResolveCanonicalSourceId(
+            spendableOutputs,
+            request.SourceObjectId);
+        await EnsureReferencedBusinessObjectExistsAsync(
+            context,
+            sourceObjectId,
+            cancellationToken).ConfigureAwait(false);
+        BusinessObjectPayloadDescriptor sourceDescriptor = await ResolvePayloadDescriptorAsync(
+            context,
+            sourceObjectId,
+            requestedObjectType: null,
+            requestedSchemaVersion: null,
+            requestedStateJson: null,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (!string.Equals(sourceDescriptor.ObjectType, request.ObjectType, StringComparison.Ordinal)
+            || !string.Equals(sourceDescriptor.SchemaVersion, request.SchemaVersion, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "A cloned BusinessObject must preserve the source object type and schema version.");
+        }
+
+        sourceDescriptor = sourceDescriptor with { StateJson = request.StateJson };
+        TransactionData data = BusinessObjectPayload.CreateStructuredData(
+            sourceDescriptor.ObjectType,
+            sourceDescriptor.SchemaVersion,
+            sourceDescriptor.StateJson,
+            [SourceReference(BusinessObjectReferenceRelationships.CloneSource, sourceObjectId)],
+            itemType: sourceDescriptor.ItemType);
         TokenTransfer carrierToken = ResolveBusinessObjectCarrierToken(
-            spendableOutputs
-                .Where(output => output.OutPoint != source.OutPoint)
-                .ToArray(),
+            spendableOutputs,
             request.SourceOutPoint,
             request.Token);
         LedgerSpendableOutput tokenSource = request.SourceOutPoint is null
             ? SelectTokenSourceOutput(spendableOutputs, carrierToken.TokenId, carrierToken.Amount, Amount.Zero)
             : SelectExplicitCreateSource(spendableOutputs, request.SourceOutPoint, Amount.Zero, carrierToken);
-        if (tokenSource.OutPoint == source.OutPoint)
-        {
-            throw new InvalidOperationException("Clone carrier token source cannot be the source BusinessObject output.");
-        }
-
-        selected.Add(tokenSource);
 
         var outputs = new List<TransactionOutput>
         {
             new(
                 0,
-                keySource.Address,
-                Amount.Zero,
-                source.Token,
-                source.BusinessObject! with
-                {
-                    Version = source.BusinessObject.Version + 1,
-                    Operation = BusinessObjectOperation.Update
-                }),
-            new(
-                1,
                 request.OwnerAddress ?? keySource.Address,
                 Amount.Zero,
                 carrierToken,
-                new BusinessObjectRef(request.NewObjectId, 1, BusinessObjectOperation.Create, data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
+                new BusinessObjectRef(
+                    request.CompatibilityLineageKey ?? lineageKeyFactory.Create(),
+                    1,
+                    BusinessObjectOperation.Create,
+                    data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
         };
 
-        AddMainOutputIfPositive(outputs, keySource.Address, source.MainAmount);
         AddSelectedChangeOutput(outputs, [tokenSource], keySource.Address, Amount.Zero, carrierToken);
 
-        LedgerTransaction unsigned = CreateMultiInputTransaction(context, keySource, selected, outputs, TransactionKind.BusinessObject, data);
+        LedgerTransaction unsigned = CreateMultiInputTransaction(context, keySource, [tokenSource], outputs, TransactionKind.BusinessObject, data);
 
         return unsigned;
     }
@@ -820,12 +869,60 @@ public sealed class BusinessObjectTransactionBuilder(
         IReadOnlyList<LedgerSpendableOutput> spendableOutputs = await ledgerReadClient
             .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
             .ConfigureAwait(false);
-        LedgerSpendableOutput first = spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == request.FirstObjectId)
-            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {request.FirstObjectId.Value}.");
-        LedgerSpendableOutput second = spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == request.SecondObjectId)
-            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {request.SecondObjectId.Value}.");
+        LedgerSpendableOutput first = FindOwnedBusinessObject(
+            spendableOutputs,
+            request.FirstObjectId,
+            keySource.Address);
+        LedgerSpendableOutput second = FindOwnedBusinessObject(
+            spendableOutputs,
+            request.SecondObjectId,
+            keySource.Address);
+        BusinessObjectId firstObjectId = BusinessObjectId.FromOutPoint(first.OutPoint);
+        BusinessObjectId secondObjectId = BusinessObjectId.FromOutPoint(second.OutPoint);
+        BusinessObjectPayloadDescriptor firstDescriptor = await ResolvePayloadDescriptorAsync(
+            context,
+            firstObjectId,
+            requestedObjectType: null,
+            requestedSchemaVersion: null,
+            requestedStateJson: null,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        BusinessObjectPayloadDescriptor secondDescriptor = await ResolvePayloadDescriptorAsync(
+            context,
+            secondObjectId,
+            requestedObjectType: null,
+            requestedSchemaVersion: null,
+            requestedStateJson: null,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (!string.Equals(firstDescriptor.ObjectType, secondDescriptor.ObjectType, StringComparison.Ordinal)
+            || !string.Equals(firstDescriptor.SchemaVersion, secondDescriptor.SchemaVersion, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Merge requires source BusinessObjects with the same object type and schema version.");
+        }
 
-        TransactionData data = BusinessObjectPayload.CreateData(request.StateJson, TransactionDataItemType.BusinessObject, externalRef: request.ExternalRef);
+        string targetObjectType = request.CompatibilityLineageKey is null
+            ? request.ObjectType
+            : firstDescriptor.ObjectType;
+        string targetSchemaVersion = request.CompatibilityLineageKey is null
+            ? request.SchemaVersion
+            : firstDescriptor.SchemaVersion;
+        if (!string.Equals(targetObjectType, firstDescriptor.ObjectType, StringComparison.Ordinal)
+            || !string.Equals(targetSchemaVersion, firstDescriptor.SchemaVersion, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Merged BusinessObject type and schema must match both source BusinessObjects.");
+        }
+
+        TransactionData data = BusinessObjectPayload.CreateStructuredData(
+            targetObjectType,
+            targetSchemaVersion,
+            request.StateJson,
+            [
+                SourceReference(BusinessObjectReferenceRelationships.MergeSource, firstObjectId),
+                SourceReference(BusinessObjectReferenceRelationships.MergeSource, secondObjectId)
+            ],
+            itemType: firstDescriptor.ItemType,
+            externalRef: request.ExternalRef);
         var selected = new List<LedgerSpendableOutput> { first, second };
         TokenTransfer carrierToken;
         if (first.Token is null && second.Token is null)
@@ -858,7 +955,11 @@ public sealed class BusinessObjectTransactionBuilder(
                 keySource.Address,
                 Amount.Zero,
                 carrierToken,
-                new BusinessObjectRef(request.TargetObjectId, 1, BusinessObjectOperation.Create, data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
+                new BusinessObjectRef(
+                    request.CompatibilityLineageKey ?? lineageKeyFactory.Create(),
+                    1,
+                    BusinessObjectOperation.Create,
+                    data.DataHash ?? BusinessObjectPayload.HashJson(request.StateJson)))
         };
         AddMainOutputIfPositive(outputs, keySource.Address, new Amount(first.MainAmount.Value + second.MainAmount.Value));
         decimal tokenInput = selected
@@ -909,9 +1010,12 @@ public sealed class BusinessObjectTransactionBuilder(
         IReadOnlyList<LedgerSpendableOutput> spendableOutputs = await ledgerReadClient
             .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
             .ConfigureAwait(false);
-        LedgerSpendableOutput selected = spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == request.ObjectId)
-            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {request.ObjectId.Value}.");
+        LedgerSpendableOutput selected = FindOwnedBusinessObject(
+            spendableOutputs,
+            request.ObjectId,
+            keySource.Address);
         EnsureBusinessObjectCarrier(selected);
+        BusinessObjectId sourceObjectId = BusinessObjectId.FromOutPoint(selected.OutPoint);
         decimal paymentTotal = request.Payments.Aggregate(0m, (sum, payment) => sum + payment.Amount.Value);
         var selectedInputs = new List<LedgerSpendableOutput> { selected };
         decimal selectedMain = selected.MainAmount.Value;
@@ -926,13 +1030,20 @@ public sealed class BusinessObjectTransactionBuilder(
             selectedMain = selectedInputs.Sum(output => output.MainAmount.Value);
         }
 
-        string stateJson = request.StateJson ?? "{}";
-        HashHex dataHash = request.StateJson is null && selected.BusinessObject is not null
-            ? selected.BusinessObject.DataHash
-            : BusinessObjectPayload.HashJson(stateJson);
-        TransactionData? data = request.StateJson is null && request.ExternalRef is null
-            ? null
-            : BusinessObjectPayload.CreateData(stateJson, TransactionDataItemType.BusinessObject, externalRef: request.ExternalRef);
+        BusinessObjectPayloadDescriptor descriptor = await ResolvePayloadDescriptorAsync(
+            context,
+            sourceObjectId,
+            request.ObjectType,
+            request.SchemaVersion,
+            request.StateJson,
+            cancellationToken).ConfigureAwait(false);
+        TransactionData data = BusinessObjectPayload.CreateStructuredData(
+            descriptor.ObjectType,
+            descriptor.SchemaVersion,
+            descriptor.StateJson,
+            [SourceReference(BusinessObjectReferenceRelationships.PreviousVersion, sourceObjectId)],
+            itemType: descriptor.ItemType,
+            externalRef: request.ExternalRef);
         var outputs = new List<TransactionOutput>();
 
         BusinessObjectPaymentOutput carrierPayment = request.Payments[0];
@@ -941,7 +1052,12 @@ public sealed class BusinessObjectTransactionBuilder(
             carrierPayment.ReceiverAddress,
             Amount.Zero,
             selected.Token,
-            new BusinessObjectRef(request.ObjectId, selected.BusinessObject!.Version + 1, BusinessObjectOperation.Transfer, dataHash)));
+            selected.BusinessObject! with
+            {
+                Version = selected.BusinessObject.Version + 1,
+                Operation = BusinessObjectOperation.Transfer,
+                DataHash = data.DataHash ?? BusinessObjectPayload.HashJson(descriptor.StateJson)
+            }));
 
         for (var i = 0; i < request.Payments.Count; i++)
         {
@@ -985,8 +1101,21 @@ public sealed class BusinessObjectTransactionBuilder(
 
         LedgerSpendableOutput selected = await GetOwnedBusinessObjectAsync(context, keySource, request.ObjectId, cancellationToken).ConfigureAwait(false);
         EnsureBusinessObjectCarrier(selected);
-        string stateJson = string.IsNullOrWhiteSpace(request.StateJson) ? "{}" : request.StateJson;
-        TransactionData data = BusinessObjectPayload.CreateData(stateJson, TransactionDataItemType.BusinessObject, externalRef: request.ExternalRef);
+        BusinessObjectId sourceObjectId = BusinessObjectId.FromOutPoint(selected.OutPoint);
+        BusinessObjectPayloadDescriptor descriptor = await ResolvePayloadDescriptorAsync(
+            context,
+            sourceObjectId,
+            request.ObjectType,
+            request.SchemaVersion,
+            request.StateJson,
+            cancellationToken).ConfigureAwait(false);
+        TransactionData data = BusinessObjectPayload.CreateStructuredData(
+            descriptor.ObjectType,
+            descriptor.SchemaVersion,
+            descriptor.StateJson,
+            [SourceReference(BusinessObjectReferenceRelationships.PreviousVersion, sourceObjectId)],
+            itemType: descriptor.ItemType,
+            externalRef: request.ExternalRef);
         var outputs = new List<TransactionOutput>
         {
             new(
@@ -994,11 +1123,12 @@ public sealed class BusinessObjectTransactionBuilder(
                 keySource.Address,
                 Amount.Zero,
                 selected.Token,
-                new BusinessObjectRef(
-                    request.ObjectId,
-                    selected.BusinessObject!.Version + 1,
-                    BusinessObjectOperation.Update,
-                    data.DataHash ?? BusinessObjectPayload.HashJson(stateJson)))
+                selected.BusinessObject! with
+                {
+                    Version = selected.BusinessObject.Version + 1,
+                    Operation = BusinessObjectOperation.Update,
+                    DataHash = data.DataHash ?? BusinessObjectPayload.HashJson(descriptor.StateJson)
+                })
         };
         AddMainOutputIfPositive(outputs, keySource.Address, selected.MainAmount);
 
@@ -1022,9 +1152,141 @@ public sealed class BusinessObjectTransactionBuilder(
             .GetSpendableOutputsAsync(new LedgerAddressQuery(context, keySource.Address), cancellationToken)
             .ConfigureAwait(false);
 
-        return spendableOutputs.FirstOrDefault(x => x.BusinessObject?.ObjectId == objectId)
-            ?? throw new InvalidOperationException($"BusinessObject is not owned by {keySource.Address.Value}: {objectId.Value}.");
+        return FindOwnedBusinessObject(spendableOutputs, objectId, keySource.Address);
     }
+
+    private static LedgerSpendableOutput FindOwnedBusinessObject(
+        IReadOnlyList<LedgerSpendableOutput> spendableOutputs,
+        BusinessObjectId objectId,
+        Address ownerAddress)
+    {
+        if (objectId.TryGetOutPoint(out OutPoint outPoint))
+        {
+            return spendableOutputs.FirstOrDefault(output =>
+                    output.BusinessObject is not null && output.OutPoint == outPoint)
+                ?? throw new InvalidOperationException($"BusinessObject is not owned by {ownerAddress.Value}: {objectId.Value}.");
+        }
+
+        // V1/V2 compatibility for callers that still hold the former stable ID. Public UI/API
+        // boundaries reject this shape and all responses expose the canonical current outpoint.
+        return spendableOutputs.FirstOrDefault(output =>
+                string.Equals(output.BusinessObject?.LineageKey.Value, objectId.Value, StringComparison.Ordinal))
+            ?? throw new InvalidOperationException($"BusinessObject is not owned by {ownerAddress.Value}: {objectId.Value}.");
+    }
+
+    private static BusinessObjectId ResolveCanonicalSourceId(
+        IReadOnlyList<LedgerSpendableOutput> spendableOutputs,
+        BusinessObjectId requestedObjectId)
+    {
+        if (requestedObjectId.TryGetOutPoint(out _))
+        {
+            return requestedObjectId;
+        }
+
+        LedgerSpendableOutput legacySource = spendableOutputs.FirstOrDefault(output =>
+                string.Equals(
+                    output.BusinessObject?.LineageKey.Value,
+                    requestedObjectId.Value,
+                    StringComparison.Ordinal))
+            ?? throw new InvalidOperationException(
+                $"Legacy BusinessObject lineage alias could not be resolved: {requestedObjectId.Value}.");
+        return BusinessObjectId.FromOutPoint(legacySource.OutPoint);
+    }
+
+    private async Task<BusinessObjectPayloadDescriptor> ResolvePayloadDescriptorAsync(
+        LedgerAccountContext context,
+        BusinessObjectId objectId,
+        string? requestedObjectType,
+        string? requestedSchemaVersion,
+        string? requestedStateJson,
+        CancellationToken cancellationToken)
+    {
+        objectId.RequireOutPoint();
+        LedgerBusinessObjectHolding? holding = null;
+        try
+        {
+            holding = await ledgerReadClient.GetBusinessObjectAsync(
+                new LedgerBusinessObjectQuery(context, ObjectId: objectId, Take: 1),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (NotSupportedException)
+        {
+            // Older read clients can still supply the source transaction below.
+        }
+
+        BusinessObjectPayloadEnvelope? envelope = null;
+        TransactionDataItemType? sourceItemType = null;
+        try
+        {
+            OutPoint outPoint = objectId.RequireOutPoint();
+            LedgerTransactionSummary? sourceTransaction = await ledgerReadClient.GetTransactionAsync(
+                context,
+                outPoint.TxId,
+                includeData: true,
+                cancellationToken).ConfigureAwait(false);
+            if (sourceTransaction?.Outputs.Any(output =>
+                    output.OutputIndex == outPoint.OutputIndex && output.HasBusinessObject) == true
+                && BusinessObjectPayloadEnvelopeReader.TryRead(sourceTransaction.Data?.InlineJson, out BusinessObjectPayloadEnvelope parsed))
+            {
+                envelope = parsed;
+            }
+
+            sourceItemType = sourceTransaction?.Data?.ItemType;
+        }
+        catch (NotSupportedException)
+        {
+            // Request metadata and the holding projection remain valid compatibility fallbacks.
+        }
+
+        return new BusinessObjectPayloadDescriptor(
+            FirstNonEmpty(requestedObjectType, holding?.ObjectType, envelope?.ObjectType, "business-object"),
+            FirstNonEmpty(requestedSchemaVersion, holding?.SchemaVersion, envelope?.SchemaVersion, "1.0"),
+            FirstNonEmpty(requestedStateJson, holding?.StateJson, envelope?.StateJson, "{}"),
+            holding?.ItemType ?? sourceItemType ?? TransactionDataItemType.BusinessObject);
+    }
+
+    private async Task EnsureReferencedBusinessObjectExistsAsync(
+        LedgerAccountContext context,
+        BusinessObjectId objectId,
+        CancellationToken cancellationToken)
+    {
+        OutPoint outPoint = objectId.RequireOutPoint();
+        try
+        {
+            LedgerTransactionSummary? sourceTransaction = await ledgerReadClient.GetTransactionAsync(
+                context,
+                outPoint.TxId,
+                includeData: false,
+                cancellationToken).ConfigureAwait(false);
+            if (sourceTransaction is null
+                || !sourceTransaction.Outputs.Any(output =>
+                    output.OutputIndex == outPoint.OutputIndex && output.HasBusinessObject))
+            {
+                throw new InvalidOperationException($"Clone source BusinessObject does not exist: {objectId.Value}.");
+            }
+        }
+        catch (NotSupportedException)
+        {
+            // Compatibility read clients may validate the reference when the transaction is submitted.
+        }
+    }
+
+    private static BusinessObjectDataReference SourceReference(
+        string relationship,
+        BusinessObjectId objectId)
+    {
+        objectId.RequireOutPoint();
+        return new BusinessObjectDataReference(relationship, objectId);
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+        => values.First(value => !string.IsNullOrWhiteSpace(value))!;
+
+    private sealed record BusinessObjectPayloadDescriptor(
+        string ObjectType,
+        string SchemaVersion,
+        string StateJson,
+        TransactionDataItemType ItemType);
 
     private static IReadOnlyList<LedgerSpendableOutput> SelectMainOutputs(
         IReadOnlyList<LedgerSpendableOutput> spendableOutputs,

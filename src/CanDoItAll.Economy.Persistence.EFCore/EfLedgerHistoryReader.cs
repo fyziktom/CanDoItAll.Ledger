@@ -144,7 +144,7 @@ public sealed class EfLedgerHistoryReader(IDbContextFactory<EconomyDbContext> db
             ParseAmount(row.MainAmount),
             string.IsNullOrWhiteSpace(row.TokenId) ? null : new TokenTransfer(new TokenId(row.TokenId), ParseAmount(row.TokenAmount ?? 0m)),
             string.IsNullOrWhiteSpace(row.BusinessObjectId) ? null : new BusinessObjectRef(
-                new BusinessObjectId(row.BusinessObjectId),
+                new BusinessObjectLineageKey(row.BusinessObjectId),
                 row.BusinessObjectVersion ?? 0,
                 (BusinessObjectOperation)(row.BusinessObjectOperation ?? 0),
                 new HashHex(row.BusinessObjectDataHash ?? string.Empty)),

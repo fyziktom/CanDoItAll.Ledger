@@ -175,10 +175,18 @@ public sealed class InProcessLedgerGateway(
         cancellationToken.ThrowIfCancellationRequested();
         lock (gate)
         {
+            BusinessObjectLineageKey? queriedLineage = query.BusinessObjectId is { } objectId
+                ? ResolveLineageKey(query.Context, objectId)
+                : null;
+            if (query.BusinessObjectId is not null && queriedLineage is null)
+            {
+                return Task.FromResult<IReadOnlyList<LedgerTransactionSummary>>([]);
+            }
+
             IReadOnlyList<LedgerTransactionSummary> result = transactions
                 .Where(x => x.Context == query.Context)
                 .Where(x => query.Address is null || x.InputAddresses.Contains(query.Address.Value) || x.OutputAddresses.Contains(query.Address.Value))
-                .Where(x => query.BusinessObjectId is null || x.Outputs.Any(output => output.BusinessObject?.ObjectId == query.BusinessObjectId.Value))
+                .Where(x => queriedLineage is null || TransactionContainsLineage(x, queriedLineage.Value))
                 .Where(x => query.Kind is null || x.Kind == query.Kind.Value)
                 .OrderByDescending(x => x.LedgerSequence ?? long.MinValue)
                 .ThenByDescending(x => x.Timestamp)
@@ -195,7 +203,7 @@ public sealed class InProcessLedgerGateway(
     private void ApplyConfirmedTransaction(LedgerTransaction transaction, long ledgerSequence)
     {
         TxId txId = transaction.TxId ?? throw new InvalidOperationException("Confirmed transaction must have a transaction id.");
-        var consumedHoldings = new Dictionary<BusinessObjectId, LedgerBusinessObjectHolding>();
+        var consumedHoldings = new Dictionary<BusinessObjectLineageKey, LedgerBusinessObjectHolding>();
 
         foreach (TransactionInput input in transaction.Inputs)
         {
@@ -204,7 +212,7 @@ public sealed class InProcessLedgerGateway(
                 && previousOutput.BusinessObject is not null
                 && businessObjectHoldings.TryGetValue(key, out ProjectedBusinessObjectHolding? previousHolding))
             {
-                consumedHoldings[previousOutput.BusinessObject.ObjectId] = previousHolding.Holding;
+                consumedHoldings[previousOutput.BusinessObject.LineageKey] = previousHolding.Holding;
             }
 
             spendableOutputs.Remove(key);
@@ -243,7 +251,7 @@ public sealed class InProcessLedgerGateway(
             transaction.Inputs.Select(x => x.Address).Distinct().ToArray(),
             transaction.Outputs.Select(x => x.Address).Distinct().ToArray(),
             transaction.Inputs.Select(input => ToInputSummary(transaction, input)).ToArray(),
-            transaction.Outputs.Select(ToOutputSummary).ToArray(),
+            transaction.Outputs.Select(output => ToOutputSummary(txId, output)).ToArray(),
             transaction.Data,
             ledgerSequence));
 
@@ -264,14 +272,21 @@ public sealed class InProcessLedgerGateway(
             input.SignatureBundle,
             input.SignaturePayloadHash);
 
-    private static LedgerTransactionOutputSummary ToOutputSummary(TransactionOutput output)
+    private static LedgerTransactionOutputSummary ToOutputSummary(TxId transactionId, TransactionOutput output)
         => new(
             output.OutputIndex,
             output.Address,
             output.MainAmount,
             output.Token,
             output.BusinessObject,
-            output.MetadataHash);
+            output.MetadataHash,
+            output.BusinessObject is null
+                ? null
+                : new LedgerBusinessObjectOutputDetails(
+                    BusinessObjectId.FromOutPoint(transactionId, output.OutputIndex),
+                    output.BusinessObject.Version,
+                    output.BusinessObject.Operation,
+                    output.BusinessObject.DataHash));
 
     private static bool Matches(LedgerAddressQuery query, LedgerSpendableOutput output)
         => output.Context == query.Context && output.Address == query.Address;
@@ -308,6 +323,28 @@ public sealed class InProcessLedgerGateway(
 
         return true;
     }
+
+    private BusinessObjectLineageKey? ResolveLineageKey(
+        LedgerAccountContext context,
+        BusinessObjectId objectId)
+    {
+        if (!objectId.TryGetOutPoint(out OutPoint outPoint))
+        {
+            return null;
+        }
+
+        return transactions
+            .Where(transaction => transaction.Context == context && transaction.TxId == outPoint.TxId)
+            .SelectMany(transaction => transaction.Outputs)
+            .Where(output => output.OutputIndex == outPoint.OutputIndex)
+            .Select(output => (BusinessObjectLineageKey?)output.BusinessObject?.LineageKey)
+            .FirstOrDefault(lineageKey => lineageKey is not null);
+    }
+
+    private static bool TransactionContainsLineage(
+        LedgerTransactionSummary transaction,
+        BusinessObjectLineageKey lineageKey)
+        => transaction.Outputs.Any(output => output.BusinessObject?.LineageKey == lineageKey);
 
     private static bool StatePropertiesMatch(string? stateJson, IReadOnlyDictionary<string, string> expected)
     {
@@ -353,15 +390,15 @@ public sealed class InProcessLedgerGateway(
         LedgerTransaction transaction,
         TransactionOutput output,
         OutPoint outPoint,
-        IReadOnlyDictionary<BusinessObjectId, LedgerBusinessObjectHolding> consumedHoldings)
+        IReadOnlyDictionary<BusinessObjectLineageKey, LedgerBusinessObjectHolding> consumedHoldings)
     {
         BusinessObjectRef businessObject = output.BusinessObject
             ?? throw new InvalidOperationException("BusinessObject output is required.");
-        consumedHoldings.TryGetValue(businessObject.ObjectId, out LedgerBusinessObjectHolding? previous);
+        consumedHoldings.TryGetValue(businessObject.LineageKey, out LedgerBusinessObjectHolding? previous);
         BusinessObjectPayloadEnvelope? envelope = TryReadPayloadEnvelope(transaction.Data?.InlineJson);
 
         return new LedgerBusinessObjectHolding(
-            businessObject.ObjectId,
+            BusinessObjectId.FromOutPoint(outPoint),
             businessObject.Version,
             output.Address,
             businessObject.Operation,
@@ -372,7 +409,8 @@ public sealed class InProcessLedgerGateway(
             envelope?.SchemaVersion ?? previous?.SchemaVersion ?? "1.0",
             envelope?.StateJson ?? transaction.Data?.InlineJson ?? previous?.StateJson,
             transaction.Data?.ExternalRef ?? previous?.ExternalRef,
-            transaction.Data?.ItemType ?? previous?.ItemType ?? TransactionDataItemType.BusinessObject);
+            transaction.Data?.ItemType ?? previous?.ItemType ?? TransactionDataItemType.BusinessObject,
+            envelope?.References ?? previous?.References);
     }
 
     private static BusinessObjectPayloadEnvelope? TryReadPayloadEnvelope(string? inlineJson)

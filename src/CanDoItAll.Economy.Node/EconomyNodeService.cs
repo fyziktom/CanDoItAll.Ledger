@@ -20,7 +20,8 @@ public sealed class EconomyNodeService(
     EconomyNodeHostOptions? hostOptions = null,
     EconomyLedgerReadModelService? readModelService = null,
     IEconomySchemaMigrator? schemaMigrator = null,
-    ITokenDefinitionHasher? providedTokenDefinitionHasher = null)
+    ITokenDefinitionHasher? providedTokenDefinitionHasher = null,
+    IBusinessObjectLineageKeyFactory? providedLineageKeyFactory = null)
 {
     private static readonly LedgerId DefaultLedgerId = new("default");
     private readonly EconomyNodeHostOptions options = hostOptions ?? new EconomyNodeHostOptions();
@@ -31,6 +32,8 @@ public sealed class EconomyNodeService(
     private readonly IEconomySchemaMigrator? configuredSchemaMigrator = schemaMigrator;
     private readonly ITokenDefinitionHasher tokenDefinitionHasher = providedTokenDefinitionHasher
         ?? new TokenDefinitionHasher(new DefaultTokenDefinitionCanonicalizer());
+    private readonly IBusinessObjectLineageKeyFactory lineageKeyFactory = providedLineageKeyFactory
+        ?? RandomBusinessObjectLineageKeyFactory.Instance;
 
     public async Task ResetAsync(CancellationToken cancellationToken)
     {
@@ -109,7 +112,6 @@ public sealed class EconomyNodeService(
         ScenarioId? scenarioId = ToScenarioId(request.ScenarioId);
         PermissionGrant grant = new(action, tokenNamespace, request.Repeatable ?? true);
         TransactionData data = PermissionTokenAuthority.CreateData(grant);
-        BusinessObjectId permissionObjectId = PermissionTokenAuthority.CreatePermissionObjectId(grant.Action, grant.Namespace);
         UnspentOutputRecord treasuryPermission = await GetTreasuryPermissionOutputAsync(scenarioId, cancellationToken).ConfigureAwait(false);
         decimal availablePermission = treasuryPermission.TokenAmount ?? 0m;
         if (availablePermission < amount.Value)
@@ -124,7 +126,7 @@ public sealed class EconomyNodeService(
                 receiverAddress,
                 Amount.Zero,
                 new TokenTransfer(PermissionTokenAuthority.PermissionTokenId, amount),
-                new BusinessObjectRef(permissionObjectId, 1, BusinessObjectOperation.Create, data.DataHash!.Value))
+                new BusinessObjectRef(lineageKeyFactory.Create(), 1, BusinessObjectOperation.Create, data.DataHash!.Value))
         };
         decimal change = availablePermission - amount.Value;
         if (change > 0m)
@@ -154,6 +156,8 @@ public sealed class EconomyNodeService(
             await SignTreasuryInputsAsync(transaction, cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
         TransactionReceipt receipt = ToReceipt(result);
+        BusinessObjectId permissionObjectId = BusinessObjectId.FromOutPoint(
+            new OutPoint(new TxId(receipt.TxId), OutputIndex: 0));
 
         return new PermissionGrantReceipt(
             permissionObjectId.Value,
@@ -230,7 +234,7 @@ public sealed class EconomyNodeService(
             receiverAddress,
             mainAmount,
             token,
-            CreateBusinessObjectRef(request.BusinessObjectId, data));
+            CreateBusinessObjectRef(request.LegacyBusinessObjectCreationMarker, data));
         if (treasuryAuthority is not null)
         {
             AddPreservedAuthorityOutput(outputs, treasuryAuthority, treasuryAddress);
@@ -323,7 +327,7 @@ public sealed class EconomyNodeService(
             toAddress,
             mainAmount,
             token,
-            CreateBusinessObjectRef(request.BusinessObjectId, data));
+            CreateBusinessObjectRef(request.LegacyBusinessObjectCreationMarker, data));
 
         AddChangeOutput(outputs, selected, fromAddress.Value, mainAmount, token);
 
@@ -550,9 +554,33 @@ public sealed class EconomyNodeService(
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return candidates.FirstOrDefault(candidate => authorizationNamespace is null
-            ? PermissionObjectAllowsToken(candidate, tokenId)
-            : PermissionObjectAllowsToken(candidate, new TokenId(authorizationNamespace)));
+        string[] dataHashes = candidates
+            .Select(candidate => candidate.BusinessObjectDataHash)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        List<LedgerTransactionRecord> permissionDataRows = dataHashes.Length == 0
+            ? []
+            : await db.Transactions
+                .AsNoTracking()
+                .Where(transaction => transaction.LedgerId == DefaultLedgerId.Value
+                    && transaction.ScenarioId == scenarioValue
+                    && transaction.DataHash != null
+                    && dataHashes.Contains(transaction.DataHash))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+        Dictionary<string, TransactionData> permissionDataByHash = permissionDataRows
+            .Select(row => new { row.DataHash, Data = EconomyNodeRecordMapper.ToTransactionData(row) })
+            .Where(item => !string.IsNullOrWhiteSpace(item.DataHash) && item.Data is not null)
+            .GroupBy(item => item.DataHash!, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Data!, StringComparer.Ordinal);
+
+        TokenId requestedNamespace = authorizationNamespace is null
+            ? tokenId
+            : new TokenId(authorizationNamespace);
+        return candidates.FirstOrDefault(candidate =>
+            PermissionObjectAllowsToken(candidate, permissionDataByHash, requestedNamespace));
     }
 
     private static void AddPreservedAuthorityOutput(
@@ -625,21 +653,26 @@ public sealed class EconomyNodeService(
             parsedType);
     }
 
-    private static BusinessObjectRef? CreateBusinessObjectRef(string? objectId, TransactionData? data)
+    private BusinessObjectRef? CreateBusinessObjectRef(
+        string? legacyBusinessObjectCreationMarker,
+        TransactionData? data)
     {
-        if (string.IsNullOrWhiteSpace(objectId))
+        if (string.IsNullOrWhiteSpace(legacyBusinessObjectCreationMarker))
         {
             return null;
         }
 
-        string normalized = objectId.Trim();
-        if (!LedgerValueValidation.IsValidIdentifier(normalized, LedgerValidationLimits.MaxBusinessObjectIdLength))
+        if (data?.DataHash is not { } dataHash)
         {
-            throw new InvalidOperationException("BusinessObject id contains unsupported characters, is empty, or is too long.");
+            throw new InvalidOperationException(
+                "The legacy businessObjectId creation marker requires transaction data with a content hash.");
         }
 
-        HashHex dataHash = data?.DataHash ?? Hex.Sha256Hex(Hex.Utf8(normalized));
-        return new BusinessObjectRef(new BusinessObjectId(normalized), 1, BusinessObjectOperation.Create, dataHash);
+        return new BusinessObjectRef(
+            lineageKeyFactory.Create(),
+            1,
+            BusinessObjectOperation.Create,
+            dataHash);
     }
 
     private static TokenTransfer? CreateToken(string? tokenId, decimal? amount)
@@ -685,27 +718,27 @@ public sealed class EconomyNodeService(
         return new TokenTransfer(tokenId, amount);
     }
 
-    private static bool PermissionObjectAllowsToken(UnspentOutputRecord row, TokenId tokenId)
+    private static bool PermissionObjectAllowsToken(
+        UnspentOutputRecord row,
+        IReadOnlyDictionary<string, TransactionData> permissionDataByHash,
+        TokenId tokenId)
     {
-        const string permissionPrefix = "permission:";
-        string actionPrefix = $"{permissionPrefix}{PermissionTokenAuthority.MintNewTokenTypeAction}:";
-        if (string.IsNullOrWhiteSpace(row.BusinessObjectId)
-            || !row.BusinessObjectId.StartsWith(actionPrefix, StringComparison.Ordinal))
+        BusinessObjectRef? businessObject = EconomyNodeRecordMapper.ToBusinessObjectRef(row);
+        if (businessObject is null
+            || string.IsNullOrWhiteSpace(row.BusinessObjectDataHash)
+            || !permissionDataByHash.TryGetValue(row.BusinessObjectDataHash, out TransactionData? data)
+            || !PermissionTokenAuthority.TryParseData(data, businessObject, out PermissionGrant grant)
+            || !string.Equals(
+                grant.Action,
+                PermissionTokenAuthority.MintNewTokenTypeAction,
+                StringComparison.Ordinal))
         {
             return false;
         }
 
-        string permissionTail = row.BusinessObjectId[actionPrefix.Length..];
-        int suffixSeparator = permissionTail.LastIndexOf(':');
-        if (suffixSeparator <= 0)
-        {
-            return false;
-        }
-
-        string tokenNamespace = permissionTail[..suffixSeparator];
         try
         {
-            return PermissionTokenAuthority.IsTokenInNamespace(tokenId, tokenNamespace);
+            return PermissionTokenAuthority.IsTokenInNamespace(tokenId, grant.Namespace);
         }
         catch (ArgumentException)
         {

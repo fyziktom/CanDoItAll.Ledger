@@ -51,7 +51,10 @@ public sealed class BusinessObjectEditUpdateComponentTests : TestContext
 
         nameInput.Input("Updated BO Name");
         await ClickButtonAsync(component, "Next");
-        Assert.Contains(businessObject.ObjectId.Value, component.Find("[data-testid='bo-edit-source']").TextContent, StringComparison.Ordinal);
+        Assert.True(businessObject.ObjectId.IsCanonicalOutPointId());
+        string sourceSummary = component.Find("[data-testid='bo-edit-source']").TextContent;
+        Assert.Contains(businessObject.ObjectId.Value[..14], sourceSummary, StringComparison.Ordinal);
+        Assert.Contains(businessObject.ObjectId.Value[^6..], sourceSummary, StringComparison.Ordinal);
 
         await ClickButtonAsync(component, "Stage BO Update");
 

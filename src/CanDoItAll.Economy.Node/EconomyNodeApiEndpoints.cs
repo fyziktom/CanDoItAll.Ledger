@@ -138,7 +138,10 @@ public static partial class EconomyNodeHost
             EconomyLedgerQueryService queries,
             CancellationToken cancellationToken) =>
             await EconomyNodeApiResults.OkOrProblemAsync(
-                token => queries.GetSpendableOutputsAsync(CreateLedgerAddressQuery(ledgerId, address, scenarioId), token),
+                token => GetPublicSpendableOutputsAsync(
+                    queries,
+                    CreateLedgerAddressQuery(ledgerId, address, scenarioId),
+                    token),
                 cancellationToken).ConfigureAwait(false))
             .AddEndpointFilter(ValidateEconomyReadAuthorizationAsync)
             .RequireRateLimiting(ReadRateLimitPolicy);
@@ -163,7 +166,11 @@ public static partial class EconomyNodeHost
             EconomyLedgerQueryService queries,
             CancellationToken cancellationToken) =>
             await EconomyNodeApiResults.OkOrProblemAsync(
-                token => queries.GetLedgerTransactionsAsync(CreateLedgerAddressQuery(ledgerId, address, scenarioId), includeData ?? false, token),
+                token => ToPublicLedgerTransactionsAsync(
+                    queries.GetLedgerTransactionsAsync(
+                        CreateLedgerAddressQuery(ledgerId, address, scenarioId),
+                        includeData ?? false,
+                        token)),
                 cancellationToken).ConfigureAwait(false))
             .AddEndpointFilter(ValidateEconomyReadAuthorizationAsync)
             .RequireRateLimiting(ReadRateLimitPolicy);
@@ -193,7 +200,9 @@ public static partial class EconomyNodeHost
                 LedgerTransactionSummary? summary = await queries
                     .GetLedgerTransactionAsync(CreateLedgerAccountContext(ledgerId, scenarioId), new TxId(txId), includeData ?? false, cancellationToken)
                     .ConfigureAwait(false);
-                return summary is null ? Results.NotFound() : Results.Ok(summary);
+                return summary is null
+                    ? Results.NotFound()
+                    : Results.Ok(ToPublicLedgerTransaction(summary));
             }
             catch (InvalidOperationException ex)
             {
@@ -224,7 +233,10 @@ public static partial class EconomyNodeHost
             EconomyLedgerQueryService queries,
             CancellationToken cancellationToken) =>
             await EconomyNodeApiResults.OkOrProblemAsync(
-                token => queries.QueryLedgerTransactionsAsync(CreateLedgerTransactionQuery(ledgerId, request), token),
+                token => ToPublicLedgerTransactionsAsync(
+                    queries.QueryLedgerTransactionsAsync(
+                        CreateLedgerTransactionQuery(ledgerId, request),
+                        token)),
                 cancellationToken).ConfigureAwait(false))
             .AddEndpointFilter(ValidateRequestBodySizeAsync)
             .AddEndpointFilter(ValidateEconomyReadAuthorizationAsync)
@@ -444,6 +456,91 @@ public static partial class EconomyNodeHost
         return new(CreateLedgerAccountContext(ledgerId, scenarioId), new Address(address));
     }
 
+    private static async Task<IReadOnlyList<EconomyNodeSpendableOutput>> GetPublicSpendableOutputsAsync(
+        EconomyLedgerQueryService queries,
+        LedgerAddressQuery query,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<LedgerSpendableOutput> outputs = await queries
+            .GetSpendableOutputsAsync(query, cancellationToken)
+            .ConfigureAwait(false);
+        return outputs.Select(ToPublicSpendableOutput).ToArray();
+    }
+
+    private static EconomyNodeSpendableOutput ToPublicSpendableOutput(LedgerSpendableOutput output)
+        => new(
+            output.Context,
+            output.OutPointKey,
+            output.OutPoint,
+            output.Address,
+            output.MainAmount,
+            output.Token,
+            output.BusinessObject is null
+                ? null
+                : new EconomyNodeSpendableBusinessObjectDetails(
+                    BusinessObjectId.FromOutPoint(output.OutPoint),
+                    output.BusinessObject.LineageKey,
+                    output.BusinessObject.Version,
+                    output.BusinessObject.Operation,
+                    output.BusinessObject.DataHash),
+            output.CreatedAt);
+
+    private static async Task<IReadOnlyList<EconomyNodeLedgerTransactionSummary>> ToPublicLedgerTransactionsAsync(
+        Task<IReadOnlyList<LedgerTransactionSummary>> summariesTask)
+    {
+        IReadOnlyList<LedgerTransactionSummary> summaries = await summariesTask.ConfigureAwait(false);
+        return summaries.Select(ToPublicLedgerTransaction).ToArray();
+    }
+
+    private static EconomyNodeLedgerTransactionSummary ToPublicLedgerTransaction(
+        LedgerTransactionSummary summary)
+        => new(
+            summary.Context,
+            summary.TxId,
+            summary.Kind,
+            summary.Status,
+            summary.Timestamp,
+            summary.InputAddresses,
+            summary.OutputAddresses,
+            summary.Inputs,
+            summary.Outputs
+                .Select(output => ToPublicLedgerTransactionOutput(summary.TxId, output))
+                .ToArray(),
+            summary.Data,
+            summary.LedgerSequence);
+
+    private static EconomyNodeLedgerTransactionOutputSummary ToPublicLedgerTransactionOutput(
+        TxId txId,
+        LedgerTransactionOutputSummary output)
+    {
+        LedgerBusinessObjectOutputDetails? details = output.BusinessObjectDetails;
+        if (details is not null)
+        {
+            BusinessObjectId expectedObjectId = BusinessObjectId.FromOutPoint(txId, output.OutputIndex);
+            if (details.ObjectId != expectedObjectId)
+            {
+                throw new InvalidOperationException(
+                    $"Transaction {txId.Value} output {output.OutputIndex} has BusinessObject id {details.ObjectId.Value}; expected {expectedObjectId.Value}.");
+            }
+        }
+        else if (output.BusinessObject is { } internalReference)
+        {
+            details = new LedgerBusinessObjectOutputDetails(
+                BusinessObjectId.FromOutPoint(txId, output.OutputIndex),
+                internalReference.Version,
+                internalReference.Operation,
+                internalReference.DataHash);
+        }
+
+        return new EconomyNodeLedgerTransactionOutputSummary(
+            output.OutputIndex,
+            output.Address,
+            output.MainAmount,
+            output.Token,
+            details,
+            output.MetadataHash);
+    }
+
     private static LedgerAccountContext CreateLedgerAccountContext(string ledgerId, string? scenarioId)
     {
         ValidateIdentifier(ledgerId, LedgerValidationLimits.MaxLedgerIdLength, "ledger id");
@@ -462,12 +559,7 @@ public static partial class EconomyNodeHost
             ownerAddress = new Address(request.OwnerAddress);
         }
 
-        BusinessObjectId? objectId = null;
-        if (!string.IsNullOrWhiteSpace(request.ObjectId))
-        {
-            ValidateIdentifier(request.ObjectId, LedgerValidationLimits.MaxBusinessObjectIdLength, "BusinessObject id");
-            objectId = new BusinessObjectId(request.ObjectId);
-        }
+        BusinessObjectId? objectId = ToCanonicalBusinessObjectId(request.ObjectId);
 
         return new LedgerBusinessObjectQuery(
             context,
@@ -492,12 +584,7 @@ public static partial class EconomyNodeHost
             address = new Address(request.Address);
         }
 
-        BusinessObjectId? businessObjectId = null;
-        if (!string.IsNullOrWhiteSpace(request.BusinessObjectId))
-        {
-            ValidateIdentifier(request.BusinessObjectId, LedgerValidationLimits.MaxBusinessObjectIdLength, "BusinessObject id");
-            businessObjectId = new BusinessObjectId(request.BusinessObjectId);
-        }
+        BusinessObjectId? businessObjectId = ToCanonicalBusinessObjectId(request.BusinessObjectId);
 
         TransactionKind? kind = null;
         if (!string.IsNullOrWhiteSpace(request.Kind))
@@ -530,6 +617,24 @@ public static partial class EconomyNodeHost
         string normalized = value.Trim();
         ValidateIdentifier(normalized, LedgerValidationLimits.MaxScenarioIdLength, "scenario id");
         return new ScenarioId(normalized);
+    }
+
+    private static BusinessObjectId? ToCanonicalBusinessObjectId(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        ValidateIdentifier(value, LedgerValidationLimits.MaxBusinessObjectIdLength, "BusinessObject id");
+        var objectId = new BusinessObjectId(value);
+        if (!objectId.IsCanonicalOutPointId())
+        {
+            throw new InvalidOperationException(
+                "BusinessObject id must be a canonical UTXO id in '64-character transaction-hash:output-index' format.");
+        }
+
+        return objectId;
     }
 
     private static void ValidateAddress(string value, string name)

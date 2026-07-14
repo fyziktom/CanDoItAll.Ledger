@@ -171,7 +171,7 @@ public sealed class EconomyNodeUiService(
             .ToArray();
         Address peerAddress = businessObjects.FirstOrDefault()?.OwnerAddress ?? address;
         var draft = new BusinessObjectTransactionDraft(
-            new BusinessObjectId($"bo:node-console:{viewedAt:yyyyMMddHHmmss}"),
+            default,
             "node-console",
             "1.0",
             address,
@@ -395,8 +395,7 @@ public sealed class EconomyNodeUiService(
                 new Address(output.Address),
                 new Amount(output.MainAmount),
                 string.IsNullOrWhiteSpace(output.TokenId) ? null : new TokenTransfer(new TokenId(output.TokenId), new Amount(output.TokenAmount ?? 0m)),
-                string.IsNullOrWhiteSpace(output.BusinessObjectId) ? null : new BusinessObjectRef(
-                    new BusinessObjectId(output.BusinessObjectId),
+                string.IsNullOrWhiteSpace(output.BusinessObjectId) ? null : new EconomyTransactionBusinessObjectDetails(
                     output.BusinessObjectVersion ?? 0,
                     ParseEnum(output.BusinessObjectOperation, BusinessObjectOperation.Create),
                     ToHash(output.BusinessObjectDataHash) ?? EmptyHash()),

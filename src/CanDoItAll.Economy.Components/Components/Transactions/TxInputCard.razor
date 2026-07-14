@@ -22,7 +22,7 @@
     </div>
     @if (Input.BusinessObject is not null)
     {
-        <small class="cda-sdk-muted">BO <CopyableMonoValue Value="@Input.BusinessObject.ObjectId.Value" Truncate="false" AriaLabel="Copy business object id" /> v@(Input.BusinessObject.Version)</small>
+        <small class="cda-sdk-muted">BO <CopyableMonoValue Value="@Input.PreviousOutPoint.ToString()" Truncate="false" AriaLabel="Copy source business object UTXO id" /> v@(Input.BusinessObject.Version)</small>
     }
     @if (!string.IsNullOrWhiteSpace(SupportingText))
     {

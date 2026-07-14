@@ -10,11 +10,11 @@ public sealed class BusinessObjectTransitionValidator
         IReadOnlyDictionary<OutPointKey, UnspentOutput> inputs)
     {
         var consumedByObjectId = GetConsumedBusinessObjects(inputKeys, inputs)
-            .GroupBy(x => x.BusinessObject!.ObjectId)
+            .GroupBy(x => x.BusinessObject!.LineageKey)
             .ToDictionary(x => x.Key, x => x.ToArray());
         var producedByObjectId = transaction.Outputs
             .Where(x => x.BusinessObject is not null)
-            .GroupBy(x => x.BusinessObject!.ObjectId)
+            .GroupBy(x => x.BusinessObject!.LineageKey)
             .ToDictionary(x => x.Key, x => x.ToArray());
 
         if (consumedByObjectId.Count == 0 && producedByObjectId.Count == 0)
@@ -24,7 +24,7 @@ public sealed class BusinessObjectTransitionValidator
 
         var errors = new List<ValidationError>();
 
-        foreach ((BusinessObjectId objectId, UnspentOutput[] consumed) in consumedByObjectId)
+        foreach ((BusinessObjectLineageKey objectId, UnspentOutput[] consumed) in consumedByObjectId)
         {
             if (consumed.Length > 1)
             {
@@ -33,7 +33,7 @@ public sealed class BusinessObjectTransitionValidator
             }
         }
 
-        foreach ((BusinessObjectId objectId, TransactionOutput[] produced) in producedByObjectId)
+        foreach ((BusinessObjectLineageKey objectId, TransactionOutput[] produced) in producedByObjectId)
         {
             if (produced.Length > 1)
             {
@@ -71,7 +71,7 @@ public sealed class BusinessObjectTransitionValidator
 
     private static void ValidateProducedReference(
         LedgerTransaction transaction,
-        BusinessObjectId objectId,
+        BusinessObjectLineageKey objectId,
         TransactionOutput output,
         UnspentOutput? current,
         List<ValidationError> errors)
@@ -109,7 +109,7 @@ public sealed class BusinessObjectTransitionValidator
     }
 
     private static void ValidateCreate(
-        BusinessObjectId objectId,
+        BusinessObjectLineageKey objectId,
         BusinessObjectRef next,
         UnspentOutput? current,
         List<ValidationError> errors)
@@ -128,7 +128,7 @@ public sealed class BusinessObjectTransitionValidator
     }
 
     private static void ValidateCurrentVersionTransition(
-        BusinessObjectId objectId,
+        BusinessObjectLineageKey objectId,
         TransactionOutput output,
         UnspentOutput? current,
         List<ValidationError> errors)
@@ -169,7 +169,7 @@ public sealed class BusinessObjectTransitionValidator
 
     private static void ValidateInlineDataBinding(
         LedgerTransaction transaction,
-        BusinessObjectId objectId,
+        BusinessObjectLineageKey objectId,
         BusinessObjectRef next,
         BusinessObjectRef? current,
         List<ValidationError> errors)

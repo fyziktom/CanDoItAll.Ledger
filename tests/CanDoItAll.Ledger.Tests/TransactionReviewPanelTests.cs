@@ -39,6 +39,46 @@ public sealed class TransactionReviewPanelTests : TestContext
         Assert.Contains("12 demo-token + 3.75 main", summary, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(BusinessObjectTransactionMode.Create)]
+    [InlineData(BusinessObjectTransactionMode.CloneObject)]
+    [InlineData(BusinessObjectTransactionMode.MergeObjects)]
+    public void New_business_object_reviews_disclose_that_identity_is_confirmation_assigned(BusinessObjectTransactionMode mode)
+    {
+        BusinessObjectTransactionDraft draft = CreateTokenTransferDraft() with
+        {
+            SelectedMode = mode,
+            SourceObjectId = new BusinessObjectId("source-transaction:0"),
+            SecondObjectId = new BusinessObjectId("second-transaction:0")
+        };
+
+        IRenderedComponent<TransactionReviewPanel> component = RenderComponent<TransactionReviewPanel>(parameters => parameters
+            .Add(item => item.Draft, draft));
+
+        Assert.Contains("Assigned after confirmation", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain(draft.ObjectId.Value, component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Clone_review_names_the_canonical_protocol_source_separately_from_external_reference()
+    {
+        var sourceId = new BusinessObjectId($"{new string('a', 64)}:0");
+        BusinessObjectTransactionDraft draft = CreateTokenTransferDraft() with
+        {
+            SelectedMode = BusinessObjectTransactionMode.CloneObject,
+            SourceObjectId = sourceId,
+            ExternalRef = string.Empty
+        };
+
+        IRenderedComponent<TransactionReviewPanel> component = RenderComponent<TransactionReviewPanel>(parameters => parameters
+            .Add(item => item.Draft, draft));
+
+        Assert.Contains("Clone-source reference", component.Markup, StringComparison.Ordinal);
+        Assert.Contains(sourceId.Value, component.Markup, StringComparison.Ordinal);
+        Assert.Contains("External reference", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Not provided", component.Markup, StringComparison.Ordinal);
+    }
+
     private static BusinessObjectTransactionDraft CreateTokenTransferDraft()
     {
         Address sender = Address.FromPublicKey([1, 2, 3, 4]);

@@ -13,15 +13,22 @@ public static class PermissionTokenAuthority
 
     public const string MintNewTokenTypeAction = "mint_new_tok_type";
 
-    public static BusinessObjectId CreatePermissionObjectId(string action, string tokenNamespace, string? suffix = null)
+    public static BusinessObjectLineageKey CreatePermissionLineageKey(
+        string action,
+        string tokenNamespace,
+        string? suffix = null)
     {
         string normalizedAction = NormalizeAction(action);
         string normalizedNamespace = NormalizeNamespace(tokenNamespace);
         string normalizedSuffix = string.IsNullOrWhiteSpace(suffix)
             ? Guid.NewGuid().ToString("N")
             : suffix.Trim();
-        return new BusinessObjectId($"permission:{normalizedAction}:{normalizedNamespace}:{normalizedSuffix}");
+        return new BusinessObjectLineageKey($"permission:{normalizedAction}:{normalizedNamespace}:{normalizedSuffix}");
     }
+
+    [Obsolete("This returns an internal legacy lineage marker, not a public BusinessObject id. Use CreatePermissionLineageKey.")]
+    public static BusinessObjectId CreatePermissionObjectId(string action, string tokenNamespace, string? suffix = null)
+        => new(CreatePermissionLineageKey(action, tokenNamespace, suffix).Value);
 
     public static TransactionData CreateData(PermissionGrant grant)
     {

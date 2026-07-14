@@ -1,4 +1,3 @@
-using System.Text.Json;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Persistence.EFCore.Records;
 
@@ -6,11 +5,11 @@ namespace CanDoItAll.Economy.Persistence.EFCore;
 
 internal static class EfBusinessObjectProjectionMapper
 {
-    public static string BusinessObjectKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectId objectId)
-        => $"{ledgerId.Value}|{scenarioId?.Value ?? string.Empty}|{objectId.Value}";
+    public static string BusinessObjectKey(LedgerId ledgerId, ScenarioId? scenarioId, BusinessObjectLineageKey lineageKey)
+        => $"{ledgerId.Value}|{scenarioId?.Value ?? string.Empty}|{lineageKey.Value}";
 
-    public static string BusinessObjectKey(string ledgerId, string? scenarioId, string objectId)
-        => $"{ledgerId}|{scenarioId ?? string.Empty}|{objectId}";
+    public static string BusinessObjectKey(string ledgerId, string? scenarioId, string lineageKey)
+        => $"{ledgerId}|{scenarioId ?? string.Empty}|{lineageKey}";
 
     public static BusinessObjectProjectionPayload ResolvePayload(
         string? inlineJson,
@@ -66,13 +65,13 @@ internal static class EfBusinessObjectProjectionMapper
         BusinessObjectProjectionPayload payload,
         BusinessObjectRecord? previous)
     {
-        string objectId = RequireObjectId(output);
+        string lineageKey = RequireLineageKey(output);
         return new BusinessObjectRecord
         {
-            BusinessObjectKey = BusinessObjectKey(ledgerId, scenarioId, new BusinessObjectId(objectId)),
+            BusinessObjectKey = BusinessObjectKey(ledgerId, scenarioId, new BusinessObjectLineageKey(lineageKey)),
             LedgerId = ledgerId.Value,
             ScenarioId = scenarioId?.Value,
-            ObjectId = objectId,
+            ObjectId = lineageKey,
             ObjectType = payload.ObjectType,
             CurrentVersion = output.BusinessObjectVersion ?? 0,
             CurrentOwnerAddress = output.Address,
@@ -105,12 +104,12 @@ internal static class EfBusinessObjectProjectionMapper
         BusinessObjectProjectionPayload payload,
         DateTimeOffset confirmedAt)
     {
-        string objectId = RequireObjectId(output);
+        string lineageKey = RequireLineageKey(output);
         return new BusinessObjectVersionRecord
         {
             LedgerId = ledgerId.Value,
             ScenarioId = scenarioId?.Value,
-            ObjectId = objectId,
+            ObjectId = lineageKey,
             Version = output.BusinessObjectVersion ?? 0,
             TxId = txId.Value,
             OutPointTxId = output.TxId,
@@ -124,91 +123,15 @@ internal static class EfBusinessObjectProjectionMapper
         };
     }
 
-    private static string RequireObjectId(UnspentOutputRecord output)
+    private static string RequireLineageKey(UnspentOutputRecord output)
         => string.IsNullOrWhiteSpace(output.BusinessObjectId)
-            ? throw new InvalidOperationException("BusinessObject projection output is missing an object id.")
+            ? throw new InvalidOperationException("BusinessObject projection output is missing its legacy lineage key.")
             : output.BusinessObjectId;
 
     private static BusinessObjectPayloadEnvelope? ReadPayloadEnvelope(string? inlineJson)
-    {
-        if (string.IsNullOrWhiteSpace(inlineJson))
-        {
-            return null;
-        }
-
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(inlineJson);
-            JsonElement root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object
-                || !TryReadString(root, "objectType", out string? objectType)
-                || !TryReadString(root, "schemaVersion", out string? schemaVersion)
-                || !TryReadStateJson(root, out string? stateJson))
-            {
-                return null;
-            }
-
-            return new BusinessObjectPayloadEnvelope(objectType, schemaVersion, stateJson);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private static bool TryReadString(JsonElement root, string propertyName, out string value)
-    {
-        value = string.Empty;
-        if (!root.TryGetProperty(propertyName, out JsonElement property)
-            || property.ValueKind != JsonValueKind.String)
-        {
-            return false;
-        }
-
-        string? text = property.GetString();
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return false;
-        }
-
-        value = text;
-        return true;
-    }
-
-    private static bool TryReadStateJson(JsonElement root, out string stateJson)
-    {
-        stateJson = string.Empty;
-        if (!root.TryGetProperty("stateJson", out JsonElement state)
-            && !root.TryGetProperty("state", out state))
-        {
-            return false;
-        }
-
-        if (state.ValueKind == JsonValueKind.String)
-        {
-            string? text = state.GetString();
-            if (text is null)
-            {
-                return false;
-            }
-
-            stateJson = text;
-            return true;
-        }
-
-        if (state.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return false;
-        }
-
-        stateJson = state.GetRawText();
-        return true;
-    }
-
-    private sealed record BusinessObjectPayloadEnvelope(
-        string ObjectType,
-        string SchemaVersion,
-        string StateJson);
+        => BusinessObjectPayloadEnvelopeReader.TryRead(inlineJson, out BusinessObjectPayloadEnvelope envelope)
+            ? envelope
+            : null;
 }
 
 internal sealed record BusinessObjectProjectionPayload(

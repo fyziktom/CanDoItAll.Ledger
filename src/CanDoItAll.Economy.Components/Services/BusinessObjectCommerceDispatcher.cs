@@ -91,11 +91,7 @@ public sealed class BusinessObjectCommerceDispatcher
         }
 
         BusinessObjectId targetObjectId = new(payment.TargetObjectId);
-        BusinessObjectId paymentObjectId = new(payment.PaymentObjectId);
-        BusinessObjectId deliveredObjectId = payment.SaleMode == BusinessObjectSaleMode.Copy
-            ? BusinessObjectCommercePayloadBuilder.CreateCloneObjectId(targetObjectId, paymentObjectId)
-            : targetObjectId;
-        LedgerTransactionSummary? existingDelivery = FindDeliveryTransaction(workspace, deliveredObjectId, buyerAddress);
+        DeliveryTransactionMatch? existingDelivery = FindDeliveryTransactionByPayment(workspace, payment, buyerAddress);
         IBusinessObjectView? target = FindBusinessObject(workspace, targetObjectId);
 
         if (target is null && existingDelivery is null)
@@ -141,18 +137,20 @@ public sealed class BusinessObjectCommerceDispatcher
             return;
         }
 
-        TxId dispatchTxId = existingDelivery?.TxId
+        TxId dispatchTxId = existingDelivery?.Transaction.TxId
             ?? await SubmitDeliveryAsync(
                     adapter,
                     workspace,
                     target ?? throw new InvalidOperationException("Target BusinessObject is required for new delivery."),
                     payment,
                     buyerAddress,
-                    deliveredObjectId,
                     sale,
                     actions,
                     cancellationToken)
                 .ConfigureAwait(false);
+        BusinessObjectId deliveredObjectId = BusinessObjectId.FromOutPoint(
+            dispatchTxId,
+            existingDelivery?.OutputIndex ?? 0);
 
         if (payment.SaleMode == BusinessObjectSaleMode.Copy && target is not null && sale is not null)
         {
@@ -163,8 +161,25 @@ public sealed class BusinessObjectCommerceDispatcher
         }
 
         BusinessObjectPaymentRecord completedPayment = CompletePayment(payment, deliveredObjectId, dispatchTxId);
-        await EnsureReceiptAsync(adapter, workspace, completedPayment, actions, cancellationToken).ConfigureAwait(false);
-        await EnsurePurchaseAsync(adapter, workspace, completedPayment, actions, cancellationToken).ConfigureAwait(false);
+        BusinessObjectId? receiptObjectId = await EnsureReceiptAsync(
+            adapter,
+            workspace,
+            completedPayment,
+            trustRecordedLink: false,
+            actions,
+            cancellationToken).ConfigureAwait(false);
+        BusinessObjectId? purchaseObjectId = await EnsurePurchaseAsync(
+            adapter,
+            workspace,
+            completedPayment,
+            trustRecordedLink: false,
+            actions,
+            cancellationToken).ConfigureAwait(false);
+        completedPayment = completedPayment with
+        {
+            ReceiptObjectId = receiptObjectId?.Value,
+            PurchaseObjectId = purchaseObjectId?.Value
+        };
         await UpdatePaymentAsync(adapter, paymentView, completedPayment, "payment-dispatched", actions, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -175,14 +190,13 @@ public sealed class BusinessObjectCommerceDispatcher
         IBusinessObjectView target,
         BusinessObjectPaymentRecord payment,
         Address buyerAddress,
-        BusinessObjectId deliveredObjectId,
         BusinessObjectSaleTerms? sale,
         List<BusinessObjectCommerceDispatchActionResult> actions,
         CancellationToken cancellationToken)
     {
         BusinessObjectTransactionDraft draft = payment.SaleMode == BusinessObjectSaleMode.Copy
-            ? CreateCloneDraft(target, buyerAddress, deliveredObjectId, workspace.TokenOptions)
-            : CreateOriginalTransferDraft(target, buyerAddress, sale);
+            ? CreateCloneDraft(target, buyerAddress, payment.PaymentObjectId, workspace.TokenOptions)
+            : CreateOriginalTransferDraft(target, buyerAddress, sale, payment.PaymentObjectId);
 
         EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(draft, cancellationToken)
             .ConfigureAwait(false);
@@ -194,14 +208,14 @@ public sealed class BusinessObjectCommerceDispatcher
     private static BusinessObjectTransactionDraft CreateCloneDraft(
         IBusinessObjectView target,
         Address buyerAddress,
-        BusinessObjectId deliveredObjectId,
+        string paymentObjectId,
         IReadOnlyList<EconomyTokenOption> tokenOptions)
     {
         string cloneStateJson = BusinessObjectCommercePayloadBuilder.ClearSaleTermsStateJson(
             target.StateJson,
-            target.ObjectId.Value);
+            DisplayFallbackName(target));
         var draft = new BusinessObjectTransactionDraft(
-            deliveredObjectId,
+            BusinessObjectId.FromOutPoint(target.CurrentOutPoint),
             target.ObjectType,
             target.SchemaVersion,
             buyerAddress,
@@ -210,17 +224,17 @@ public sealed class BusinessObjectCommerceDispatcher
             Amount.Zero,
             Amount.Zero,
             cloneStateJson,
-            $"bo-commerce://clone/{deliveredObjectId.Value}",
+            $"bo-commerce://clone/payment/{paymentObjectId}",
             BusinessObjectTransactionMode.CloneObject,
-            SourceObjectId: target.ObjectId,
-            TargetObjectId: deliveredObjectId);
+            SourceObjectId: BusinessObjectId.FromOutPoint(target.CurrentOutPoint));
         return BusinessObjectCarrierTokenPolicy.WithDefaultCarrierToken(draft, tokenOptions, allowBalanceFallback: true);
     }
 
     private static BusinessObjectTransactionDraft CreateOriginalTransferDraft(
         IBusinessObjectView target,
         Address buyerAddress,
-        BusinessObjectSaleTerms? sale)
+        BusinessObjectSaleTerms? sale,
+        string paymentObjectId)
     {
         string stateJson = target.StateJson ?? "{}";
         if (sale is not null)
@@ -232,12 +246,13 @@ public sealed class BusinessObjectCommerceDispatcher
             };
             stateJson = BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(
                 target.StateJson,
-                target.ObjectId.Value,
+                DisplayFallbackName(target),
                 soldTerms);
         }
 
+        BusinessObjectId sourceObjectId = BusinessObjectId.FromOutPoint(target.CurrentOutPoint);
         return new BusinessObjectTransactionDraft(
-            target.ObjectId,
+            sourceObjectId,
             target.ObjectType,
             target.SchemaVersion,
             buyerAddress,
@@ -246,9 +261,9 @@ public sealed class BusinessObjectCommerceDispatcher
             Amount.Zero,
             Amount.Zero,
             stateJson,
-            $"bo-commerce://transfer/{target.ObjectId.Value}",
+            $"bo-commerce://transfer/payment/{paymentObjectId}",
             BusinessObjectTransactionMode.TransferObject,
-            SourceObjectId: target.ObjectId);
+            SourceObjectId: sourceObjectId);
     }
 
     private async Task UpdateCopySaleCounterAsync(
@@ -274,7 +289,7 @@ public sealed class BusinessObjectCommerceDispatcher
         };
         string stateJson = BusinessObjectCommercePayloadBuilder.WithSaleTermsStateJson(
             target.StateJson,
-            target.ObjectId.Value,
+            DisplayFallbackName(target),
             nextSale);
         BusinessObjectTransactionDraft draft = CreateUpdateDraft(
             target.ObjectId,
@@ -303,15 +318,28 @@ public sealed class BusinessObjectCommerceDispatcher
             return;
         }
 
-        await EnsureReceiptAsync(adapter, workspace, payment, actions, cancellationToken).ConfigureAwait(false);
-        await EnsurePurchaseAsync(adapter, workspace, payment, actions, cancellationToken).ConfigureAwait(false);
+        BusinessObjectId? receiptObjectId = await EnsureReceiptAsync(
+            adapter,
+            workspace,
+            payment,
+            trustRecordedLink: true,
+            actions,
+            cancellationToken).ConfigureAwait(false);
+        BusinessObjectId? purchaseObjectId = await EnsurePurchaseAsync(
+            adapter,
+            workspace,
+            payment,
+            trustRecordedLink: true,
+            actions,
+            cancellationToken).ConfigureAwait(false);
 
-        if (string.IsNullOrWhiteSpace(payment.ReceiptObjectId) || string.IsNullOrWhiteSpace(payment.PurchaseObjectId))
+        if (!string.Equals(payment.ReceiptObjectId, receiptObjectId?.Value, StringComparison.Ordinal)
+            || !string.Equals(payment.PurchaseObjectId, purchaseObjectId?.Value, StringComparison.Ordinal))
         {
             BusinessObjectPaymentRecord normalized = payment with
             {
-                ReceiptObjectId = payment.ReceiptObjectId ?? BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(new BusinessObjectId(payment.PaymentObjectId)).Value,
-                PurchaseObjectId = payment.PurchaseObjectId ?? BusinessObjectCommercePayloadBuilder.CreatePurchaseObjectId(new BusinessObjectId(payment.PaymentObjectId)).Value,
+                ReceiptObjectId = receiptObjectId?.Value,
+                PurchaseObjectId = purchaseObjectId?.Value,
                 UpdatedAtUtc = utcNow()
             };
             await UpdatePaymentAsync(adapter, paymentView, normalized, "payment-link-normalize", actions, cancellationToken)
@@ -319,83 +347,125 @@ public sealed class BusinessObjectCommerceDispatcher
         }
     }
 
-    private async Task EnsureReceiptAsync(
+    private async Task<BusinessObjectId?> EnsureReceiptAsync(
         IEconomyAccountWorkspaceAdapter adapter,
         BusinessObjectWorkspaceModel workspace,
         BusinessObjectPaymentRecord payment,
+        bool trustRecordedLink,
         List<BusinessObjectCommerceDispatchActionResult> actions,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(payment.DeliveredObjectId) || string.IsNullOrWhiteSpace(payment.DispatchTxId))
         {
-            return;
+            return null;
         }
 
-        BusinessObjectId paymentObjectId = new(payment.PaymentObjectId);
-        BusinessObjectId receiptObjectId = string.IsNullOrWhiteSpace(payment.ReceiptObjectId)
-            ? BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(paymentObjectId)
-            : new BusinessObjectId(payment.ReceiptObjectId);
-        if (HasObjectOrTransactionOutput(workspace, receiptObjectId))
+        BusinessObjectId? linkedReceiptId = trustRecordedLink
+            ? FindVerifiedLinkedArtifact(workspace, payment.ReceiptObjectId)
+            : null;
+        if (linkedReceiptId is not null)
         {
-            return;
+            return linkedReceiptId;
+        }
+
+        ICommerceBusinessObjectView? existing = workspace.BusinessObjects
+            .OfType<ICommerceBusinessObjectView>()
+            .FirstOrDefault(view => string.Equals(
+                view.Commerce.Receipt?.PaymentObjectId,
+                payment.PaymentObjectId,
+                StringComparison.Ordinal));
+        if (existing is not null)
+        {
+            return existing.ObjectId;
+        }
+
+        BusinessObjectId? confirmedReceiptId = FindConfirmedArtifactByPayment(
+            workspace,
+            "receipt",
+            payment.PaymentObjectId,
+            new Address(payment.SellerAddress));
+        if (confirmedReceiptId is not null)
+        {
+            return confirmedReceiptId;
         }
 
         BusinessObjectReceiptRecord receipt = BusinessObjectCommercePayloadBuilder.CreateReceiptRecord(
-            receiptObjectId,
-            payment with { ReceiptObjectId = receiptObjectId.Value },
+            payment with { ReceiptObjectId = null },
             new BusinessObjectId(payment.DeliveredObjectId),
             new TxId(payment.DispatchTxId),
             utcNow());
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
             BusinessObjectCommercePayloadBuilder.CreateReceiptPayload(receipt));
         BusinessObjectTransactionDraft draft = CreateCreateDraft(
-            receiptObjectId,
             "receipt",
             new Address(payment.SellerAddress),
             stateJson,
-            $"bo-commerce://receipt/{receiptObjectId.Value}",
+            $"bo-commerce://receipt/payment/{payment.PaymentObjectId}",
             workspace.TokenOptions);
 
         EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(draft, cancellationToken)
             .ConfigureAwait(false);
         actions.Add(FromExecution(payment.PaymentObjectId, "receipt-create", result));
         EnsureAccepted(result, "Receipt create");
+        return result.ResultBusinessObjectId
+            ?? throw new InvalidOperationException("Accepted receipt create did not return its output-derived BusinessObject id.");
     }
 
-    private async Task EnsurePurchaseAsync(
+    private async Task<BusinessObjectId?> EnsurePurchaseAsync(
         IEconomyAccountWorkspaceAdapter adapter,
         BusinessObjectWorkspaceModel workspace,
         BusinessObjectPaymentRecord payment,
+        bool trustRecordedLink,
         List<BusinessObjectCommerceDispatchActionResult> actions,
         CancellationToken cancellationToken)
     {
-        BusinessObjectId paymentObjectId = new(payment.PaymentObjectId);
-        BusinessObjectId purchaseObjectId = string.IsNullOrWhiteSpace(payment.PurchaseObjectId)
-            ? BusinessObjectCommercePayloadBuilder.CreatePurchaseObjectId(paymentObjectId)
-            : new BusinessObjectId(payment.PurchaseObjectId);
-        if (HasObjectOrTransactionOutput(workspace, purchaseObjectId))
+        BusinessObjectId? linkedPurchaseId = trustRecordedLink
+            ? FindVerifiedLinkedArtifact(workspace, payment.PurchaseObjectId)
+            : null;
+        if (linkedPurchaseId is not null)
         {
-            return;
+            return linkedPurchaseId;
+        }
+
+        ICommerceBusinessObjectView? existing = workspace.BusinessObjects
+            .OfType<ICommerceBusinessObjectView>()
+            .FirstOrDefault(view => string.Equals(
+                view.Commerce.Purchase?.PaymentObjectId,
+                payment.PaymentObjectId,
+                StringComparison.Ordinal));
+        if (existing is not null)
+        {
+            return existing.ObjectId;
+        }
+
+        BusinessObjectId? confirmedPurchaseId = FindConfirmedArtifactByPayment(
+            workspace,
+            "purchase",
+            payment.PaymentObjectId,
+            new Address(payment.BuyerAddress));
+        if (confirmedPurchaseId is not null)
+        {
+            return confirmedPurchaseId;
         }
 
         BusinessObjectPurchaseRecord purchase = BusinessObjectCommercePayloadBuilder.CreatePurchaseRecord(
-            purchaseObjectId,
-            payment with { PurchaseObjectId = purchaseObjectId.Value },
+            payment with { PurchaseObjectId = null },
             utcNow());
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
             BusinessObjectCommercePayloadBuilder.CreatePurchasePayload(purchase));
         BusinessObjectTransactionDraft draft = CreateCreateDraft(
-            purchaseObjectId,
             "purchase",
             new Address(payment.BuyerAddress),
             stateJson,
-            $"bo-commerce://purchase/{purchaseObjectId.Value}",
+            $"bo-commerce://purchase/payment/{payment.PaymentObjectId}",
             workspace.TokenOptions);
 
         EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(draft, cancellationToken)
             .ConfigureAwait(false);
         actions.Add(FromExecution(payment.PaymentObjectId, "purchase-create", result));
         EnsureAccepted(result, "Purchase create");
+        return result.ResultBusinessObjectId
+            ?? throw new InvalidOperationException("Accepted purchase create did not return its output-derived BusinessObject id.");
     }
 
     private async Task RejectPaymentAsync(
@@ -445,18 +515,12 @@ public sealed class BusinessObjectCommerceDispatcher
         BusinessObjectId deliveredObjectId,
         TxId dispatchTxId)
     {
-        BusinessObjectId paymentObjectId = new(payment.PaymentObjectId);
-        string receiptObjectId = payment.ReceiptObjectId
-            ?? BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(paymentObjectId).Value;
-        string purchaseObjectId = payment.PurchaseObjectId
-            ?? BusinessObjectCommercePayloadBuilder.CreatePurchaseObjectId(paymentObjectId).Value;
         return payment with
         {
             Status = BusinessObjectCommerceRecordStatus.Dispatched,
+            PaymentTxId = payment.PaymentTxId ?? new BusinessObjectId(payment.PaymentObjectId).RequireOutPoint().TxId.Value,
             DispatchTxId = dispatchTxId.Value,
             DeliveredObjectId = deliveredObjectId.Value,
-            ReceiptObjectId = receiptObjectId,
-            PurchaseObjectId = purchaseObjectId,
             UpdatedAtUtc = utcNow()
         };
     }
@@ -532,7 +596,6 @@ public sealed class BusinessObjectCommerceDispatcher
             SourceObjectId: objectId);
 
     private static BusinessObjectTransactionDraft CreateCreateDraft(
-        BusinessObjectId objectId,
         string objectType,
         Address ownerAddress,
         string stateJson,
@@ -540,7 +603,7 @@ public sealed class BusinessObjectCommerceDispatcher
         IReadOnlyList<EconomyTokenOption> tokenOptions)
     {
         var draft = new BusinessObjectTransactionDraft(
-            objectId,
+            default,
             objectType,
             "1.0",
             ownerAddress,
@@ -564,6 +627,11 @@ public sealed class BusinessObjectCommerceDispatcher
 
     private static IBusinessObjectView? FindBusinessObject(BusinessObjectWorkspaceModel workspace, BusinessObjectId objectId)
         => workspace.BusinessObjects.FirstOrDefault(item => item.ObjectId == objectId);
+
+    private static string DisplayFallbackName(IBusinessObjectView businessObject)
+        => businessObject is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name)
+            ? media.Name
+            : "Untitled BusinessObject";
 
     private static bool IsSellerPayment(BusinessObjectPaymentRecord payment, Address sellerAddress)
         => string.Equals(payment.SellerAddress, sellerAddress.Value, StringComparison.Ordinal);
@@ -599,20 +667,85 @@ public sealed class BusinessObjectCommerceDispatcher
             view.Commerce.Payment is { Status: BusinessObjectCommerceRecordStatus.Dispatched } payment
             && string.Equals(payment.TargetObjectId, targetObjectId, StringComparison.Ordinal));
 
-    private static LedgerTransactionSummary? FindDeliveryTransaction(
+    private static DeliveryTransactionMatch? FindDeliveryTransactionByPayment(
         BusinessObjectWorkspaceModel workspace,
-        BusinessObjectId deliveredObjectId,
+        BusinessObjectPaymentRecord payment,
         Address buyerAddress)
-        => LedgerTransactionOrdering
-            .NewestFirst(workspace.Transactions)
-            .FirstOrDefault(transaction => transaction.Outputs.Any(output =>
-                output.Address == buyerAddress
-                && output.BusinessObject?.ObjectId == deliveredObjectId));
+    {
+        string expectedExternalRef = payment.SaleMode == BusinessObjectSaleMode.Copy
+            ? $"bo-commerce://clone/payment/{payment.PaymentObjectId}"
+            : $"bo-commerce://transfer/payment/{payment.PaymentObjectId}";
 
-    private static bool HasObjectOrTransactionOutput(BusinessObjectWorkspaceModel workspace, BusinessObjectId objectId)
-        => workspace.BusinessObjects.Any(item => item.ObjectId == objectId)
+        foreach (LedgerTransactionSummary transaction in LedgerTransactionOrdering.NewestFirst(workspace.Transactions))
+        {
+            if (!string.Equals(transaction.Data?.ExternalRef, expectedExternalRef, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            LedgerTransactionOutputSummary? output = transaction.Outputs
+                .OrderBy(candidate => candidate.OutputIndex)
+                .FirstOrDefault(candidate => candidate.Address == buyerAddress && candidate.HasBusinessObject);
+            if (output is not null)
+            {
+                return new DeliveryTransactionMatch(transaction, output.OutputIndex);
+            }
+        }
+
+        return null;
+    }
+
+    private static BusinessObjectId? FindVerifiedLinkedArtifact(
+        BusinessObjectWorkspaceModel workspace,
+        string? linkedObjectId)
+    {
+        if (string.IsNullOrWhiteSpace(linkedObjectId))
+        {
+            return null;
+        }
+
+        var objectId = new BusinessObjectId(linkedObjectId);
+        if (!objectId.IsCanonicalOutPointId())
+        {
+            return null;
+        }
+
+        bool exists = workspace.BusinessObjects.Any(item => item.ObjectId == objectId)
             || workspace.Transactions.Any(transaction => transaction.Outputs.Any(output =>
-                output.BusinessObject?.ObjectId == objectId));
+                output.HasBusinessObject
+                && BusinessObjectId.FromOutPoint(transaction.TxId, output.OutputIndex) == objectId));
+        return exists ? objectId : null;
+    }
+
+    private static BusinessObjectId? FindConfirmedArtifactByPayment(
+        BusinessObjectWorkspaceModel workspace,
+        string objectType,
+        string paymentObjectId,
+        Address ownerAddress)
+    {
+        string expectedExternalRef = $"bo-commerce://{objectType}/payment/{paymentObjectId}";
+        foreach (LedgerTransactionSummary transaction in LedgerTransactionOrdering.NewestFirst(workspace.Transactions))
+        {
+            if (!string.Equals(transaction.Data?.ExternalRef, expectedExternalRef, StringComparison.Ordinal)
+                || !BusinessObjectPayloadEnvelopeReader.TryRead(
+                    transaction.Data?.InlineJson,
+                    out BusinessObjectPayloadEnvelope envelope)
+                || !string.Equals(envelope.ObjectType, objectType, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            LedgerTransactionOutputSummary? output = transaction.Outputs
+                .OrderBy(candidate => candidate.OutputIndex)
+                .FirstOrDefault(candidate => candidate.Address == ownerAddress && candidate.HasBusinessObject);
+            if (output is not null)
+            {
+                return BusinessObjectId.FromOutPoint(transaction.TxId, output.OutputIndex);
+            }
+        }
+
+        return null;
+    }
 
     private static BusinessObjectCommerceDispatchActionResult FromExecution(
         string paymentObjectId,
@@ -633,6 +766,10 @@ public sealed class BusinessObjectCommerceDispatcher
             throw new InvalidOperationException($"{subject} was rejected: {result.Message}");
         }
     }
+
+    private sealed record DeliveryTransactionMatch(
+        LedgerTransactionSummary Transaction,
+        int OutputIndex);
 }
 
 public sealed record BusinessObjectCommerceDispatchResult(

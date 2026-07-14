@@ -16,8 +16,7 @@ public static class RuleBusinessObjectDisplay
             return false;
         }
 
-        bool isRuleCandidate = businessObject is GenericBusinessObjectView { ItemType: TransactionDataItemType.Rule }
-            || businessObject.ObjectId.Value.StartsWith(RuleTokenAuthority.RuleObjectIdPrefix, StringComparison.Ordinal);
+        bool isRuleCandidate = businessObject is GenericBusinessObjectView { ItemType: TransactionDataItemType.Rule };
         if (!isRuleCandidate)
         {
             return false;
@@ -30,7 +29,7 @@ public static class RuleBusinessObjectDisplay
             businessObject is GenericBusinessObjectView generic ? generic.ExternalRef : null,
             TransactionDataItemType.Rule);
         var reference = new BusinessObjectRef(
-            businessObject.ObjectId,
+            new BusinessObjectLineageKey("display-only"),
             businessObject.Version,
             businessObject.Operation,
             businessObject.DataHash);

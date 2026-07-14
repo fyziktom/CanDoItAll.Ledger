@@ -70,13 +70,9 @@ public static class BusinessObjectTicketVerification
                 Array.Empty<BusinessObjectTicketHistoryEntry>());
         }
 
-        BusinessObjectTicketHistoryEntry[] entries = history
-            .SelectMany(transaction => transaction.Outputs
-                .Where(output => output.BusinessObject?.ObjectId == objectId)
-                .Select(output => ToEntry(transaction, output)))
-            .OrderBy(entry => entry.Version)
-            .ThenBy(entry => entry.Timestamp)
-            .ThenBy(entry => entry.TxId.Value, StringComparer.Ordinal)
+        BusinessObjectTicketHistoryEntry[] entries = BusinessObjectTransactionHistory
+            .SelectVersions(objectId, history, transactionsAreLineageFiltered: true)
+            .Select(version => ToEntry(version.Transaction, version.Output))
             .ToArray();
 
         BusinessObjectTicketHistoryEntry? origin = entries.FirstOrDefault(entry => entry.Version == 1);
@@ -162,7 +158,7 @@ public static class BusinessObjectTicketVerification
         DateTimeOffset usedAtUtc,
         HashHex? verificationHash = null)
     {
-        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(stateJson, objectId.Value);
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(stateJson, "Untitled ticket");
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("ticket");
         var fields = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (KeyValuePair<string, string> field in BusinessObjectPayloadBuilder.NormalizeFields(definition, payload.Fields))
@@ -197,11 +193,15 @@ public static class BusinessObjectTicketVerification
         LedgerTransactionSummary transaction,
         LedgerTransactionOutputSummary output)
     {
-        string? stateJson = transaction.Data?.InlineJson;
+        string? stateJson = BusinessObjectPayloadEnvelopeReader.TryRead(
+            transaction.Data?.InlineJson,
+            out BusinessObjectPayloadEnvelope envelope)
+                ? envelope.StateJson
+                : transaction.Data?.InlineJson;
         return new BusinessObjectTicketHistoryEntry(
             transaction.TxId,
             transaction.Timestamp,
-            output.BusinessObject?.Version ?? 0,
+            output.BusinessObjectVersion ?? 0,
             StateHasUsedFlag(stateJson),
             stateJson);
     }

@@ -18,9 +18,12 @@ public sealed class LedgerTransactionValidationPipeline(
     ITokenCreationPolicy tokenCreationPolicy,
     InputSignatureValidator inputSignatureValidator,
     AssetConservationValidator assetConservationValidator,
-    ITokenDefinitionPolicy? providedTokenDefinitionPolicy = null)
+    ITokenDefinitionPolicy? providedTokenDefinitionPolicy = null,
+    BusinessObjectReferenceValidator? providedBusinessObjectReferenceValidator = null)
 {
     private readonly ITokenDefinitionPolicy tokenDefinitionPolicy = providedTokenDefinitionPolicy ?? new TokenDefinitionPolicy();
+    private readonly BusinessObjectReferenceValidator businessObjectReferenceValidator =
+        providedBusinessObjectReferenceValidator ?? new BusinessObjectReferenceValidator();
 
     public async Task<ValidationResult> ValidateAsync(
         LedgerTransactionValidationContext context,
@@ -57,6 +60,14 @@ public sealed class LedgerTransactionValidationPipeline(
         if (!businessObjects.IsValid)
         {
             return businessObjects;
+        }
+
+        ValidationResult businessObjectReferences = await businessObjectReferenceValidator
+            .ValidateAsync(context, cancellationToken)
+            .ConfigureAwait(false);
+        if (!businessObjectReferences.IsValid)
+        {
+            return businessObjectReferences;
         }
 
         ValidationResult mainCurrencyIssuance = mainCurrencyIssuancePolicy.Validate(
