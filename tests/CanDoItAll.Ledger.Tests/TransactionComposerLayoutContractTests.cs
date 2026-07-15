@@ -42,8 +42,11 @@ public sealed class TransactionComposerLayoutContractTests
         Assert.Contains("TransactionContextRail", shell, StringComparison.Ordinal);
         Assert.Contains("ReviewReadyChanged", shell, StringComparison.Ordinal);
         Assert.Contains("grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem);", css, StringComparison.Ordinal);
-        Assert.Contains(".cda-transaction-workbench__canvas", css, StringComparison.Ordinal);
-        Assert.Contains("overflow: visible;", css, StringComparison.Ordinal);
+        Assert.Matches(@"(?s)\.cda-transaction-workbench__canvas\s*\{[^}]*min-width:\s*0;[^}]*overflow-x:\s*clip;", css);
+        Assert.Matches(@"(?s)\.cda-transaction-workflow-steps\s*>\s*ol\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0;[^}]*list-style:\s*none;", css);
+        Assert.DoesNotMatch(@"(?s)\.cda-transaction-workflow-steps\s*>\s*ol\s*\{[^}]*40rem", css);
+        Assert.Matches(@"(?s)\.cda-transaction-composer\s*\{[^}]*container-name:\s*transaction-composer;[^}]*container-type:\s*inline-size;", css);
+        Assert.Matches(@"(?s)@container\s+transaction-composer\s*\(max-width:\s*76rem\)\s*\{.*?\.cda-transaction-workbench\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);[^}]*\}.*?\.cda-transaction-context-rail\s*\{[^}]*position:\s*static;[^}]*max-height:\s*none;", css);
         Assert.Matches(@"(?s)\.cda-transaction-composer\s+\.cda-material-icon[^\{]*\{[^}]*letter-spacing:\s*normal\s*!important;[^}]*text-transform:\s*none\s*!important;", css);
         Assert.Matches(@"(?s)\.cda-transaction-workflow-steps\s*>\s*div:last-child\s*>\s*\.rz-stack\s*>\s*div:first-child\s*\{[^}]*display:\s*none;", css);
         Assert.Matches(@"(?s)\.cda-transaction-context-rail__actions\s*\{[^}]*position:\s*sticky;", css);
@@ -53,7 +56,11 @@ public sealed class TransactionComposerLayoutContractTests
         Assert.Contains("grid-template-columns: repeat(4, minmax(0, 1fr));", css, StringComparison.Ordinal);
         Assert.Contains("cda-split-output-empty", css, StringComparison.Ordinal);
         Assert.Contains("Class = \"cda-vef-dialog cda-token-creation-modal\"", accountHost, StringComparison.Ordinal);
-        Assert.Contains(".cda-token-creation-modal", css, StringComparison.Ordinal);
+        Assert.Matches(@"(?m)^section\.cda-vef-dialog--send\s*\{", css);
+        Assert.Matches(@"(?m)^section\.cda-vef-dialog--address-directory\s*\{", css);
+        Assert.Matches(@"(?m)^section\.cda-token-creation-modal\s*\{", css);
+        Assert.Matches(@"(?m)^section\.cda-transaction-picker-modal\s*\{", css);
+        Assert.DoesNotMatch(@"(?m)^\.(?:cda-vef-dialog--send|cda-vef-dialog--address-directory|cda-token-creation-modal|cda-transaction-picker-modal)\s*\{", css);
     }
 
     [Fact]

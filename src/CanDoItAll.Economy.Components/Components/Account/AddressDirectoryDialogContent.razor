@@ -4,142 +4,122 @@
 @inject IAddressDirectoryService AddressDirectory
 @inject ITagOccurrenceService Tags
 
-<DialogScaffold Dense="true"
-                Eyebrow="Address directory"
-                Title="@Title"
-                Description="@Description">
-    <ChildContent>
-        <Stack GapScale="LayoutGap.Medium"
-               AlignItems="AlignItems.Stretch"
-               Class="cda-address-directory"
-               data-testid="cda-address-directory-dialog">
-            <section class="cda-address-directory__control-band">
-                <div class="cda-address-directory__toolbar">
-                    <SecondaryTabs Items="FilterItems"
-                                   SelectedKey="@selectedFilter"
-                                   SelectedKeyChanged="SelectFilterAsync"
-                                   Dense="true" />
-                    <FormField Text="Search" ContainerClass="cda-economy-field">
-                        <TextBox Value="@search"
-                                 ValueChanged="@(value => search = value ?? string.Empty)"
-                                 Immediate="true"
-                                 Placeholder="Name, address, or tag"
-                                 aria-label="Search address directory" />
-                    </FormField>
-                    <div class="cda-address-directory__summary">
-                        <span>Showing</span>
-                        <strong>@FilteredEntries.Count / @entries.Count</strong>
-                    </div>
+<Stack GapScale="LayoutGap.Medium"
+       AlignItems="AlignItems.Stretch"
+       FillHeight="true"
+       Class="cda-address-directory"
+       data-testid="cda-address-directory-dialog-content">
+    <Toolbar Class="cda-address-directory__control-band"
+             data-testid="cda-address-directory-toolbar">
+        <ToolbarRow>
+            <ToolbarFields Class="cda-address-directory__toolbar-fields">
+                <SecondaryTabs Items="FilterItems"
+                               SelectedKey="@selectedFilter"
+                               SelectedKeyChanged="SelectFilterAsync"
+                               Dense="true" />
+                <FormField Text="Search" ContainerClass="cda-economy-field cda-address-directory__search">
+                    <TextBox Value="@search"
+                             ValueChanged="@(value => search = value ?? string.Empty)"
+                             Immediate="true"
+                             Placeholder="Name, address, or tag"
+                             aria-label="Search address directory" />
+                </FormField>
+            </ToolbarFields>
+            <ToolbarActions>
+                <div class="cda-address-directory__summary" role="status" aria-live="polite">
+                    <span>Showing</span>
+                    <strong>@FilteredEntries.Count / @entries.Count</strong>
                 </div>
-
                 @if (Mode == AddressDirectoryDialogMode.Manage)
                 {
-                    <section class="cda-address-directory__add" data-testid="cda-address-directory-add">
-                        <FormField Text="Name" ContainerClass="cda-economy-field">
-                            <TextBox Value="@newName"
-                                     ValueChanged="@(value => newName = value ?? string.Empty)"
-                                     Immediate="true"
-                                     Placeholder="Display name" />
-                        </FormField>
-                        <FormField Text="Address" ContainerClass="cda-economy-field cda-economy-field--wide">
-                            <TextBox Value="@newAddress"
-                                     ValueChanged="@(value => newAddress = value ?? string.Empty)"
-                                     Immediate="true"
-                                     Placeholder="cdia1..." />
-                        </FormField>
-                        <PageHeaderActionButton Icon="add"
-                                                Label="Add address"
-                                                TooltipText="Add address to the directory"
+                    <Button Text="Add address"
+                            Icon="person_add"
+                            Size="ButtonSize.Small"
+                            ButtonStyle="ButtonStyle.Secondary"
+                            Click="OpenAddAddressAsync"
+                            data-testid="cda-address-directory-add-button" />
+                }
+            </ToolbarActions>
+        </ToolbarRow>
+    </Toolbar>
+
+    <Grid ColumnTemplate="repeat(auto-fit, minmax(min(100%, 20rem), 1fr))"
+          Gap="LayoutGap.Medium"
+          AlignItems="AlignItems.Stretch"
+          Class="cda-address-directory__grid"
+          data-testid="cda-address-directory-grid">
+        @foreach (AddressDirectoryEntry entry in FilteredEntries)
+        {
+            <article class="cda-address-directory-card" data-testid="cda-address-directory-card">
+                <div class="cda-address-directory-card__header">
+                    <div class="cda-address-directory-card__avatar">
+                        @if (!string.IsNullOrWhiteSpace(entry.ProfileImageLink))
+                        {
+                            <img src="@entry.ProfileImageLink" alt="@entry.DisplayName" />
+                        }
+                        else
+                        {
+                            <span>@Initials(entry)</span>
+                        }
+                    </div>
+                    <div>
+                        <strong>@entry.DisplayName</strong>
+                        <CopyableMonoValue Value="@entry.Address" StartChars="10" EndChars="6" AriaLabel="Copy directory address" />
+                    </div>
+                    <PageHeaderActionButton Icon="@(entry.Favorite ? "star" : "star_border")"
+                                            Label="Favorite"
+                                            TooltipText="Toggle favorite"
+                                            Variant="Variant.Outlined"
+                                            Click="@(() => ToggleFavoriteAsync(entry))"
+                                            TestId="cda-address-directory-favorite" />
+                </div>
+
+                <div class="cda-address-directory-card__meta">
+                    <StatusBadge Text="@entry.Kind.ToString()" Tone="@(entry.Kind == AddressDirectoryEntryKind.Own ? "info" : "neutral")" />
+                    @if (!string.IsNullOrWhiteSpace(entry.ProfileDisplayName) || !string.IsNullOrWhiteSpace(entry.ProfileObjectId))
+                    {
+                        <StatusBadge Text="Profile cached" Tone="success" />
+                    }
+                </div>
+
+                <FormField Text="Tags" ContainerClass="cda-economy-field cda-address-directory-card__tags">
+                    <TagEditor Value="@entry.TagsOrEmpty"
+                               ValueChanged="@((IReadOnlyList<string> value) => SaveTagsAsync(entry, value))"
+                               Suggestions="@tagSuggestions"
+                               Placeholder="Add address tag"
+                               InputTestId="cda-address-directory-tag-input" />
+                </FormField>
+
+                <div class="cda-address-directory-card__actions">
+                    @if (Mode == AddressDirectoryDialogMode.Select)
+                    {
+                        <PageHeaderActionButton Icon="check"
+                                                Label="Select"
+                                                TooltipText="Select this address"
                                                 ButtonStyle="ButtonStyle.Secondary"
-                                                Click="AddExternalAsync"
-                                                TestId="cda-address-directory-add-button" />
-                    </section>
-                }
-            </section>
-
-            <div class="cda-address-directory__grid" data-testid="cda-address-directory-grid">
-                @foreach (AddressDirectoryEntry entry in FilteredEntries)
-                {
-                    <article class="cda-address-directory-card" data-testid="cda-address-directory-card">
-                        <div class="cda-address-directory-card__header">
-                            <div class="cda-address-directory-card__avatar">
-                                @if (!string.IsNullOrWhiteSpace(entry.ProfileImageLink))
-                                {
-                                    <img src="@entry.ProfileImageLink" alt="@entry.DisplayName" />
-                                }
-                                else
-                                {
-                                    <span>@Initials(entry)</span>
-                                }
-                            </div>
-                            <div>
-                                <strong>@entry.DisplayName</strong>
-                                <CopyableMonoValue Value="@entry.Address" StartChars="10" EndChars="6" AriaLabel="Copy directory address" />
-                            </div>
-                            <PageHeaderActionButton Icon="@(entry.Favorite ? "star" : "star_border")"
-                                                    Label="Favorite"
-                                                    TooltipText="Toggle favorite"
-                                                    Variant="Variant.Outlined"
-                                                    Click="@(() => ToggleFavoriteAsync(entry))"
-                                                    TestId="cda-address-directory-favorite" />
-                        </div>
-
-                        <div class="cda-address-directory-card__meta">
-                            <StatusBadge Text="@entry.Kind.ToString()" Tone="@(entry.Kind == AddressDirectoryEntryKind.Own ? "info" : "neutral")" />
-                            @if (!string.IsNullOrWhiteSpace(entry.ProfileDisplayName) || !string.IsNullOrWhiteSpace(entry.ProfileObjectId))
-                            {
-                                <StatusBadge Text="Profile cached" Tone="success" />
-                            }
-                        </div>
-
-                        <FormField Text="Tags" ContainerClass="cda-economy-field cda-address-directory-card__tags">
-                            <TagEditor Value="@entry.TagsOrEmpty"
-                                       ValueChanged="@((IReadOnlyList<string> value) => SaveTagsAsync(entry, value))"
-                                       Suggestions="@tagSuggestions"
-                                       Placeholder="Add address tag"
-                                       InputTestId="cda-address-directory-tag-input" />
-                        </FormField>
-
-                        <div class="cda-address-directory-card__actions">
-                            @if (Mode == AddressDirectoryDialogMode.Select)
-                            {
-                                <PageHeaderActionButton Icon="check"
-                                                        Label="Select"
-                                                        TooltipText="Select this address"
-                                                        ButtonStyle="ButtonStyle.Secondary"
-                                                        Click="@(() => SelectAsync(entry))" />
-                            }
-                            else
-                            {
-                                <PageHeaderActionButton Icon="save"
-                                                        Label="Save"
-                                                        TooltipText="Save address metadata"
-                                                        Variant="Variant.Outlined"
-                                                        ButtonStyle="ButtonStyle.Secondary"
-                                                        Click="@(() => SaveEntryAsync(entry))" />
-                                <PageHeaderActionButton Icon="delete"
-                                                        Label="Remove"
-                                                        TooltipText="Remove address metadata"
-                                                        Variant="Variant.Outlined"
-                                                        ButtonStyle="ButtonStyle.Warning"
-                                                        Disabled="@(entry.Kind == AddressDirectoryEntryKind.Own)"
-                                                        Click="@(() => RemoveAsync(entry))" />
-                            }
-                        </div>
-                    </article>
-                }
-            </div>
-        </Stack>
-    </ChildContent>
-    <Footer>
-        <PageHeaderActionButton Icon="close"
-                                Label="Close"
-                                TooltipText="Close address directory"
-                                Variant="Variant.Outlined"
-                                ButtonStyle="ButtonStyle.Light"
-                                Click="CloseAsync" />
-    </Footer>
-</DialogScaffold>
+                                                Click="@(() => SelectAsync(entry))" />
+                    }
+                    else
+                    {
+                        <PageHeaderActionButton Icon="save"
+                                                Label="Save"
+                                                TooltipText="Save address metadata"
+                                                Variant="Variant.Outlined"
+                                                ButtonStyle="ButtonStyle.Secondary"
+                                                Click="@(() => SaveEntryAsync(entry))" />
+                        <PageHeaderActionButton Icon="delete"
+                                                Label="Remove"
+                                                TooltipText="Remove address metadata"
+                                                Variant="Variant.Outlined"
+                                                ButtonStyle="ButtonStyle.Warning"
+                                                Disabled="@(entry.Kind == AddressDirectoryEntryKind.Own)"
+                                                Click="@(() => RemoveAsync(entry))" />
+                    }
+                </div>
+            </article>
+        }
+    </Grid>
+</Stack>
 
 @code {
     private static readonly IReadOnlyList<SecondaryTabItem> FilterItems =
@@ -154,8 +134,6 @@
     private IReadOnlyList<string> tagSuggestions = [];
     private string selectedFilter = "all";
     private string search = string.Empty;
-    private string newName = string.Empty;
-    private string newAddress = string.Empty;
 
     [Parameter]
     public BusinessObjectWorkspaceModel? Workspace { get; set; }
@@ -169,11 +147,8 @@
     [Parameter]
     public AddressDirectoryDialogMode Mode { get; set; }
 
-    private string Title => Mode == AddressDirectoryDialogMode.Select ? "Select address" : "Manage addresses";
-
-    private string Description => Mode == AddressDirectoryDialogMode.Select
-        ? "Choose an own or external address from the shared directory."
-        : "Manage favorite flags and local user tags for own and external addresses.";
+    [CascadingParameter]
+    public DialogReference? CurrentDialog { get; set; }
 
     private AddressDirectorySeed Seed
         => Workspace is not null
@@ -186,10 +161,14 @@
             .Where(MatchesSearch)
             .ToArray();
 
-    protected override async Task OnParametersSetAsync()
+    protected override Task OnParametersSetAsync()
+        => ReloadDirectoryAsync();
+
+    private async Task ReloadDirectoryAsync()
     {
-        entries = await AddressDirectory.GetEntriesAsync(Seed);
-        tagSuggestions = await Tags.GetSuggestionsAsync(Seed.AccountScope, TagSuggestionSource.Unique);
+        AddressDirectorySeed seed = Seed;
+        entries = await AddressDirectory.GetEntriesAsync(seed);
+        tagSuggestions = await Tags.GetSuggestionsAsync(seed.AccountScope, TagSuggestionSource.Unique);
     }
 
     private Task SelectFilterAsync(string filter)
@@ -198,23 +177,37 @@
         return Task.CompletedTask;
     }
 
-    private async Task AddExternalAsync()
+    private async Task OpenAddAddressAsync()
     {
-        if (string.IsNullOrWhiteSpace(newAddress))
+        AddressDirectorySeed seed = Seed;
+        object? result = await DialogService.OpenAsync<AddressDirectoryAddDialogContent>(
+            "Add address",
+            new Dictionary<string, object?>
+            {
+                [nameof(AddressDirectoryAddDialogContent.AccountScope)] = seed.AccountScope
+            },
+            new DialogOptions
+            {
+                Subtitle = "Save a contact for faster transactions",
+                Size = ModalSize.Compact,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-vef-dialog cda-address-directory-add-modal",
+                TestId = "cda-address-directory-add-dialog"
+            });
+
+        if (result is not AddressDirectoryEntry added)
         {
-            Notifications.Warning("Address required", "Paste an address before adding a directory card.", position: NotificationPosition.BottomCenter);
             return;
         }
 
-        var entry = new AddressDirectoryEntry(
-            newAddress.Trim(),
-            string.IsNullOrWhiteSpace(newName) ? AccountWorkspaceLocalServiceHelpers.ShortAddress(newAddress) : newName.Trim(),
-            AddressDirectoryEntryKind.External);
-        await AddressDirectory.SaveEntryAsync(Seed.AccountScope, entry);
-        newAddress = string.Empty;
-        newName = string.Empty;
-        entries = await AddressDirectory.GetEntriesAsync(Seed);
-        Notifications.Success("Address saved", entry.DisplayName, position: NotificationPosition.BottomCenter);
+        if (!MatchesFilter(added) || !MatchesSearch(added))
+        {
+            selectedFilter = "external";
+            search = string.Empty;
+        }
+
+        await ReloadDirectoryAsync();
     }
 
     private async Task ToggleFavoriteAsync(AddressDirectoryEntry entry)
@@ -249,10 +242,12 @@
     }
 
     private Task SelectAsync(AddressDirectoryEntry entry)
-        => DialogService.CloseAsync(entry);
+        => CloseCurrentDialogAsync(entry);
 
-    private Task CloseAsync()
-        => DialogService.CloseAsync();
+    private Task CloseCurrentDialogAsync(object? result = null)
+        => CurrentDialog is null
+            ? DialogService.CloseAsync(result)
+            : CurrentDialog.CloseAsync(result);
 
     private bool MatchesFilter(AddressDirectoryEntry entry)
         => selectedFilter switch

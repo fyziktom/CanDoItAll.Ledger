@@ -3,6 +3,38 @@ namespace CanDoItAll.Economy.Tests;
 public sealed class AccountAppUiSourceContractTests
 {
     [Fact]
+    public void App_shells_keep_page_and_portal_hosts_inside_one_theme_boundary()
+    {
+        string[] shells =
+        [
+            ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Layout", "MainLayout.razor"),
+            ReadRepoFile("examples", "CanDoItAll.Economy.Components.Demo", "Components", "App.razor"),
+            ReadRepoFile("examples", "CanDoItAll.Ledger.Simulator.App", "Components", "App.razor"),
+            ReadRepoFile("src", "CanDoItAll.Economy.Node", "Components", "App.razor")
+        ];
+
+        foreach (string shell in shells)
+        {
+            Assert.Equal(1, shell.Split("<ThemeHost>", StringSplitOptions.None).Length - 1);
+            Assert.Equal(1, shell.Split("</ThemeHost>", StringSplitOptions.None).Length - 1);
+
+            int themeStart = shell.IndexOf("<ThemeHost>", StringComparison.Ordinal);
+            int themeEnd = shell.IndexOf("</ThemeHost>", StringComparison.Ordinal);
+            int pageContent = shell.Contains("@Body", StringComparison.Ordinal)
+                ? shell.IndexOf("@Body", StringComparison.Ordinal)
+                : shell.IndexOf("<Routes", StringComparison.Ordinal);
+
+            Assert.True(pageContent > themeStart && pageContent < themeEnd);
+            Assert.True(shell.IndexOf("<DialogHost", StringComparison.Ordinal) > themeStart);
+            Assert.True(shell.IndexOf("<DialogHost", StringComparison.Ordinal) < themeEnd);
+            Assert.True(shell.IndexOf("<Notification", StringComparison.Ordinal) > themeStart);
+            Assert.True(shell.IndexOf("<Notification", StringComparison.Ordinal) < themeEnd);
+            Assert.True(shell.IndexOf("<Tooltip", StringComparison.Ordinal) > themeStart);
+            Assert.True(shell.IndexOf("<Tooltip", StringComparison.Ordinal) < themeEnd);
+        }
+    }
+
+    [Fact]
     public void Home_uses_steps_for_import_and_removes_unlocked_workspace_frame()
     {
         string home = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor");

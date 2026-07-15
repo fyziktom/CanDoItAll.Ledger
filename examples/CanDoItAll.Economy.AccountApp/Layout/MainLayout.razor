@@ -1,9 +1,11 @@
 @inherits LayoutComponentBase
 
-<main class="account-app-shell">
-    @Body
-</main>
+<ThemeHost>
+    <main class="account-app-shell">
+        @Body
+    </main>
 
-<DialogHost />
-<Notification Position="NotificationPosition.BottomCenter" />
-<Tooltip />
+    <DialogHost />
+    <Notification Position="NotificationPosition.BottomCenter" />
+    <Tooltip />
+</ThemeHost>

@@ -13,9 +13,12 @@
     <HeadOutlet />
 </head>
 <body>
-    <Routes />
-    <DialogHost @rendermode="InteractiveServer" />
-    <Notification Position="NotificationPosition.BottomCenter" @rendermode="InteractiveServer" />
+    <ThemeHost>
+        <Routes />
+        <DialogHost @rendermode="InteractiveServer" />
+        <Notification Position="NotificationPosition.BottomCenter" @rendermode="InteractiveServer" />
+        <Tooltip @rendermode="InteractiveServer" />
+    </ThemeHost>
     <script src="_framework/blazor.web.js"></script>
 </body>
 </html>

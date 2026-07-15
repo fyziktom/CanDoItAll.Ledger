@@ -3279,37 +3279,29 @@ button.cda-economy-list-item:focus-visible {
 }
 
 .cda-address-directory {
-  display: grid;
-  gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
   min-width: 0;
   width: 100%;
-  min-height: min(42rem, calc(100vh - 9rem));
 }
 
 .cda-address-directory__control-band {
-  display: grid;
-  gap: 0.65rem;
+  flex: 0 0 auto;
   min-width: 0;
   border: 1px solid #dfe5ee;
-  border-radius: 0.38rem;
+  border-radius: 0.65rem;
   background: #f7f9fc;
-  padding: 0.72rem;
+  padding: 0.65rem;
 }
 
-.cda-address-directory__toolbar,
-.cda-address-directory__add {
-  display: grid;
-  gap: 0.65rem;
-  align-items: end;
+.cda-address-directory__toolbar-fields,
+.cda-address-directory__search {
   min-width: 0;
 }
 
-.cda-address-directory__toolbar {
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.34fr) auto;
-}
-
-.cda-address-directory__add {
-  grid-template-columns: minmax(14rem, 0.26fr) minmax(28rem, 1fr) auto;
+.cda-address-directory__control-band .cad-sheet-toolbar-actions {
+  align-items: end;
+  flex-wrap: wrap;
 }
 
 .cda-address-directory__summary {
@@ -3336,26 +3328,25 @@ button.cda-economy-list-item:focus-visible {
 }
 
 .cda-address-directory__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-  gap: 0.75rem;
-  justify-content: stretch;
+  flex: 1 1 auto;
+  align-content: start;
   min-width: 0;
-  max-height: min(48rem, calc(100vh - 18rem));
-  overflow: auto;
-  padding-right: 0.15rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  scrollbar-width: thin;
 }
 
 .cda-address-directory-card {
-  display: grid;
-  grid-template-rows: auto auto minmax(5rem, 1fr) auto;
-  gap: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
   min-width: 0;
-  aspect-ratio: 1 / 1;
+  min-height: 12rem;
   border: 1px solid #dfe5ee;
-  border-radius: 0.42rem;
+  border-radius: 0.65rem;
   background: #ffffff;
-  padding: 0.72rem;
+  padding: 0.8rem;
 }
 
 .cda-address-directory-card__header {
@@ -3411,7 +3402,17 @@ button.cda-economy-list-item:focus-visible {
 }
 
 .cda-address-directory-card__actions {
-  align-self: end;
+  align-self: stretch;
+  margin-top: auto;
+}
+
+section.cda-address-directory-add-modal {
+  max-width: min(40rem, calc(100vw - 2rem)) !important;
+}
+
+.cda-address-directory-add-form,
+.cda-address-directory-add-form__actions {
+  width: 100%;
 }
 
 .cda-address-directory-mini {
@@ -3661,7 +3662,7 @@ button.cda-economy-list-item:focus-visible {
   margin-top: 0.9rem;
 }
 
-.cda-vef-dialog {
+section.cda-vef-dialog {
   border-radius: 0.35rem !important;
   border-color: #d8dee7 !important;
   box-shadow: 0 18px 42px rgba(27, 33, 45, 0.28) !important;
@@ -3684,11 +3685,11 @@ button.cda-economy-list-item:focus-visible {
   padding: 0.52rem 0.78rem;
 }
 
-.cda-vef-dialog--form {
+section.cda-vef-dialog--form {
   max-width: min(30rem, 100%) !important;
 }
 
-.cda-vef-dialog--send {
+section.cda-vef-dialog--send {
   max-width: min(112rem, calc(100vw - 1rem)) !important;
 }
 
@@ -3707,24 +3708,24 @@ button.cda-economy-list-item:focus-visible {
   min-height: 7.75rem;
 }
 
-.cda-vef-dialog--details {
+section.cda-vef-dialog--details {
   max-width: min(76rem, 100%) !important;
 }
 
-.cda-vef-dialog--tx-detail,
-.cda-vef-dialog--bo-detail {
+section.cda-vef-dialog--tx-detail,
+section.cda-vef-dialog--bo-detail {
   max-width: min(112rem, calc(100vw - 1rem)) !important;
 }
 
-.cda-vef-dialog--security {
+section.cda-vef-dialog--security {
   max-width: min(112rem, calc(100vw - 1rem)) !important;
 }
 
-.cda-vef-dialog--address-directory {
+section.cda-vef-dialog--address-directory {
   max-width: min(112rem, calc(100vw - 1rem)) !important;
 }
 
-.cda-vef-dialog--transactions {
+section.cda-vef-dialog--transactions {
   max-width: min(112rem, 100%) !important;
 }
 
@@ -7355,7 +7356,7 @@ button.cda-economy-list-item:focus-visible {
   min-height: 8.25rem;
 }
 
-.cda-transaction-picker-modal {
+section.cda-transaction-picker-modal {
   max-width: min(112rem, calc(100vw - 1rem)) !important;
 }
 
@@ -7515,7 +7516,7 @@ button.cda-economy-list-item:focus-visible {
   font-weight: 700;
 }
 
-.cda-token-creation-modal {
+section.cda-token-creation-modal {
   max-width: min(82rem, calc(100vw - 2rem)) !important;
 }
 
@@ -7721,6 +7722,11 @@ button.cda-economy-list-item:focus-visible {
 }
 
 /* Desktop transaction workbench: wide canvas, compact progress, persistent context and actions. */
+.cda-transaction-composer {
+  container-name: transaction-composer;
+  container-type: inline-size;
+}
+
 .cda-transaction-composer,
 .cda-transaction-flow-panel,
 .cda-transaction-wizard,
@@ -7757,8 +7763,9 @@ button.cda-economy-list-item:focus-visible {
 }
 
 .cda-transaction-workbench__canvas {
+  min-width: 0;
   width: 100%;
-  overflow: visible;
+  overflow-x: clip;
   padding-top: 0 !important;
 }
 
@@ -7875,7 +7882,9 @@ button.cda-economy-list-item:focus-visible {
 }
 
 .cda-transaction-workflow-steps > ol {
-  width: min(100%, 40rem);
+  width: 100%;
+  margin: 0;
+  list-style: none;
   padding: 0.15rem 0.35rem 0.35rem;
 }
 
@@ -8018,6 +8027,17 @@ button.cda-economy-list-item:focus-visible {
   grid-template-columns: repeat(2, minmax(0, 17rem));
   max-height: none;
   overflow: visible;
+}
+
+@container transaction-composer (max-width: 76rem) {
+  .cda-transaction-workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cda-transaction-context-rail {
+    position: static;
+    max-height: none;
+  }
 }
 
 @media (max-width: 640px) {
