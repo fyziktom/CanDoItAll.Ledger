@@ -579,7 +579,10 @@ public sealed class WasmAccountWorkspaceAdapter(
         string tokenName = NormalizeTokenSegment(request.TokenName, "asset");
         var tokenId = new TokenId($"{tokenNamespace}.{tokenName}");
         LedgerTransaction unsigned = await account.BuildUnsignedTokenMintTransactionAsync(
-            new TokenMintRequest(tokenId, PositiveOrDefault(request.Amount, 1)),
+            new TokenMintRequest(
+                tokenId,
+                PositiveOrDefault(request.Amount, 1),
+                PermissionSourceOutPoint: request.PermissionSourceOutPoint),
             cancellationToken).ConfigureAwait(false);
 
         return await SignAndSubmitAsync(BusinessObjectTransactionMode.Create, unsigned, $"Token {tokenId.Value}", cancellationToken)
@@ -1041,11 +1044,16 @@ public sealed class WasmAccountWorkspaceAdapter(
     private static IReadOnlyList<EconomyTokenCreationAuthority> CreateTokenCreationAuthorities(
         IReadOnlyList<LedgerPermissionSource> permissionSources)
         => permissionSources
-            .Where(source => source.Output.BusinessObject is not null)
+            .Where(source => string.Equals(source.Grant.Action, PermissionTokenAuthority.MintNewTokenTypeAction, StringComparison.Ordinal)
+                && source.Output.BusinessObject is not null
+                && source.Amount.Value > 0m)
             .Select(source => new EconomyTokenCreationAuthority(
                 source.Grant.Namespace,
                 BusinessObjectId.FromOutPoint(source.Output.OutPoint),
-                source.Output.Address))
+                source.Output.Address,
+                source.OutPoint,
+                source.Amount,
+                source.Grant.Repeatable))
             .Distinct()
             .ToArray();
 

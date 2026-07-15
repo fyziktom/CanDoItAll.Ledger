@@ -7,6 +7,8 @@ using CanDoItAll.Economy.Persistence.EFCore;
 using CanDoItAll.Economy.Persistence.EFCore.Records;
 using CanDoItAll.Economy.Sdk;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CanDoItAll.Economy.Node;
 
@@ -44,6 +46,14 @@ public sealed class EconomyNodeService(
 
         await using EconomyDbContext db = await dbContextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         await db.Database.EnsureDeletedAsync(cancellationToken).ConfigureAwait(false);
+
+        if (options.SchemaManagementMode == EconomyNodeSchemaManagementMode.Migrate
+            && db.Database.IsRelational())
+        {
+            IRelationalDatabaseCreator databaseCreator = db.GetService<IRelationalDatabaseCreator>();
+            await databaseCreator.CreateAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         await ApplySchemaManagementAsync(db, cancellationToken).ConfigureAwait(false);
 
         if (options.BootstrapTreasuryAdmin)

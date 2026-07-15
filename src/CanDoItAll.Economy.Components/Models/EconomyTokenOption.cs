@@ -26,7 +26,10 @@ public sealed record EconomyTokenOption(
 public sealed record EconomyTokenCreationAuthority(
     string Namespace,
     BusinessObjectId GrantObjectId,
-    Address OwnerAddress);
+    Address OwnerAddress,
+    OutPoint? SourceOutPoint = null,
+    Amount AvailableAmount = default,
+    bool Repeatable = true);
 
 public sealed record EconomyAddressBookmark(
     string Name,
@@ -37,7 +40,8 @@ public sealed record EconomyTokenCreationRequest(
     string TokenName,
     Amount Amount,
     Amount MainAmount,
-    string Description);
+    string Description,
+    OutPoint? PermissionSourceOutPoint = null);
 
 public sealed record BusinessObjectSendRequest(
     BusinessObjectId ObjectId,

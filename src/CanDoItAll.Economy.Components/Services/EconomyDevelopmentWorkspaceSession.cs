@@ -336,11 +336,15 @@ public sealed class EconomyDevelopmentWorkspaceSession(
 
         return permissions
             .Where(source => string.Equals(source.Grant.Action, PermissionTokenAuthority.MintNewTokenTypeAction, StringComparison.Ordinal)
-                && source.Output.BusinessObject is not null)
+                && source.Output.BusinessObject is not null
+                && source.Amount.Value > 0m)
             .Select(source => new EconomyTokenCreationAuthority(
                 source.Grant.Namespace,
                 BusinessObjectId.FromOutPoint(source.Output.OutPoint),
-                source.Output.Address))
+                source.Output.Address,
+                source.OutPoint,
+                source.Amount,
+                source.Grant.Repeatable))
             .OrderBy(authority => authority.Namespace, StringComparer.Ordinal)
             .ToArray();
     }
@@ -960,7 +964,8 @@ public sealed class EconomyDevelopmentWorkspaceSession(
         LedgerSubmitResult mintResult = await account.MintTokenAsync(
             new TokenMintRequest(
                 tokenId,
-                sourceAmount),
+                sourceAmount,
+                PermissionSourceOutPoint: request.PermissionSourceOutPoint),
             cancellationToken).ConfigureAwait(false);
 
         return ToExecutionResult(BusinessObjectTransactionMode.Create, mintResult, $"Token {tokenId.Value}");

@@ -131,56 +131,81 @@ EnsureMinimum("Bob main", bobMainAfter, options.BobMainAmount);
 EnsureMinimum($"Alice {options.TokenId}", aliceTokenAfter, aliceTokenMinimumAfterBobFunding);
 EnsureMinimum($"Bob {options.TokenId}", bobTokenAfter, options.BobTokenAmount);
 
-Console.WriteLine(JsonSerializer.Serialize(new
+if (options.VerifyPermissionTokenBusinessObjectFlow)
 {
-    status = "seeded",
-    node = options.NodeBaseUri.ToString(),
-    ledgerId = context.LedgerId.Value,
-    scenarioId = context.ScenarioId?.Value,
-    token = options.TokenId,
-    requested = new
+    PermissionTokenBusinessObjectVerification verification = await VerifyPermissionTokenBusinessObjectFlowAsync(
+        nodeClient,
+        context,
+        alice,
+        cancellationToken).ConfigureAwait(false);
+
+    Console.WriteLine(JsonSerializer.Serialize(new
     {
-        aliceMain = FormatAmount(options.AliceMainAmount),
-        bobMain = FormatAmount(options.BobMainAmount),
-        aliceTokenSupply = FormatAmount(options.TokenSupplyAmount),
-        bobTokenFromAlice = FormatAmount(options.BobTokenAmount)
-    },
-    treasury = new
+        status = "verified",
+        seedTransactions = new
+        {
+            aliceMainTransferTx = aliceMainTransfer?.TxId,
+            bobMainTransferTx = bobMainTransfer?.TxId,
+            tokenMintTx = tokenMint?.TxId,
+            aliceTokenTransferTx = aliceTokenTreasuryTransfer?.TxId,
+            aliceToBobSignedTokenTransferTx = aliceToBobTokenTransfer?.TxId?.Value
+        },
+        verification
+    }, consoleJsonOptions));
+}
+else
+{
+    Console.WriteLine(JsonSerializer.Serialize(new
     {
-        address = bootstrap.AdminAddress,
-        mainAmount = bootstrap.TreasuryMainAmountText,
-        tokenMintTx = tokenMint?.TxId
-    },
-    alice = new
-    {
-        address = alice.Address,
-        rawKeyPath = alice.Path,
-        accountAppImportPath = aliceBackup.Path,
-        mainBefore = FormatAmount(aliceMainBefore),
-        mainAfter = FormatAmount(aliceMainAfter),
-        tokenBefore = FormatAmount(aliceTokenBefore),
-        tokenAfter = FormatAmount(aliceTokenAfter),
-        treasuryMainTransferTx = aliceMainTransfer?.TxId,
-        treasuryTokenTransferTx = aliceTokenTreasuryTransfer?.TxId
-    },
-    bob = new
-    {
-        address = bob.Address,
-        rawKeyPath = bob.Path,
-        accountAppImportPath = bobBackup.Path,
-        mainBefore = FormatAmount(bobMainBefore),
-        mainAfter = FormatAmount(bobMainAfter),
-        tokenBefore = FormatAmount(bobTokenBefore),
-        tokenAfter = FormatAmount(bobTokenAfter),
-        treasuryMainTransferTx = bobMainTransfer?.TxId,
-        aliceSignedTokenTransferTx = aliceToBobTokenTransfer?.TxId?.Value
-    },
-    accountAppImport = new
-    {
-        password = options.AccountBackupPassword,
-        readmePath = Path.Combine(options.KeyRoot, options.KeySetName, "imports", "README.md")
-    }
-}, consoleJsonOptions));
+        status = "seeded",
+        node = options.NodeBaseUri.ToString(),
+        ledgerId = context.LedgerId.Value,
+        scenarioId = context.ScenarioId?.Value,
+        token = options.TokenId,
+        requested = new
+        {
+            aliceMain = FormatAmount(options.AliceMainAmount),
+            bobMain = FormatAmount(options.BobMainAmount),
+            aliceTokenSupply = FormatAmount(options.TokenSupplyAmount),
+            bobTokenFromAlice = FormatAmount(options.BobTokenAmount)
+        },
+        treasury = new
+        {
+            address = bootstrap.AdminAddress,
+            mainAmount = bootstrap.TreasuryMainAmountText,
+            tokenMintTx = tokenMint?.TxId
+        },
+        alice = new
+        {
+            address = alice.Address,
+            rawKeyPath = alice.Path,
+            accountAppImportPath = aliceBackup.Path,
+            mainBefore = FormatAmount(aliceMainBefore),
+            mainAfter = FormatAmount(aliceMainAfter),
+            tokenBefore = FormatAmount(aliceTokenBefore),
+            tokenAfter = FormatAmount(aliceTokenAfter),
+            treasuryMainTransferTx = aliceMainTransfer?.TxId,
+            treasuryTokenTransferTx = aliceTokenTreasuryTransfer?.TxId
+        },
+        bob = new
+        {
+            address = bob.Address,
+            rawKeyPath = bob.Path,
+            accountAppImportPath = bobBackup.Path,
+            mainBefore = FormatAmount(bobMainBefore),
+            mainAfter = FormatAmount(bobMainAfter),
+            tokenBefore = FormatAmount(bobTokenBefore),
+            tokenAfter = FormatAmount(bobTokenAfter),
+            treasuryMainTransferTx = bobMainTransfer?.TxId,
+            aliceSignedTokenTransferTx = aliceToBobTokenTransfer?.TxId?.Value
+        },
+        accountAppImport = new
+        {
+            password = options.AccountBackupPassword,
+            readmePath = Path.Combine(options.KeyRoot, options.KeySetName, "imports", "README.md")
+        }
+    }, consoleJsonOptions));
+}
 
 static HttpClient CreateHttpClient(DemoSeedOptions options)
 {
@@ -365,6 +390,161 @@ static async Task<LedgerSubmitResult> SubmitSignedTokenTransferAsync(
     return result;
 }
 
+static async Task<PermissionTokenBusinessObjectVerification> VerifyPermissionTokenBusinessObjectFlowAsync(
+    EconomyNodeLedgerClient nodeClient,
+    LedgerAccountContext context,
+    DemoAccountKey alice,
+    CancellationToken cancellationToken)
+{
+    const string tokenNamespace = "xray";
+    const decimal tokenSupply = 1_000_000_000_000m;
+    const decimal carrierAmount = 1m;
+    const decimal expectedPlainChange = tokenSupply - carrierAmount;
+    var tokenId = new TokenId("xray.image");
+
+    PermissionGrantReceipt grant = await nodeClient.GrantPermissionAsync(
+        new PermissionGrantRequest(
+            tokenNamespace,
+            alice.Address,
+            Amount: 1m,
+            Repeatable: true,
+            Action: PermissionTokenAuthority.MintNewTokenTypeAction,
+            context.ScenarioId?.Value),
+        cancellationToken).ConfigureAwait(false);
+    var grantedPermissionOutPoint = new OutPoint(new TxId(grant.TxId), OutputIndex: 0);
+
+    ITransactionHasher hasher = new TransactionHasher(new DefaultTransactionCanonicalizer());
+    var builder = new BusinessObjectTransactionBuilder(
+        nodeClient,
+        hasher,
+        new SignaturePayloadBuilder(hasher),
+        new CryptoDriverAccountInputSigner(new DotNetEconomyCryptoDriver()),
+        new SeederSystemClock());
+    var economyClient = new EconomyClient(nodeClient, nodeClient, builder);
+    BusinessObjectAccount account = economyClient.LoadAccount(context, alice.ToKeySource());
+
+    IReadOnlyList<LedgerPermissionSource> permissionSources = await account
+        .GetMintPermissionSourcesAsync(tokenId, cancellationToken)
+        .ConfigureAwait(false);
+    LedgerPermissionSource permissionSource = permissionSources.SingleOrDefault(
+            source => source.OutPoint == grantedPermissionOutPoint)
+        ?? throw new InvalidOperationException(
+            $"The newly granted xray permission output {FormatOutPoint(grantedPermissionOutPoint)} was not resolved for Alice.");
+
+    LedgerSubmitResult mintResult = await account.MintTokenAsync(
+        new TokenMintRequest(
+            tokenId,
+            Amount.FromDecimal(tokenSupply),
+            PermissionSourceOutPoint: permissionSource.OutPoint),
+        cancellationToken).ConfigureAwait(false);
+    TxId mintTxId = RequireAcceptedTxId(mintResult, "Alice xray.image token mint");
+    var mintedTokenOutPoint = new OutPoint(mintTxId, OutputIndex: 0);
+
+    string stateJson = JsonSerializer.Serialize(new
+    {
+        name = "Xray verification image",
+        description = "Token-backed image created by the opt-in live verification flow.",
+        token = tokenId.Value,
+        tags = new[] { "xray", "image", "verification" }
+    });
+    LedgerSubmitResult businessObjectResult = await account.CreateBusinessObjectAsync(
+        new CreateBusinessObjectRequest(
+            "image",
+            stateJson,
+            Token: new TokenTransfer(tokenId, Amount.FromDecimal(carrierAmount)),
+            SourceOutPoint: mintedTokenOutPoint),
+        cancellationToken).ConfigureAwait(false);
+    TxId businessObjectTxId = RequireAcceptedTxId(businessObjectResult, "Alice xray.image-backed image BO create");
+    var businessObjectOutPoint = new OutPoint(businessObjectTxId, OutputIndex: 0);
+    var plainTokenChangeOutPoint = new OutPoint(businessObjectTxId, OutputIndex: 1);
+
+    IReadOnlyList<LedgerSpendableOutput> outputs = await account
+        .GetSpendableOutputsAsync(cancellationToken)
+        .ConfigureAwait(false);
+    LedgerSpendableOutput businessObjectOutput = outputs.SingleOrDefault(
+            output => output.OutPoint == businessObjectOutPoint)
+        ?? throw new InvalidOperationException(
+            $"The confirmed image BO output {FormatOutPoint(businessObjectOutPoint)} is not spendable by Alice.");
+    if (businessObjectOutput.BusinessObject is null
+        || businessObjectOutput.Token?.TokenId != tokenId
+        || businessObjectOutput.Token.Amount.Value != carrierAmount)
+    {
+        throw new InvalidOperationException("The confirmed image BO output does not carry exactly one xray.image token.");
+    }
+
+    LedgerSpendableOutput plainTokenChange = outputs.SingleOrDefault(
+            output => output.OutPoint == plainTokenChangeOutPoint)
+        ?? throw new InvalidOperationException(
+            $"The expected plain token change output {FormatOutPoint(plainTokenChangeOutPoint)} is missing.");
+    if (plainTokenChange.BusinessObject is not null
+        || plainTokenChange.MainAmount != Amount.Zero
+        || plainTokenChange.Token?.TokenId != tokenId
+        || plainTokenChange.Token.Amount.Value != expectedPlainChange)
+    {
+        throw new InvalidOperationException(
+            $"Expected plain xray.image change {FormatAmount(expectedPlainChange)}, but the confirmed output shape or amount differs.");
+    }
+
+    IReadOnlyList<LedgerBusinessObjectHolding> holdings = await account
+        .GetBusinessObjectsAsync(cancellationToken)
+        .ConfigureAwait(false);
+    LedgerBusinessObjectHolding holding = holdings.SingleOrDefault(
+            candidate => candidate.CurrentOutPoint == businessObjectOutPoint)
+        ?? throw new InvalidOperationException("The confirmed xray.image-backed image BO is absent from Alice's holdings.");
+    if (!string.Equals(holding.ObjectType, "image", StringComparison.Ordinal))
+    {
+        throw new InvalidOperationException($"Expected image BO type, but the confirmed type is {holding.ObjectType}.");
+    }
+
+    NodeHealthResponse readiness = await nodeClient.GetReadinessAsync(cancellationToken).ConfigureAwait(false);
+    bool ledgerVerificationValid = string.Equals(readiness.VerificationStatus, "valid_semantic_payload", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(readiness.VerificationStatus, "valid_semantic_trusted", StringComparison.OrdinalIgnoreCase);
+    if (!string.Equals(readiness.Status, "ok", StringComparison.OrdinalIgnoreCase)
+        || !ledgerVerificationValid
+        || readiness.VerificationIssueCount != 0
+        || !string.Equals(readiness.ProjectionVerificationStatus, "valid", StringComparison.OrdinalIgnoreCase)
+        || readiness.ProjectionIssueCount != 0)
+    {
+        throw new InvalidOperationException(
+            $"Node readiness is not valid after verification: status={readiness.Status}, ledger={readiness.VerificationStatus}, " +
+            $"ledgerIssues={readiness.VerificationIssueCount}, projection={readiness.ProjectionVerificationStatus}, " +
+            $"projectionIssues={readiness.ProjectionIssueCount}.");
+    }
+
+    return new PermissionTokenBusinessObjectVerification(
+        TokenId: tokenId.Value,
+        Supply: FormatAmount(tokenSupply),
+        PermissionGrantTxId: grant.TxId,
+        PermissionOutPoint: FormatOutPoint(permissionSource.OutPoint),
+        MintTxId: mintTxId.Value,
+        MintedTokenOutPoint: FormatOutPoint(mintedTokenOutPoint),
+        BusinessObjectTxId: businessObjectTxId.Value,
+        BusinessObjectOutPoint: FormatOutPoint(businessObjectOutPoint),
+        BusinessObjectCarrierAmount: FormatAmount(carrierAmount),
+        PlainTokenChangeOutPoint: FormatOutPoint(plainTokenChangeOutPoint),
+        PlainTokenChangeAmount: FormatAmount(plainTokenChange.Token.Amount.Value),
+        ReadinessStatus: readiness.Status,
+        LedgerVerificationStatus: readiness.VerificationStatus,
+        ProjectionVerificationStatus: readiness.ProjectionVerificationStatus,
+        LatestLedgerSequence: readiness.LatestLedgerSequence);
+}
+
+static TxId RequireAcceptedTxId(LedgerSubmitResult result, string operation)
+{
+    if (result.Accepted && result.TxId is { } txId)
+    {
+        return txId;
+    }
+
+    string errors = result.Errors.Count == 0
+        ? "unknown rejection"
+        : string.Join("; ", result.Errors.Select(error => $"{error.Code}: {error.Message}"));
+    throw new InvalidOperationException($"{operation} was rejected: {errors}");
+}
+
+static string FormatOutPoint(OutPoint outPoint)
+    => $"{outPoint.TxId.Value}:{outPoint.OutputIndex.ToString(CultureInfo.InvariantCulture)}";
+
 static async Task<decimal> GetMainBalanceAsync(
     EconomyNodeLedgerClient nodeClient,
     LedgerAccountContext context,
@@ -501,6 +681,23 @@ static async Task WriteImportReadmeAsync(
 static string FormatAmount(decimal amount)
     => amount.ToString("0.#############################", CultureInfo.InvariantCulture);
 
+internal sealed record PermissionTokenBusinessObjectVerification(
+    string TokenId,
+    string Supply,
+    string PermissionGrantTxId,
+    string PermissionOutPoint,
+    string MintTxId,
+    string MintedTokenOutPoint,
+    string BusinessObjectTxId,
+    string BusinessObjectOutPoint,
+    string BusinessObjectCarrierAmount,
+    string PlainTokenChangeOutPoint,
+    string PlainTokenChangeAmount,
+    string ReadinessStatus,
+    string LedgerVerificationStatus,
+    string ProjectionVerificationStatus,
+    long LatestLedgerSequence);
+
 internal sealed record DemoSeedOptions(
     Uri NodeBaseUri,
     string ApiBasePath,
@@ -517,6 +714,7 @@ internal sealed record DemoSeedOptions(
     decimal BobTokenAmount,
     string AccountBackupPassword,
     TimeSpan WaitTimeout,
+    bool VerifyPermissionTokenBusinessObjectFlow,
     bool AllowInvalidHttpsCertificate)
 {
     public static DemoSeedOptions Parse(string[] args)
@@ -566,6 +764,8 @@ internal sealed record DemoSeedOptions(
                 ?? Environment.GetEnvironmentVariable("CANDOITALL_ECONOMY_ACCOUNT_BACKUP_PASSWORD")
                 ?? "accountapp-demo-password",
             TimeSpan.FromSeconds(waitSeconds),
+            HasSwitch(args, "--verify-permission-token-bo-flow")
+                || ReadBool(Environment.GetEnvironmentVariable("CANDOITALL_ECONOMY_VERIFY_PERMISSION_TOKEN_BO_FLOW")),
             HasSwitch(args, "--allow-invalid-https-certificate")
                 || ReadBool(Environment.GetEnvironmentVariable("CANDOITALL_ECONOMY_ALLOW_INVALID_HTTPS_CERTIFICATE")));
     }

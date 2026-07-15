@@ -6,7 +6,7 @@ x-dotnet-build: &dotnet-build
     candoitall-components: ../CanDoItAll.Components
     candoitall-external-packages: ../CanDoItAll/ExternalPackages
   args:
-    CDA_COMPONENTS_PACKAGE_VERSION: "0.1.0"
+    CDA_COMPONENTS_PACKAGE_VERSION: "0.1.2"
 
 services:
   postgres:

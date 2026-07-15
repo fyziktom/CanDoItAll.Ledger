@@ -14,4 +14,10 @@
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=false" />
   </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>CanDoItAll.Ledger.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

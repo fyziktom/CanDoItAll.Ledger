@@ -4,6 +4,7 @@ namespace CanDoItAll.Economy.Core;
 
 public sealed record TokenTransfer(TokenId TokenId, Amount Amount);
 
+[method: JsonConstructor]
 public sealed record BusinessObjectRef(
     [property: JsonPropertyName("objectId")] BusinessObjectLineageKey LineageKey,
     int Version,

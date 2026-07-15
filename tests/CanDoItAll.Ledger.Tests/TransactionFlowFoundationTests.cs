@@ -251,12 +251,20 @@ public sealed class TransactionFlowFoundationTests : TestContext
     [Fact]
     public async Task Token_creator_exposes_submit_only_on_review_step()
     {
+        var permissionSource = new OutPoint(new TxId(new string('a', 64)), 0);
         EconomyTokenCreationAuthority authority = new(
             "demo",
-            new BusinessObjectId("bo:authority:demo"),
-            Alice);
+            BusinessObjectId.FromOutPoint(permissionSource),
+            Alice,
+            permissionSource,
+            Amount.FromInt64(1),
+            Repeatable: true);
+        EconomyTokenCreationRequest? submitted = null;
         IRenderedComponent<TokenCreationDialogContent> component = RenderComponent<TokenCreationDialogContent>(parameters => parameters
-            .Add(item => item.Authorities, new[] { authority }));
+            .Add(item => item.Authorities, new[] { authority })
+            .Add(
+                item => item.SubmitRequested,
+                EventCallback.Factory.Create<EconomyTokenCreationRequest>(this, request => submitted = request)));
 
         Assert.Empty(component.FindAll("[data-testid='token-creation-submit']"));
 
@@ -266,7 +274,12 @@ public sealed class TransactionFlowFoundationTests : TestContext
         await component.Find("[data-testid='token-creation-next']").ClickAsync(new MouseEventArgs());
 
         Assert.Single(component.FindAll("[data-testid='token-creation-submit']"));
-        Assert.Contains("demo:voucher", component.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("demo.voucher", component.Markup, StringComparison.OrdinalIgnoreCase);
+
+        component.Find("[data-testid='token-creation-submit']").Click();
+
+        Assert.NotNull(submitted);
+        Assert.Equal(permissionSource, submitted.PermissionSourceOutPoint);
     }
 
     [Fact]

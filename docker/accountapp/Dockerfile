@@ -2,7 +2,7 @@
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0.201 AS build
 WORKDIR /src/CanDoItAll.Economy
-ARG CDA_COMPONENTS_PACKAGE_VERSION=0.1.0
+ARG CDA_COMPONENTS_PACKAGE_VERSION=0.1.2
 
 COPY . .
 COPY --from=candoitall-components . /src/CanDoItAll.Components

@@ -964,6 +964,53 @@ public sealed class BusinessObjectAdvancedTransactionTests
     }
 
     [Fact]
+    public async Task Account_MintsTrillionTokenSupplyAndUsesItToCreateBusinessObject()
+    {
+        TestRig rig = CreateRig(
+            DateTimeOffset.Parse("2026-05-09T01:58:00Z"),
+            enforceTokenPolicy: true,
+            includeRootPermission: true);
+        BusinessObjectAccount admin = rig.CreateAccount("bootstrap");
+        BusinessObjectAccount alice = rig.CreateAccount("alice");
+        var tokenId = new TokenId("xray.image");
+        Amount supply = Amount.FromDecimal(1_000_000_000_000m);
+
+        LedgerSubmitResult issue = await admin.IssuePermissionAsync(
+            new PermissionIssueRequest(Alice, "xray", Amount.FromInt64(1), Repeatable: true),
+            CancellationToken.None);
+        Assert.True(issue.Accepted, string.Join("; ", issue.Errors));
+
+        LedgerPermissionSource permission = Assert.Single(await alice.GetMintPermissionSourcesAsync(tokenId, CancellationToken.None));
+        rig.Time.Advance(TimeSpan.FromMinutes(1));
+        LedgerSubmitResult mint = await alice.MintTokenAsync(
+            new TokenMintRequest(tokenId, supply, PermissionSourceOutPoint: permission.OutPoint),
+            CancellationToken.None);
+        Assert.True(mint.Accepted, string.Join("; ", mint.Errors));
+        Assert.Equal(supply, (await alice.GetBalanceAsync(CancellationToken.None)).TokenBalances[tokenId]);
+
+        rig.Time.Advance(TimeSpan.FromMinutes(1));
+        LedgerTransaction create = await alice.BuildCreateBusinessObjectTransactionAsync(
+            new CreateBusinessObjectRequest(
+                "image",
+                "{\"name\":\"xray sample\"}",
+                Token: new TokenTransfer(tokenId, Amount.FromInt64(1)),
+                SourceOutPoint: new OutPoint(mint.TxId!.Value, 0)),
+            CancellationToken.None);
+
+        Assert.Equal(Amount.FromInt64(1), create.Outputs[0].Token!.Amount);
+        Assert.NotNull(create.Outputs[0].BusinessObject);
+        Assert.Equal(999_999_999_999m, create.Outputs[1].Token!.Amount.Value);
+        Assert.Null(create.Outputs[1].BusinessObject);
+
+        LedgerSubmitResult created = await alice.SubmitTransactionAsync(create, CancellationToken.None);
+        Assert.True(created.Accepted, string.Join("; ", created.Errors));
+        Assert.Equal(supply, (await alice.GetBalanceAsync(CancellationToken.None)).TokenBalances[tokenId]);
+        Assert.Single(
+            await alice.GetBusinessObjectsAsync(CancellationToken.None),
+            holding => holding.ObjectType == "image" && holding.ItemType == TransactionDataItemType.BusinessObject);
+    }
+
+    [Fact]
     public async Task Account_DoesNotSpendBusinessObjectsForPlainPayments()
     {
         TestRig rig = CreateRig(DateTimeOffset.Parse("2026-05-09T02:00:00Z"));
