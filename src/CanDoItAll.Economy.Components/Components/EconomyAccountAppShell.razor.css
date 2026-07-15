@@ -1,0 +1,26 @@
+.cda-economy-theme {
+    display: contents;
+    --cda-economy-accent: #6f65f4;
+    --cda-economy-accent-dark: #4f46d6;
+    --cda-economy-border: #d8dee7;
+    --cda-economy-border-strong: #c8d0dc;
+    --cda-economy-text: #2f3440;
+    --cda-economy-muted: #687282;
+    --cda-economy-soft: #f5f6f9;
+    --cda-economy-panel: #ffffff;
+    --cad-tone-primary-solid-bg: var(--cda-economy-accent);
+    --cad-tone-primary-solid-hover: var(--cda-economy-accent-dark);
+    --cad-tone-primary-solid-border: var(--cda-economy-accent);
+    --cad-tone-primary-solid-fg: #ffffff;
+}
+
+.cda-economy-theme ::deep .cda-economy-shell {
+    color: var(--cda-economy-text);
+    font-family: "Segoe UI", Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (max-width: 767px) {
+    .cda-economy-theme ::deep .cda-economy-shell {
+        flex-direction: column;
+    }
+}

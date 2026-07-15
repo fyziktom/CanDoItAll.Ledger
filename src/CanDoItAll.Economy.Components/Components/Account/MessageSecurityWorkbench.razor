@@ -1,13 +1,13 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-workbench" data-testid="cda-message-security-workbench">
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="cda-message-security-workbench">
     <MessageSecurityPanel Workspace="Workspace"
                           SignRequested="SignRequested"
                           VerifyRequested="VerifyRequested"
                           EncryptRequested="EncryptRequested"
                           DecryptRequested="DecryptRequested" />
     <SecurityResultCard Result="Result" />
-</section>
+</Stack>
 
 @code {
     [Parameter, EditorRequired]

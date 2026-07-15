@@ -20,7 +20,7 @@
 }
 else
 {
-    <VenftSsrEconomyApp Workspace="workspace"
+    <EconomyAccountAppShell Workspace="workspace"
                         RefreshRequested="RefreshWorkspaceAsync"
                         CreateSubAccountRequested="OpenSubAccountDialogAsync"
                         OpenSendTransactionRequested="OpenSendTransactionDialogAsync"
@@ -125,7 +125,7 @@ else
                 Subtitle = $"{workspace.AccountName} - {workspace.Address.Value}",
                 Size = ModalSize.Wide,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--send",
+                Class = "cda-ledger-dialog cda-ledger-dialog--send",
                 TestId = "cda-send-transaction-dialog"
             });
     }
@@ -147,7 +147,7 @@ else
             {
                 Subtitle = "Create a child account under the current SSR session.",
                 Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form",
                 ShowCloseButton = false,
                 TestId = "cda-subaccount-dialog"
             });
@@ -186,7 +186,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--tx-detail",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--tx-detail",
                 TestId = "cda-transaction-details-dialog"
             });
     }
@@ -211,7 +211,7 @@ else
             {
                 Subtitle = item.ObjectId.Value,
                 Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form",
                 TestId = "cda-bo-send-dialog"
             });
     }
@@ -236,7 +236,7 @@ else
             {
                 Subtitle = item.ObjectId.Value,
                 Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form",
                 TestId = "cda-bo-set-price-dialog"
             });
     }
@@ -264,7 +264,7 @@ else
             {
                 Subtitle = profileObject?.ObjectId.Value ?? "New profile BusinessObject",
                 Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form",
                 TestId = "cda-profile-edit-dialog"
             });
     }
@@ -290,7 +290,7 @@ else
                 Size = ModalSize.Wide,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-token-creation-modal",
+                Class = "cda-ledger-dialog cda-token-creation-modal",
                 TestId = "cda-token-create-dialog"
             });
     }
@@ -535,7 +535,7 @@ else
 
     private string LoadingDescription
         => loadError is null
-            ? "The VENFT demo is loading account keys outside the repo and querying the configured node. If unavailable, it falls back to a seeded development workspace."
+            ? "The economy demo is loading account keys outside the repo and querying the configured node. If unavailable, it falls back to a seeded development workspace."
             : $"{loadError} Falling back to a seeded development workspace when available.";
 
     private async Task<BusinessObjectWorkspaceModel> LoadWorkspaceSnapshotAsync(

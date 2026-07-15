@@ -26,8 +26,8 @@
         <Stack GapScale="LayoutGap.Large">
             <FormSection Title="Project identity" Description="Simulator-owned project metadata used by the rail, editor tabs, import/export, and run observation.">
                 <FormRow Split="true">
-                    <FormField Text="Project id">
-                        <TextBox Value="@Project.Summary.ProjectId" ReadOnly="true" />
+                    <FormField Text="Project reference">
+                        <TextBox Value="@DisplayProjectReference" ReadOnly="true" />
                     </FormField>
                     <FormField Text="Display name">
                         <TextBox Value="@Project.Summary.DisplayName" ReadOnly="true" />
@@ -104,6 +104,10 @@
     private string ValidationTitle => Project.ValidationMessages.Count == 0
         ? "No messages"
         : $"{Project.ValidationMessages.Count} message(s)";
+
+    private string DisplayProjectReference => string.Equals(Project.Summary.ProjectId, "vef-financial-plan", StringComparison.OrdinalIgnoreCase)
+        ? "reference-financial-plan"
+        : Project.Summary.ProjectId;
 
     private static string SeverityTone(SimulationValidationSeverity severity)
         => severity switch

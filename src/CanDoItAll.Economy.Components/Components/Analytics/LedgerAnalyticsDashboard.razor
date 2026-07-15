@@ -1,29 +1,28 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-ledger-analytics-dashboard">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Ledger analytics</span>
-            <h2>Analytics dashboard</h2>
-        </div>
+<div data-testid="cda-ledger-analytics-dashboard">
+<SectionCard Title="Analytics dashboard" Description="Ledger analytics">
+    <HeaderActions>
         <StatusBadge Text="CdaChart" Tone="success" />
-    </header>
+    </HeaderActions>
+    <ChildContent>
+        <ChartFilterToolbar />
 
-    <ChartFilterToolbar />
-
-    <div class="cda-sdk-dashboard-grid">
-        <AccountBalanceTrendChart Workspace="Workspace" />
-        <TokenAllocationDonut TokenOptions="Workspace.TokenOptions" />
-        <TransactionVolumeBarChart Transactions="Workspace.Transactions" />
-        <TransactionKindStackedChart Transactions="Workspace.Transactions" />
-        <UtxoAgeDistributionChart Outputs="Workspace.SpendableOutputsOrEmpty" ViewedAtUtc="Workspace.ViewedAtUtc" />
-        <PermissionUseChart Sources="Workspace.PermissionSourcesOrEmpty" />
-        <BusinessObjectLifecycleChart Objects="Workspace.BusinessObjects" />
-        <BusinessObjectVersionVelocityChart Objects="Workspace.BusinessObjects" />
-        <ScenarioComparisonChart CurrentScenario="@(Workspace.Context.ScenarioId?.Value ?? "live")" CurrentValue="Workspace.Balance.MainBalance.Value" />
-        <ChartInsightSummary Title="Ledger facts" Insights="Insights" />
-    </div>
-</section>
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+            <AccountBalanceTrendChart Workspace="Workspace" />
+            <TokenAllocationDonut TokenOptions="Workspace.TokenOptions" />
+            <TransactionVolumeBarChart Transactions="Workspace.Transactions" />
+            <TransactionKindStackedChart Transactions="Workspace.Transactions" />
+            <UtxoAgeDistributionChart Outputs="Workspace.SpendableOutputsOrEmpty" ViewedAtUtc="Workspace.ViewedAtUtc" />
+            <PermissionUseChart Sources="Workspace.PermissionSourcesOrEmpty" />
+            <BusinessObjectLifecycleChart Objects="Workspace.BusinessObjects" />
+            <BusinessObjectVersionVelocityChart Objects="Workspace.BusinessObjects" />
+            <ScenarioComparisonChart CurrentScenario="@(Workspace.Context.ScenarioId?.Value ?? "live")" CurrentValue="Workspace.Balance.MainBalance.Value" />
+            <ChartInsightSummary Title="Ledger facts" Insights="Insights" />
+        </Grid>
+    </ChildContent>
+</SectionCard>
+</div>
 
 @code {
     [Parameter, EditorRequired]

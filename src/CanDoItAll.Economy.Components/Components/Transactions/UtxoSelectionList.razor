@@ -1,19 +1,22 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-utxo-selector cda-economy-field--wide" data-testid="@TestId">
-    <div class="cda-utxo-selector__summary">
-        <div>
-            <span>@Label</span>
-            <strong>@SelectedCount selected</strong>
-            <small>@EligibleOutputs.Count matching of @AllEligibleOutputs.Count eligible plain UTXO(s)</small>
-        </div>
+<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="@TestId">
+    <Split Breakpoint="LayoutBreakpoint.Sm"
+           AlignItems="AlignItems.Center"
+           Wrap="FlexWrap.Wrap"
+           Gap="LayoutGap.Medium">
+        <Stack GapScale="LayoutGap.Tiny">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="@Label" />
+            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@($"{SelectedCount} selected")" />
+            <SmallText Text="@($"{EligibleOutputs.Count} matching of {AllEligibleOutputs.Count} eligible plain UTXO(s)")" />
+        </Stack>
         <Cluster Gap="LayoutGap.XSmall">
             <StatusBadge Text="@($"{SelectedTotal} selected")" Tone="info" />
             <StatusBadge Text="@($"{AllEligibleTotal} available")" Tone="neutral" />
         </Cluster>
-    </div>
+    </Split>
 
-    <FormField Text="Search UTXOs" ContainerClass="cda-economy-field cda-economy-field--wide cda-utxo-selector__search">
+    <FormField Text="Search UTXOs">
         <TextBox Value="@filter"
                  ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => filter = value ?? string.Empty))"
                  Immediate="true"
@@ -28,28 +31,36 @@
     }
     else
     {
-        <div class="cda-sdk-list cda-utxo-selector__list">
-            @foreach (LedgerSpendableOutput output in EligibleOutputs)
-            {
-                bool selected = IsSelected(output.OutPoint);
-                <article class="cda-sdk-list__row cda-utxo-selector__row @(selected ? "cda-sdk-list__row--selected" : null)"
-                         data-testid="@($"{TestId}-row")">
-                    <CheckBox TValue="bool"
-                              Value="@selected"
-                              ValueChanged="@((bool value) => ToggleAsync(output.OutPoint, value))"
-                              aria-label="@($"Select UTXO {output.OutPoint}")" />
-                    <span class="material-icons" aria-hidden="true">receipt_long</span>
-                    <div>
-                        <strong>@output.OutPoint</strong>
-                        <span>@output.MainAmount main</span>
-                        <small>@Short(output.Address.Value)</small>
-                    </div>
-                    <CopyableMonoValue Value="@output.OutPointKey.Value.Value" />
-                </article>
-            }
+        <div class="cda-utxo-selection-scroll">
+            <ListGroup>
+                @foreach (LedgerSpendableOutput output in EligibleOutputs)
+                {
+                    bool selected = IsSelected(output.OutPoint);
+                    <SurfaceCard Soft="@selected" data-testid="@($"{TestId}-row")">
+                        <Split Breakpoint="LayoutBreakpoint.Sm"
+                               AlignItems="AlignItems.Center"
+                               Wrap="FlexWrap.Wrap"
+                               Gap="LayoutGap.Medium">
+                            <Cluster Wrap="FlexWrap.NoWrap" AlignItems="AlignItems.Center" Class="min-w-0">
+                                <CheckBox TValue="bool"
+                                          Value="@selected"
+                                          ValueChanged="@((bool value) => ToggleAsync(output.OutPoint, value))"
+                                          aria-label="@($"Select UTXO {output.OutPoint}")" />
+                                <Icon Name="receipt_long" />
+                                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                    <MonoText Text="@output.OutPoint.ToString()" />
+                                    <TextBlock TextStyle="TextStyle.Body2" Value="@($"{output.MainAmount} main")" />
+                                    <SmallText Text="@Short(output.Address.Value)" />
+                                </Stack>
+                            </Cluster>
+                            <CopyableMonoValue Value="@output.OutPointKey.Value.Value" />
+                        </Split>
+                    </SurfaceCard>
+                }
+            </ListGroup>
         </div>
     }
-</section>
+</Stack>
 
 @code {
     private string filter = string.Empty;

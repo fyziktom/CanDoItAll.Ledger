@@ -1,12 +1,12 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 
-<div class="cda-sim-panel-heading">
+<SectionHead>
     <TextBlock TextStyle="TextStyle.H4" Value="@Title" />
     @if (!string.IsNullOrWhiteSpace(LinkText))
     {
-        <span>@LinkText</span>
+        <SmallText Text="@LinkText" />
     }
-</div>
+</SectionHead>
 
 @code {
     [Parameter, EditorRequired]

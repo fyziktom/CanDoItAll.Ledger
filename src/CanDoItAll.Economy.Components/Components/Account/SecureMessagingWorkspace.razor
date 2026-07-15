@@ -1,128 +1,150 @@
 @namespace CanDoItAll.Economy.Components
 @inject NotificationService Notifications
 
-<section class="cda-secure-mail" data-testid="secure-messaging-workspace">
-    <div class="cda-secure-mail__header">
-        <div>
-            <h2>Messaging</h2>
-            <p>@Messages.Count encrypted conversation item(s)</p>
-        </div>
+<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="secure-messaging-workspace">
+    <Split Breakpoint="LayoutBreakpoint.None"
+           Gap="LayoutGap.Medium"
+           AlignItems="AlignItems.Center"
+           JustifyContent="JustifyContent.SpaceBetween"
+           Wrap="FlexWrap.Wrap">
+        <Stack GapScale="LayoutGap.Tiny">
+            <TextBlock TextStyle="TextStyle.H2" Value="Messaging" />
+            <TextBlock TextStyle="TextStyle.Body2" Value="@($"{Messages.Count} encrypted conversation item(s)")" />
+        </Stack>
         <StatusBadge Text="E2E" Tone="success" />
-    </div>
+    </Split>
 
-    <Grid ColumnsLg="3" ColumnTemplateLg="minmax(18rem, 0.8fr) minmax(0, 1.25fr) minmax(20rem, 0.95fr)" Gap="LayoutGap.Medium" Class="cda-secure-mail__grid">
-        <section class="cda-vef-panel cda-secure-mail__list">
-            <div class="cda-vef-panel-header">
-                <span>Mailbox</span>
+    <Grid ColumnsLg="3" ColumnTemplateLg="minmax(18rem, 0.8fr) minmax(0, 1.25fr) minmax(20rem, 0.95fr)" Gap="LayoutGap.Medium">
+        <SectionCard Title="Mailbox" Description="Encrypted messages visible in the current ledger snapshot.">
+            <HeaderActions>
                 <StatusBadge Text="@Messages.Count.ToString()" Tone="info" />
-            </div>
-            <div class="cda-vef-panel-body">
+            </HeaderActions>
+            <ChildContent>
+              <div class="cda-secure-mail__panel-body cda-secure-mail__mailbox">
                 @if (Messages.Count == 0)
                 {
-                    <p class="cda-vef-empty-line">No secure messages are visible in the current transaction snapshot.</p>
+                    <EmptyState Title="No secure messages"
+                                Description="No secure messages are visible in the current transaction snapshot." />
                 }
                 else
                 {
-                    <div class="cda-secure-mail__items">
+                    <Stack GapScale="LayoutGap.Small">
                         @foreach (SecureMailboxItem item in Messages)
                         {
-                            <button type="button"
-                                    class="@MailboxItemClass(item)"
-                                    @onclick="@(() => OpenMessageAsync(item))"
-                                    data-testid="secure-message-row"
-                                    data-txid="@item.Transaction.TxId.Value">
-                                <span class="material-icons" aria-hidden="true">@MessageStateIcon(item)</span>
-                                <span>
-                                    <strong>@PeerLabel(item)</strong>
-                                    <small>@MessageStateLabel(item) / @item.Transaction.Timestamp.ToString("MM.dd HH:mm")</small>
-                                    <em>Encrypted message</em>
-                                </span>
-                                <StatusBadge Text="@MessageStateLabel(item)" Tone="@MessageStateTone(item)" />
-                            </button>
+                            <SelectionListItem Title="@PeerLabel(item)"
+                                               Eyebrow="@MessageStateLabel(item)"
+                                               Meta="@item.Transaction.Timestamp.ToString("MM.dd HH:mm")"
+                                               Summary="Encrypted message"
+                                               IsSelected="@(selectedItem?.Transaction.TxId == item.Transaction.TxId)"
+                                               Dense="true"
+                                               OnSelect="@(() => OpenMessageAsync(item))"
+                                               DataTestId="secure-message-row"
+                                               data-txid="@item.Transaction.TxId.Value">
+                                <Status>
+                                    <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                                        <Icon Name="@MessageStateIcon(item)" />
+                                        <StatusBadge Text="@MessageStateLabel(item)" Tone="@MessageStateTone(item)" />
+                                    </Cluster>
+                                </Status>
+                                <Actions>
+                                    <CopyableMonoValue Value="@item.Transaction.TxId.Value" StartChars="8" EndChars="6" AriaLabel="Copy message transaction id" />
+                                </Actions>
+                            </SelectionListItem>
                         }
-                    </div>
+                    </Stack>
                 }
-            </div>
-        </section>
+              </div>
+            </ChildContent>
+        </SectionCard>
 
-        <section class="cda-vef-panel cda-secure-mail__reader">
-            <div class="cda-vef-panel-header">
-                <span>Message</span>
+        <SectionCard Title="Message" Description="Decrypt and inspect the selected message and its attachments.">
+            <HeaderActions>
                 @if (selectedItem is not null)
                 {
                     <CopyableMonoValue Value="@selectedItem.Transaction.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy selected message transaction id" />
                 }
-            </div>
-            <div class="cda-vef-panel-body">
+            </HeaderActions>
+            <ChildContent>
+              <div class="cda-secure-mail__panel-body">
                 @if (selectedItem is null)
                 {
-                    <div class="cda-secure-mail__empty">
-                        <span class="material-icons" aria-hidden="true">mark_email_unread</span>
-                        <strong>No message selected</strong>
-                    </div>
+                    <EmptyState Eyebrow="Mailbox"
+                                Title="No message selected"
+                                Description="Choose a message from the mailbox to decrypt and inspect it." />
                 }
                 else if (openBusy)
                 {
-                    <div class="cda-secure-mail__empty">
-                        <span class="material-icons" aria-hidden="true">lock_open</span>
-                        <strong>Decrypting</strong>
-                    </div>
+                    <LoadingState Eyebrow="Message" Title="Decrypting" Description="Opening the selected encrypted ledger payload." />
                 }
                 else if (openResult?.Success == true && openResult.Content is not null)
                 {
                     <Stack GapScale="LayoutGap.Medium">
-                        <div class="cda-secure-mail__subject">
-                            <span>@MessageStateLabel(selectedItem)</span>
-                            <h3>@openResult.Content.Subject</h3>
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <StatusBadge Text="@MessageStateLabel(selectedItem)" Tone="@MessageStateTone(selectedItem)" />
+                            <TextBlock TextStyle="TextStyle.H3" Value="@openResult.Content.Subject" />
                             <CopyableMonoValue Value="@PeerAddress(selectedItem).Value" StartChars="12" EndChars="8" AriaLabel="Copy message peer address" />
-                        </div>
+                        </Stack>
                         <pre class="cda-secure-mail__body" data-testid="secure-message-plaintext">@openResult.Content.Body</pre>
 
                         @if (openResult.Content.Attachments.Count > 0)
                         {
-                            <div class="cda-secure-mail__attachments" data-testid="secure-message-attachments">
+                            <Stack GapScale="LayoutGap.Small" data-testid="secure-message-attachments">
                                 @foreach (SecureLedgerMessageContentAttachment attachment in openResult.Content.Attachments)
                                 {
-                                    <article class="cda-secure-mail__attachment">
-                                        <span class="material-icons" aria-hidden="true">@AttachmentIcon(attachment.ContentType, attachment.FileName)</span>
-                                        <div>
-                                            <strong>@attachment.FileName</strong>
-                                            <small>@attachment.ContentType / @FormatSize(attachment.Size)</small>
-                                        </div>
-                                        <PageHeaderActionButton Icon="lock_open"
-                                                                Label="Decrypt attachment"
-                                                                TooltipText="Decrypt attachment"
-                                                                Variant="Variant.Outlined"
-                                                                IsBusy="@(attachmentBusyId == attachment.AttachmentId)"
-                                                                Click="@(() => OpenAttachmentAsync(attachment.AttachmentId))"
-                                                                TestId="secure-message-decrypt-attachment" />
-                                    </article>
+                                    <SurfaceCard Soft="true">
+                                      <Split Breakpoint="LayoutBreakpoint.None"
+                                             Gap="LayoutGap.Small"
+                                             AlignItems="AlignItems.Center"
+                                             JustifyContent="JustifyContent.SpaceBetween"
+                                             Wrap="FlexWrap.Wrap">
+                                        <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap">
+                                            <Icon Name="@AttachmentIcon(attachment.ContentType, attachment.FileName)" />
+                                            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@attachment.FileName" />
+                                                <SmallText Text="@($"{attachment.ContentType} / {FormatSize(attachment.Size)}")" />
+                                            </Stack>
+                                        </Cluster>
+                                            <PageHeaderActionButton Icon="lock_open"
+                                                                    Label="Decrypt attachment"
+                                                                    TooltipText="Decrypt attachment"
+                                                                    Variant="Variant.Outlined"
+                                                                    IsBusy="@(attachmentBusyId == attachment.AttachmentId)"
+                                                                    Click="@(() => OpenAttachmentAsync(attachment.AttachmentId))"
+                                                                    TestId="secure-message-decrypt-attachment" />
+                                      </Split>
+                                    </SurfaceCard>
                                 }
-                            </div>
+                            </Stack>
                         }
 
                         @if (attachmentResult?.Success == true && attachmentResult.Attachment is not null)
                         {
                             SecureLedgerMessageAttachmentPlaintext decryptedAttachment = attachmentResult.Attachment;
                             string attachmentDataUri = AttachmentDataUri(decryptedAttachment);
-                            <div class="cda-secure-mail__decrypted-attachment" data-testid="secure-message-decrypted-attachment">
-                                <div class="cda-secure-mail__decrypted-attachment-header">
-                                    <span class="material-icons" aria-hidden="true">@AttachmentIcon(decryptedAttachment.ContentType, decryptedAttachment.FileName)</span>
-                                    <div>
-                                        <strong>@decryptedAttachment.FileName</strong>
-                                        <small>@decryptedAttachment.ContentType / @FormatSize(decryptedAttachment.Data.LongLength)</small>
-                                    </div>
-                                    <a class="cda-secure-mail__download"
-                                       href="@attachmentDataUri"
-                                       download="@decryptedAttachment.FileName"
-                                       target="_blank"
-                                       rel="noopener noreferrer"
-                                       data-testid="secure-message-download-attachment"
-                                       title="Download decrypted attachment">
-                                        <span class="material-icons" aria-hidden="true">download</span>
-                                        <span>Download</span>
-                                    </a>
-                                </div>
+                            <SurfaceCard Soft="true" data-testid="secure-message-decrypted-attachment">
+                                <Stack GapScale="LayoutGap.Medium">
+                                <Split Breakpoint="LayoutBreakpoint.None"
+                                       Gap="LayoutGap.Medium"
+                                       AlignItems="AlignItems.Center"
+                                       JustifyContent="JustifyContent.SpaceBetween"
+                                       Wrap="FlexWrap.Wrap">
+                                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap">
+                                        <Icon Name="@AttachmentIcon(decryptedAttachment.ContentType, decryptedAttachment.FileName)" />
+                                        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@decryptedAttachment.FileName" />
+                                            <TextBlock TextStyle="TextStyle.Caption" Value="@($"{decryptedAttachment.ContentType} / {FormatSize(decryptedAttachment.Data.LongLength)}")" />
+                                        </Stack>
+                                    </Cluster>
+                                    <Button Text="Download"
+                                            Icon="download"
+                                            Variant="Variant.Outlined"
+                                            Href="@attachmentDataUri"
+                                            Target="_blank"
+                                            Rel="noopener noreferrer"
+                                            download="@decryptedAttachment.FileName"
+                                            data-testid="secure-message-download-attachment"
+                                            title="Download decrypted attachment" />
+                                </Split>
 
                                 @if (IsImageAttachment(decryptedAttachment))
                                 {
@@ -157,13 +179,14 @@
                                 }
                                 else
                                 {
-                                    <div class="cda-secure-mail__preview-unavailable" data-testid="secure-message-decrypted-file">
-                                        <span class="material-icons" aria-hidden="true">download_for_offline</span>
-                                        <strong>Preview unavailable</strong>
-                                        <small>Use download to open this file with a local application.</small>
+                                    <div data-testid="secure-message-decrypted-file">
+                                        <EmptyState Eyebrow="Attachment"
+                                                    Title="Preview unavailable"
+                                                    Description="Use download to open this file with a local application." />
                                     </div>
                                 }
-                            </div>
+                                </Stack>
+                            </SurfaceCard>
                         }
                     </Stack>
                 }
@@ -171,13 +194,12 @@
                 {
                     <Alert AlertStyle="AlertStyle.Danger">@openResult.Summary</Alert>
                 }
-            </div>
-        </section>
+              </div>
+            </ChildContent>
+        </SectionCard>
 
-        <section class="cda-vef-panel cda-secure-mail__compose">
-            <div class="cda-vef-panel-header">Compose</div>
-            <div class="cda-vef-panel-body">
-                <Stack GapScale="LayoutGap.Small" @key="composeRevision">
+        <SectionCard Title="Compose" Description="Encrypt a message and optional attachments for another ledger address.">
+                <Stack GapScale="LayoutGap.Small" Class="cda-secure-mail__panel-body" @key="composeRevision">
                     <FormField Text="To">
                         <TextBox Value="@receiver"
                                  ValueChanged="@(value => receiver = value ?? string.Empty)"
@@ -210,12 +232,12 @@
                                 DropZoneTestHookId="secure-message-attachment-zone" />
                     @if (attachments.Count > 0)
                     {
-                        <div class="cda-secure-mail__draft-attachments">
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
                             @foreach (SecureMessageAttachmentDraft attachment in attachments)
                             {
-                                <span>@attachment.FileName (@FormatSize(attachment.Size))</span>
+                                <StatusBadge Text="@($"{attachment.FileName} ({FormatSize(attachment.Size)})")" Tone="neutral" />
                             }
-                        </div>
+                        </Cluster>
                     }
                     <PageHeaderActionButton Icon="send"
                                             Label="Send secure message"
@@ -230,10 +252,9 @@
                         <Alert AlertStyle="@composeAlert">@composeStatus</Alert>
                     }
                 </Stack>
-            </div>
-        </section>
+        </SectionCard>
     </Grid>
-</section>
+</Stack>
 
 @code {
     private const long MaxAttachmentBytes = 32 * 1024 * 1024;
@@ -418,11 +439,6 @@
         => string.IsNullOrWhiteSpace(Workspace.AccountAlias)
             ? Workspace.AccountName
             : Workspace.AccountAlias;
-
-    private string MailboxItemClass(SecureMailboxItem item)
-        => selectedItem?.Transaction.TxId == item.Transaction.TxId
-            ? "cda-secure-mail__item is-active"
-            : "cda-secure-mail__item";
 
     private string MessageStateIcon(SecureMailboxItem item)
         => MessageStateLabel(item) switch

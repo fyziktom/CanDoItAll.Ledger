@@ -1,22 +1,17 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-bo-action-rail">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Actions</span>
-            <h2>Object action rail</h2>
-        </div>
-    </header>
-
-    <div class="cda-sdk-action-rail">
+<div data-testid="cda-bo-action-rail">
+<SectionCard Title="Object action rail" Description="Actions">
+    <Grid ColumnTemplate="repeat(auto-fit, minmax(8rem, 1fr))" Gap="LayoutGap.Small">
         <Button Text="Update" Icon="edit" Variant="Variant.Outlined" Disabled="@Disabled" />
         <Button Text="Send" Icon="send" Variant="Variant.Outlined" Disabled="@Disabled" />
         <Button Text="Clone" Icon="content_copy" Variant="Variant.Outlined" Disabled="@Disabled" />
         <Button Text="Merge" Icon="call_merge" Variant="Variant.Outlined" Disabled="@Disabled" />
         <Button Text="Split" Icon="call_split" Variant="Variant.Outlined" Disabled="@Disabled" />
         <Button Text="Close" Icon="lock" ButtonStyle="ButtonStyle.Danger" Disabled="@Disabled" />
-    </div>
-</section>
+    </Grid>
+</SectionCard>
+</div>
 
 @code {
     [Parameter]

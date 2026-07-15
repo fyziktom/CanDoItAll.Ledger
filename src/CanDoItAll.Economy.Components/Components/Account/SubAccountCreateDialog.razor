@@ -8,7 +8,7 @@
                 ValidationContent="@RenderValidation"
                 Footer="@RenderFooter"
                 data-testid="cda-subaccount-create-dialog">
-    <div class="cda-sdk-form-grid">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
         <FormField Text="Subaccount name">
             <TextBox @bind-Value="name" Placeholder="Treasury approval" />
         </FormField>
@@ -18,7 +18,7 @@
         <FormField Text="Parent address" ContainerClass="cda-sdk-span-all">
             <TextBox Value="@ParentAddress.Value" ReadOnly="true" />
         </FormField>
-    </div>
+    </Grid>
 </DialogScaffold>
 
 @code {

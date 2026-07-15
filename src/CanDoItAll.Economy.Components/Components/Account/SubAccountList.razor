@@ -6,22 +6,22 @@
     </HeaderActions>
 
     <ChildContent>
-        <Stack GapScale="LayoutGap.Small" Class="cda-economy-list">
+        <Stack GapScale="LayoutGap.Small">
             @foreach (BusinessObjectSubAccountSummary subAccount in Items)
             {
-                <div class="cda-economy-list-item">
+                <SurfaceCard Soft="true">
                     <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Start" Gap="LayoutGap.Small">
                         <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
                             <strong>@subAccount.Name</strong>
                             <span>@subAccount.Address</span>
                         </Stack>
                         <Cluster Gap="LayoutGap.Small">
-                            <span class="cda-economy-pill">@FormatAmount(subAccount.MainBalance)</span>
-                            <span class="cda-economy-pill">@subAccount.BusinessObjectCount BO</span>
-                            <span class="cda-economy-pill">@subAccount.UtxoCount UTXO</span>
+                            <Pill Text="@FormatAmount(subAccount.MainBalance)" Tone="PillTone.Info" />
+                            <Pill Text="@($"{subAccount.BusinessObjectCount} BO")" Tone="PillTone.Neutral" />
+                            <Pill Text="@($"{subAccount.UtxoCount} UTXO")" Tone="PillTone.Neutral" />
                         </Cluster>
                     </Split>
-                </div>
+                </SurfaceCard>
             }
         </Stack>
     </ChildContent>

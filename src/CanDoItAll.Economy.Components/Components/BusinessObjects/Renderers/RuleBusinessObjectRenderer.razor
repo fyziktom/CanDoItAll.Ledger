@@ -2,12 +2,12 @@
 
 @if (Mode == BusinessObjectRenderMode.Summary)
 {
-    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
-        <strong>@(rule?.RuleId ?? Object.ObjectId.Value)</strong>
-        <span>@(rule?.RuleNamespace ?? "rule")</span>
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@(rule?.RuleId ?? Object.ObjectId.Value)" />
+        <TextBlock TextStyle="TextStyle.Caption" Value="@(rule?.RuleNamespace ?? "rule")" />
         <Cluster Gap="LayoutGap.Small">
-            <span class="cda-economy-pill">rule</span>
-            <span class="cda-economy-pill">@(rule?.Trigger?.Kind.ToString() ?? "unknown")</span>
+            <Pill Tone="PillTone.Info" Text="rule" />
+            <Pill Tone="PillTone.Neutral" Text="@(rule?.Trigger?.Kind.ToString() ?? "unknown")" />
         </Cluster>
     </Stack>
 }

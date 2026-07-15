@@ -2,17 +2,21 @@
 @using CanDoItAll.Economy.Components.Samples
 @inject DialogService DialogService
 
-<section class="cda-sdk-panel cda-node-console" data-testid="cda-node-admin-dashboard">
-    <header class="cda-sdk-panel__header cda-node-console__header">
-        <div>
-            <span>Node admin</span>
-            <h2>Operator console</h2>
-        </div>
+<Stack Section="true" GapScale="LayoutGap.Medium" Class="cda-node-console" data-testid="cda-node-admin-dashboard">
+    <Split Breakpoint="LayoutBreakpoint.None"
+           Gap="LayoutGap.Medium"
+           AlignItems="AlignItems.Center"
+           JustifyContent="JustifyContent.SpaceBetween"
+           Wrap="FlexWrap.Wrap">
+        <Stack GapScale="LayoutGap.Tiny">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Node admin" />
+            <TextBlock TextStyle="TextStyle.H2" Value="Operator console" />
+        </Stack>
         <Cluster Gap="LayoutGap.Small">
             <StatusBadge Text="@HealthStatusLabel" Tone="@HealthTone" />
             <StatusBadge Text="@ReadinessLabel" Tone="info" />
         </Cluster>
-    </header>
+    </Split>
 
     <Tabs TabPosition="TabPosition.Left"
           SelectedIndex="@selectedNodeTab"
@@ -24,16 +28,16 @@
           Class="cda-node-console__tabs"
           AriaLabel="Node console sections">
         <TabsItem Text="Overview" Icon="dashboard">
-            <div class="cda-node-console__panel">
-                <div class="cda-node-console__summary">
+            <Stack GapScale="LayoutGap.Medium">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
                     <NodeHealthPanel />
-                    <div class="cda-node-console__stat-band">
-                        <div><span>Addresses</span><strong>@AddressRowsSource.Count</strong></div>
-                        <div><span>Transactions</span><strong>@TransactionRowsSource.Count</strong></div>
-                        <div><span>Indexed BOs</span><strong>@AddressRowsSource.Sum(item => item.BusinessObjects)</strong></div>
-                        <div><span>Newest tx</span><strong>@NewestTransactionLabel</strong></div>
-                    </div>
-                </div>
+                    <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                        <SummaryTile Label="Addresses" Value="@AddressRowsSource.Count.ToString()" />
+                        <SummaryTile Label="Transactions" Value="@TransactionRowsSource.Count.ToString()" />
+                        <SummaryTile Label="Indexed BOs" Value="@AddressRowsSource.Sum(item => item.BusinessObjects).ToString()" />
+                        <SummaryTile Label="Newest tx" Value="@NewestTransactionLabel" />
+                    </SummaryTiles>
+                </Grid>
 
                 <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
                     <ReadinessVerificationPanel />
@@ -41,47 +45,56 @@
                     <ChainVerificationPanel />
                     <NodeIssueList />
                 </Grid>
-            </div>
+            </Stack>
         </TabsItem>
 
         <TabsItem Text="Addresses" Icon="account_tree" BadgeText="@AddressRowsSource.Count.ToString()">
-            <div class="cda-node-console__panel">
-                <div class="cda-node-console__toolbar">
-                    <FormField Text="Search addresses" ContainerClass="cda-economy-field">
+            <Stack GapScale="LayoutGap.Medium">
+                <Grid ColumnsLg="2" ColumnTemplateLg="minmax(16rem, 1fr) minmax(16rem, 0.8fr)" Gap="LayoutGap.Medium" AlignItems="AlignItems.End">
+                    <FormField Text="Search addresses">
                         <TextBox @bind-Value="addressSearch"
                                  Immediate="true"
                                  Placeholder="Name, address, role, status..."
                                  aria-label="Search node addresses" />
                     </FormField>
-                    <div class="cda-node-console__toolbar-facts">
-                        <div><span>Matches</span><strong>@FilteredAddresses.Count</strong></div>
-                        <div><span>Transactions</span><strong>@FilteredAddresses.Sum(item => item.Transactions)</strong></div>
-                    </div>
-                </div>
+                    <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                        <SummaryTile Label="Matches" Value="@FilteredAddresses.Count.ToString()" Compact="true" />
+                        <SummaryTile Label="Transactions" Value="@FilteredAddresses.Sum(item => item.Transactions).ToString()" Compact="true" />
+                    </SummaryTiles>
+                </Grid>
 
-                <div class="cda-node-address-grid">
+                <Grid ColumnTemplate="repeat(auto-fit, minmax(17rem, 1fr))" Gap="LayoutGap.Medium">
                     @foreach (NodeAdminAddressSummary address in FilteredAddresses)
                     {
-                        <article class="cda-node-address-card">
-                            <div>
-                                <span>@address.Role</span>
-                                <h3>@address.Label</h3>
-                                <p>@address.Address</p>
-                            </div>
-                            <div class="cda-node-card-meta">
-                                <span>@address.Balance</span>
-                                <span>@address.Transactions tx</span>
-                                <span>@address.BusinessObjects BOs</span>
-                            </div>
-                            <div class="cda-node-address-card__activity">
+                        <SurfaceCard Soft="true">
+                            <Stack GapScale="LayoutGap.Medium">
+                            <Stack GapScale="LayoutGap.Tiny">
+                                <TextBlock TextStyle="TextStyle.Eyebrow" Value="@address.Role" />
+                                <TextBlock TextStyle="TextStyle.H3" Value="@address.Label" />
+                                <CopyableMonoValue Value="@address.Address" StartChars="10" EndChars="6" AriaLabel="Copy node address" />
+                            </Stack>
+                            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
+                                <Pill Tone="PillTone.Label" Text="@address.Balance" />
+                                <Pill Tone="PillTone.Label" Text="@($"{address.Transactions} tx")" />
+                                <Pill Tone="PillTone.Label" Text="@($"{address.BusinessObjects} BOs")" />
+                            </Cluster>
+                            <Stack GapScale="LayoutGap.XSmall">
                                 @foreach (NodeAdminTransactionSummary transaction in TransactionsFor(address).Take(2))
                                 {
-                                    <button type="button" @onclick="@(() => OpenTransactionDetailsAsync(transaction))">
-                                        <span>@transaction.TxId</span>
-                                        <small>@transaction.Data</small>
-                                    </button>
+                                    <Button Look="ButtonLook.SheetCardGhost"
+                                            Class="w-full justify-start text-left"
+                                            Click="@(() => OpenTransactionDetailsAsync(transaction))">
+                                        <Split Breakpoint="LayoutBreakpoint.None"
+                                               Gap="LayoutGap.Small"
+                                               AlignItems="AlignItems.Center"
+                                               JustifyContent="JustifyContent.SpaceBetween"
+                                               Wrap="FlexWrap.NoWrap">
+                                            <TextBlock TextStyle="TextStyle.Mono" Value="@transaction.TxId" />
+                                            <SmallText Text="@transaction.Data" />
+                                        </Split>
+                                    </Button>
                                 }
-                            </div>
+                            </Stack>
                             <Cluster Gap="LayoutGap.Small">
                                 <Button Text="Details"
                                         Icon="info"
@@ -92,25 +105,26 @@
                                         Icon="receipt_long"
                                         Size="ButtonSize.Small"
                                         ButtonStyle="ButtonStyle.Secondary"
-                                        Variant="Variant.Outlined"
-                                        Click="@(() => FocusTransactions(address.Address))" />
+                                         Variant="Variant.Outlined"
+                                         Click="@(() => FocusTransactions(address.Address))" />
                             </Cluster>
-                        </article>
+                            </Stack>
+                        </SurfaceCard>
                     }
-                </div>
-            </div>
+                </Grid>
+            </Stack>
         </TabsItem>
 
         <TabsItem Text="Transactions" Icon="receipt_long" BadgeText="@TransactionRowsSource.Count.ToString()">
-            <div class="cda-node-console__panel">
-                <div class="cda-node-console__toolbar cda-node-console__toolbar--three">
-                    <FormField Text="Search transactions" ContainerClass="cda-economy-field">
+            <Stack GapScale="LayoutGap.Medium">
+                <Grid ColumnsLg="3" ColumnTemplateLg="minmax(16rem, 1.3fr) minmax(10rem, 0.7fr) minmax(10rem, 0.7fr)" Gap="LayoutGap.Medium" AlignItems="AlignItems.End">
+                    <FormField Text="Search transactions">
                         <TextBox @bind-Value="transactionSearch"
                                  Immediate="true"
                                  Placeholder="Tx id, address, route, data..."
                                  aria-label="Search node transactions" />
                     </FormField>
-                    <FormField Text="Kind" ContainerClass="cda-economy-field">
+                    <FormField Text="Kind">
                         <DropDown TValue="string"
                                   Data="KindOptions"
                                   TextProperty="Text"
@@ -120,7 +134,7 @@
                                   Placeholder="All kinds"
                                   aria-label="Filter node transactions by kind" />
                     </FormField>
-                    <FormField Text="Status" ContainerClass="cda-economy-field">
+                    <FormField Text="Status">
                         <DropDown TValue="string"
                                   Data="StatusOptions"
                                   TextProperty="Text"
@@ -130,50 +144,53 @@
                                   Placeholder="All statuses"
                                   aria-label="Filter node transactions by status" />
                     </FormField>
-                </div>
+                </Grid>
 
-                <div class="cda-node-transaction-list">
+                <Stack GapScale="LayoutGap.Small" Class="max-h-[min(48rem,calc(100vh-14rem))] overflow-y-auto overscroll-contain pr-1">
                     @foreach (NodeAdminTransactionSummary transaction in FilteredTransactions)
                     {
-                        <article class="cda-node-tx-row cda-node-tx-row--rich">
-                            <span class="material-icons" aria-hidden="true">@TransactionIcon(transaction)</span>
-                            <div>
-                                <strong>@transaction.TxId</strong>
-                                <span>@transaction.Route</span>
-                                <small>@transaction.PrimaryAddress</small>
-                            </div>
-                            <div class="cda-node-tx-pills">
-                                <span>@transaction.Kind</span>
-                                <span>@transaction.Status</span>
-                                <span>@transaction.Inputs input(s)</span>
-                                <span>@transaction.Outputs output(s)</span>
-                                <span>@transaction.Data</span>
-                            </div>
-                            <Button Text="Details"
-                                    Icon="open_in_full"
-                                    Size="ButtonSize.Small"
-                                    Variant="Variant.Outlined"
-                                    Click="@(() => OpenTransactionDetailsAsync(transaction))" />
-                        </article>
+                        <SelectionListItem Title="@transaction.TxId"
+                                           Eyebrow="@transaction.Kind.ToString()"
+                                           Meta="@transaction.PrimaryAddress"
+                                           Summary="@transaction.Route"
+                                           Dense="true"
+                                           OnSelect="@(() => OpenTransactionDetailsAsync(transaction))">
+                            <Status>
+                                <Icon Name="@TransactionIcon(transaction)" />
+                            </Status>
+                            <Actions>
+                                <Stack GapScale="LayoutGap.XSmall" AlignItems="AlignItems.End">
+                                    <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap" JustifyContent="JustifyContent.End">
+                                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@TransactionStatusTone(transaction.Status)" />
+                                        <Pill Tone="PillTone.Label" Text="@($"{transaction.Inputs} input(s)")" />
+                                        <Pill Tone="PillTone.Label" Text="@($"{transaction.Outputs} output(s)")" />
+                                        <Pill Tone="PillTone.Label" Text="@transaction.Data" />
+                                    </Cluster>
+                                    <Button Text="Details"
+                                            Icon="open_in_full"
+                                            Size="ButtonSize.Small"
+                                            Variant="Variant.Outlined"
+                                            Click="@(() => OpenTransactionDetailsAsync(transaction))" />
+                                </Stack>
+                            </Actions>
+                        </SelectionListItem>
                     }
-                </div>
-            </div>
+                </Stack>
+            </Stack>
         </TabsItem>
 
         <TabsItem Text="Rules" Icon="account_tree" BadgeText="@RuleObjects.Count.ToString()">
-            <div class="cda-node-console__panel">
+            <Stack GapScale="LayoutGap.Medium">
                 <Grid ColumnsLg="2" ColumnTemplateLg="minmax(24rem, 0.95fr) minmax(0, 1.05fr)" Gap="LayoutGap.Medium">
                     <AccountRuleDesigner Workspace="RuleWorkspace"
                                          SubmitRequested="RuleTokenCreateRequested" />
 
-                    <section class="cda-sdk-panel" data-testid="cda-admin-rule-objects">
-                        <header class="cda-sdk-panel__header">
-                            <div>
-                                <span>Rule BOs</span>
-                                <h2>Logic carried by this account</h2>
-                            </div>
+                    <div data-testid="cda-admin-rule-objects">
+                        <SectionCard Title="Logic carried by this account" Description="Rule business objects available to the operator account.">
+                            <HeaderActions>
                             <StatusBadge Text="@($"{RuleObjects.Count} rule(s)")" Tone="info" />
-                        </header>
+                            </HeaderActions>
+                            <ChildContent>
 
                         @if (RuleObjects.Count == 0)
                         {
@@ -188,14 +205,16 @@
                                 }
                             </Stack>
                         }
-                    </section>
+                            </ChildContent>
+                        </SectionCard>
+                    </div>
                 </Grid>
-            </div>
+            </Stack>
         </TabsItem>
 
         <TabsItem Text="Operations" Icon="admin_panel_settings">
-            <div class="cda-node-console__panel">
-                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-node-operations-grid">
+            <Stack GapScale="LayoutGap.Medium">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" AlignItems="AlignItems.Start">
                     <SecurityProfilePanel />
                     <AdminKeyPosturePanel />
                     <BootstrapInfoPanel />
@@ -205,10 +224,10 @@
                     <SnapshotAdminPanel />
                     <TimeControlPanel />
                 </Grid>
-            </div>
+            </Stack>
         </TabsItem>
     </Tabs>
-</section>
+</Stack>
 
 @code {
     private const string AllFilter = "__all";
@@ -311,7 +330,7 @@
                 Subtitle = address.Address,
                 Size = ModalSize.Wide,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--details cda-node-dialog",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-node-dialog",
                 TestId = "cda-node-address-dialog"
             });
 
@@ -338,7 +357,7 @@
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--tx-detail",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--tx-detail",
                 TestId = "cda-node-transaction-details-dialog"
             }).ConfigureAwait(false);
     }
@@ -398,6 +417,15 @@
             TransactionKind.Mint => "south",
             TransactionKind.BusinessObject => "widgets",
             _ => "swap_horiz"
+        };
+
+    private static string TransactionStatusTone(TransactionStatus status)
+        => status switch
+        {
+            TransactionStatus.Confirmed => "success",
+            TransactionStatus.Pending => "warning",
+            TransactionStatus.Rejected or TransactionStatus.Reverted => "danger",
+            _ => "neutral"
         };
 
     private async Task<EconomyTransactionDetailsModel?> ResolveTransactionDetailsAsync(NodeAdminTransactionSummary transaction)

@@ -162,13 +162,13 @@ internal static class BusinessObjectCardDisplay
 
     public static string PreviewClass(IBusinessObjectView item)
         => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out _)
-            ? "cda-vef-gallery-preview cda-vef-gallery-preview--icon"
+            ? "cda-bo-gallery-preview cda-bo-gallery-preview--icon"
             : item.ObjectType switch
             {
-                "settings" or "account-settings" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--settings",
-                "purchase-order" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--order",
-                "inventory-lot" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--inventory",
-                _ => "cda-vef-gallery-preview cda-vef-gallery-preview--icon"
+                "settings" or "account-settings" => "cda-bo-gallery-preview cda-bo-gallery-preview--icon cda-bo-gallery-preview--settings",
+                "purchase-order" => "cda-bo-gallery-preview cda-bo-gallery-preview--icon cda-bo-gallery-preview--order",
+                "inventory-lot" => "cda-bo-gallery-preview cda-bo-gallery-preview--icon cda-bo-gallery-preview--inventory",
+                _ => "cda-bo-gallery-preview cda-bo-gallery-preview--icon"
             };
 
     public static string ShortObjectId(BusinessObjectId objectId)

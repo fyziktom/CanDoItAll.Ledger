@@ -1,30 +1,39 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-tx-data-payload-viewer">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Payload</span>
-            <h2>@(Data?.ItemType.ToString() ?? "No data item")</h2>
-        </div>
+<div data-testid="cda-tx-data-payload-viewer">
+<SectionCard Title="@(Data?.ItemType.ToString() ?? "No data item")" Description="Payload">
+    <HeaderActions>
         <StatusBadge Text="@(Data?.ContentType ?? "none")" Tone="neutral" />
-    </header>
-
-    @if (Data is null)
-    {
-        <p class="cda-sdk-muted">No transaction payload is attached.</p>
-    }
-    else
-    {
-        <div class="cda-sdk-fact-grid">
-            <div><span>External ref</span><strong><CopyableMonoValue Value="@Data.ExternalRef" EmptyText="none" StartChars="18" EndChars="10" AriaLabel="Copy external reference" /></strong></div>
-            <div><span>Hash</span><strong><HashDisplay Value="@(Data.DataHash?.Value)" EmptyText="none" /></strong></div>
-        </div>
-        @if (!string.IsNullOrWhiteSpace(Data.InlineJson))
+    </HeaderActions>
+    <ChildContent>
+        @if (Data is null)
         {
-            <pre class="cda-sdk-code" data-testid="tx-payload-inline-json">@TransactionRawJsonFormatter.FormatInlineJson(Data.InlineJson)</pre>
+            <EmptyState Eyebrow="Payload" Title="No data item" Description="No transaction payload is attached." />
         }
-    }
-</section>
+        else
+        {
+            <Grid ColumnsLg="2" Gap="LayoutGap.Small">
+                <SurfaceCard Soft="true">
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="External ref" />
+                        <CopyableMonoValue Value="@Data.ExternalRef" EmptyText="none" StartChars="18" EndChars="10" AriaLabel="Copy external reference" />
+                    </Stack>
+                </SurfaceCard>
+                <SurfaceCard Soft="true">
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Hash" />
+                        <HashDisplay Value="@(Data.DataHash?.Value)" EmptyText="none" />
+                    </Stack>
+                </SurfaceCard>
+            </Grid>
+            @if (!string.IsNullOrWhiteSpace(Data.InlineJson))
+            {
+                <pre class="cda-sdk-code" data-testid="tx-payload-inline-json">@TransactionRawJsonFormatter.FormatInlineJson(Data.InlineJson)</pre>
+            }
+        }
+    </ChildContent>
+</SectionCard>
+</div>
 
 @code {
     [Parameter]

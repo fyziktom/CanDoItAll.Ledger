@@ -1,7 +1,7 @@
 @namespace CanDoItAll.Economy.Components
 @inherits BusinessObjectDataItemAddressComponentBase
 
-<Stack Class="@(Large ? "cda-venft-dataitem-preview cda-venft-dataitem-preview--large" : "cda-venft-dataitem-preview")">
+<Stack Class="@(Large ? "cda-bo-data-preview cda-bo-data-preview--large" : "cda-bo-data-preview")">
     @if (Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null)
     {
         <img src="@PreviewUri" alt="@Item.Name" />
@@ -14,7 +14,7 @@
     {
         <Stack GapScale="LayoutGap.Tiny"
                AlignItems="AlignItems.Center"
-               Class="cda-venft-file-preview cda-venft-file-preview--audio">
+               Class="cda-bo-file-preview cda-bo-file-preview--audio">
             <Icon Name="graphic_eq" />
             <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Item.Name" />
             <audio src="@PreviewUri" controls preload="metadata"></audio>
@@ -24,7 +24,7 @@
     {
         <Stack GapScale="LayoutGap.Tiny"
                AlignItems="AlignItems.Center"
-               Class="cda-venft-file-preview">
+               Class="cda-bo-file-preview">
             <Icon Name="@Icon" />
             <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Label" />
         </Stack>

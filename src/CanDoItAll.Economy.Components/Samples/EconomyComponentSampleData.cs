@@ -442,28 +442,6 @@ public static class EconomyComponentSampleData
             items[0]);
     }
 
-    public static IReadOnlyList<BusinessObjectGalleryItem> CreateGalleryItems()
-    {
-        var context = new LedgerAccountContext(new LedgerId("company-economy"), new ScenarioId("forward-sim-q2"));
-        var primaryAddress = AddressForKey("operations-primary");
-        var viewedAt = new DateTimeOffset(2026, 05, 06, 14, 30, 00, TimeSpan.Zero);
-
-        return CreateMediaObjects(context, primaryAddress, viewedAt)
-            .Select((item, index) => new BusinessObjectGalleryItem(
-                item,
-                ResolvePreview(item),
-                IsOwnObject: index is not 2,
-                IsOffered: index is 1,
-                Accent: index switch
-                {
-                    0 => "#2c7a7b",
-                    1 => "#8a5a18",
-                    2 => "#5f6f52",
-                    _ => "#576574"
-                }))
-            .ToArray();
-    }
-
     private static IReadOnlyList<IMediaBusinessObjectView> CreateMediaObjects(
         LedgerAccountContext context,
         Address primaryAddress,
@@ -654,8 +632,4 @@ public static class EconomyComponentSampleData
     private static BusinessObjectId FixtureObjectId(string label, int outputIndex = 0)
         => BusinessObjectId.FromOutPoint(FixtureOutPoint(label, outputIndex));
 
-    private static string ResolvePreview(IMediaBusinessObjectView item)
-        => item.DataItems.FirstOrDefault(dataItem => dataItem.IsMain && dataItem.Uri is not null)?.Uri?.ToString()
-            ?? item.ImageLink
-            ?? "https://picsum.photos/seed/candoitall-business-object/900/600";
 }

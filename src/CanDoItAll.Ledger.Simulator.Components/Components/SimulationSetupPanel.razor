@@ -1,7 +1,10 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 @using System.Globalization
 
-<div class="cda-sim-split-grid" data-testid="simulation-setup-tab">
+<Grid ColumnTemplateLg="minmax(18rem, 0.85fr) minmax(0, 1.5fr)"
+      Gap="LayoutGap.Large"
+      AlignItems="AlignItems.Start"
+      data-testid="simulation-setup-tab">
     <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
         <Stack FillHeight="true" GapScale="LayoutGap.Medium">
             <Split Breakpoint="LayoutBreakpoint.None"
@@ -19,20 +22,20 @@
                 @foreach (SimulationRunSetupState setup in Project.RunSetups.OrderBy(x => x.SetupId, StringComparer.Ordinal))
                 {
                     bool selected = string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal);
-                    <button type="button"
-                            class="@ResolveSetupButtonClass(selected)"
-                            data-testid="@($"simulation-run-setup-{setup.SetupId}")"
-                            @onclick="@(() => SelectSetup(setup.SetupId))">
-                        <span class="flex min-w-0 flex-col items-start gap-1 text-left">
-                            <span class="max-w-full truncate text-sm font-semibold text-slate-950">@setup.ScenarioName</span>
-                            <span class="max-w-full truncate text-xs text-slate-500">@setup.SetupId</span>
-                            <span class="text-xs text-slate-500">@FormatDate(setup.HorizonStartDate) to @FormatDate(setup.HorizonEndDate)</span>
-                        </span>
-                        <span class="flex flex-col items-end gap-1 text-xs">
-                            <StatusBadge Text="@setup.StepPeriod.ToString()" Tone="info" />
-                            <span>@setup.StepCount step(s)</span>
-                        </span>
-                    </button>
+                    <SelectionListItem IsSelected="@selected"
+                                       Dense="true"
+                                       Title="@setup.ScenarioName"
+                                       Meta="@setup.SetupId"
+                                       Summary="@($"{FormatDate(setup.HorizonStartDate)} to {FormatDate(setup.HorizonEndDate)}")"
+                                       DataTestId="@($"simulation-run-setup-{setup.SetupId}")"
+                                       OnSelect="@(() => SelectSetup(setup.SetupId))">
+                        <Status>
+                            <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.End">
+                                <StatusBadge Text="@setup.StepPeriod.ToString()" Tone="info" />
+                                <SmallText Text="@($"{setup.StepCount} step(s)")" />
+                            </Stack>
+                        </Status>
+                    </SelectionListItem>
                 }
             </Stack>
 
@@ -139,7 +142,7 @@
             </Stack>
         }
     </WorkspacePanel>
-</div>
+</Grid>
 
 @code {
     private readonly ISimulationProjectImportExportService importExport = new SimulationProjectImportExportService(new EconomySimulatorJsonSerializer(), new SimulationProjectValidationService());
@@ -187,9 +190,4 @@
     private static string FormatDate(DateOnly value)
         => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    private static string ResolveSetupButtonClass(bool selected)
-        => string.Join(' ', [
-            "flex w-full min-w-0 items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition",
-            selected ? "border-sky-300 bg-sky-50" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-        ]);
 }

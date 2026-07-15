@@ -1,34 +1,55 @@
 @namespace CanDoItAll.Economy.Components
 
-<article class="cda-sdk-mini-card cda-vef-tx-io-card cda-vef-tx-input-card" data-testid="cda-tx-input-card">
-    <div class="cda-sdk-mini-card__top">
-        <strong>Input #@Input.InputIndex</strong>
-        <Cluster Gap="LayoutGap.XSmall">
-            @if (!string.IsNullOrWhiteSpace(RoleLabel))
-            {
-                <StatusBadge Text="@RoleLabel" Tone="@RoleTone" />
-            }
-            <StatusBadge Text="@($"{Input.SignatureCount} sig")" Tone="info" />
-        </Cluster>
-    </div>
-    <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight cda-vef-input-fact-grid">
-        <div><span>Previous</span><strong><span class="cda-vef-outpoint-value" title="@Input.PreviousOutPoint.ToString()">@ShortOutPoint(Input.PreviousOutPoint.ToString())</span></strong></div>
-        <div><span>Main</span><strong>@(Input.MainAmount?.ToString() ?? "unknown")</strong></div>
-        <div><span>Token</span><strong>@FormatToken(Input.Token)</strong></div>
-    </div>
-    <div class="cda-vef-io-address-line">
-        <span>Source address</span>
-        <CopyableMonoValue Value="@Input.Address.Value" />
-    </div>
-    @if (Input.BusinessObject is not null)
-    {
-        <small class="cda-sdk-muted">BO <CopyableMonoValue Value="@Input.PreviousOutPoint.ToString()" Truncate="false" AriaLabel="Copy source business object UTXO id" /> v@(Input.BusinessObject.Version)</small>
-    }
-    @if (!string.IsNullOrWhiteSpace(SupportingText))
-    {
-        <p class="cda-sdk-muted cda-vef-io-card-note">@SupportingText</p>
-    }
-</article>
+<SurfaceCard data-testid="cda-tx-input-card">
+    <Stack GapScale="LayoutGap.Medium">
+        <Split Breakpoint="LayoutBreakpoint.None"
+               AlignItems="AlignItems.Center"
+               Wrap="FlexWrap.Wrap"
+               Gap="LayoutGap.Small">
+            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@($"Input #{Input.InputIndex}")" />
+            <Cluster Gap="LayoutGap.XSmall">
+                @if (!string.IsNullOrWhiteSpace(RoleLabel))
+                {
+                    <StatusBadge Text="@RoleLabel" Tone="@RoleTone" />
+                }
+                <StatusBadge Text="@($"{Input.SignatureCount} sig")" Tone="info" />
+            </Cluster>
+        </Split>
+
+        <Grid ColumnsSm="3" Gap="LayoutGap.Small">
+            <MetricCard Label="Previous">
+                <ValueContent>
+                    <CopyableMonoValue Value="@Input.PreviousOutPoint.ToString()"
+                                       StartChars="10"
+                                       EndChars="6"
+                                       AriaLabel="Copy previous outpoint" />
+                </ValueContent>
+            </MetricCard>
+            <MetricCard Label="Main" Value="@(Input.MainAmount?.ToString() ?? "unknown")" />
+            <MetricCard Label="Token" Value="@FormatToken(Input.Token)" />
+        </Grid>
+
+        <Grid ColumnTemplateMd="minmax(7rem,0.24fr) minmax(0,1fr)"
+              Gap="LayoutGap.Small"
+              AlignItems="AlignItems.Center">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Source address" />
+            <CopyableMonoValue Value="@Input.Address.Value" />
+        </Grid>
+
+        @if (Input.BusinessObject is not null)
+        {
+            <SmallText Paragraph="true">
+                BO <CopyableMonoValue Value="@Input.PreviousOutPoint.ToString()"
+                                      Truncate="false"
+                                      AriaLabel="Copy source business object UTXO id" /> v@(Input.BusinessObject.Version)
+            </SmallText>
+        }
+        @if (!string.IsNullOrWhiteSpace(SupportingText))
+        {
+            <TextBlock TextStyle="TextStyle.Muted" Value="@SupportingText" />
+        }
+    </Stack>
+</SurfaceCard>
 
 @code {
     [Parameter, EditorRequired]
@@ -46,6 +67,4 @@
     private static string FormatToken(TokenTransfer? token)
         => token is null ? "none" : $"{token.Amount} {token.TokenId.Value}";
 
-    private static string ShortOutPoint(string value)
-        => value.Length <= 19 ? value : $"{value[..10]}...{value[^6..]}";
 }

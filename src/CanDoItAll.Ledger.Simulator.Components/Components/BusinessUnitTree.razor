@@ -26,7 +26,10 @@
 }
 else
 {
-    <div class="cda-sim-split-grid" data-testid="simulation-bu-accounts-tab">
+    <Grid ColumnTemplateLg="minmax(18rem, 0.85fr) minmax(0, 1.5fr)"
+          Gap="LayoutGap.Large"
+          AlignItems="AlignItems.Start"
+          data-testid="simulation-bu-accounts-tab">
         <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
             <Stack FillHeight="true" GapScale="LayoutGap.Medium">
                 <Split Breakpoint="LayoutBreakpoint.None"
@@ -160,7 +163,7 @@ else
                 </Stack>
             }
         </WorkspacePanel>
-    </div>
+    </Grid>
 }
 
 @code {

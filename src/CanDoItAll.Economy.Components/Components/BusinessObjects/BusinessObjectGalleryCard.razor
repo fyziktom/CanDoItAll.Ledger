@@ -3,7 +3,7 @@
 <article class="@CardClass" data-testid="@TestId">
     @if (PreviewImage is not null)
     {
-        <button type="button" class="cda-vef-gallery-preview cda-vef-gallery-preview--media" @onclick="OpenAsync">
+        <button type="button" class="cda-bo-gallery-preview cda-bo-gallery-preview--media" @onclick="OpenAsync">
             <BusinessObjectDataItemPreview Item="PreviewImage" />
         </button>
     }
@@ -13,32 +13,32 @@
             <span class="material-icons" aria-hidden="true">@BusinessObjectCardDisplay.PreviewIcon(Item)</span>
         </button>
     }
-    <div class="cda-vef-gallery-card-body">
+    <div class="cda-bo-gallery-card-body">
         <h3>@DisplayName</h3>
         <p>@Description</p>
-        <div class="cda-vef-badges">
+        <div class="cda-bo-badges">
             <span>@Item.Operation</span>
             <span>BO</span>
             <span>@Item.ObjectType</span>
             @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
             {
-                <span class="cda-vef-sale-badge" data-testid="cda-bo-sale-badge">@sale.Mode / @BusinessObjectCardDisplay.FormatPrice(sale.PriceAmount, sale.TokenId)</span>
+                <span class="cda-commerce-sale-badge" data-testid="cda-bo-sale-badge">@sale.Mode / @BusinessObjectCardDisplay.FormatPrice(sale.PriceAmount, sale.TokenId)</span>
             }
         </div>
-        <div class="cda-vef-gallery-meta">
+        <div class="cda-bo-gallery-meta">
             <span>@BusinessObjectCardDisplay.ShortObjectId(Item.ObjectId)</span>
             <span>@SortTimestamp.ToString("MM.dd.yyyy HH:mm")</span>
         </div>
         @if (Facts.Count > 0)
         {
-            <div class="cda-vef-gallery-meta">
+            <div class="cda-bo-gallery-meta">
                 @foreach (BusinessObjectDisplayFact fact in Facts.Take(MaxFacts))
                 {
                     <span>@fact.Label: @fact.Value</span>
                 }
             </div>
         }
-        <div class="cda-vef-tags">
+        <div class="cda-bo-tags">
             @foreach (string tag in Tags)
             {
                 <span>#@tag</span>
@@ -47,7 +47,7 @@
     </div>
     @if (ShowInfoButton)
     {
-        <button type="button" class="cda-vef-info-button" @onclick="OpenAsync" aria-label="@InfoLabel">
+        <button type="button" class="cda-ledger-info-button" @onclick="OpenAsync" aria-label="@InfoLabel">
             <span class="material-icons" aria-hidden="true">info</span>
         </button>
     }
@@ -77,8 +77,8 @@
 
     private string CardClass
         => string.IsNullOrWhiteSpace(Class)
-            ? "cda-vef-gallery-card"
-            : $"cda-vef-gallery-card {Class}";
+            ? "cda-bo-gallery-card"
+            : $"cda-bo-gallery-card {Class}";
 
     private BusinessObjectDataItem? PreviewImage
         => BusinessObjectCardDisplay.ImageFor(Item);

@@ -1,34 +1,19 @@
 @namespace CanDoItAll.Economy.Components
 
 <SectionCard Title="Account" Description="@Description">
-    <Grid ColumnsMd="2" ColumnsXl="4" Gap="LayoutGap.Medium">
-        <div class="cda-economy-metric">
-            <span>Main balance</span>
-            <strong>@FormatAmount(Workspace.Balance.MainBalance)</strong>
-        </div>
-        <div class="cda-economy-metric">
-            <span>Business objects</span>
-            <strong>@Workspace.BusinessObjects.Count</strong>
-        </div>
-        <div class="cda-economy-metric">
-            <span>Spendable outputs</span>
-            <strong>@Workspace.Balance.UtxoCount</strong>
-        </div>
-        <div class="cda-economy-metric">
-            <span>Subaccounts</span>
-            <strong>@Workspace.SubAccounts.Count</strong>
-        </div>
-    </Grid>
+    <SummaryTiles ColumnsSm="2" ColumnsXl="4" GapScale="LayoutGap.Medium">
+        <SummaryTile Label="Main balance" Value="@FormatAmount(Workspace.Balance.MainBalance)" />
+        <SummaryTile Label="Business objects" Value="@Workspace.BusinessObjects.Count.ToString()" />
+        <SummaryTile Label="Spendable outputs" Value="@Workspace.Balance.UtxoCount.ToString()" />
+        <SummaryTile Label="Subaccounts" Value="@Workspace.SubAccounts.Count.ToString()" />
+    </SummaryTiles>
 
-    <Cluster Class="cda-economy-token-strip" Gap="LayoutGap.Small">
+    <Grid ColumnTemplate="repeat(auto-fit, minmax(10rem, 1fr))" Gap="LayoutGap.Small">
         @foreach (KeyValuePair<TokenId, Amount> token in OrderedTokenBalances)
         {
-            <span class="cda-economy-token">
-                <span>@token.Key</span>
-                <strong>@FormatAmount(token.Value)</strong>
-            </span>
+            <SummaryTile Label="@token.Key.Value" Value="@FormatAmount(token.Value)" Compact="true" Tone="info" />
         }
-    </Cluster>
+    </Grid>
 </SectionCard>
 
 @code {

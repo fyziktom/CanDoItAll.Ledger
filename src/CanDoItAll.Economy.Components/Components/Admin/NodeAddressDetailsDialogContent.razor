@@ -6,50 +6,57 @@
 }
 else
 {
-    <Stack GapScale="LayoutGap.Medium" Class="cda-node-address-dialog" data-testid="cda-node-address-details">
-        <section class="cda-node-address-hero">
-            <div>
-                <span class="cda-economy-eyebrow">@Address.Role</span>
-                <h3>@Address.Label</h3>
-                <CopyableMonoValue Value="@Address.Address" />
-            </div>
-            <StatusBadge Text="@Address.Status" Tone="@(Address.Status == "Active" ? "success" : "warning")" />
-        </section>
+    <Stack GapScale="LayoutGap.Medium" data-testid="cda-node-address-details">
+        <SurfaceCard Soft="true">
+            <Split Breakpoint="LayoutBreakpoint.None"
+                   Gap="LayoutGap.Medium"
+                   AlignItems="AlignItems.Center"
+                   JustifyContent="JustifyContent.SpaceBetween"
+                   Wrap="FlexWrap.Wrap">
+                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="@Address.Role" />
+                    <TextBlock TextStyle="TextStyle.H3" Value="@Address.Label" />
+                    <CopyableMonoValue Value="@Address.Address" />
+                </Stack>
+                <StatusBadge Text="@Address.Status" Tone="@(Address.Status == "Active" ? "success" : "warning")" />
+            </Split>
+        </SurfaceCard>
 
-        <Grid ColumnsLg="4" Gap="LayoutGap.Small">
-            <div class="cda-economy-fact"><span>Balance</span><strong>@Address.Balance</strong></div>
-            <div class="cda-economy-fact"><span>Objects</span><strong>@Address.BusinessObjects</strong></div>
-            <div class="cda-economy-fact"><span>Transactions</span><strong>@Address.Transactions</strong></div>
-            <div class="cda-economy-fact"><span>Last seen</span><strong>@Address.LastSeenUtc.ToString("MM.dd HH:mm")</strong></div>
-        </Grid>
+        <SummaryTiles ColumnsSm="2" ColumnsXl="4" GapScale="LayoutGap.Small">
+            <SummaryTile Label="Balance" Value="@Address.Balance" />
+            <SummaryTile Label="Objects" Value="@Address.BusinessObjects.ToString()" />
+            <SummaryTile Label="Transactions" Value="@Address.Transactions.ToString()" />
+            <SummaryTile Label="Last seen" Value="@Address.LastSeenUtc.ToString("MM.dd HH:mm")" />
+        </SummaryTiles>
 
-        <section class="cda-vef-panel">
-            <div class="cda-vef-panel-header">Address transactions</div>
-            <div class="cda-vef-panel-body cda-node-address-tx-list">
+        <SectionCard Title="Address transactions" Description="Ledger activity associated with this address.">
                 @if (Transactions.Count == 0)
                 {
-                    <p class="cda-vef-empty-line">No matching transactions are available for this address.</p>
+                    <EmptyState Title="No matching transactions"
+                                Description="No matching transactions are available for this address." />
                 }
                 else
                 {
-                    @foreach (NodeAdminTransactionSummary transaction in Transactions)
-                    {
-                        <article class="cda-node-tx-row">
-                            <div>
-                                <strong>@transaction.TxId</strong>
-                                <span>@transaction.Route</span>
-                                <small>@transaction.Kind / @transaction.Status / @transaction.TimestampUtc.ToString("MM.dd.yyyy HH:mm")</small>
-                            </div>
-                            <Button Text="Open"
-                                    Icon="open_in_full"
-                                    Size="ButtonSize.Small"
-                                    Variant="Variant.Outlined"
-                                    Click="@(() => TransactionSelected.InvokeAsync(transaction))" />
-                        </article>
-                    }
+                    <Stack GapScale="LayoutGap.Small">
+                        @foreach (NodeAdminTransactionSummary transaction in Transactions)
+                        {
+                            <SelectionListItem Title="@transaction.TxId"
+                                               Meta="@($"{transaction.Kind} / {transaction.Status} / {transaction.TimestampUtc:MM.dd.yyyy HH:mm}")"
+                                               Summary="@transaction.Route"
+                                               Dense="true"
+                                               OnSelect="@(() => TransactionSelected.InvokeAsync(transaction))">
+                                <Actions>
+                                    <Button Text="Open"
+                                            Icon="open_in_full"
+                                            Size="ButtonSize.Small"
+                                            Variant="Variant.Outlined"
+                                            Click="@(() => TransactionSelected.InvokeAsync(transaction))" />
+                                </Actions>
+                            </SelectionListItem>
+                        }
+                    </Stack>
                 }
-            </div>
-        </section>
+        </SectionCard>
     </Stack>
 }
 

@@ -1,7 +1,10 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 @using System.Globalization
 
-<div class="cda-sim-split-grid" data-testid="simulation-planned-financial-schedules-tab">
+<Grid ColumnTemplateLg="minmax(18rem, 0.85fr) minmax(0, 1.5fr)"
+      Gap="LayoutGap.Large"
+      AlignItems="AlignItems.Start"
+      data-testid="simulation-planned-financial-schedules-tab">
     <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
         <Stack FillHeight="true" GapScale="LayoutGap.Medium">
             <Split Breakpoint="LayoutBreakpoint.None"
@@ -84,12 +87,12 @@
                     <DataGridColumn TItem="FinancialScheduleTimelineRow" Property="BusinessUnit" Title="BU" />
                     <DataGridColumn TItem="FinancialScheduleTimelineRow" Title="Schedule">
                         <Template Context="row">
-                            <button type="button"
-                                    class="text-left text-sm font-semibold text-sky-700 hover:text-sky-900"
-                                    data-testid="@($"simulation-planned-expense-row-{row.ScheduleId}")"
-                                    @onclick="@(() => SelectSchedule(row.ScheduleId))">
-                                @row.Schedule
-                            </button>
+                            <Button Text="@row.Schedule"
+                                    ButtonStyle="ButtonStyle.Info"
+                                    Variant="Variant.Text"
+                                    Size="ButtonSize.Small"
+                                    Click="@(() => SelectSchedule(row.ScheduleId))"
+                                    data-testid="@($"simulation-planned-expense-row-{row.ScheduleId}")" />
                         </Template>
                     </DataGridColumn>
                     <DataGridColumn TItem="FinancialScheduleTimelineRow" Title="Amount">
@@ -126,7 +129,7 @@
             }
         </Stack>
     </WorkspacePanel>
-</div>
+</Grid>
 
 @code {
     private static readonly IEconomySimulatorJsonSerializer Serializer = new EconomySimulatorJsonSerializer();

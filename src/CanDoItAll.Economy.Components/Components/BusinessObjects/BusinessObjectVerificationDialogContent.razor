@@ -15,9 +15,9 @@
         else
         {
             <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-bo-verification" data-testid="cda-bo-verification-dialog">
-                <section class="cda-vef-panel">
-                    <div class="cda-vef-panel-header">Payload</div>
-                    <div class="cda-vef-panel-body cda-bo-verification__section">
+                <section class="cda-ledger-panel">
+                    <div class="cda-ledger-panel-header">Payload</div>
+                    <div class="cda-ledger-panel-body cda-bo-verification__section">
                         <TextArea Value="@payload"
                                   ValueChanged="@(value => payload = value ?? string.Empty)"
                                   Rows="12"
@@ -45,12 +45,12 @@
                     </div>
                 </section>
 
-                <section class="cda-vef-panel">
-                    <div class="cda-vef-panel-header">Result</div>
-                    <div class="cda-vef-panel-body cda-bo-verification__section">
+                <section class="cda-ledger-panel">
+                    <div class="cda-ledger-panel-header">Result</div>
+                    <div class="cda-ledger-panel-body cda-bo-verification__section">
                         @if (result is null)
                         {
-                            <p class="cda-vef-empty-line">Run verification to check payload format, object id, owner, outpoint, and data hash.</p>
+                            <p class="cda-ledger-empty-line">Run verification to check payload format, object id, owner, outpoint, and data hash.</p>
                         }
                         else
                         {

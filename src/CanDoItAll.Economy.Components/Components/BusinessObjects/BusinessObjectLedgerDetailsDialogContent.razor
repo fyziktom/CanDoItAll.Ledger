@@ -12,25 +12,26 @@
 }
 else
 {
-    <Stack GapScale="LayoutGap.Medium" Class="cda-vef-bo-detail-shell" data-testid="cda-bo-details-layout">
+    <div class="cda-bo-detail-shell" data-testid="cda-bo-details-layout">
+      <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" FillHeight="true">
         <Tabs Variant="TabsVariant.ModalCompact"
               BorderMode="TabsBorderMode.Soft"
               OverflowMode="TabsOverflowMode.Scroll"
               PanelOverflowMode="TabsPanelOverflowMode.Visible"
-              Class="cda-vef-dialog-tabs cda-vef-bo-detail-tabs"
+              Class="cda-bo-detail-tabs"
               AriaLabel="Business object detail sections">
             <TabsItem Text="Overview" Icon="dashboard" BadgeText="@($"{DataItems.Count} item(s)")">
                 @if (HasDataItems)
                 {
-                    <section class="cda-vef-bo-overview-workspace">
-                        <div class="cda-vef-bo-selected-preview">
+                    <section class="cda-bo-overview-workspace">
+                        <div class="cda-bo-selected-preview">
                             @if (SelectedItem is not null)
                             {
                                 <BusinessObjectDataItemInteractivePreview Item="SelectedItem" />
                             }
                             else
                             {
-                                <div class="cda-vef-bo-preview-empty">
+                                <div class="cda-bo-preview-empty">
                                     <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
                                     <strong>@DisplayName</strong>
                                     <small>No data items are attached.</small>
@@ -38,75 +39,79 @@ else
                             }
                         </div>
 
-                        <aside class="cda-vef-bo-overview-aside">
-                            <div class="cda-vef-bo-summary">
-                                <span class="cda-economy-eyebrow">@Object.ObjectType</span>
-                                <h3>@DisplayName</h3>
-                                <p>@Description</p>
+                        <aside class="cda-bo-overview-aside">
+                            <Stack GapScale="LayoutGap.Small">
+                                <Eyebrow Text="@Object.ObjectType" />
+                                <TextBlock TextStyle="TextStyle.H3" Value="@DisplayName" />
+                                <TextBlock TextStyle="TextStyle.Body2" Value="@Description" />
                                 @if (HasLongDescription)
                                 {
-                                    <section class="cda-vef-bo-long-description" data-testid="cda-bo-long-description" aria-label="Business object long description">
-                                        <span>Long description</span>
-                                        <p>@LongDescription</p>
-                                    </section>
+                                    <SurfaceCard Soft="true"
+                                                 Class="cda-bo-long-description"
+                                                 data-testid="cda-bo-long-description"
+                                                 aria-label="Business object long description">
+                                        <Stack GapScale="LayoutGap.XSmall">
+                                            <Eyebrow Text="Long description" />
+                                            <TextBlock TextStyle="TextStyle.Body2" Value="@LongDescription" />
+                                        </Stack>
+                                    </SurfaceCard>
                                 }
-                                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
+                                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-bo-tags">
                                     @foreach (string tag in Tags.Take(6))
                                     {
                                         <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="cda-bo-detail-tag-badge" />
                                     }
                                 </Cluster>
-                            </div>
+                            </Stack>
 
-                            <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-vef-bo-overview-facts">
-                                <div class="cda-economy-fact"><span>Version</span><strong>@Object.Version</strong></div>
-                                <div class="cda-economy-fact"><span>Operation</span><strong>@Object.Operation</strong></div>
-                                <div class="cda-economy-fact"><span>Data items</span><strong>@DataItems.Count</strong></div>
-                                <div class="cda-economy-fact"><span>Created</span><strong>@Object.CreatedAt.ToString("MM.dd HH:mm")</strong></div>
-                            </Grid>
+                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                                <SummaryTile Label="Version" Value="@Object.Version.ToString(CultureInfo.InvariantCulture)" Compact="true" />
+                                <SummaryTile Label="Operation" Value="@Object.Operation.ToString()" Compact="true" />
+                                <SummaryTile Label="Data items" Value="@DataItems.Count.ToString(CultureInfo.InvariantCulture)" Compact="true" />
+                                <SummaryTile Label="Created" Value="@Object.CreatedAt.ToString("MM.dd HH:mm")" Compact="true" />
+                            </SummaryTiles>
                             @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
                             {
-                                <section class="cda-vef-sale-panel" data-testid="cda-bo-sale-panel">
-                                    <div>
-                                        <span>For sale</span>
-                                        <strong>@sale.Mode / @FormatPrice(sale.PriceAmount, sale.TokenId)</strong>
-                                    </div>
+                                <SurfaceCard Soft="true" data-testid="cda-bo-sale-panel">
+                                  <Stack GapScale="LayoutGap.Small">
+                                    <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                                        <SummaryTile Label="For sale" Value="@($"{sale.Mode} / {FormatPrice(sale.PriceAmount, sale.TokenId)}")" Compact="true" Tone="success" />
                                     @if (sale.MaxClones is not null)
                                     {
-                                        <div>
-                                            <span>Copies</span>
-                                            <strong>@sale.SoldCount / @sale.MaxClones</strong>
-                                        </div>
+                                        <SummaryTile Label="Copies" Value="@($"{sale.SoldCount} / {sale.MaxClones}")" Compact="true" />
                                     }
-                                    <div class="cda-vef-sale-panel__link">
-                                        <span>Buy link</span>
-                                        <CopyableMonoValue Value="@BuyLink" StartChars="32" EndChars="12" AriaLabel="Copy buy link" />
-                                    </div>
-                                </section>
+                                    </SummaryTiles>
+                                    <MetricCard Label="Buy link">
+                                        <ValueContent>
+                                            <CopyableMonoValue Value="@BuyLink" StartChars="32" EndChars="12" AriaLabel="Copy buy link" />
+                                        </ValueContent>
+                                    </MetricCard>
+                                  </Stack>
+                                </SurfaceCard>
                             }
                             @if (TypedFacts.Count > 0)
                             {
-                                <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-vef-bo-overview-facts">
+                                <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
                                     @foreach (BusinessObjectDisplayFact fact in TypedFacts)
                                     {
-                                        <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
+                                        <SummaryTile Label="@fact.Label" Value="@fact.Value" Compact="true" />
                                     }
-                                </Grid>
+                                </SummaryTiles>
                             }
 
-                            <section class="cda-vef-bo-gallery-rail" aria-label="Business object data items">
-                                <div class="cda-vef-bo-gallery-rail__header">
+                            <section class="cda-bo-gallery-rail" aria-label="Business object data items">
+                                <div class="cda-bo-gallery-rail__header">
                                     <strong>Data items</strong>
                                     <StatusBadge Text="@($"{DataItems.Count} item(s)")" Tone="info" />
                                 </div>
 
-                                <div class="cda-vef-bo-gallery-list">
+                                <div class="cda-bo-gallery-list">
                                     @foreach (BusinessObjectDataItem item in DataItems)
                                     {
                                         string? itemUri = ResolveDataItemUriString(item);
                                         <article class="@GalleryItemClass(item)">
                                             <button type="button"
-                                                    class="cda-vef-bo-gallery-item__select"
+                                                    class="cda-bo-gallery-item__select"
                                                     aria-label="@($"Show {item.Name}")"
                                                     @onclick="@(() => SelectItem(item))">
                                                 <BusinessObjectDataItemPreview Item="item" />
@@ -116,10 +121,9 @@ else
                                                     <em>@(item.Description ?? item.FileName ?? item.Hash)</em>
                                                 </span>
                                             </button>
-                                            <Cluster Gap="LayoutGap.XSmall"
-                                                     Wrap="FlexWrap.NoWrap"
-                                                     Class="cda-vef-bo-gallery-item__actions"
-                                                     aria-label="@($"Copy actions for {item.Name}")">
+                                             <Cluster Gap="LayoutGap.XSmall"
+                                                      Wrap="FlexWrap.NoWrap"
+                                                      aria-label="@($"Copy actions for {item.Name}")">
                                                 <CopyButton Value="@item.Hash"
                                                             Icon="tag"
                                                             DisplayMode="CopyButtonDisplayMode.IconOnly"
@@ -147,26 +151,29 @@ else
                 else
                 {
                     <Grid ColumnsLg="2" Gap="LayoutGap.Medium" data-testid="cda-bo-overview-no-data">
-                        <section class="cda-vef-panel" data-testid="cda-bo-overview-summary">
-                            <div class="cda-vef-panel-header">
-                                <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center">
-                                    <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
-                                    <span>@Object.ObjectType</span>
-                                </Cluster>
-                            </div>
-                            <div class="cda-vef-panel-body">
+                        <div data-testid="cda-bo-overview-summary">
+                          <SectionCard Title="@Object.ObjectType">
+                            <HeaderActions>
+                                <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
+                            </HeaderActions>
+                            <ChildContent>
                                 <Stack GapScale="LayoutGap.Small">
-                                    <span class="cda-economy-eyebrow">@Object.ObjectType</span>
-                                    <h3>@DisplayName</h3>
-                                    <p>@Description</p>
+                                    <Eyebrow Text="@Object.ObjectType" />
+                                    <TextBlock TextStyle="TextStyle.H3" Value="@DisplayName" />
+                                    <TextBlock TextStyle="TextStyle.Body2" Value="@Description" />
                                     @if (HasLongDescription)
                                     {
-                                        <section class="cda-vef-bo-long-description" data-testid="cda-bo-long-description" aria-label="Business object long description">
-                                            <span>Long description</span>
-                                            <p>@LongDescription</p>
-                                        </section>
+                                        <SurfaceCard Soft="true"
+                                                     Class="cda-bo-long-description"
+                                                     data-testid="cda-bo-long-description"
+                                                     aria-label="Business object long description">
+                                            <Stack GapScale="LayoutGap.XSmall">
+                                                <Eyebrow Text="Long description" />
+                                                <TextBlock TextStyle="TextStyle.Body2" Value="@LongDescription" />
+                                            </Stack>
+                                        </SurfaceCard>
                                     }
-                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
+                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-bo-tags">
                                         @foreach (string tag in Tags.Take(8))
                                         {
                                             <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="cda-bo-detail-tag-badge" />
@@ -174,50 +181,48 @@ else
                                     </Cluster>
                                     @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
                                     {
-                                        <section class="cda-vef-sale-panel" data-testid="cda-bo-sale-panel">
-                                            <div>
-                                                <span>For sale</span>
-                                                <strong>@sale.Mode / @FormatPrice(sale.PriceAmount, sale.TokenId)</strong>
-                                            </div>
+                                        <SurfaceCard Soft="true" data-testid="cda-bo-sale-panel">
+                                          <Stack GapScale="LayoutGap.Small">
+                                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                                                <SummaryTile Label="For sale" Value="@($"{sale.Mode} / {FormatPrice(sale.PriceAmount, sale.TokenId)}")" Compact="true" Tone="success" />
                                             @if (sale.MaxClones is not null)
                                             {
-                                                <div>
-                                                    <span>Copies</span>
-                                                    <strong>@sale.SoldCount / @sale.MaxClones</strong>
-                                                </div>
+                                                <SummaryTile Label="Copies" Value="@($"{sale.SoldCount} / {sale.MaxClones}")" Compact="true" />
                                             }
-                                            <div class="cda-vef-sale-panel__link">
-                                                <span>Buy link</span>
-                                                <CopyableMonoValue Value="@BuyLink" StartChars="32" EndChars="12" AriaLabel="Copy buy link" />
-                                            </div>
-                                        </section>
+                                            </SummaryTiles>
+                                            <MetricCard Label="Buy link">
+                                                <ValueContent>
+                                                    <CopyableMonoValue Value="@BuyLink" StartChars="32" EndChars="12" AriaLabel="Copy buy link" />
+                                                </ValueContent>
+                                            </MetricCard>
+                                          </Stack>
+                                        </SurfaceCard>
                                     }
                                 </Stack>
-                            </div>
-                        </section>
+                            </ChildContent>
+                          </SectionCard>
+                        </div>
 
                         <Stack GapScale="LayoutGap.Medium">
-                            <section class="cda-vef-panel" data-testid="cda-bo-overview-facts">
-                                <div class="cda-vef-panel-header">Key information</div>
-                                <div class="cda-vef-panel-body">
-                                    <Grid ColumnsLg="2" Gap="LayoutGap.Small" Class="cda-vef-bo-fact-grid">
-                                        <div class="cda-economy-fact"><span>Version</span><strong>@Object.Version</strong></div>
-                                        <div class="cda-economy-fact"><span>Operation</span><strong>@Object.Operation</strong></div>
-                                        <div class="cda-economy-fact"><span>Data items</span><strong>@DataItems.Count</strong></div>
-                                        <div class="cda-economy-fact"><span>Created</span><strong>@Object.CreatedAt.ToString("MM.dd HH:mm")</strong></div>
+                            <div data-testid="cda-bo-overview-facts">
+                              <SectionCard Title="Key information">
+                                    <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                                        <SummaryTile Label="Version" Value="@Object.Version.ToString(CultureInfo.InvariantCulture)" Compact="true" />
+                                        <SummaryTile Label="Operation" Value="@Object.Operation.ToString()" Compact="true" />
+                                        <SummaryTile Label="Data items" Value="@DataItems.Count.ToString(CultureInfo.InvariantCulture)" Compact="true" />
+                                        <SummaryTile Label="Created" Value="@Object.CreatedAt.ToString("MM.dd HH:mm")" Compact="true" />
                                         @foreach (BusinessObjectDisplayFact fact in TypedFacts)
                                         {
-                                            <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
+                                            <SummaryTile Label="@fact.Label" Value="@fact.Value" Compact="true" />
                                         }
-                                    </Grid>
-                                </div>
-                            </section>
+                                    </SummaryTiles>
+                              </SectionCard>
+                            </div>
 
                             @if (RelatedBusinessObjects.Count > 0)
                             {
-                                <section class="cda-vef-panel" data-testid="cda-bo-related-panel">
-                                    <div class="cda-vef-panel-header">Related business object</div>
-                                    <div class="cda-vef-panel-body">
+                                <div data-testid="cda-bo-related-panel">
+                                  <SectionCard Title="Related business object">
                                         <Grid ColumnsLg="1" Gap="LayoutGap.Small">
                                             @foreach (IBusinessObjectView related in RelatedBusinessObjects)
                                             {
@@ -227,8 +232,8 @@ else
                                                                            TestId="cda-bo-related-card" />
                                             }
                                         </Grid>
-                                    </div>
-                                </section>
+                                  </SectionCard>
+                                </div>
                             }
                         </Stack>
                     </Grid>
@@ -238,11 +243,9 @@ else
             @if (ShowActions)
             {
                 <TabsItem Text="Actions" Icon="bolt">
-                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-bo-action-grid">
-                        <section class="cda-vef-panel">
-                            <div class="cda-vef-panel-header">Object actions</div>
-                            <div class="cda-vef-panel-body">
-                                <div class="cda-vef-bo-action-list">
+                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                        <SectionCard Title="Object actions">
+                                <Grid ColumnsSm="2" Gap="LayoutGap.Small">
                                     <QrCodeButton Payload="@ObjectOwnershipQrPayload"
                                                   Label="Show ownership QR"
                                                   TooltipText="Show BO ownership payload as QR"
@@ -265,56 +268,58 @@ else
                                             Disabled="@(!CanRecycle)"
                                             Click="RecycleAsync"
                                             data-testid="cda-bo-recycle-button" />
-                                </div>
-                            </div>
-                        </section>
+                                </Grid>
+                        </SectionCard>
 
-                        <section class="cda-vef-panel">
-                            <div class="cda-vef-panel-header">Data item actions</div>
-                            <div class="cda-vef-panel-body">
+                        <SectionCard Title="Data item actions">
                                 @if (DataItems.Count == 0)
                                 {
-                                    <p class="cda-vef-empty-line">Attach a data item to enable asset-specific commands.</p>
+                                    <EmptyState Eyebrow="Data items"
+                                                Title="No data item actions"
+                                                Description="Attach a data item to enable asset-specific commands." />
                                 }
                                 else
                                 {
-                                    <div class="cda-vef-bo-action-table">
+                                    <div class="cda-bo-data-action-list">
+                                      <Stack GapScale="LayoutGap.Small">
                                         @foreach (BusinessObjectDataItem item in DataItems)
                                         {
                                             string? itemUri = ResolveDataItemUriString(item);
-                                            <article>
-                                                <div>
-                                                    <strong>@item.Name</strong>
-                                                    <span>@item.Type / @FormatSize(item.Size)</span>
-                                                </div>
-                                                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
-                                                    <CopyButton Text="CID"
-                                                                Value="@item.Hash"
-                                                                Size="CopyButtonSize.Small"
-                                                                ButtonStyle="ButtonStyle.Secondary" />
-                                                    <Button Text="Open"
-                                                            Icon="open_in_new"
-                                                            Size="ButtonSize.Small"
-                                                            Variant="Variant.Outlined"
-                                                            Href="@itemUri"
-                                                            Target="_blank"
-                                                            Rel="noopener noreferrer"
-                                                            Disabled="@(itemUri is null)" />
-                                                    <Button Text="Download"
-                                                            Icon="download"
-                                                            Size="ButtonSize.Small"
-                                                            Variant="Variant.Outlined"
-                                                            Href="@itemUri"
-                                                            Target="_blank"
-                                                            Rel="noopener noreferrer"
-                                                            Disabled="@(itemUri is null)" />
-                                                </Cluster>
-                                            </article>
+                                            <SelectionListItem Title="@item.Name"
+                                                               Meta="@($"{item.Type} / {FormatSize(item.Size)}")"
+                                                               Dense="true"
+                                                               IsSelected="@(SelectedItem is not null && IsSameItem(item, SelectedItem))"
+                                                               OnSelect="@(() => SelectItem(item))">
+                                                <Actions>
+                                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                                                        <CopyButton Text="CID"
+                                                                    Value="@item.Hash"
+                                                                    Size="CopyButtonSize.Small"
+                                                                    ButtonStyle="ButtonStyle.Secondary" />
+                                                        <Button Text="Open"
+                                                                Icon="open_in_new"
+                                                                Size="ButtonSize.Small"
+                                                                Variant="Variant.Outlined"
+                                                                Href="@itemUri"
+                                                                Target="_blank"
+                                                                Rel="noopener noreferrer"
+                                                                Disabled="@(itemUri is null)" />
+                                                        <Button Text="Download"
+                                                                Icon="download"
+                                                                Size="ButtonSize.Small"
+                                                                Variant="Variant.Outlined"
+                                                                Href="@itemUri"
+                                                                Target="_blank"
+                                                                Rel="noopener noreferrer"
+                                                                Disabled="@(itemUri is null)" />
+                                                    </Cluster>
+                                                </Actions>
+                                            </SelectionListItem>
                                         }
+                                      </Stack>
                                     </div>
                                 }
-                            </div>
-                        </section>
+                        </SectionCard>
                     </Grid>
                 </TabsItem>
             }
@@ -322,18 +327,17 @@ else
             @if (IsTicket)
             {
                 <TabsItem Text="Ticket" Icon="confirmation_number">
-                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-bo-action-grid">
-                        <section class="cda-vef-panel">
-                            <div class="cda-vef-panel-header">Ticket status</div>
-                            <div class="cda-vef-panel-body cda-vef-bo-fact-grid">
-                                <div class="cda-economy-fact"><span>Event</span><strong>@TicketField("eventId")</strong></div>
-                                <div class="cda-economy-fact"><span>Seat</span><strong>@TicketField("seat")</strong></div>
-                                <div class="cda-economy-fact"><span>Class</span><strong>@TicketField("ticketClass")</strong></div>
-                                <div class="cda-economy-fact"><span>Duration</span><strong>@TicketField("ticketDuration")</strong></div>
-                                <div class="cda-economy-fact"><span>Used</span><strong>@(TicketUsed ? "true" : "false")</strong></div>
-                                <div class="cda-economy-fact"><span>Used at</span><strong>@TicketField("usedAt")</strong></div>
-                            </div>
-                            <div class="cda-vef-panel-footer">
+                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                        <SectionCard Title="Ticket status">
+                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                                <SummaryTile Label="Event" Value="@TicketField("eventId")" Compact="true" />
+                                <SummaryTile Label="Seat" Value="@TicketField("seat")" Compact="true" />
+                                <SummaryTile Label="Class" Value="@TicketField("ticketClass")" Compact="true" />
+                                <SummaryTile Label="Duration" Value="@TicketField("ticketDuration")" Compact="true" />
+                                <SummaryTile Label="Used" Value="@(TicketUsed ? "true" : "false")" Compact="true" Tone="@(TicketUsed ? "warning" : "success")" />
+                                <SummaryTile Label="Used at" Value="@TicketField("usedAt")" Compact="true" />
+                            </SummaryTiles>
+                            <Cluster Gap="LayoutGap.Small" JustifyContent="JustifyContent.End">
                                 <Button Text="Sign Ownership"
                                         Icon="verified"
                                         ButtonStyle="ButtonStyle.Secondary"
@@ -347,87 +351,99 @@ else
                                         IsBusy="@ticketUseBusy"
                                         Disabled="@(TicketUseRequested is null || TicketUsed)"
                                         Click="UseTicketAsync" />
-                            </div>
-                        </section>
+                            </Cluster>
+                        </SectionCard>
 
-                        <section class="cda-vef-panel" data-testid="cda-ticket-verification-panel">
-                            <div class="cda-vef-panel-header">Verification code</div>
-                            <div class="cda-vef-panel-body">
+                        <div data-testid="cda-ticket-verification-panel">
+                          <SectionCard Title="Verification code">
                                 @if (ticketVerification is null)
                                 {
-                                    <p class="cda-vef-empty-line">No ticket ownership code is generated for this dialog session.</p>
+                                    <EmptyState Eyebrow="Verification"
+                                                Title="No ownership code"
+                                                Description="No ticket ownership code is generated for this dialog session." />
                                 }
                                 else
                                 {
-                                    <div class="cda-economy-fact cda-economy-fact--wide">
-                                        <span>Status</span>
-                                        <strong>@ticketVerification.Summary</strong>
-                                    </div>
-                                    <div class="cda-economy-fact cda-economy-fact--wide">
-                                        <span>Hash</span>
-                                        <strong><HashDisplay Value="@(ticketVerification.MessageHash?.Value ?? string.Empty)" /></strong>
-                                    </div>
-                                    <pre class="cda-vef-bo-state-json" data-testid="cda-ticket-verification-message">@ticketVerification.Message</pre>
-                                    @if (!string.IsNullOrWhiteSpace(ticketVerification.SignatureJson))
-                                    {
-                                        <pre class="cda-vef-bo-state-json" data-testid="cda-ticket-verification-signature">@ticketVerification.SignatureJson</pre>
-                                    }
-                                    <div class="cda-ticket-qr-real" data-testid="cda-ticket-ownership-qr" aria-label="Ticket verification QR">
-                                        <QrCodeView Payload="@TicketOwnershipPayloadText"
-                                                    Caption="Ticket ownership payload"
-                                                    TestId="cda-ticket-ownership-qr-view" />
-                                        <QrCodeButton Payload="@TicketOwnershipQrPayload"
-                                                      Label="Open ticket QR"
-                                                      TooltipText="Open ticket ownership QR dialog"
-                                                      TestId="cda-ticket-ownership-qr-button" />
-                                    </div>
+                                    <Stack GapScale="LayoutGap.Small">
+                                        <SummaryTile Label="Status" Value="@ticketVerification.Summary" Compact="true" Tone="@(ticketVerification.Success ? "success" : "warning")" />
+                                        <MetricCard Label="Hash">
+                                            <ValueContent>
+                                                <HashDisplay Value="@(ticketVerification.MessageHash?.Value ?? string.Empty)" />
+                                            </ValueContent>
+                                        </MetricCard>
+                                        <pre class="cda-bo-state-json" data-testid="cda-ticket-verification-message">@ticketVerification.Message</pre>
+                                        @if (!string.IsNullOrWhiteSpace(ticketVerification.SignatureJson))
+                                        {
+                                            <pre class="cda-bo-state-json" data-testid="cda-ticket-verification-signature">@ticketVerification.SignatureJson</pre>
+                                        }
+                                        <Grid ColumnsMd="2"
+                                              Gap="LayoutGap.Small"
+                                              AlignItems="AlignItems.Center"
+                                              data-testid="cda-ticket-ownership-qr"
+                                              aria-label="Ticket verification QR">
+                                            <QrCodeView Payload="@TicketOwnershipPayloadText"
+                                                        Caption="Ticket ownership payload"
+                                                        TestId="cda-ticket-ownership-qr-view" />
+                                            <QrCodeButton Payload="@TicketOwnershipQrPayload"
+                                                          Label="Open ticket QR"
+                                                          TooltipText="Open ticket ownership QR dialog"
+                                                          TestId="cda-ticket-ownership-qr-button" />
+                                        </Grid>
+                                    </Stack>
                                 }
-                            </div>
-                        </section>
+                          </SectionCard>
+                        </div>
                     </Grid>
                 </TabsItem>
             }
 
             <TabsItem Text="Ledger details" Icon="data_object">
-                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-bo-raw-grid">
-                    <section class="cda-vef-panel">
-                        <div class="cda-vef-panel-header">Ledger storage</div>
-                        <div class="cda-vef-panel-body cda-vef-bo-fact-grid">
-                            <div class="cda-economy-fact cda-economy-fact--wide"><span>Object id</span><strong><CopyableMonoValue Value="@Object.ObjectId.Value" Truncate="false" AriaLabel="Copy object id" /></strong></div>
-                            <div class="cda-economy-fact"><span>Owner</span><strong><CopyableMonoValue Value="@Object.OwnerAddress.Value" StartChars="12" EndChars="8" AriaLabel="Copy owner address" /></strong></div>
-                            <div class="cda-economy-fact"><span>Outpoint</span><strong><CopyableMonoValue Value="@Object.CurrentOutPoint.ToString()" StartChars="10" EndChars="6" AriaLabel="Copy object outpoint" /></strong></div>
-                            <div class="cda-economy-fact"><span>Version</span><strong>@Object.Version</strong></div>
-                            <div class="cda-economy-fact"><span>Operation</span><strong>@Object.Operation</strong></div>
-                            <div class="cda-economy-fact cda-economy-fact--wide"><span>Data hash</span><strong><HashDisplay Value="@Object.DataHash.Value" /></strong></div>
-                            <div class="cda-economy-fact"><span>Created</span><strong>@Object.CreatedAt.ToString("u")</strong></div>
-                            <div class="cda-economy-fact"><span>Viewed</span><strong>@(ViewedAtUtc?.ToString("u") ?? Object.ViewedAt.ToString("u"))</strong></div>
-                        </div>
-                        <div class="cda-vef-panel-footer">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                    <SectionCard Title="Ledger storage">
+                        <Grid ColumnsSm="2" Gap="LayoutGap.Small">
+                            <MetricCard Label="Object id">
+                                <ValueContent><CopyableMonoValue Value="@Object.ObjectId.Value" Truncate="false" AriaLabel="Copy object id" /></ValueContent>
+                            </MetricCard>
+                            <MetricCard Label="Owner">
+                                <ValueContent><CopyableMonoValue Value="@Object.OwnerAddress.Value" StartChars="12" EndChars="8" AriaLabel="Copy owner address" /></ValueContent>
+                            </MetricCard>
+                            <MetricCard Label="Outpoint">
+                                <ValueContent><CopyableMonoValue Value="@Object.CurrentOutPoint.ToString()" StartChars="10" EndChars="6" AriaLabel="Copy object outpoint" /></ValueContent>
+                            </MetricCard>
+                            <MetricCard Label="Version" Value="@Object.Version.ToString(CultureInfo.InvariantCulture)" />
+                            <MetricCard Label="Operation" Value="@Object.Operation.ToString()" />
+                            <MetricCard Label="Data hash">
+                                <ValueContent><HashDisplay Value="@Object.DataHash.Value" /></ValueContent>
+                            </MetricCard>
+                            <MetricCard Label="Created" Value="@Object.CreatedAt.ToString("u")" />
+                            <MetricCard Label="Viewed" Value="@(ViewedAtUtc?.ToString("u") ?? Object.ViewedAt.ToString("u"))" />
+                        </Grid>
+                        <Cluster JustifyContent="JustifyContent.End">
                             <Button Text="Open transaction"
                                     Icon="receipt_long"
                                     ButtonStyle="ButtonStyle.Secondary"
                                     Disabled="@(!TransactionDetailsRequested.HasDelegate)"
                                     Click="OpenTransactionAsync" />
-                        </div>
-                    </section>
+                        </Cluster>
+                    </SectionCard>
 
-                    <section class="cda-vef-panel">
-                        <div class="cda-vef-panel-header">Raw state</div>
-                        <div class="cda-vef-panel-body">
+                    <SectionCard Title="Raw state">
                             @if (string.IsNullOrWhiteSpace(Object.StateJson))
                             {
-                                <p class="cda-vef-empty-line">No state JSON was stored with this object.</p>
+                                <EmptyState Eyebrow="Ledger state"
+                                            Title="No state JSON"
+                                            Description="No state JSON was stored with this object." />
                             }
                             else
                             {
-                                <pre class="cda-vef-bo-state-json">@Object.StateJson</pre>
+                                <pre class="cda-bo-state-json">@Object.StateJson</pre>
                             }
-                        </div>
-                    </section>
+                    </SectionCard>
                 </Grid>
             </TabsItem>
         </Tabs>
-    </Stack>
+      </Stack>
+    </div>
 }
 
 @code {
@@ -645,7 +661,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--bo-edit",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--bo-edit",
                 TestId = "cda-bo-edit-dialog"
             });
     }
@@ -724,7 +740,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--bo-detail",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--bo-detail",
                 TestId = "cda-bo-details-dialog"
             });
 
@@ -796,8 +812,8 @@ else
 
     private string GalleryItemClass(BusinessObjectDataItem item)
         => SelectedItem is not null && IsSameItem(item, SelectedItem)
-            ? "cda-vef-bo-gallery-item is-selected"
-            : "cda-vef-bo-gallery-item";
+            ? "cda-bo-gallery-item is-selected"
+            : "cda-bo-gallery-item";
 
     private static bool IsSameItem(BusinessObjectDataItem left, BusinessObjectDataItem right)
         => left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase)

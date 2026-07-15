@@ -7,7 +7,7 @@
                 ReviewPanel="@RenderReview"
                 Footer="@RenderFooter"
                 data-testid="cda-jwt-token-create-dialog">
-    <div class="cda-sdk-form-grid">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
         <FormField Text="Name">
             <TextBox @bind-Value="name" />
         </FormField>
@@ -17,7 +17,7 @@
         <FormField Text="Expiration">
             <TextBox @bind-Value="expiration" />
         </FormField>
-    </div>
+    </Grid>
 </DialogScaffold>
 
 @code {

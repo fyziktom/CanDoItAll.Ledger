@@ -1,38 +1,40 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-token-source-explorer">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Token sources</span>
-            <h2>Token type explorer</h2>
-        </div>
-        <StatusBadge Text="@($"{TokenTypes.Count} types")" Tone="info" />
-    </header>
+<div data-testid="cda-token-source-explorer">
+    <SectionCard Title="Token type explorer" Description="Token sources projected for this account">
+        <HeaderActions>
+            <StatusBadge Text="@($"{TokenTypes.Count} types")" Tone="info" />
+        </HeaderActions>
 
-    @if (TokenTypes.Count == 0)
-    {
-        <EmptyState Eyebrow="Tokens" Title="No token types" Description="Token type projections are not available for this account context." />
-    }
-    else
-    {
-        <div class="cda-sdk-card-grid">
-            @foreach (LedgerTokenType token in TokenTypes)
+        <ChildContent>
+            @if (TokenTypes.Count == 0)
             {
-                <article class="cda-sdk-mini-card">
-                    <div class="cda-sdk-mini-card__top">
-                        <strong>@token.TokenId.Value</strong>
-                        <StatusBadge Text="@($"{token.TotalUtxoCount} UTXO")" Tone="neutral" />
-                    </div>
-                    <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight">
-                        <div><span>Total</span><strong>@token.TotalAmount</strong></div>
-                        <div><span>Source</span><strong>@token.SourceAmount</strong></div>
-                        <div><span>Unique</span><strong>@token.UniqueAmount</strong></div>
-                    </div>
-                </article>
+                <EmptyState Eyebrow="Tokens" Title="No token types" Description="Token type projections are not available for this account context." />
             }
-        </div>
-    }
-</section>
+            else
+            {
+                <Grid ColumnsMd="2" ColumnsXl="3" Gap="LayoutGap.Small">
+                    @foreach (LedgerTokenType token in TokenTypes)
+                    {
+                        <SurfaceCard Soft="true">
+                            <Stack GapScale="LayoutGap.Medium">
+                                <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
+                                    <TextBlock TextStyle="TextStyle.Mono" Value="@token.TokenId.Value" />
+                                    <StatusBadge Text="@($"{token.TotalUtxoCount} UTXO")" Tone="neutral" />
+                                </Split>
+                                <SummaryTiles ColumnsSm="3" ColumnsXl="3" GapScale="LayoutGap.Small">
+                                    <SummaryTile Label="Total" Value="@token.TotalAmount.ToString()" Compact="true" />
+                                    <SummaryTile Label="Source" Value="@token.SourceAmount.ToString()" Compact="true" />
+                                    <SummaryTile Label="Unique" Value="@token.UniqueAmount.ToString()" Compact="true" />
+                                </SummaryTiles>
+                            </Stack>
+                        </SurfaceCard>
+                    }
+                </Grid>
+            }
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]

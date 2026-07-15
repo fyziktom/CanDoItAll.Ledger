@@ -1,27 +1,28 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-security-result-card">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Security result</span>
-            <h2>@(Result?.Summary ?? "No operation yet")</h2>
-        </div>
+<div data-testid="cda-security-result-card">
+<SectionCard Title="@(Result?.Summary ?? "No operation yet")" Description="Security result">
+    <HeaderActions>
         <StatusBadge Text="@(Result?.Success == true ? "Success" : "Pending")" Tone="@(Result?.Success == true ? "success" : "neutral")" />
-    </header>
-
-    @if (Result?.PayloadJson is not null)
-    {
-        <pre class="cda-sdk-code">@Result.PayloadJson</pre>
-    }
-    else if (Result?.PlainText is not null)
-    {
-        <pre class="cda-sdk-code">@Result.PlainText</pre>
-    }
-    else
-    {
-        <p class="cda-sdk-muted">Signed, verified, encrypted, and decrypted payloads are shown after the operation returns.</p>
-    }
-</section>
+    </HeaderActions>
+    <ChildContent>
+        @if (Result?.PayloadJson is not null)
+        {
+            <pre class="cda-sdk-code">@Result.PayloadJson</pre>
+        }
+        else if (Result?.PlainText is not null)
+        {
+            <pre class="cda-sdk-code">@Result.PlainText</pre>
+        }
+        else
+        {
+            <EmptyState Eyebrow="Security result"
+                        Title="No operation yet"
+                        Description="Signed, verified, encrypted, and decrypted payloads are shown after the operation returns." />
+        }
+    </ChildContent>
+</SectionCard>
+</div>
 
 @code {
     [Parameter]

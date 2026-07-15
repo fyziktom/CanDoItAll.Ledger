@@ -1,7 +1,10 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 @using System.Globalization
 
-<div class="cda-sim-split-grid" data-testid="simulation-run-bu-tab">
+<Grid ColumnTemplateLg="minmax(18rem, 0.85fr) minmax(0, 1.5fr)"
+      Gap="LayoutGap.Large"
+      AlignItems="AlignItems.Start"
+      data-testid="simulation-run-bu-tab">
     <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
         <Stack FillHeight="true" GapScale="LayoutGap.Medium">
             <Split Breakpoint="LayoutBreakpoint.None"
@@ -75,7 +78,7 @@
                     </FormRow>
                 </FormSection>
 
-                <div class="cda-sim-equal-grid">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Large">
                     <SectionCard Title="Current business objects" Description="BO ids related to this account at the observation point.">
                         <Stack GapScale="LayoutGap.Small">
                             @foreach (string objectId in SelectedSnapshot.CurrentBusinessObjectIds.DefaultIfEmpty("none"))
@@ -96,7 +99,7 @@
                             <DataGridColumn TItem="SimulationIssue" Property="Message" Title="Message" />
                         </DataGrid>
                     </FormSection>
-                </div>
+                </Grid>
             </Stack>
         }
         else if (SelectedBusinessUnit is not null)
@@ -157,7 +160,7 @@
             </Stack>
         }
     </WorkspacePanel>
-</div>
+</Grid>
 
 @code {
     private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);

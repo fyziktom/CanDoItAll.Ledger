@@ -1,21 +1,31 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-node-issue-list">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Issues</span>
-            <h2>Node issue review</h2>
-        </div>
-        <StatusBadge Text="2 open" Tone="warning" />
-    </header>
-    <div class="cda-sdk-list">
-        <article class="cda-sdk-list__row">
-            <span class="material-icons" aria-hidden="true">warning</span>
-            <div><strong>Legacy route disabled</strong><span>Clients must use api/v1 or configured ApiBasePath.</span></div>
-        </article>
-        <article class="cda-sdk-list__row">
-            <span class="material-icons" aria-hidden="true">info</span>
-            <div><strong>Projection rebuild queued</strong><span>Operator approval required before rebuild.</span></div>
-        </article>
-    </div>
-</section>
+<div data-testid="cda-node-issue-list">
+    <SectionCard Title="Node issue review" Description="Issues requiring operator attention.">
+        <HeaderActions>
+            <StatusBadge Text="2 open" Tone="warning" />
+        </HeaderActions>
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Small">
+                <SurfaceCard Soft="true">
+                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                        <Icon Name="warning" />
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="Legacy route disabled" />
+                            <SmallText Text="Clients must use api/v1 or configured ApiBasePath." />
+                        </Stack>
+                    </Cluster>
+                </SurfaceCard>
+                <SurfaceCard Soft="true">
+                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                        <Icon Name="info" />
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="Projection rebuild queued" />
+                            <SmallText Text="Operator approval required before rebuild." />
+                        </Stack>
+                    </Cluster>
+                </SurfaceCard>
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>

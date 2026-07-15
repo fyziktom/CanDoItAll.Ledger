@@ -34,36 +34,6 @@
     flex: 0 0 auto;
 }
 
-.cda-sdk-theme ::deep .cda-sdk-shell .cda-button {
-    max-width: 100%;
-    min-width: 0;
-}
-
-.cda-sdk-theme ::deep .cda-sdk-shell .cda-button .rz-button-text {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile {
-    max-width: 100%;
-    min-width: 0;
-}
-
-.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile__row,
-.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile__value,
-.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile__helper {
-    max-width: 100%;
-    min-width: 0;
-    overflow-wrap: anywhere;
-    white-space: normal;
-}
-
-.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile__value {
-    letter-spacing: 0;
-}
-
 .cda-sdk-theme ::deep .cda-sdk-shell pre,
 .cda-sdk-theme ::deep .cda-sdk-shell code {
     box-sizing: border-box;

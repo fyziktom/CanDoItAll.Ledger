@@ -12,35 +12,33 @@
 <NodeAuthShell Heading="Log in"
                Description="Use an administrator account to access the node console."
                TestId="node-login-page">
-    <section class="cda-sdk-panel">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Identity</span>
-                <h2>Administrator sign-in</h2>
-            </div>
+    <SectionCard Title="Administrator sign-in" Description="Identity">
+        <HeaderActions>
             <StatusBadge Text="Blazor SSR" Tone="success" />
-        </header>
-        <StatusMessage Message="@errorMessage" />
-        <EditForm Model="Input" method="post" FormName="login" OnValidSubmit="LoginUser">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-            <Stack GapScale="LayoutGap.Small">
-                <FormField Text="Email">
-                    <InputText class="w-full rounded-md border border-slate-300 px-3 py-2" @bind-Value="Input.Email" autocomplete="username" aria-required="true" />
-                    <ValidationMessage For="() => Input.Email" />
-                </FormField>
-                <FormField Text="Password">
-                    <InputText class="w-full rounded-md border border-slate-300 px-3 py-2" type="password" @bind-Value="Input.Password" autocomplete="current-password" aria-required="true" />
-                    <ValidationMessage For="() => Input.Password" />
-                </FormField>
-                <label class="inline-flex items-center gap-2">
-                    <InputCheckbox @bind-Value="Input.RememberMe" />
-                    Remember me
-                </label>
-                <Button Text="Log in" Icon="login" Type="submit" />
-            </Stack>
-        </EditForm>
-    </section>
+        </HeaderActions>
+        <ChildContent>
+            <StatusMessage Message="@errorMessage" />
+            <EditForm Model="Input" method="post" FormName="login" OnValidSubmit="LoginUser">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <Stack GapScale="LayoutGap.Small">
+                    <FormField Text="Email">
+                        <InputText class="w-full rounded-md border border-slate-300 px-3 py-2" @bind-Value="Input.Email" autocomplete="username" aria-required="true" />
+                        <ValidationMessage For="() => Input.Email" />
+                    </FormField>
+                    <FormField Text="Password">
+                        <InputText class="w-full rounded-md border border-slate-300 px-3 py-2" type="password" @bind-Value="Input.Password" autocomplete="current-password" aria-required="true" />
+                        <ValidationMessage For="() => Input.Password" />
+                    </FormField>
+                    <label class="inline-flex items-center gap-2">
+                        <InputCheckbox @bind-Value="Input.RememberMe" />
+                        Remember me
+                    </label>
+                    <Button Text="Log in" Icon="login" Type="submit" />
+                </Stack>
+            </EditForm>
+        </ChildContent>
+    </SectionCard>
 </NodeAuthShell>
 
 @code {

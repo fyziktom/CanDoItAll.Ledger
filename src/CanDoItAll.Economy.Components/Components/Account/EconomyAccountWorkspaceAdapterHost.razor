@@ -22,7 +22,7 @@ else
     <section class="cda-economy-adapter-workspace" data-testid="adapter-workspace-host">
         @if (UseFullAppShell)
         {
-            <VenftSsrEconomyApp Workspace="workspace"
+            <EconomyAccountAppShell Workspace="workspace"
                                 InitialView="@InitialView"
                                 HostModeLabel="@Adapter.HostMode"
                                 SigningModeLabel="@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")"
@@ -266,7 +266,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-vef-dialog--send",
+                Class = "cda-ledger-dialog cda-ledger-dialog--send",
                 TestId = "cda-send-transaction-dialog"
             });
     }
@@ -291,7 +291,7 @@ else
             {
                 Subtitle = "Create a child account under the current browser vault.",
                 Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form",
                 ShowCloseButton = false,
                 TestId = "cda-subaccount-dialog"
             }).ConfigureAwait(false);
@@ -329,7 +329,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--tx-detail",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--tx-detail",
                 TestId = "cda-transaction-details-dialog"
             }).ConfigureAwait(false);
     }
@@ -354,7 +354,7 @@ else
             {
                 Subtitle = item.ObjectId.Value,
                 Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form",
                 TestId = "cda-bo-send-dialog"
             });
     }
@@ -379,7 +379,7 @@ else
             {
                 Subtitle = item.ObjectId.Value,
                 Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form",
                 TestId = "cda-bo-set-price-dialog"
             });
     }
@@ -407,7 +407,7 @@ else
             {
                 Subtitle = profileObject?.ObjectId.Value ?? "New profile BusinessObject",
                 Size = ModalSize.Medium,
-                Class = "cda-vef-dialog cda-vef-dialog--form",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form",
                 TestId = "cda-profile-edit-dialog"
             });
     }
@@ -433,7 +433,7 @@ else
                 Size = ModalSize.Wide,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-token-creation-modal",
+                Class = "cda-ledger-dialog cda-token-creation-modal",
                 TestId = "cda-token-create-dialog"
             });
     }

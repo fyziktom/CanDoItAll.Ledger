@@ -24,7 +24,10 @@
     </Header>
 
     <ChildContent>
-        <div class="cda-sim-run-console-layout" data-testid="simulation-run-console-page">
+        <Grid ColumnTemplateLg="minmax(18rem, 22rem) minmax(0, 1fr)"
+              Gap="LayoutGap.Large"
+              AlignItems="AlignItems.Start"
+              data-testid="simulation-run-console-page">
             <WorkspacePanel Class="min-h-0 overflow-hidden">
                 <Stack FillHeight="true" GapScale="LayoutGap.Medium">
                     <FormField Text="Project">
@@ -46,27 +49,29 @@
                                  Placeholder="Search runs..." />
                     </FormField>
 
-                    <div class="cda-sim-run-list" data-testid="simulation-run-list">
+                    <Stack GapScale="LayoutGap.Small"
+                           Class="min-h-0 max-h-[48rem] overflow-auto"
+                           data-testid="simulation-run-list">
                         @foreach (SimulationRunConsoleState run in FilteredRuns)
                         {
                             bool selected = string.Equals(run.Run.RunId, Selected.Run.RunId, StringComparison.Ordinal);
-                            <button type="button"
-                                    class="@RunCardClass(selected)"
-                                    data-testid="@($"simulation-run-row-{run.Run.RunId}")"
-                                    @onclick="@(() => SelectRunAsync(run.Run.RunId))">
-                                <span class="cda-sim-run-card-main">
-                                    <span class="cda-sim-run-card-title">@run.Run.RunId</span>
-                                    <span>@run.Run.ScenarioName</span>
-                                    <span>Started: @run.Run.StartedAtUtc.ToString("MMM d, yyyy HH:mm", CultureInfo.InvariantCulture)</span>
-                                </span>
-                                <span class="cda-sim-run-card-meta">
-                                    <StatusBadge Text="@DisplayStatus(run.Run.Status)" Tone="@LifecycleTone(run.Run.Status)" />
-                                    <span>@(run.Run.ErrorCount == 0 ? $"{run.Run.WarningCount} warning(s)" : $"{run.Run.ErrorCount} error(s)")</span>
-                                    <span>@FormatDuration(run.Run.WallClockElapsed)</span>
-                                </span>
-                            </button>
+                            <SelectionListItem IsSelected="@selected"
+                                               Dense="true"
+                                               Title="@run.Run.RunId"
+                                               Meta="@run.Run.ScenarioName"
+                                               Summary="@($"Started: {run.Run.StartedAtUtc.ToString("MMM d, yyyy HH:mm", CultureInfo.InvariantCulture)}")"
+                                               DataTestId="@($"simulation-run-row-{run.Run.RunId}")"
+                                               OnSelect="@(() => SelectRunAsync(run.Run.RunId))">
+                                <Status>
+                                    <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.End">
+                                        <StatusBadge Text="@DisplayStatus(run.Run.Status)" Tone="@LifecycleTone(run.Run.Status)" />
+                                        <SmallText Text="@(run.Run.ErrorCount == 0 ? $"{run.Run.WarningCount} warning(s)" : $"{run.Run.ErrorCount} error(s)")" />
+                                        <SmallText Text="@FormatDuration(run.Run.WallClockElapsed)" />
+                                    </Stack>
+                                </Status>
+                            </SelectionListItem>
                         }
-                    </div>
+                    </Stack>
 
                     <Button Text="Start new run" Icon="add" ButtonStyle="ButtonStyle.Secondary" Click="@(() => CommandRequested.InvokeAsync(SimulationRunCommandKind.Restart))" />
                 </Stack>
@@ -80,7 +85,7 @@
                            Gap="LayoutGap.Large"
                            Wrap="FlexWrap.Wrap"
                            data-testid="simulation-run-header">
-                        <div class="cda-sim-run-header-grid">
+                        <Grid ColumnTemplate="repeat(auto-fit, minmax(9rem, 1fr))" Gap="LayoutGap.Large">
                             <RunHeaderFact Label="Project" Value="@Selected.Run.ProjectName" />
                             <RunHeaderFact Label="Scenario" Value="@Selected.Run.ScenarioName" />
                             <RunHeaderFact Label="Run ID" Value="@Selected.Run.RunId" Monospace="true" />
@@ -88,7 +93,7 @@
                             <RunHeaderFact Label="Current step / date" Value="@($"{Selected.Run.CurrentStep}/{Selected.Run.TotalSteps} - {FormatDate(Selected.Run.CurrentDate)}")" />
                             <RunHeaderFact Label="Elapsed" Value="@FormatDuration(Selected.Run.WallClockElapsed)" />
                             <RunHeaderFact Label="Output hash" Value="@Short(Selected.Run.OutputHash)" Monospace="true" />
-                        </div>
+                        </Grid>
                     </Split>
 
                     @if (Console.CommandMessages.Count > 0)
@@ -121,33 +126,41 @@
 
                     @if (CanApplyInterventions)
                     {
-                        <section class="cda-sim-panel cda-sim-intervention-panel" data-testid="simulation-run-intervention-panel">
-                            <PanelHeading Title="Manual interventions" LinkText="@($"{RuntimeInterventionCount} applied")" />
-                            <div class="cda-sim-intervention-layout">
-                                <div class="cda-sim-run-mode-grid">
-                                    <button type="button"
-                                            class="@ResolveInterventionKindButtonClass(SimulationRunInterventionKind.DemandChange)"
-                                            aria-pressed="@(pendingInterventionKind == SimulationRunInterventionKind.DemandChange)"
-                                            @onclick="@(() => SelectInterventionKind(SimulationRunInterventionKind.DemandChange))">
-                                        <span class="material-icons" aria-hidden="true">trending_up</span>
-                                        <span>
-                                            <strong>Demand</strong>
-                                            <small>Forecast quantity or multiplier</small>
-                                        </span>
-                                    </button>
-                                    <button type="button"
-                                            class="@ResolveInterventionKindButtonClass(SimulationRunInterventionKind.CapacityExpansion)"
-                                            aria-pressed="@(pendingInterventionKind == SimulationRunInterventionKind.CapacityExpansion)"
-                                            @onclick="@(() => SelectInterventionKind(SimulationRunInterventionKind.CapacityExpansion))">
-                                        <span class="material-icons" aria-hidden="true">precision_manufacturing</span>
-                                        <span>
-                                            <strong>Production line</strong>
-                                            <small>CapEx request and depreciation</small>
-                                        </span>
-                                    </button>
-                                </div>
+                        <PanelCard data-testid="simulation-run-intervention-panel">
+                            <Stack GapScale="LayoutGap.Large">
+                                <PanelHeading Title="Manual interventions" LinkText="@($"{RuntimeInterventionCount} applied")" />
+                                <Grid ColumnsMd="2" Gap="LayoutGap.Medium" role="group" aria-label="Intervention type">
+                                    <Button Look="ButtonLook.SheetCardGhost"
+                                            Class="h-full w-full items-start justify-start text-left"
+                                            Style="@ChoiceCardStyle(pendingInterventionKind == SimulationRunInterventionKind.DemandChange)"
+                                            aria-pressed="@(pendingInterventionKind == SimulationRunInterventionKind.DemandChange ? "true" : "false")"
+                                            data-testid="simulation-intervention-demand"
+                                            Click="@(() => SelectInterventionKind(SimulationRunInterventionKind.DemandChange))">
+                                        <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.Stretch" Class="w-full">
+                                            <Cluster JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Small">
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Demand" />
+                                                <Pill Tone="PillTone.Label" Text="Intervention" />
+                                            </Cluster>
+                                            <TextBlock TextStyle="TextStyle.Body2" Value="Forecast quantity or multiplier" />
+                                        </Stack>
+                                    </Button>
+                                    <Button Look="ButtonLook.SheetCardGhost"
+                                            Class="h-full w-full items-start justify-start text-left"
+                                            Style="@ChoiceCardStyle(pendingInterventionKind == SimulationRunInterventionKind.CapacityExpansion)"
+                                            aria-pressed="@(pendingInterventionKind == SimulationRunInterventionKind.CapacityExpansion ? "true" : "false")"
+                                            data-testid="simulation-intervention-capacity"
+                                            Click="@(() => SelectInterventionKind(SimulationRunInterventionKind.CapacityExpansion))">
+                                        <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.Stretch" Class="w-full">
+                                            <Cluster JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Small">
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Production line" />
+                                                <Pill Tone="PillTone.Label" Text="Intervention" />
+                                            </Cluster>
+                                            <TextBlock TextStyle="TextStyle.Body2" Value="CapEx request and depreciation" />
+                                        </Stack>
+                                    </Button>
+                                </Grid>
 
-                                <div class="cda-sim-intervention-fields">
+                                <Grid ColumnTemplate="repeat(auto-fit, minmax(12rem, 1fr))" Gap="LayoutGap.Medium">
                                     <FormField Text="@InterventionTargetLabel">
                                         <TextBox Value="@interventionTargetId"
                                                  ValueChanged="@(value => interventionTargetId = value ?? string.Empty)"
@@ -189,14 +202,14 @@
                                                  ValueChanged="@(value => interventionReason = value ?? string.Empty)"
                                                  Immediate="true" />
                                     </FormField>
-                                </div>
+                                </Grid>
 
                                 <Cluster JustifyContent="JustifyContent.End" Gap="LayoutGap.Small">
                                     <Button Text="Reset" Icon="restart_alt" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@ResetInterventionForm" />
                                     <Button Text="Apply" Icon="playlist_add_check" Click="@ApplyInterventionAsync" data-testid="simulation-apply-intervention" />
                                 </Cluster>
-                            </div>
-                        </section>
+                            </Stack>
+                        </PanelCard>
                     }
 
                     <Tabs AriaLabel="Simulation run observation workspace"
@@ -209,125 +222,123 @@
                           data-testid="simulation-run-observation-tabs">
                         <TabsItem Text="State" Icon="monitoring">
                             <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch" data-testid="simulation-run-state-tab">
-                                <div class="cda-sim-kpi-strip" data-testid="simulation-run-kpi-strip">
-                                    @foreach (SimulationRunKpiSnapshot kpi in Selected.Kpis)
-                                    {
-                                        <section class="cda-sim-kpi-tile">
-                                            <span>@kpi.DisplayName</span>
-                                            <strong>@kpi.Value</strong>
-                                            <small>@kpi.Unit</small>
-                                            <small class="@TrendClass(kpi.Tone)">@kpi.DeltaText</small>
-                                            <small>@kpi.SourceLabel</small>
-                                        </section>
-                                    }
+                                <div data-testid="simulation-run-kpi-strip">
+                                    <SummaryTiles ColumnsSm="2" ColumnsXl="4">
+                                        @foreach (SimulationRunKpiSnapshot kpi in Selected.Kpis)
+                                        {
+                                            <SummaryTile Label="@kpi.DisplayName"
+                                                         Value="@kpi.Value"
+                                                         HelperText="@($"{kpi.Unit} | {kpi.DeltaText} | {kpi.SourceLabel}")"
+                                                         Tone="@KpiTone(kpi.Tone)" />
+                                        }
+                                    </SummaryTiles>
                                 </div>
 
-                                <section class="cda-sim-clock-panel" data-testid="simulation-run-clock">
-                                    <div>
-                                        <TextBlock TextStyle="TextStyle.H4" Value="Run clock" />
-                                        <SmallText Text="Simulation time, step progress, and wall clock state." />
-                                    </div>
-                                    <div class="cda-sim-clock-grid">
+                                <PanelCard data-testid="simulation-run-clock">
+                                    <Stack GapScale="LayoutGap.Large">
+                                        <Stack GapScale="LayoutGap.Tiny">
+                                            <TextBlock TextStyle="TextStyle.H4" Value="Run clock" />
+                                            <SmallText Text="Simulation time, step progress, and wall clock state." />
+                                        </Stack>
+                                        <Grid ColumnTemplate="repeat(auto-fit, minmax(9rem, 1fr))" Gap="LayoutGap.Large">
                                         <RunHeaderFact Label="Simulated time" Value="@FormatDate(Selected.Run.CurrentDate)" />
                                         <RunHeaderFact Label="Period" Value="@($"{Selected.Run.CurrentStep} / {Selected.Run.TotalSteps}")" />
                                         <RunHeaderFact Label="Steps completed" Value="@Selected.Run.CurrentStep.ToString(CultureInfo.InvariantCulture)" />
-                                        <div>
-                                            <SmallText Text="Step progress" />
-                                            <div class="cda-sim-progress-track">
-                                                <span class="cda-sim-progress-fill" style="@($"width:{ProgressPercent.ToString("0", CultureInfo.InvariantCulture)}%")"></span>
-                                            </div>
-                                            <SmallText Text="@($"{ProgressPercent:0}%")" />
-                                        </div>
+                                        <MetricCard Label="Step progress">
+                                            <ValueContent>
+                                                <Stack GapScale="LayoutGap.Tiny">
+                                                    <ProgressBar Value="@((double)ProgressPercent)" Max="100" aria-label="Step progress" />
+                                                    <SmallText Text="@($"{ProgressPercent:0}%")" />
+                                                </Stack>
+                                            </ValueContent>
+                                        </MetricCard>
                                         <RunHeaderFact Label="Wall clock elapsed" Value="@FormatDuration(Selected.Run.WallClockElapsed)" />
                                         <RunHeaderFact Label="Est. time remaining" Value="@(Selected.Run.EstimatedRemaining is null ? "Complete" : FormatDuration(Selected.Run.EstimatedRemaining.Value))" />
-                                    </div>
-                                </section>
+                                        </Grid>
+                                    </Stack>
+                                </PanelCard>
 
-                                <div class="cda-sim-state-grid">
-                                    <section class="cda-sim-panel" data-testid="simulation-run-events-panel">
-                                        <PanelHeading Title="Recent events" LinkText="View all events" />
-                                        <table class="cda-sim-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Time (sim)</th>
-                                                    <th>Level</th>
-                                                    <th>Source</th>
-                                                    <th>Message</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (SimulationRunEventState item in Selected.Events.Take(5))
-                                                {
-                                                    <tr>
-                                                        <td>@FormatDate(item.SimulationDate)</td>
-                                                        <td><StatusBadge Text="@item.Level.ToString()" Tone="@SeverityTone(item.Level)" /></td>
-                                                        <td>@item.Source</td>
-                                                        <td>@item.Message</td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </section>
+                                <Grid ColumnTemplateLg="minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(16rem, 0.8fr)"
+                                      Gap="LayoutGap.Large">
+                                    <PanelCard data-testid="simulation-run-events-panel">
+                                        <Stack GapScale="LayoutGap.Medium">
+                                            <PanelHeading Title="Recent events" LinkText="View all events" />
+                                            <DataGrid TItem="SimulationRunEventState" Data="Selected.Events.Take(5)" Caption="Recent simulation events">
+                                                <DataGridColumn TItem="SimulationRunEventState" Title="Time (sim)">
+                                                    <Template Context="item"><TextBlock Value="@FormatDate(item.SimulationDate)" /></Template>
+                                                </DataGridColumn>
+                                                <DataGridColumn TItem="SimulationRunEventState" Title="Level">
+                                                    <Template Context="item"><StatusBadge Text="@item.Level.ToString()" Tone="@SeverityTone(item.Level)" /></Template>
+                                                </DataGridColumn>
+                                                <DataGridColumn TItem="SimulationRunEventState" Property="Source" Title="Source" />
+                                                <DataGridColumn TItem="SimulationRunEventState" Property="Message" Title="Message" />
+                                            </DataGrid>
+                                        </Stack>
+                                    </PanelCard>
 
-                                    <section class="cda-sim-panel" data-testid="simulation-run-top-issues-panel">
-                                        <PanelHeading Title="@($"Top issues ({Selected.TopIssues.Count})")" LinkText="View all issues" />
-                                        <table class="cda-sim-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Severity</th>
-                                                    <th>Source</th>
-                                                    <th>Issue</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (SimulationRunTopIssueState issue in Selected.TopIssues.Take(4))
-                                                {
-                                                    <tr>
-                                                        <td><StatusBadge Text="@issue.Severity.ToString()" Tone="@SeverityTone(issue.Severity)" /></td>
-                                                        <td>@issue.Source</td>
-                                                        <td>@issue.Issue <SmallText Text="@($"First: {FormatDate(issue.FirstSeen)}")" /></td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </section>
+                                    <PanelCard data-testid="simulation-run-top-issues-panel">
+                                        <Stack GapScale="LayoutGap.Medium">
+                                            <PanelHeading Title="@($"Top issues ({Selected.TopIssues.Count})")" LinkText="View all issues" />
+                                            <DataGrid TItem="SimulationRunTopIssueState" Data="Selected.TopIssues.Take(4)" Caption="Top simulation issues">
+                                                <DataGridColumn TItem="SimulationRunTopIssueState" Title="Severity">
+                                                    <Template Context="issue"><StatusBadge Text="@issue.Severity.ToString()" Tone="@SeverityTone(issue.Severity)" /></Template>
+                                                </DataGridColumn>
+                                                <DataGridColumn TItem="SimulationRunTopIssueState" Property="Source" Title="Source" />
+                                                <DataGridColumn TItem="SimulationRunTopIssueState" Title="Issue">
+                                                    <Template Context="issue">
+                                                        <Stack GapScale="LayoutGap.Tiny">
+                                                            <TextBlock Value="@issue.Issue" />
+                                                            <SmallText Text="@($"First: {FormatDate(issue.FirstSeen)}")" />
+                                                        </Stack>
+                                                    </Template>
+                                                </DataGridColumn>
+                                            </DataGrid>
+                                        </Stack>
+                                    </PanelCard>
 
-                                    <section class="cda-sim-panel" data-testid="simulation-run-resources-panel">
-                                        <PanelHeading Title="Resource usage" LinkText="View run diagnostics" />
-                                        <Stack GapScale="LayoutGap.Small">
+                                    <PanelCard data-testid="simulation-run-resources-panel">
+                                        <Stack GapScale="LayoutGap.Medium">
+                                            <PanelHeading Title="Resource usage" LinkText="View run diagnostics" />
                                             @foreach (SimulationRunResourceMetricState metric in Selected.ResourceUsage.Metrics)
                                             {
-                                                <div class="cda-sim-resource-row">
-                                                    <span>@metric.DisplayName</span>
-                                                    <div class="cda-sim-progress-track">
-                                                        <span class="cda-sim-progress-fill cda-sim-progress-fill--green" style="@($"width:{metric.Percent.ToString("0", CultureInfo.InvariantCulture)}%")"></span>
-                                                    </div>
-                                                    <span>@metric.Detail</span>
-                                                </div>
+                                                <Grid ColumnTemplateSm="5.5rem minmax(4rem, 1fr) minmax(5rem, 7rem)"
+                                                      Gap="LayoutGap.Small"
+                                                      AlignItems="AlignItems.Center">
+                                                    <TextBlock Value="@metric.DisplayName" />
+                                                    <ProgressBar Value="@((double)metric.Percent)" Max="100" aria-label="@($"{metric.DisplayName} utilization")" />
+                                                    <SmallText Text="@metric.Detail" />
+                                                </Grid>
                                             }
                                         </Stack>
-                                    </section>
-                                </div>
+                                    </PanelCard>
+                                </Grid>
 
-                                <section class="cda-sim-panel" data-testid="simulation-run-pipeline-panel">
-                                    <PanelHeading Title="Simulation pipeline" LinkText="View step details" />
-                                    <div class="cda-sim-pipeline">
-                                        @foreach (SimulationRunPipelineStepState step in Selected.Pipeline.OrderBy(x => x.SortOrder))
-                                        {
-                                            <div class="@PipelineClass(step.Status)">
-                                                <span>@step.SortOrder. @step.DisplayName</span>
-                                                <small>@(step.Duration is null ? step.Detail : FormatDuration(step.Duration.Value))</small>
-                                            </div>
-                                        }
-                                    </div>
-                                </section>
+                                <PanelCard data-testid="simulation-run-pipeline-panel">
+                                    <Stack GapScale="LayoutGap.Medium">
+                                        <PanelHeading Title="Simulation pipeline" LinkText="View step details" />
+                                        <Grid ColumnTemplate="repeat(auto-fit, minmax(8.5rem, 1fr))" Gap="LayoutGap.Small">
+                                            @foreach (SimulationRunPipelineStepState step in Selected.Pipeline.OrderBy(x => x.SortOrder))
+                                            {
+                                                <PanelCard Soft="true">
+                                                    <Stack GapScale="LayoutGap.Tiny">
+                                                        <StatusBadge Text="@($"{step.SortOrder}. {step.DisplayName}")" Tone="@PipelineTone(step.Status)" />
+                                                        <SmallText Text="@(step.Duration is null ? step.Detail : FormatDuration(step.Duration.Value))" />
+                                                    </Stack>
+                                                </PanelCard>
+                                            }
+                                        </Grid>
+                                    </Stack>
+                                </PanelCard>
 
-                                <section class="cda-sim-run-footer">
-                                    <span class="@FooterStatusClass"></span>
-                                    <span>Run started: @Selected.Run.StartedAtUtc.ToString("MMM d, yyyy HH:mm", CultureInfo.InvariantCulture) by @Selected.Run.StartedBy</span>
-                                    <span>Last update: @Selected.Run.LastUpdatedAtUtc.ToString("HH:mm:ss", CultureInfo.InvariantCulture)</span>
-                                    <span>Auto-refresh: deterministic sample provider</span>
-                                </section>
+                                <Cluster Gap="LayoutGap.Medium"
+                                         AlignItems="AlignItems.Center"
+                                         Wrap="FlexWrap.Wrap"
+                                         Class="border-t border-slate-200 pt-3">
+                                    <StatusBadge Text="@DisplayStatus(Selected.Run.Status)" Tone="@LifecycleTone(Selected.Run.Status)" />
+                                    <SmallText Text="@($"Run started: {Selected.Run.StartedAtUtc.ToString("MMM d, yyyy HH:mm", CultureInfo.InvariantCulture)} by {Selected.Run.StartedBy}")" />
+                                    <SmallText Text="@($"Last update: {Selected.Run.LastUpdatedAtUtc.ToString("HH:mm:ss", CultureInfo.InvariantCulture)}")" />
+                                    <SmallText Text="Auto-refresh: deterministic sample provider" />
+                                </Cluster>
                             </Stack>
                         </TabsItem>
                         <TabsItem Text="Summary" Icon="calendar_view_month">
@@ -345,7 +356,7 @@
                                                                        Observation="Selected.Observation" />
                         </TabsItem>
                         <TabsItem Text="BO Evidence" Icon="rule">
-                            <div class="cda-sim-equal-grid" data-testid="simulation-run-bo-evidence-tab">
+                            <Grid ColumnsLg="2" Gap="LayoutGap.Large" data-testid="simulation-run-bo-evidence-tab">
                                 <FormSection Title="Rule execution evidence" Description="Evidence generated by existing account-rule automation contracts.">
                                     <DataGrid TItem="RuleExecutionEvidenceState" Data="Selected.Observation.RuleEvidence">
                                         <DataGridColumn TItem="RuleExecutionEvidenceState" Property="RuleId" Title="Rule" />
@@ -367,7 +378,7 @@
                                         <DataGridColumn TItem="SimulationOutputSourceRef" Property="RuleId" Title="Rule" />
                                     </DataGrid>
                                 </FormSection>
-                            </div>
+                            </Grid>
                         </TabsItem>
                         <TabsItem Text="Issues" Icon="report_problem">
                             <FormSection Title="Run issues" Description="Deficits, inactive bindings, rule gaps, and failed posting evidence surfaced from the observation read model.">
@@ -393,7 +404,7 @@
                             </FormSection>
                         </TabsItem>
                         <TabsItem Text="Artifacts" Icon="inventory_2">
-                            <div class="cda-sim-equal-grid" data-testid="simulation-run-artifacts-tab">
+                            <Grid ColumnsLg="2" Gap="LayoutGap.Large" data-testid="simulation-run-artifacts-tab">
                                 <FormSection Title="Artifacts" Description="Generated run outputs and local or persisted paths.">
                                     <DataGrid TItem="SimulationRunArtifactState" Data="Selected.Observation.Artifacts">
                                         <DataGridColumn TItem="SimulationRunArtifactState" Property="DisplayName" Title="Artifact" />
@@ -413,12 +424,12 @@
                                         <DataGridColumn TItem="SimulationRunAssumptionItem" Property="Source" Title="Source" />
                                     </DataGrid>
                                 </FormSection>
-                            </div>
+                            </Grid>
                         </TabsItem>
                     </Tabs>
                 </Stack>
             </WorkspacePanel>
-        </div>
+        </Grid>
     </ChildContent>
 </PageScaffold>
 
@@ -512,10 +523,6 @@
 
     private string TimelineStatusTone => Selected.Run.SelectedStepHasData ? "success" : "warning";
 
-    private string FooterStatusClass => Selected.Run.Status is SimulationRunLifecycleStatus.Failed
-        ? "cda-sim-status-dot cda-sim-status-dot--danger"
-        : "cda-sim-status-dot";
-
     private Task OnObservationTabChanged(int index)
     {
         selectedObservationTabIndex = NormalizeObservationTabIndex(index);
@@ -590,6 +597,11 @@
             ? DefaultDemandTarget()
             : DefaultCapacityTarget();
     }
+
+    private static string? ChoiceCardStyle(bool selected)
+        => selected
+            ? "border-color:var(--cad-tone-info-soft-border);background:var(--cad-tone-info-soft-bg);color:var(--cad-tone-info-soft-fg);box-shadow:var(--cad-shadow-soft);"
+            : null;
 
     private Task ResetInterventionForm()
     {
@@ -767,26 +779,18 @@
             _ => "info"
         };
 
-    private static string TrendClass(string tone)
+    private static string KpiTone(string tone)
         => tone.Equals("warning", StringComparison.OrdinalIgnoreCase) || tone.Equals("danger", StringComparison.OrdinalIgnoreCase)
-            ? "cda-sim-trend cda-sim-trend--down"
-            : "cda-sim-trend";
+            ? "danger"
+            : "success";
 
-    private static string RunCardClass(bool selected)
-        => selected ? "cda-sim-run-card cda-sim-run-card--active" : "cda-sim-run-card";
-
-    private static string PipelineClass(SimulationRunPipelineStepStatus status)
+    private static string PipelineTone(SimulationRunPipelineStepStatus status)
         => status switch
         {
-            SimulationRunPipelineStepStatus.Completed => "cda-sim-pipeline-step cda-sim-pipeline-step--done",
-            SimulationRunPipelineStepStatus.Running => "cda-sim-pipeline-step cda-sim-pipeline-step--active",
-            SimulationRunPipelineStepStatus.Failed => "cda-sim-pipeline-step cda-sim-pipeline-step--failed",
-            SimulationRunPipelineStepStatus.Skipped => "cda-sim-pipeline-step cda-sim-pipeline-step--skipped",
-            _ => "cda-sim-pipeline-step"
+            SimulationRunPipelineStepStatus.Completed => "success",
+            SimulationRunPipelineStepStatus.Running => "info",
+            SimulationRunPipelineStepStatus.Failed => "danger",
+            SimulationRunPipelineStepStatus.Skipped => "warning",
+            _ => "secondary"
         };
-
-    private string ResolveInterventionKindButtonClass(SimulationRunInterventionKind kind)
-        => pendingInterventionKind == kind
-            ? "cda-sim-run-mode-button cda-sim-run-mode-button--active"
-            : "cda-sim-run-mode-button";
 }

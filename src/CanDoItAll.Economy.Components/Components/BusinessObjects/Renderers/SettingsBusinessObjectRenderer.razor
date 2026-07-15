@@ -2,41 +2,28 @@
 
 @if (Mode == BusinessObjectRenderMode.Summary)
 {
-    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
-        <strong>@Object.ObjectId</strong>
-        <span>@Settings.Count account settings</span>
-        <span class="cda-economy-pill">settings renderer</span>
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Object.ObjectId.Value" />
+        <TextBlock TextStyle="TextStyle.Caption" Value="@($"{Settings.Count} account settings")" />
+        <StatusBadge Tone="neutral" Text="settings renderer" />
     </Stack>
 }
 else
 {
-    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-        <div class="cda-economy-fact">
-            <span>Renderer</span>
-            <strong>@Descriptor.DisplayName</strong>
-        </div>
-        <div class="cda-economy-fact">
-            <span>Settings count</span>
-            <strong>@Settings.Count</strong>
-        </div>
-        <div class="cda-economy-fact">
-            <span>Object id</span>
-            <strong>@Object.ObjectId</strong>
-        </div>
-        <div class="cda-economy-fact">
-            <span>Owner</span>
-            <strong>@Object.OwnerAddress</strong>
-        </div>
-    </Grid>
+    <Stack GapScale="LayoutGap.Medium">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <SummaryTile Label="Renderer" Value="@Descriptor.DisplayName" Compact="true" />
+            <SummaryTile Label="Settings count" Value="@Settings.Count.ToString()" Compact="true" />
+            <SummaryTile Label="Object id" Value="@Object.ObjectId.Value" Compact="true" />
+            <SummaryTile Label="Owner" Value="@Object.OwnerAddress.Value" Compact="true" />
+        </Grid>
 
-    <Stack GapScale="LayoutGap.Small" Class="cda-economy-settings">
-        @foreach (KeyValuePair<string, string> item in Settings)
-        {
-            <div class="cda-economy-setting-row">
-                <span>@item.Key</span>
-                <strong>@item.Value</strong>
-            </div>
-        }
+        <Stack GapScale="LayoutGap.Small">
+            @foreach (KeyValuePair<string, string> item in Settings)
+            {
+                <SummaryTile Label="@item.Key" Value="@item.Value" Compact="true" />
+            }
+        </Stack>
     </Stack>
 }
 

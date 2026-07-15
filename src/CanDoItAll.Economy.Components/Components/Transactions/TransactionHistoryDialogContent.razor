@@ -1,19 +1,23 @@
 @namespace CanDoItAll.Economy.Components
 
-<Stack GapScale="LayoutGap.Medium" Class="cda-vef-transaction-browser" data-testid="tx-history-dialog">
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="tx-history-dialog">
     <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
-        <div class="cda-economy-fact"><span>Total</span><strong>@Transactions.Count</strong></div>
-        <div class="cda-economy-fact"><span>Visible</span><strong>@FilteredTransactions.Count</strong></div>
-        <div class="cda-economy-fact"><span>Account</span><strong><CopyableMonoValue Value="@(AccountAddress?.Value)" EmptyText="current" StartChars="12" EndChars="8" AriaLabel="Copy account address" /></strong></div>
-        <div class="cda-economy-fact"><span>Newest</span><strong>@NewestLabel</strong></div>
+        <MetricCard Label="Total" Value="@Transactions.Count.ToString()" />
+        <MetricCard Label="Visible" Value="@FilteredTransactions.Count.ToString()" />
+        <MetricCard Label="Account">
+            <ValueContent>
+                <CopyableMonoValue Value="@(AccountAddress?.Value)" EmptyText="current" StartChars="12" EndChars="8" AriaLabel="Copy account address" />
+            </ValueContent>
+        </MetricCard>
+        <MetricCard Label="Newest" Value="@NewestLabel" />
     </Grid>
 
-    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-vef-transaction-browser-toolbar">
-        <FormField Text="Search" ContainerClass="cda-economy-field">
+    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" AlignItems="AlignItems.End">
+        <FormField Text="Search">
             <TextBox @bind-Value="search" Immediate="true" Placeholder="Search tx id, address, kind..." aria-label="Search transactions" />
         </FormField>
 
-        <FormField Text="Kind" ContainerClass="cda-economy-field">
+        <FormField Text="Kind">
             <DropDown TValue="string"
                       Data="KindOptions"
                       TextProperty="Text"
@@ -24,7 +28,7 @@
                       aria-label="Filter transaction kind" />
         </FormField>
 
-        <FormField Text="Status" ContainerClass="cda-economy-field">
+        <FormField Text="Status">
             <DropDown TValue="string"
                       Data="StatusOptions"
                       TextProperty="Text"
@@ -42,44 +46,56 @@
     }
     else
     {
-        <div class="cda-economy-ledger-table-wrap cda-vef-transaction-browser-grid">
-            <table class="cda-economy-ledger-table">
-                <thead>
-                    <tr>
-                        <th>Tx id</th>
-                        <th>Route</th>
-                        <th>Kind</th>
-                        <th>Status</th>
-                        <th>Inputs</th>
-                        <th>Outputs</th>
-                        <th>Data</th>
-                        <th>Created</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (LedgerTransactionSummary transaction in FilteredTransactions)
-                    {
-                        <tr tabindex="0"
-                            data-testid="tx-history-row"
-                            @ondblclick="@(() => OpenDetailsAsync(transaction))"
-                            @onkeydown="@(args => HandleRowKeyAsync(args, transaction))">
-                            <td><CopyableMonoValue Value="@transaction.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" /></td>
-                            <td><CopyableMonoValue Value="@FormatRoute(transaction)" StartChars="18" EndChars="10" AriaLabel="Copy transaction route" /></td>
-                            <td>@transaction.Kind</td>
-                            <td><span class="cda-economy-pill">@transaction.Status</span></td>
-                            <td>@transaction.Inputs.Count</td>
-                            <td>@transaction.Outputs.Count</td>
-                            <td>@(transaction.Data is null ? "none" : transaction.Data.ItemType)</td>
-                            <td>@transaction.Timestamp.ToString("MM.dd.yyyy HH:mm:ss")</td>
-                            <td>
-                                <Button Text="Details" Icon="info" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="@(() => OpenDetailsAsync(transaction))" />
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+        <DataGrid TItem="LedgerTransactionSummary"
+                  Data="@FilteredTransactions"
+                  Caption="Transaction history"
+                  EmptyText="No matching transactions."
+                  RowSelect="OpenDetailsAsync"
+                  data-testid="tx-history-grid">
+            <Columns>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Tx id">
+                    <Template Context="transaction">
+                        <div data-testid="tx-history-row"
+                             @onclick:stopPropagation="true"
+                             @onkeydown:stopPropagation="true">
+                            <CopyableMonoValue Value="@transaction.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" />
+                        </div>
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Route">
+                    <Template Context="transaction">
+                        <div @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                            <CopyableMonoValue Value="@FormatRoute(transaction)" StartChars="18" EndChars="10" AriaLabel="Copy transaction route" />
+                        </div>
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Property="Kind" Title="Kind" />
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Status">
+                    <Template Context="transaction">
+                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@StatusTone(transaction.Status)" NoWrap="true" />
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Inputs">
+                    <Template Context="transaction">@transaction.Inputs.Count</Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Outputs">
+                    <Template Context="transaction">@transaction.Outputs.Count</Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Data">
+                    <Template Context="transaction">@(transaction.Data is null ? "none" : transaction.Data.ItemType)</Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Created">
+                    <Template Context="transaction">@transaction.Timestamp.ToString("MM.dd.yyyy HH:mm:ss")</Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Actions">
+                    <Template Context="transaction">
+                        <div @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                            <Button Text="Details" Icon="info" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="@(() => OpenDetailsAsync(transaction))" />
+                        </div>
+                    </Template>
+                </DataGridColumn>
+            </Columns>
+        </DataGrid>
     }
 </Stack>
 
@@ -116,11 +132,6 @@
 
     private Task OpenDetailsAsync(LedgerTransactionSummary transaction)
         => TransactionDetailsRequested.InvokeAsync(transaction);
-
-    private Task HandleRowKeyAsync(KeyboardEventArgs args, LedgerTransactionSummary transaction)
-        => args.Key is "Enter" or " "
-            ? OpenDetailsAsync(transaction)
-            : Task.CompletedTask;
 
     private bool MatchesFilters(LedgerTransactionSummary transaction)
     {
@@ -171,6 +182,15 @@
 
         return $"{inputs} \u2192 {outputs}";
     }
+
+    private static string StatusTone(TransactionStatus status)
+        => status switch
+        {
+            TransactionStatus.Confirmed => "success",
+            TransactionStatus.Pending => "warning",
+            TransactionStatus.Rejected or TransactionStatus.Reverted => "danger",
+            _ => "neutral"
+        };
 
     private sealed record FilterOption(string Value, string Text);
 }

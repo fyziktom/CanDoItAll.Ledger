@@ -1,38 +1,51 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-transaction-history-browser">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Transactions</span>
-            <h2>History browser</h2>
-        </div>
-        <StatusBadge Text="@($"{Transactions.Count} rows")" Tone="info" />
-    </header>
+<div data-testid="cda-transaction-history-browser">
+    <SectionCard Title="History browser" Description="Transactions">
+        <HeaderActions>
+            <StatusBadge Text="@($"{Transactions.Count} rows")" Tone="info" />
+        </HeaderActions>
 
-    <TransactionFilterToolbar />
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Medium">
+                <TransactionFilterToolbar />
 
-    @if (Transactions.Count == 0)
-    {
-        <EmptyState Eyebrow="History" Title="No transactions" Description="Submitted transactions will appear here." />
-    }
-    else
-    {
-        <div class="cda-sdk-list">
-            @foreach (LedgerTransactionSummary item in LedgerTransactionOrdering.NewestFirst(Transactions))
-            {
-                <article class="cda-sdk-list__row">
-                    <span class="material-icons" aria-hidden="true">@IconFor(item.Kind)</span>
-                    <div>
-                        <strong><CopyableMonoValue Value="@item.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" /></strong>
-                        <span>@item.Kind - @item.Status - @item.Timestamp.ToString("MM.dd HH:mm")</span>
-                        <small>@item.Inputs.Count input(s), @item.Outputs.Count output(s)</small>
-                    </div>
-                    <StatusBadge Text="@item.Status.ToString()" Tone="@(item.Status == TransactionStatus.Confirmed ? "success" : "warning")" />
-                </article>
-            }
-        </div>
-    }
-</section>
+                @if (Transactions.Count == 0)
+                {
+                    <EmptyState Eyebrow="History" Title="No transactions" Description="Submitted transactions will appear here." />
+                }
+                else
+                {
+                    <ListGroup>
+                        @foreach (LedgerTransactionSummary item in LedgerTransactionOrdering.NewestFirst(Transactions))
+                        {
+                            <ListItem>
+                                <Split Breakpoint="LayoutBreakpoint.Sm"
+                                       AlignItems="AlignItems.Center"
+                                       Wrap="FlexWrap.Wrap"
+                                       Gap="LayoutGap.Medium">
+                                    <Cluster Wrap="FlexWrap.NoWrap" AlignItems="AlignItems.Start" Class="min-w-0">
+                                        <Icon Name="@IconFor(item.Kind)" />
+                                        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                            <CopyableMonoValue Value="@item.TxId.Value"
+                                                               StartChars="10"
+                                                               EndChars="6"
+                                                               AriaLabel="Copy transaction id" />
+                                            <TextBlock TextStyle="TextStyle.Body2"
+                                                       Value="@($"{item.Kind} - {item.Status} - {item.Timestamp:MM.dd HH:mm}")" />
+                                            <SmallText Text="@($"{item.Inputs.Count} input(s), {item.Outputs.Count} output(s)")" />
+                                        </Stack>
+                                    </Cluster>
+                                    <StatusBadge Text="@item.Status.ToString()" Tone="@StatusTone(item.Status)" />
+                                </Split>
+                            </ListItem>
+                        }
+                    </ListGroup>
+                }
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]
@@ -45,5 +58,13 @@
             TransactionKind.BusinessObject => "inventory_2",
             TransactionKind.Transfer => "sync_alt",
             _ => "receipt_long"
+        };
+
+    private static string StatusTone(TransactionStatus status)
+        => status switch
+        {
+            TransactionStatus.Confirmed => "success",
+            TransactionStatus.Rejected => "danger",
+            _ => "warning"
         };
 }

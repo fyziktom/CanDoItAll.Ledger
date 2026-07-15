@@ -52,15 +52,18 @@ public sealed class TransactionComposerLayoutContractTests
         Assert.Matches(@"(?s)\.cda-transaction-context-rail__actions\s*\{[^}]*position:\s*sticky;", css);
         Assert.Matches(@"(?s)\.cda-transaction-picker-dialog__actions\s*\{[^}]*position:\s*sticky;", css);
         Assert.Matches(@"(?s)\.cda-split-output-grid__items\s*\{[^}]*grid-template-columns:\s*repeat\(2,[^;}]+;[^}]*max-height:[^;}]+;[^}]*overflow-y:\s*auto;", css);
-        Assert.Contains(".cda-action-review-panel__facts", css, StringComparison.Ordinal);
-        Assert.Contains("grid-template-columns: repeat(4, minmax(0, 1fr));", css, StringComparison.Ordinal);
+        Assert.DoesNotContain(".cda-action-review-panel", css, StringComparison.Ordinal);
+        Assert.Contains(
+            "<ActionReviewPanel",
+            ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionReviewPanel.razor"),
+            StringComparison.Ordinal);
         Assert.Contains("cda-split-output-empty", css, StringComparison.Ordinal);
-        Assert.Contains("Class = \"cda-vef-dialog cda-token-creation-modal\"", accountHost, StringComparison.Ordinal);
-        Assert.Matches(@"(?m)^section\.cda-vef-dialog--send\s*\{", css);
-        Assert.Matches(@"(?m)^section\.cda-vef-dialog--address-directory\s*\{", css);
+        Assert.Contains("Class = \"cda-ledger-dialog cda-token-creation-modal\"", accountHost, StringComparison.Ordinal);
+        Assert.Matches(@"(?m)^section\.cda-ledger-dialog--send\s*\{", css);
+        Assert.Matches(@"(?m)^section\.cda-ledger-dialog--address-directory\s*\{", css);
         Assert.Matches(@"(?m)^section\.cda-token-creation-modal\s*\{", css);
         Assert.Matches(@"(?m)^section\.cda-transaction-picker-modal\s*\{", css);
-        Assert.DoesNotMatch(@"(?m)^\.(?:cda-vef-dialog--send|cda-vef-dialog--address-directory|cda-token-creation-modal|cda-transaction-picker-modal)\s*\{", css);
+        Assert.DoesNotMatch(@"(?m)^\.(?:cda-ledger-dialog--send|cda-ledger-dialog--address-directory|cda-token-creation-modal|cda-transaction-picker-modal)\s*\{", css);
     }
 
     [Fact]

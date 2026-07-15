@@ -1,50 +1,55 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-tx-flow-graph">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Flow</span>
-            <h2>Inputs to outputs</h2>
-        </div>
+<div data-testid="cda-tx-flow-graph">
+<SectionCard Title="Inputs to outputs" Description="Flow">
+    <HeaderActions>
         <StatusBadge Text="@($"{Inputs.Count} \u2192 {Outputs.Count}")" Tone="info" />
-    </header>
-
-    <div class="cda-sdk-flow">
-        <div>
+    </HeaderActions>
+    <ChildContent>
+      <Grid ColumnTemplateLg="minmax(0, 1fr) auto minmax(0, 1fr)" Gap="LayoutGap.Medium" AlignItems="AlignItems.Center">
+        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
             @foreach (EconomyTransactionInputDetails input in Inputs)
             {
-                <div class="cda-sdk-flow__node">
-                    <strong>Input #@input.InputIndex</strong>
-                    <div class="cda-sdk-flow__amounts">
-                        <span>Main <strong>@FormatMain(input.MainAmount)</strong></span>
+                <SurfaceCard Soft="true">
+                    <Stack GapScale="LayoutGap.Small">
+                        <TextBlock TextStyle="TextStyle.Subtitle2">Input #@input.InputIndex</TextBlock>
+                        <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                            <SummaryTile Label="Main" Value="@FormatMain(input.MainAmount)" Compact="true" />
                         @if (input.Token is not null)
                         {
-                            <span>Token <strong>@FormatToken(input.Token)</strong></span>
+                                <SummaryTile Label="Token" Value="@FormatToken(input.Token)" Compact="true" />
                         }
-                    </div>
-                    <CopyableMonoValue Value="@input.Address.Value" StartChars="8" EndChars="5" AriaLabel="Copy input address" />
-                </div>
+                        </SummaryTiles>
+                        <CopyableMonoValue Value="@input.Address.Value" StartChars="8" EndChars="5" AriaLabel="Copy input address" />
+                    </Stack>
+                </SurfaceCard>
             }
-        </div>
-        <span class="material-icons cda-sdk-flow__arrow" aria-hidden="true">east</span>
-        <div>
+        </Stack>
+        <Stack AlignItems="AlignItems.Center">
+            <Icon Name="east" />
+        </Stack>
+        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
             @foreach (EconomyTransactionOutputDetails output in Outputs)
             {
-                <div class="cda-sdk-flow__node cda-sdk-flow__node--output">
-                    <strong>Output #@output.OutputIndex</strong>
-                    <div class="cda-sdk-flow__amounts">
-                        <span>Main <strong>@output.MainAmount</strong></span>
+                <SurfaceCard Soft="true">
+                    <Stack GapScale="LayoutGap.Small">
+                        <TextBlock TextStyle="TextStyle.Subtitle2">Output #@output.OutputIndex</TextBlock>
+                        <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                            <SummaryTile Label="Main" Value="@output.MainAmount.ToString()" Compact="true" />
                         @if (output.Token is not null)
                         {
-                            <span>Token <strong>@FormatToken(output.Token)</strong></span>
+                                <SummaryTile Label="Token" Value="@FormatToken(output.Token)" Compact="true" />
                         }
-                    </div>
-                    <CopyableMonoValue Value="@output.Address.Value" StartChars="8" EndChars="5" AriaLabel="Copy output address" />
-                </div>
+                        </SummaryTiles>
+                        <CopyableMonoValue Value="@output.Address.Value" StartChars="8" EndChars="5" AriaLabel="Copy output address" />
+                    </Stack>
+                </SurfaceCard>
             }
-        </div>
-    </div>
-</section>
+        </Stack>
+      </Grid>
+    </ChildContent>
+</SectionCard>
+</div>
 
 @code {
     [Parameter]

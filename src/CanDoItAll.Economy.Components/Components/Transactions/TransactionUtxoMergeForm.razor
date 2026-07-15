@@ -20,16 +20,14 @@
                                  TestId="cda-merge-output-address" />
     </Grid>
 
-    <div class="cda-transaction-inline-facts">
-        <div class="cda-economy-fact" data-testid="cda-merge-selected-total">
-            <span>Selected total</span>
-            <strong>@SelectedTotal</strong>
+    <Grid ColumnTemplate="repeat(2,minmax(0,12rem))" Gap="LayoutGap.Small">
+        <div data-testid="cda-merge-selected-total">
+            <SummaryTile Label="Selected total" Value="@SelectedTotal.ToString()" Compact="true" />
         </div>
-        <div class="cda-economy-fact" data-testid="cda-merge-output-count">
-            <span>Resulting outputs</span>
-            <strong>1</strong>
+        <div data-testid="cda-merge-output-count">
+            <SummaryTile Label="Resulting outputs" Value="1" Compact="true" />
         </div>
-    </div>
+    </Grid>
 </Stack>
 
 @code {

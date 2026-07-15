@@ -125,11 +125,11 @@ public sealed class EconomyNodeWorkspaceSession(
             JsonSerializer.Serialize(new
             {
                 title = $"Message from {normalizedAccount}",
-                text = "Created from the VENFT real-node demo.",
+                text = "Created from the economy real-node demo.",
                 account = account.Address.Value,
                 viewedAtUtc = viewedAt
             }),
-            $"venft://{normalizedAccount}/message/draft",
+            $"economy://{normalizedAccount}/message/draft",
             TokenId: defaultToken?.TokenId,
             TokenAmount: defaultToken is null ? null : Amount.FromInt64(1));
 

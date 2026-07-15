@@ -1,36 +1,40 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-permission-source-panel">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Permissions</span>
-            <h2>Permission source panel</h2>
-        </div>
-        <StatusBadge Text="@($"{Sources.Count} grants")" Tone="warning" />
-    </header>
+<div data-testid="cda-permission-source-panel">
+    <SectionCard Title="Permission source panel" Description="Permissions available to guarded account actions">
+        <HeaderActions>
+            <StatusBadge Text="@($"{Sources.Count} grants")" Tone="warning" />
+        </HeaderActions>
 
-    @if (Sources.Count == 0)
-    {
-        <EmptyState Eyebrow="Permissions" Title="No permission sources" Description="Minting and guarded actions will stay disabled until permission outputs are available." />
-    }
-    else
-    {
-        <div class="cda-sdk-list">
-            @foreach (LedgerPermissionSource source in Sources)
+        <ChildContent>
+            @if (Sources.Count == 0)
             {
-                <article class="cda-sdk-list__row">
-                    <span class="material-icons" aria-hidden="true">verified_user</span>
-                    <div>
-                        <strong>@source.Grant.Action</strong>
-                        <span>@source.Grant.Namespace</span>
-                        <small>@source.OutPoint - @source.Amount permission token(s)</small>
-                    </div>
-                    <StatusBadge Text="available" Tone="success" />
-                </article>
+                <EmptyState Eyebrow="Permissions" Title="No permission sources" Description="Minting and guarded actions will stay disabled until permission outputs are available." />
             }
-        </div>
-    }
-</section>
+            else
+            {
+                <Stack GapScale="LayoutGap.Small">
+                    @foreach (LedgerPermissionSource source in Sources)
+                    {
+                        <SurfaceCard Soft="true">
+                            <Split Breakpoint="LayoutBreakpoint.Md" Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
+                                <Cluster AlignItems="AlignItems.Start" Gap="LayoutGap.Small">
+                                    <Icon Name="verified_user" />
+                                    <Stack GapScale="LayoutGap.Tiny">
+                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@source.Grant.Action" />
+                                        <TextBlock TextStyle="TextStyle.Body2" Value="@source.Grant.Namespace" />
+                                        <TextBlock TextStyle="TextStyle.Caption">@source.OutPoint - @source.Amount permission token(s)</TextBlock>
+                                    </Stack>
+                                </Cluster>
+                                <StatusBadge Text="available" Tone="success" />
+                            </Split>
+                        </SurfaceCard>
+                    }
+                </Stack>
+            }
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]

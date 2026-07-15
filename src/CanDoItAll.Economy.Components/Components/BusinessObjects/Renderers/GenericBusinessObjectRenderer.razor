@@ -2,51 +2,34 @@
 
 @if (Mode == BusinessObjectRenderMode.Summary)
 {
-    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
-        <strong>@Object.ObjectId</strong>
-        <span>@Object.ObjectType v@(Object.Version)</span>
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Object.ObjectId.Value" />
+        <TextBlock TextStyle="TextStyle.Caption">@Object.ObjectType v@(Object.Version)</TextBlock>
         <Cluster Gap="LayoutGap.Small">
-            <span class="cda-economy-pill">@Object.Operation</span>
-            <span class="cda-economy-pill">generic</span>
+            <StatusBadge Tone="neutral" Text="@Object.Operation.ToString()" />
+            <StatusBadge Tone="info" Text="generic" />
         </Cluster>
     </Stack>
 }
 else
 {
-    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-        <div class="cda-economy-fact">
-            <span>Renderer</span>
-            <strong>@Descriptor.DisplayName</strong>
-        </div>
-        <div class="cda-economy-fact">
-            <span>Object type</span>
-            <strong>@Object.ObjectType</strong>
-        </div>
-        <div class="cda-economy-fact">
-            <span>Object id</span>
-            <strong>@Object.ObjectId</strong>
-        </div>
-        <div class="cda-economy-fact">
-            <span>Owner</span>
-            <strong>@Object.OwnerAddress</strong>
-        </div>
-        <div class="cda-economy-fact">
-            <span>Operation</span>
-            <strong>@Object.Operation</strong>
-        </div>
-        <div class="cda-economy-fact">
-            <span>Outpoint</span>
-            <strong>@Object.CurrentOutPoint</strong>
-        </div>
-        <div class="cda-economy-fact cda-economy-fact--wide">
-            <span>Data hash</span>
-            <strong>@Object.DataHash</strong>
-        </div>
-        <div class="cda-economy-fact cda-economy-fact--wide">
-            <span>State JSON</span>
-            <pre>@DisplayState</pre>
-        </div>
-    </Grid>
+    <Stack GapScale="LayoutGap.Medium">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <SummaryTile Label="Renderer" Value="@Descriptor.DisplayName" Compact="true" />
+            <SummaryTile Label="Object type" Value="@Object.ObjectType" Compact="true" />
+            <SummaryTile Label="Object id" Value="@Object.ObjectId.Value" Compact="true" />
+            <SummaryTile Label="Owner" Value="@Object.OwnerAddress.Value" Compact="true" />
+            <SummaryTile Label="Operation" Value="@Object.Operation.ToString()" Compact="true" />
+            <SummaryTile Label="Outpoint" Value="@Object.CurrentOutPoint.ToString()" Compact="true" />
+        </Grid>
+
+        <MetricCard Label="Data hash" Value="@Object.DataHash.Value" />
+        <MetricCard Label="State JSON">
+            <ValueContent>
+                <TextBlock TextStyle="TextStyle.Mono" Value="@DisplayState" />
+            </ValueContent>
+        </MetricCard>
+    </Stack>
 }
 
 @code {

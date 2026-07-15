@@ -2,8 +2,8 @@
 @using System.Globalization
 @inherits BusinessObjectDataItemAddressComponentBase
 
-<section class="cda-vef-bo-preview-stage" data-testid="cda-bo-selected-preview">
-    <div class="cda-vef-bo-preview-stage__toolbar">
+<section class="cda-bo-preview-stage" data-testid="cda-bo-selected-preview">
+    <div class="cda-bo-preview-stage__toolbar">
         <div>
             <strong>@Item.Name</strong>
             <span>@Item.Type / @Item.Storage</span>
@@ -11,33 +11,39 @@
 
         @if (PreviewUri is not null)
         {
-            <div class="cda-vef-bo-preview-tools" aria-label="Image view controls">
+            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap" aria-label="Image view controls">
                 @if (Item.Type == BusinessObjectDataItemType.Image)
                 {
-                    <button type="button" title="Zoom out" aria-label="Zoom out" @onclick="ZoomOut">
-                        <span class="material-icons" aria-hidden="true">zoom_out</span>
-                    </button>
-                    <button type="button" title="Reset view" aria-label="Reset view" @onclick="ResetView">
-                        <span class="material-icons" aria-hidden="true">center_focus_strong</span>
-                    </button>
-                    <button type="button" title="Zoom in" aria-label="Zoom in" @onclick="ZoomIn">
-                        <span class="material-icons" aria-hidden="true">zoom_in</span>
-                    </button>
+                    <PageHeaderActionButton Icon="zoom_out"
+                                            Label="Zoom out"
+                                            TooltipText="Zoom out"
+                                            Variant="Variant.Outlined"
+                                            Click="ZoomOut" />
+                    <PageHeaderActionButton Icon="center_focus_strong"
+                                            Label="Reset view"
+                                            TooltipText="Reset view"
+                                            Variant="Variant.Outlined"
+                                            Click="ResetView" />
+                    <PageHeaderActionButton Icon="zoom_in"
+                                            Label="Zoom in"
+                                            TooltipText="Zoom in"
+                                            Variant="Variant.Outlined"
+                                            Click="ZoomIn" />
                 }
-                <a href="@PreviewUri"
-                   download="@DownloadFileName"
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   title="Download"
-                   aria-label="Download data item"
-                   data-testid="cda-bo-dataitem-download">
-                    <span class="material-icons" aria-hidden="true">download</span>
-                </a>
-            </div>
+                <PageHeaderActionButton Icon="download"
+                                        Label="Download data item"
+                                        TooltipText="Download"
+                                        Variant="Variant.Outlined"
+                                        Href="@PreviewUri"
+                                        Target="_blank"
+                                        Rel="noopener noreferrer"
+                                        TestId="cda-bo-dataitem-download"
+                                        download="@DownloadFileName" />
+            </Cluster>
         }
     </div>
 
-    <div class="cda-vef-bo-preview-stage__canvas @CanvasClass"
+    <div class="cda-bo-preview-stage__canvas @CanvasClass"
          @onpointerdown="BeginPan"
          @onpointermove="MovePan"
          @onpointerup="EndPan"
@@ -60,7 +66,7 @@
             <MermaidDiagram Source="@MermaidSource"
                             PanZoomEnabled="true"
                             ShowControls="true"
-                            Class="cda-vef-bo-mermaid-preview"
+                            Class="cda-bo-mermaid-preview"
                             Style="height: 100%; --cda-mermaid-height: auto; --cda-mermaid-min-height: 0;" />
         }
         else if (IsVideo && PreviewUri is not null)
@@ -69,7 +75,7 @@
         }
         else if (IsAudio && PreviewUri is not null)
         {
-            <div class="cda-vef-bo-file-preview">
+            <div class="cda-bo-file-preview">
                 <span class="material-icons" aria-hidden="true">graphic_eq</span>
                 <strong>@Item.Name</strong>
                 <audio src="@PreviewUri" controls preload="metadata"></audio>
@@ -77,7 +83,7 @@
         }
         else
         {
-            <div class="cda-vef-bo-file-preview">
+            <div class="cda-bo-file-preview">
                 <span class="material-icons" aria-hidden="true">@Icon</span>
                 <strong>@Label</strong>
                 <small>@(Item.Description ?? Item.FileName ?? Item.Hash)</small>

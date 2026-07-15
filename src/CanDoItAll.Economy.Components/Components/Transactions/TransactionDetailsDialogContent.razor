@@ -6,15 +6,15 @@
 }
 else
 {
-    <Stack GapScale="LayoutGap.Medium" Class="cda-vef-transaction-details cda-vef-tx-detail-shell cda-vef-tx-detail-shell--max" data-testid="tx-details-layout">
-        <section class="cda-vef-tx-hero cda-vef-tx-hero--max cda-vef-tx-hero--compact">
-            <div class="cda-vef-tx-hero-icon">
+    <Stack GapScale="LayoutGap.Medium" Class="cda-transaction-details cda-transaction-detail-shell cda-transaction-detail-shell--max" data-testid="tx-details-layout">
+        <section class="cda-transaction-hero cda-transaction-hero--max cda-transaction-hero--compact">
+            <div class="cda-transaction-hero-icon">
                 <span class="material-icons" aria-hidden="true">@StatusIcon</span>
             </div>
-            <Stack GapScale="LayoutGap.Tiny" Class="cda-vef-tx-hero-copy">
-                <span class="cda-economy-eyebrow">@Details.Status transaction</span>
-                <h3>@Details.Kind</h3>
-                <div class="cda-vef-tx-hash-row" aria-label="Transaction identifiers">
+            <Stack GapScale="LayoutGap.Tiny" Class="cda-transaction-hero-copy">
+                <TextBlock TextStyle="TextStyle.Eyebrow">@Details.Status transaction</TextBlock>
+                <TextBlock TextStyle="TextStyle.H3" Value="@Details.Kind.ToString()" />
+                <div class="cda-transaction-hash-row" aria-label="Transaction identifiers">
                     <span>
                         <small>Tx</small>
                         <CopyableMonoValue Value="@Details.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" />
@@ -33,7 +33,7 @@ else
                                   TestId="cda-tx-hash-qr-button" />
                 </div>
             </Stack>
-            <div class="cda-vef-tx-badge-row" aria-label="Transaction status metadata">
+            <div class="cda-transaction-badge-row" aria-label="Transaction status metadata">
                 <StatusBadge Text="@Details.Kind.ToString()" Tone="@KindTone" />
                 <StatusBadge Text="@Details.SigningMode.ToString()" Tone="neutral" />
                 <StatusBadge Text="@Details.Status.ToString()" Tone="@StatusTone" />
@@ -47,7 +47,7 @@ else
               BorderMode="TabsBorderMode.Soft"
               OverflowMode="TabsOverflowMode.Scroll"
               PanelOverflowMode="TabsPanelOverflowMode.Visible"
-              Class="cda-vef-dialog-tabs cda-vef-tx-detail-tabs"
+              Class="cda-ledger-dialog-tabs cda-transaction-detail-tabs"
               AriaLabel="Transaction detail sections">
             <TabsItem Text="Overview" Icon="hub">
                 <Grid Gap="LayoutGap.Medium"
@@ -56,15 +56,15 @@ else
                     <TxFlowGraph Inputs="Details.Inputs" Outputs="Details.Outputs" />
                     @if (IsMintTransaction)
                     {
-                        <section class="cda-vef-panel cda-vef-mint-structure" data-testid="cda-mint-structure-overview">
-                            <div class="cda-vef-panel-header">
+                        <section class="cda-ledger-panel cda-transaction-mint-structure" data-testid="cda-mint-structure-overview">
+                            <div class="cda-ledger-panel-header">
                                 <span>Mint structure</span>
                                 <StatusBadge Text="permission-backed" Tone="info" />
                             </div>
-                            <div class="cda-vef-panel-body cda-vef-mint-structure-body">
+                            <div class="cda-ledger-panel-body cda-transaction-mint-structure-body">
                                 @if (MintPermissionInput is not null)
                                 {
-                                    <article class="cda-vef-mint-row">
+                                    <article class="cda-transaction-mint-row">
                                         <span class="material-icons" aria-hidden="true">vpn_key</span>
                                         <div>
                                             <strong>Permission BO input</strong>
@@ -75,7 +75,7 @@ else
                                 }
                                 @if (MintedTokenOutput is not null)
                                 {
-                                    <article class="cda-vef-mint-row">
+                                    <article class="cda-transaction-mint-row">
                                         <span class="material-icons" aria-hidden="true">add_circle</span>
                                         <div>
                                             <strong>Minted token output</strong>
@@ -86,7 +86,7 @@ else
                                 }
                                 @if (MintPermissionReturnOutput is not null)
                                 {
-                                    <article class="cda-vef-mint-row">
+                                    <article class="cda-transaction-mint-row">
                                         <span class="material-icons" aria-hidden="true">replay</span>
                                         <div>
                                             <strong>Permission returned</strong>
@@ -103,16 +103,16 @@ else
             </TabsItem>
 
             <TabsItem Text="Inputs & outputs" Icon="account_tree" BadgeText="@($"{Details.Inputs.Count}/{Details.Outputs.Count}")">
-                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-tx-io-grid">
-                    <section class="cda-vef-panel">
-                        <div class="cda-vef-panel-header">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-transaction-io-grid">
+                    <section class="cda-ledger-panel">
+                        <div class="cda-ledger-panel-header">
                             <span>Inputs</span>
                             <StatusBadge Text="@($"{Details.Inputs.Count} row(s)")" Tone="info" />
                         </div>
-                        <div class="cda-vef-panel-body cda-vef-tx-scroll-list">
+                        <div class="cda-ledger-panel-body cda-transaction-scroll-list">
                             @if (Details.Inputs.Count == 0)
                             {
-                                <p class="cda-vef-empty-line">Only genesis-style mint transactions should have no inputs.</p>
+                                <p class="cda-ledger-empty-line">Only genesis-style mint transactions should have no inputs.</p>
                             }
                             else
                             {
@@ -127,15 +127,15 @@ else
                         </div>
                     </section>
 
-                    <section class="cda-vef-panel">
-                        <div class="cda-vef-panel-header">
+                    <section class="cda-ledger-panel">
+                        <div class="cda-ledger-panel-header">
                             <span>Outputs</span>
                             <StatusBadge Text="@($"{Details.Outputs.Count} row(s)")" Tone="success" />
                         </div>
-                        <div class="cda-vef-panel-body cda-vef-tx-scroll-list">
+                        <div class="cda-ledger-panel-body cda-transaction-scroll-list">
                             @if (Details.Outputs.Count == 0)
                             {
-                                <p class="cda-vef-empty-line">No outputs are attached to this transaction.</p>
+                                <p class="cda-ledger-empty-line">No outputs are attached to this transaction.</p>
                             }
                             else
                             {
@@ -154,20 +154,20 @@ else
             </TabsItem>
 
             <TabsItem Text="Payload" Icon="data_object">
-                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-vef-tx-payload-grid">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-transaction-payload-grid">
                     <TxDataPayloadViewer Data="Details.Data" />
-                    <section class="cda-vef-panel">
-                        <div class="cda-vef-panel-header">Business object outputs</div>
-                        <div class="cda-vef-panel-body cda-vef-tx-scroll-list cda-vef-tx-scroll-list--compact">
+                    <section class="cda-ledger-panel">
+                        <div class="cda-ledger-panel-header">Business object outputs</div>
+                        <div class="cda-ledger-panel-body cda-transaction-scroll-list cda-transaction-scroll-list--compact">
                             @if (BusinessObjectOutputs.Count == 0)
                             {
-                                <p class="cda-vef-empty-line">No BO output references are attached.</p>
+                                <p class="cda-ledger-empty-line">No BO output references are attached.</p>
                             }
                             else
                             {
                                 @foreach (EconomyTransactionOutputDetails output in BusinessObjectOutputs)
                                 {
-                                    <article class="cda-vef-io-card">
+                                    <article class="cda-transaction-io-card">
                                         <strong>Output #@output.OutputIndex</strong>
                                         <CopyableMonoValue Value="@BusinessObjectId.FromOutPoint(Details.TxId, output.OutputIndex).Value" Truncate="false" AriaLabel="Copy business object UTXO id" />
                                         <small>@output.BusinessObject!.Operation v@output.BusinessObject.Version</small>
@@ -181,7 +181,7 @@ else
             </TabsItem>
 
             <TabsItem Text="Signatures" Icon="key" BadgeText="@TotalSignatures.ToString()">
-                <div class="cda-vef-tx-signature-grid">
+                <div class="cda-transaction-signature-grid">
                     @if (Details.Inputs.Count == 0)
                     {
                         <EmptyState Eyebrow="Signatures" Title="No input signatures" Description="This transaction has no spend inputs to sign." />
@@ -197,12 +197,12 @@ else
             </TabsItem>
 
             <TabsItem Text="Raw tx" Icon="code" BadgeText="JSON">
-                <section class="cda-vef-panel" data-testid="tx-raw-json-panel">
-                    <div class="cda-vef-panel-header">
+                <section class="cda-ledger-panel" data-testid="tx-raw-json-panel">
+                    <div class="cda-ledger-panel-header">
                         <span>Structured raw transaction</span>
                         <StatusBadge Text="JSON" Tone="neutral" />
                     </div>
-                    <div class="cda-vef-panel-body">
+                    <div class="cda-ledger-panel-body">
                         <pre class="cda-sdk-code" data-testid="tx-raw-json">@RawTransactionJson</pre>
                     </div>
                 </section>
@@ -226,8 +226,8 @@ else
 
     private string OverviewGridClass
         => IsMintTransaction
-            ? "cda-vef-tx-overview-grid cda-vef-tx-overview-grid--mint"
-            : "cda-vef-tx-overview-grid";
+            ? "cda-transaction-overview-grid cda-transaction-overview-grid--mint"
+            : "cda-transaction-overview-grid";
 
     private string OverviewColumnTemplate
         => IsMintTransaction

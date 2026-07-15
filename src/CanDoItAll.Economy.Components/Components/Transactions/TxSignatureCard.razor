@@ -1,36 +1,37 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-tx-signature-card">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Input #@Input.InputIndex</span>
-            <h2>Signatures</h2>
-        </div>
+<div data-testid="cda-tx-signature-card">
+<SectionCard Title="Signatures" Description="@($"Input #{Input.InputIndex}")">
+    <HeaderActions>
         <StatusBadge Text="@($"{Input.SignatureBundle.Signatures.Count} recorded")" Tone="info" />
-    </header>
-
-    @if (Input.SignatureBundle.Signatures.Count == 0)
-    {
-        <p class="cda-sdk-muted">No input signatures were recorded.</p>
-    }
-    else
-    {
-        <div class="cda-sdk-list">
-            @foreach (SignatureEnvelope signature in Input.SignatureBundle.Signatures)
-            {
-                <article class="cda-sdk-list__row">
-                    <span class="material-icons" aria-hidden="true">key</span>
-                    <div>
-                        <strong>@signature.Algorithm</strong>
-                        <span>@signature.KeyId</span>
-                        <small>@signature.SignatureBytes.Length signature bytes</small>
-                        <HashDisplay Value="@signature.PublicKeyHash.Value" />
-                    </div>
-                </article>
-            }
-        </div>
-    }
-</section>
+    </HeaderActions>
+    <ChildContent>
+        @if (Input.SignatureBundle.Signatures.Count == 0)
+        {
+            <EmptyState Eyebrow="Signatures" Title="No signatures" Description="No input signatures were recorded." />
+        }
+        else
+        {
+            <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+                @foreach (SignatureEnvelope signature in Input.SignatureBundle.Signatures)
+                {
+                    <SurfaceCard Soft="true">
+                        <Cluster AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                            <Icon Name="key" />
+                            <Stack GapScale="LayoutGap.Tiny">
+                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@signature.Algorithm.ToString()" />
+                                <TextBlock TextStyle="TextStyle.Mono" Value="@signature.KeyId" />
+                                <TextBlock TextStyle="TextStyle.Caption">@signature.SignatureBytes.Length signature bytes</TextBlock>
+                                <HashDisplay Value="@signature.PublicKeyHash.Value" />
+                            </Stack>
+                        </Cluster>
+                    </SurfaceCard>
+                }
+            </Stack>
+        }
+    </ChildContent>
+</SectionCard>
+</div>
 
 @code {
     [Parameter, EditorRequired]

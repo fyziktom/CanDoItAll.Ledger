@@ -79,7 +79,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(older, newest, middle)));
 
-        string[] headings = component.FindAll(".cda-vef-gallery-card h3")
+        string[] headings = component.FindAll(".cda-bo-gallery-card h3")
             .Select(element => element.TextContent.Trim())
             .ToArray();
 
@@ -114,7 +114,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(middle, ListedAtUtc.AddMinutes(2))
                         ])));
 
-        string[] headings = component.FindAll(".cda-vef-gallery-card h3")
+        string[] headings = component.FindAll(".cda-bo-gallery-card h3")
             .Select(element => element.TextContent.Trim())
             .ToArray();
 
@@ -150,7 +150,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(older, ListedAtUtc)
                         ])));
 
-        string[] headings = component.FindAll(".cda-vef-gallery-card h3")
+        string[] headings = component.FindAll(".cda-bo-gallery-card h3")
             .Select(element => element.TextContent.Trim())
             .ToArray();
 
@@ -177,7 +177,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(payment, ListedAtUtc.AddMinutes(2))
                         ])));
 
-        IElement card = Assert.Single(component.FindAll(".cda-vef-gallery-card"));
+        IElement card = Assert.Single(component.FindAll(".cda-bo-gallery-card"));
 
         Assert.Contains("Visible gallery post", card.TextContent, StringComparison.Ordinal);
         Assert.DoesNotContain("Payment for", component.Markup, StringComparison.Ordinal);
@@ -214,7 +214,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(wrappedMessage, ListedAtUtc.AddMinutes(3))
                         ])));
 
-        IElement card = Assert.Single(component.FindAll(".cda-vef-gallery-card"));
+        IElement card = Assert.Single(component.FindAll(".cda-bo-gallery-card"));
 
         Assert.Contains("Visible non-message post", card.TextContent, StringComparison.Ordinal);
         Assert.DoesNotContain("Hidden secure message", component.Markup, StringComparison.Ordinal);

@@ -1,14 +1,10 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-transaction-timeline">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Timeline</span>
-            <h2>Transaction timeline</h2>
-        </div>
-    </header>
+<div data-testid="cda-transaction-timeline">
+<SectionCard Title="Transaction timeline" Description="Timeline">
     <Timeline Items="Items" AriaLabel="Transaction timeline" />
-</section>
+</SectionCard>
+</div>
 
 @code {
     [Parameter]

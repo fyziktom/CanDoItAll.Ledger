@@ -35,7 +35,7 @@
         </SectionCard>
     </Grid>
 
-    <div class="cda-sim-equal-grid">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Large">
         <Stack GapScale="LayoutGap.Large">
             <FormSection Title="Export manifest" Description="Read-only deterministic JSON generated from the selected project state.">
                 <TextArea Value="@ManifestJson" ReadOnly="true" Rows="14" />
@@ -89,7 +89,7 @@
 
             <ValidationList Messages="ImportPreview.Validation.Messages" />
         </Stack>
-    </div>
+    </Grid>
 </Stack>
 
 @code {

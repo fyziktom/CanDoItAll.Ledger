@@ -1,22 +1,22 @@
 @namespace CanDoItAll.Economy.Components
 
 <SectionCard Title="Transaction history" Description="Recent account-visible ledger activity">
-    <Stack GapScale="LayoutGap.Small" Class="cda-economy-list">
+    <Stack GapScale="LayoutGap.Small">
         @foreach (LedgerTransactionSummary transaction in Items)
         {
-            <div class="cda-economy-list-item">
-                    <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Start" Gap="LayoutGap.Small">
-                        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+            <SurfaceCard Soft="true">
+                <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Start" Gap="LayoutGap.Small">
+                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
                         <strong><CopyableMonoValue Value="@transaction.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" /></strong>
                         <CopyableMonoValue Value="@FormatRoute(transaction)" StartChars="18" EndChars="10" AriaLabel="Copy transaction route" />
                     </Stack>
                     <Cluster Gap="LayoutGap.Small">
-                        <span class="cda-economy-pill">@transaction.Kind</span>
-                        <span class="cda-economy-pill">@transaction.Status</span>
-                        <span class="cda-economy-pill">@transaction.Timestamp.ToString("g")</span>
+                        <Pill Text="@transaction.Kind.ToString()" Tone="PillTone.Info" />
+                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@ResolveStatusTone(transaction.Status)" />
+                        <Pill Text="@transaction.Timestamp.ToString("g")" Tone="PillTone.Neutral" />
                     </Cluster>
                 </Split>
-            </div>
+            </SurfaceCard>
         }
     </Stack>
 </SectionCard>
@@ -36,4 +36,13 @@
 
         return $"{inputs} \u2192 {outputs}";
     }
+
+    private static string ResolveStatusTone(TransactionStatus status)
+        => status switch
+        {
+            TransactionStatus.Confirmed => "success",
+            TransactionStatus.Pending => "warning",
+            TransactionStatus.Rejected or TransactionStatus.Reverted => "danger",
+            _ => "neutral"
+        };
 }

@@ -4,13 +4,13 @@
 
 <SectionCard Title="Account Settings" Description="Current ledger session and UI account context.">
     <Grid ColumnsMd="2" Gap="LayoutGap.Medium">
-        <div class="cda-economy-fact cda-economy-fact--wide"><span>Address</span><strong>@Workspace.Address.Value</strong></div>
-        <div class="cda-economy-fact"><span>Account</span><strong>@Workspace.AccountName</strong></div>
-        <div class="cda-economy-fact"><span>Alias</span><strong>@(Workspace.AccountAlias ?? "none")</strong></div>
-        <div class="cda-economy-fact"><span>Ledger</span><strong>@Workspace.Context.LedgerId.Value</strong></div>
-        <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
-        <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
-        <div class="cda-economy-fact cda-economy-fact--wide"><span>Connection</span><strong>@Workspace.ConnectionLabel</strong></div>
+        <MetricCard Label="Address" Value="@Workspace.Address.Value" Class="cda-sdk-span-all" />
+        <SummaryTile Label="Account" Value="@Workspace.AccountName" Compact="true" />
+        <SummaryTile Label="Alias" Value="@(Workspace.AccountAlias ?? "none")" Compact="true" />
+        <SummaryTile Label="Ledger" Value="@Workspace.Context.LedgerId.Value" Compact="true" />
+        <SummaryTile Label="Scenario" Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" Compact="true" />
+        <SummaryTile Label="Viewed at UTC" Value="@Workspace.ViewedAtUtc.ToString("u")" Compact="true" />
+        <MetricCard Label="Connection" Value="@Workspace.ConnectionLabel" Class="cda-sdk-span-all" />
         <FormField Text="Frequent tag source" ContainerClass="cda-economy-field">
             <select class="cda-economy-input"
                     value="@suggestionSource"

@@ -1,29 +1,35 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-asset-balance-strip">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Assets</span>
-            <h2>Balance strip</h2>
-        </div>
-        <StatusBadge Text="@($"{TokenOptions.Count} assets")" Tone="info" />
-    </header>
+<div data-testid="cda-asset-balance-strip">
+    <SectionCard Title="Balance strip" Description="Assets available to this account">
+        <HeaderActions>
+            <StatusBadge Text="@($"{TokenOptions.Count} assets")" Tone="info" />
+        </HeaderActions>
 
-    <div class="cda-sdk-asset-strip">
-        @foreach (EconomyTokenOption option in TokenOptions)
-        {
-            <article class="cda-sdk-asset-card">
-                <span>@(option.IsMain ? "Native" : "Token")</span>
-                <strong>@option.AssetLabel</strong>
-                <em>@option.AvailableAmount</em>
-                @if (option.CanCreateMore)
+        <ChildContent>
+            <Grid ColumnsSm="2" ColumnsLg="3" ColumnsXl="4" Gap="LayoutGap.Small">
+                @foreach (EconomyTokenOption option in TokenOptions)
                 {
-                    <StatusBadge Text="Mintable" Tone="success" />
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Small">
+                            <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
+                                <Stack GapScale="LayoutGap.Tiny">
+                                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="@(option.IsMain ? "Native" : "Token")" />
+                                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="@option.AssetLabel" />
+                                </Stack>
+                                @if (option.CanCreateMore)
+                                {
+                                    <StatusBadge Text="Mintable" Tone="success" />
+                                }
+                            </Split>
+                            <TextBlock TextStyle="TextStyle.Subtitle1" Value="@option.AvailableAmount.ToString()" />
+                        </Stack>
+                    </SurfaceCard>
                 }
-            </article>
-        }
-    </div>
-</section>
+            </Grid>
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]

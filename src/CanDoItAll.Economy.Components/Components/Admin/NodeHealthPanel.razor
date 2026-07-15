@@ -1,20 +1,20 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-node-health-panel">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Node health</span>
-            <h2>@NodeName</h2>
-        </div>
-        <StatusBadge Text="@Status" Tone="@Tone" />
-    </header>
-    <div class="cda-sdk-fact-grid">
-        <div><span>Base URI</span><strong>@BaseUri</strong></div>
-        <div><span>Ledger</span><strong>@LedgerId</strong></div>
-        <div><span>Mode</span><strong>@EnvironmentName</strong></div>
-        <div><span>Checked</span><strong>@CheckedAtUtc.ToString("u")</strong></div>
-    </div>
-</section>
+<div data-testid="cda-node-health-panel">
+    <SectionCard Title="@NodeName" Description="Node health">
+        <HeaderActions>
+            <StatusBadge Text="@Status" Tone="@Tone" />
+        </HeaderActions>
+        <ChildContent>
+            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                <SummaryTile Label="Base URI" Value="@BaseUri" Compact="true" />
+                <SummaryTile Label="Ledger" Value="@LedgerId" Compact="true" />
+                <SummaryTile Label="Mode" Value="@EnvironmentName" Compact="true" />
+                <SummaryTile Label="Checked" Value="@CheckedAtUtc.ToString("u")" Compact="true" />
+            </SummaryTiles>
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]

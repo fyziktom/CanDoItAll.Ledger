@@ -1,25 +1,23 @@
 @namespace CanDoItAll.Economy.Components
 
 <SectionCard Title="Business objects" Description="Current BO holdings projected from the ledger">
-    <Stack GapScale="LayoutGap.Small" Class="cda-economy-list">
+    <Stack GapScale="LayoutGap.Small">
         @foreach (IBusinessObjectView item in Items)
         {
             bool isSelected = SelectedObjectId.HasValue && item.ObjectId.Equals(SelectedObjectId.Value);
 
-            <button type="button"
-                    class="@ResolveItemClass(isSelected)"
-                    @onclick="() => SelectAsync(item)">
-                <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Start" Gap="LayoutGap.Small">
-                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                        <strong>@item.ObjectId</strong>
-                        <span>@item.ObjectType v@(item.Version) owned by @item.OwnerAddress</span>
-                    </Stack>
+            <SelectionListItem Title="@item.ObjectId.ToString()"
+                               Meta="@($"{item.ObjectType} v{item.Version} owned by {item.OwnerAddress}")"
+                               IsSelected="@isSelected"
+                               Dense="true"
+                               OnSelect="@(() => SelectAsync(item))">
+                <Status>
                     <Cluster Gap="LayoutGap.Small">
-                        <span class="cda-economy-pill">@item.Operation</span>
-                        <span class="cda-economy-pill">schema @item.SchemaVersion</span>
+                        <StatusBadge Text="@item.Operation.ToString()" Tone="info" />
+                        <Pill Text="@($"schema {item.SchemaVersion}")" Tone="PillTone.Neutral" />
                     </Cluster>
-                </Split>
-            </button>
+                </Status>
+            </SelectionListItem>
         }
     </Stack>
 </SectionCard>
@@ -36,9 +34,4 @@
 
     private Task SelectAsync(IBusinessObjectView item)
         => SelectedObjectChanged.InvokeAsync(item);
-
-    private static string ResolveItemClass(bool isSelected)
-        => isSelected
-            ? "cda-economy-list-item cda-economy-list-item--active"
-            : "cda-economy-list-item";
 }

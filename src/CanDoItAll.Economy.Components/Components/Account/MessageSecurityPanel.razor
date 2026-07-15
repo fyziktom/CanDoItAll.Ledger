@@ -4,25 +4,23 @@
 @inject NotificationService Notifications
 @inject IBusinessObjectVerificationService VerificationService
 
-<Stack GapScale="LayoutGap.Medium" Class="cda-message-security" data-testid="message-security-panel">
+<Stack GapScale="LayoutGap.Medium" data-testid="message-security-panel">
     <Tabs Variant="TabsVariant.ModalCompact"
           BorderMode="TabsBorderMode.Soft"
           OverflowMode="TabsOverflowMode.Scroll"
           PanelOverflowMode="TabsPanelOverflowMode.Visible"
-          Class="cda-vef-dialog-tabs cda-message-security-tabs"
           AriaLabel="Message security sections">
         <TabsItem Text="Signatures" Icon="verified">
-            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-message-security-grid">
-                <section class="cda-vef-panel">
-                    <div class="cda-vef-panel-header">Sign message</div>
-                    <div class="cda-vef-panel-body cda-message-security-section">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                <SectionCard Title="Sign message" Description="Sign plaintext with the active account key.">
+                    <Stack GapScale="LayoutGap.Medium">
                         <FormField Text="Message to sign">
                             <TextArea Value="@signMessage"
                                       ValueChanged="@((string value) => signMessage = value)"
                                       Rows="6"
                                       data-testid="message-security-sign-message" />
                         </FormField>
-                        <div class="cda-message-security-actions">
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                             <PageHeaderActionButton Icon="draw"
                                                     Label="Sign message"
                                                     TooltipText="Sign message with the active account"
@@ -38,13 +36,12 @@
                                                     Disabled="@string.IsNullOrWhiteSpace(signMessage)"
                                                     Click="UseSignMessageForVerification"
                                                     TestId="message-security-use-sign-message" />
-                        </div>
-                    </div>
-                </section>
+                        </Cluster>
+                    </Stack>
+                </SectionCard>
 
-                <section class="cda-vef-panel">
-                    <div class="cda-vef-panel-header">Verify signature</div>
-                    <div class="cda-vef-panel-body cda-message-security-section">
+                <SectionCard Title="Verify signature" Description="Verify signature JSON against its original plaintext.">
+                    <Stack GapScale="LayoutGap.Medium">
                         <FormField Text="Verification message">
                             <TextArea Value="@verifyMessage"
                                       ValueChanged="@((string value) => verifyMessage = value)"
@@ -57,7 +54,7 @@
                                       Rows="7"
                                       data-testid="message-security-signature-json" />
                         </FormField>
-                        <div class="cda-message-security-actions">
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                             <PageHeaderActionButton Icon="verified"
                                                     Label="Verify signature"
                                                     TooltipText="Verify signature JSON"
@@ -66,23 +63,22 @@
                                                     IsBusy="@verifying"
                                                     Click="VerifyAsync"
                                                     TestId="message-security-verify-button" />
-                        </div>
+                        </Cluster>
                         @if (!string.IsNullOrWhiteSpace(verifyStatus))
                         {
                             <Alert AlertStyle="@verifyAlertStyle" data-testid="message-security-verify-status">
                                 @verifyStatus
                             </Alert>
                         }
-                    </div>
-                </section>
+                    </Stack>
+                </SectionCard>
             </Grid>
         </TabsItem>
 
         <TabsItem Text="Encryption" Icon="lock">
-            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-message-security-grid">
-                <section class="cda-vef-panel">
-                    <div class="cda-vef-panel-header">Encrypt for receiver</div>
-                    <div class="cda-vef-panel-body cda-message-security-section">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                <SectionCard Title="Encrypt for receiver" Description="Encrypt plaintext for another account.">
+                    <Stack GapScale="LayoutGap.Medium">
                         <FormField Text="Receiver account">
                             <TextBox Value="@receiverAccount"
                                      ValueChanged="@((string value) => receiverAccount = value)"
@@ -94,7 +90,7 @@
                                       Rows="7"
                                       data-testid="message-security-encrypt-message" />
                         </FormField>
-                        <div class="cda-message-security-actions">
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                             <PageHeaderActionButton Icon="lock"
                                                     Label="Encrypt"
                                                     TooltipText="Encrypt for receiver"
@@ -103,20 +99,19 @@
                                                     IsBusy="@encrypting"
                                                     Click="EncryptAsync"
                                                     TestId="message-security-encrypt-button" />
-                        </div>
-                    </div>
-                </section>
+                        </Cluster>
+                    </Stack>
+                </SectionCard>
 
-                <section class="cda-vef-panel">
-                    <div class="cda-vef-panel-header">Decrypt here</div>
-                    <div class="cda-vef-panel-body cda-message-security-section">
+                <SectionCard Title="Decrypt here" Description="Open encrypted message JSON with the active account.">
+                    <Stack GapScale="LayoutGap.Medium">
                         <FormField Text="Encrypted message JSON">
                             <TextArea Value="@encryptedJson"
                                       ValueChanged="@((string value) => encryptedJson = value)"
                                       Rows="7"
                                       data-testid="message-security-encrypted-json" />
                         </FormField>
-                        <div class="cda-message-security-actions">
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                             <PageHeaderActionButton Icon="lock_open"
                                                     Label="Decrypt"
                                                     TooltipText="Decrypt message JSON"
@@ -125,7 +120,7 @@
                                                     IsBusy="@decrypting"
                                                     Click="DecryptAsync"
                                                     TestId="message-security-decrypt-button" />
-                        </div>
+                        </Cluster>
                         <FormField Text="Decrypted plaintext">
                             <TextArea Value="@decryptedPlainText"
                                       ReadOnly="true"
@@ -138,16 +133,15 @@
                                 @encryptionStatus
                             </Alert>
                         }
-                    </div>
-                </section>
+                    </Stack>
+                </SectionCard>
             </Grid>
         </TabsItem>
 
         <TabsItem Text="Ownership" Icon="fact_check">
-            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-message-security-grid cda-ownership-verification-grid">
-                <section class="cda-vef-panel">
-                    <div class="cda-vef-panel-header">Scan or paste payload</div>
-                    <div class="cda-vef-panel-body cda-message-security-section">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                <SectionCard Title="Scan or paste payload" Description="Load an ownership payload from QR or pasted text.">
+                    <Stack GapScale="LayoutGap.Medium">
                         <FormField Text="Ownership payload">
                             <TextArea Value="@ownershipPayload"
                                       ValueChanged="@((string value) => ownershipPayload = value)"
@@ -155,7 +149,7 @@
                                       Placeholder="Scan a BO ownership QR code or paste a ticket ownership payload."
                                       data-testid="message-security-ownership-payload" />
                         </FormField>
-                        <div class="cda-message-security-actions">
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                             <QrScanButton Label="Scan ownership QR"
                                           TooltipText="Scan ownership QR with camera or paste text"
                                           EnableCamera="true"
@@ -175,16 +169,16 @@
                                                     Variant="Variant.Outlined"
                                                     Click="ClearOwnershipAsync"
                                                     TestId="message-security-ownership-clear" />
-                        </div>
-                    </div>
-                </section>
+                        </Cluster>
+                    </Stack>
+                </SectionCard>
 
-                <section class="cda-vef-panel">
-                    <div class="cda-vef-panel-header">Verification result</div>
-                    <div class="cda-vef-panel-body cda-message-security-section">
+                <SectionCard Title="Verification result" Description="Review signature, ownership flow, and resolved business-object evidence.">
+                    <Stack GapScale="LayoutGap.Medium">
                         @if (string.IsNullOrWhiteSpace(ownershipStatus))
                         {
-                            <p class="cda-vef-empty-line">Scan or paste an ownership QR payload to verify it against the loaded workspace.</p>
+                            <EmptyState Title="No ownership result"
+                                        Description="Scan or paste an ownership QR payload to verify it against the loaded workspace." />
                         }
                         else
                         {
@@ -195,82 +189,50 @@
 
                         @if (ownershipSignatureResult is not null)
                         {
-                            <div class="cda-economy-fact cda-economy-fact--wide">
-                                <span>Signature</span>
-                                <strong>@ownershipSignatureResult.Summary</strong>
-                            </div>
+                            <SummaryTile Label="Signature" Value="@ownershipSignatureResult.Summary" Tone="info" />
                         }
 
                         @if (ownershipFlowResult is not null)
                         {
-                            <div class="cda-bo-verification__steps">
+                            <Stack GapScale="LayoutGap.Small">
                                 @foreach (VerificationStepResult step in ownershipFlowResult.Steps)
                                 {
-                                    <div class="cda-bo-verification-step">
-                                        <StatusBadge Text="@step.Status.ToString()" Tone="@StepTone(step)" />
-                                        <div>
-                                            <strong>@step.Label</strong>
-                                            <span>@step.Summary</span>
-                                        </div>
-                                    </div>
+                                    <SurfaceCard Soft="true">
+                                        <Split Breakpoint="LayoutBreakpoint.None"
+                                               Gap="LayoutGap.Small"
+                                               AlignItems="AlignItems.Center"
+                                               JustifyContent="JustifyContent.SpaceBetween"
+                                               Wrap="FlexWrap.Wrap">
+                                            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@step.Label" />
+                                                <SmallText Text="@step.Summary" />
+                                            </Stack>
+                                            <StatusBadge Text="@step.Status.ToString()" Tone="@StepTone(step)" />
+                                        </Split>
+                                    </SurfaceCard>
                                 }
-                            </div>
+                            </Stack>
                         }
 
                         @if (OwnershipFacts.Count > 0)
                         {
-                            <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="cda-ownership-facts">
+                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
                                 @foreach (OwnershipFact fact in OwnershipFacts)
                                 {
-                                    <div class="cda-economy-fact @(fact.Wide ? "cda-economy-fact--wide" : null)">
-                                        <span>@fact.Label</span>
-                                        <strong>@fact.Value</strong>
-                                    </div>
+                                    <SummaryTile Label="@fact.Label" Value="@fact.Value" Compact="true" />
                                 }
-                            </Grid>
+                            </SummaryTiles>
                         }
 
                         @if (ownershipObject is not null)
                         {
-                            <article class="cda-vef-gallery-card cda-ownership-bo-card" data-testid="message-security-ownership-bo-card">
-                                @if (ImageFor(ownershipObject) is { } previewImage)
-                                {
-                                    <button type="button" class="cda-vef-gallery-preview cda-vef-gallery-preview--media" @onclick="OpenOwnershipDetailsAsync">
-                                        <BusinessObjectDataItemPreview Item="previewImage" />
-                                    </button>
-                                }
-                                else
-                                {
-                                    <button type="button" class="@PreviewClass(ownershipObject)" @onclick="OpenOwnershipDetailsAsync">
-                                        <span class="material-icons" aria-hidden="true">@PreviewIcon(ownershipObject)</span>
-                                    </button>
-                                }
-                                <div class="cda-vef-gallery-card-body">
-                                    <h3>@DisplayName(ownershipObject)</h3>
-                                    <p>@Description(ownershipObject)</p>
-                                    <div class="cda-vef-badges">
-                                        <span>@ownershipObject.Operation</span>
-                                        <span>@ownershipObject.ObjectType</span>
-                                        <span>v@ownershipObject.Version</span>
-                                    </div>
-                                    <div class="cda-vef-gallery-meta">
-                                        <span>@ShortObjectId(ownershipObject.ObjectId)</span>
-                                        <span>@ownershipObject.CreatedAt.ToString("MM.dd.yyyy HH:mm")</span>
-                                    </div>
-                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
-                                        @foreach (string tag in TagsFor(ownershipObject).Take(5))
-                                        {
-                                            <TagBadge Tag="@tag" AccountScope="@ownershipObject.OwnerAddress.Value" />
-                                        }
-                                    </Cluster>
-                                </div>
-                                <button type="button" class="cda-vef-info-button" @onclick="OpenOwnershipDetailsAsync" aria-label="Open BO details">
-                                    <span class="material-icons" aria-hidden="true">info</span>
-                                </button>
-                            </article>
+                            <BusinessObjectGalleryCard Item="ownershipObject"
+                                                       Workspace="Workspace"
+                                                       OpenRequested="@(_ => OpenOwnershipDetailsAsync())"
+                                                       TestId="message-security-ownership-bo-card" />
                         }
-                    </div>
-                </section>
+                    </Stack>
+                </SectionCard>
             </Grid>
         </TabsItem>
     </Tabs>
@@ -605,7 +567,7 @@
                     Size = ModalSize.Full,
                     DenseChrome = true,
                     CloseOnBackdrop = false,
-                    Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--bo-detail",
+                    Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--bo-detail",
                     TestId = "cda-bo-details-dialog"
                 });
 
@@ -754,9 +716,6 @@
             ? payload
             : null;
 
-    private static BusinessObjectDataItem? ImageFor(IBusinessObjectView item)
-        => BusinessObjectCardDisplay.ImageFor(item);
-
     private static string DisplayName(IBusinessObjectView item)
     {
         if (item is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name))
@@ -769,75 +728,6 @@
             ? item.ObjectId.Value
             : payload.Name;
     }
-
-    private static string Description(IBusinessObjectView item)
-    {
-        if (item is IMediaBusinessObjectView media)
-        {
-            string mediaDescription = !string.IsNullOrWhiteSpace(media.Description)
-                ? media.Description
-                : media.Text;
-            if (!string.IsNullOrWhiteSpace(mediaDescription))
-            {
-                return mediaDescription.Length > 120 ? $"{mediaDescription[..120]}..." : mediaDescription;
-            }
-        }
-
-        BusinessObjectMediaPayload? payload = PayloadFor(item);
-        string state = !string.IsNullOrWhiteSpace(payload?.Description)
-            ? payload.Description
-            : !string.IsNullOrWhiteSpace(payload?.Text)
-                ? payload.Text
-                : item.StateJson ?? string.Empty;
-
-        return state.Length > 120 ? $"{state[..120]}..." : state;
-    }
-
-    private static IReadOnlyList<string> TagsFor(IBusinessObjectView item)
-    {
-        IEnumerable<string> mediaTags = item is IMediaBusinessObjectView media
-            ? media.Tags
-            : [];
-        BusinessObjectMediaPayload? payload = PayloadFor(item);
-        IEnumerable<string> payloadTags = string.IsNullOrWhiteSpace(payload?.Tags)
-            ? []
-            : payload.Tags
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(tag => tag.TrimStart('#'));
-
-        return mediaTags
-            .Concat(payloadTags)
-            .Concat(item.ObjectType.Split(['-', ':', '.'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            .Concat([item.Operation.ToString(), $"v{item.Version}"])
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(8)
-            .ToArray();
-    }
-
-    private static string PreviewIcon(IBusinessObjectView item)
-        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out BusinessObjectFamilyDefinition definition)
-            ? definition.Icon
-            : item.ObjectType switch
-            {
-                "settings" or "account-settings" => "settings",
-                "purchase-order" => "receipt_long",
-                "inventory-lot" => "inventory_2",
-                _ => "widgets"
-            };
-
-    private static string PreviewClass(IBusinessObjectView item)
-        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out _)
-            ? "cda-vef-gallery-preview cda-vef-gallery-preview--icon"
-            : item.ObjectType switch
-            {
-                "settings" or "account-settings" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--settings",
-                "purchase-order" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--order",
-                "inventory-lot" => "cda-vef-gallery-preview cda-vef-gallery-preview--icon cda-vef-gallery-preview--inventory",
-                _ => "cda-vef-gallery-preview cda-vef-gallery-preview--icon"
-            };
-
-    private static string ShortObjectId(BusinessObjectId objectId)
-        => objectId.Value.Length > 18 ? $"{objectId.Value[..12]}...{objectId.Value[^6..]}" : objectId.Value;
 
     private static string TicketField(IBusinessObjectView item, string key)
         => PayloadFor(item)?.Fields is not null

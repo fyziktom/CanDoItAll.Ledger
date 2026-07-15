@@ -4,14 +4,14 @@
     <span class="sr-only" data-route-focus>@Heading</span>
     <div class="w-full max-w-lg mx-auto">
         <Stack GapScale="LayoutGap.Medium" Class="min-w-0 w-full">
-            <div class="text-center">
-                <span class="cda-economy-eyebrow">@Eyebrow</span>
-                <h1 class="cda-economy-title">@Heading</h1>
+            <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.Center" Class="text-center">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="@Eyebrow" />
+                <TextBlock TextStyle="TextStyle.H1" Value="@Heading" />
                 @if (!string.IsNullOrWhiteSpace(Description))
                 {
-                    <p class="cda-economy-subtitle">@Description</p>
+                    <TextBlock TextStyle="TextStyle.Body2" Value="@Description" />
                 }
-            </div>
+            </Stack>
 
             <div class="w-full">
                 @ChildContent

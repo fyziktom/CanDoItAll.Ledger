@@ -1,24 +1,26 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-address-bookmark-manager">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Address book</span>
-            <h2>Directory</h2>
-        </div>
-        <PageHeaderActionButton Icon="contacts"
-                                Label="Manage"
-                                TooltipText="Manage address directory"
-                                Variant="Variant.Outlined"
-                                Click="OpenAsync" />
-    </header>
+<div data-testid="cda-address-bookmark-manager">
+    <SectionCard Title="Directory" Description="Address book">
+        <HeaderActions>
+            <PageHeaderActionButton Icon="contacts"
+                                    Label="Manage"
+                                    TooltipText="Manage address directory"
+                                    Variant="Variant.Outlined"
+                                    Click="OpenAsync" />
+        </HeaderActions>
 
-    <div class="cda-sdk-list cda-address-directory-mini">
-        <span>@Bookmarks.Count bookmark(s)</span>
-        <Button Text="Open directory" Icon="open_in_new" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenAsync" />
-    </div>
-</section>
+        <ChildContent>
+            <SurfaceCard Soft="true">
+                <Split Breakpoint="LayoutBreakpoint.Md" Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                    <TextBlock TextStyle="TextStyle.Body2">@Bookmarks.Count bookmark(s)</TextBlock>
+                    <Button Text="Open directory" Icon="open_in_new" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenAsync" />
+                </Split>
+            </SurfaceCard>
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]
@@ -42,7 +44,7 @@
                 Subtitle = "Manage own and external addresses.",
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                Class = "cda-ledger-dialog cda-ledger-dialog--address-directory",
                 TestId = "cda-address-directory-dialog"
             });
 }

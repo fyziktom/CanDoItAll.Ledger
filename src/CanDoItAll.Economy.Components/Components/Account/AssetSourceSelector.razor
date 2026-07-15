@@ -1,20 +1,15 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-asset-source-selector">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Source selection</span>
-            <h2>Asset source selector</h2>
-        </div>
-    </header>
-
-    <EntityPicker Title="Spend from"
-                  Description="Token options stay decoupled from transaction submission."
-                  Items="PickerItems"
-                  SelectedId="@SelectedTokenKey"
-                  SelectedIdChanged="SelectedTokenKeyChanged"
-                  EmptyText="No spendable assets." />
-</section>
+<div data-testid="cda-asset-source-selector">
+    <SectionCard Title="Asset source selector" Description="Source selection">
+        <EntityPicker Title="Spend from"
+                      Description="Token options stay decoupled from transaction submission."
+                      Items="PickerItems"
+                      SelectedId="@SelectedTokenKey"
+                      SelectedIdChanged="SelectedTokenKeyChanged"
+                      EmptyText="No spendable assets." />
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]

@@ -36,11 +36,43 @@ public sealed class TransactionUiComponentTests : TestContext
             ]));
 
         IReadOnlyList<AngleSharp.Dom.IElement> rows = component.FindAll("[data-testid='tx-history-row']");
+        string[] headers = component.FindAll("[data-testid='tx-history-grid'] th")
+            .Select(header => header.TextContent.Trim())
+            .ToArray();
+        IElement grid = component.Find("[data-testid='tx-history-grid']");
 
         Assert.Equal(3, rows.Count);
+        Assert.Equal(["Tx id", "Route", "Kind", "Status", "Inputs", "Outputs", "Data", "Created", "Actions"], headers);
+        Assert.Contains("overflow-x-auto", grid.ClassList);
+        Assert.All(grid.QuerySelectorAll("tbody tr"), row => Assert.Equal("0", row.GetAttribute("tabindex")));
         Assert.Contains("tx-newest-message", rows[0].TextContent, StringComparison.Ordinal);
         Assert.Contains("tx-middle", rows[1].TextContent, StringComparison.Ordinal);
         Assert.Contains("tx-oldest", rows[2].TextContent, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task HistoryDialog_grid_preserves_row_and_details_actions_without_copy_bubbling()
+    {
+        LedgerTransactionSummary transaction = CreateSummary(
+            "tx-action",
+            DateTimeOffset.Parse("2026-07-03T12:00:00Z"),
+            4);
+        var requested = new List<LedgerTransactionSummary>();
+        IRenderedComponent<TransactionHistoryDialogContent> component = RenderComponent<TransactionHistoryDialogContent>(parameters => parameters
+            .Add(x => x.Transactions, [transaction])
+            .Add(x => x.TransactionDetailsRequested, item => requested.Add(item)));
+
+        await component.Find("[data-testid='tx-history-row'] button").ClickAsync(new MouseEventArgs());
+        Assert.Empty(requested);
+
+        await component.Find("[data-testid='tx-history-grid'] tbody tr").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
+        Assert.Equal([transaction], requested);
+
+        requested.Clear();
+        IElement detailsButton = component.FindAll("button")
+            .Single(button => button.TextContent.Contains("Details", StringComparison.Ordinal));
+        await detailsButton.ClickAsync(new MouseEventArgs());
+        Assert.Equal([transaction], requested);
     }
 
     [Fact]

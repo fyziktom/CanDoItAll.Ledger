@@ -6,22 +6,20 @@
 <PageTitle>Account</PageTitle>
 
 <NodeAuthShell Heading="Administrator account" Description="Review the signed-in operator account and identity posture." TestId="node-account-manage">
-    <section class="cda-sdk-panel">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Identity</span>
-                <h2>@(currentUser?.Email ?? "Administrator")</h2>
-            </div>
+    <SectionCard Title="@(currentUser?.Email ?? "Administrator")" Description="Identity">
+        <HeaderActions>
             <StatusBadge Text="Signed in" Tone="success" />
-        </header>
-        <div class="cda-sdk-fact-grid">
-            <div><span>User id</span><strong>@(currentUser?.Id ?? "unknown")</strong></div>
-            <div><span>Email confirmed</span><strong>@(currentUser?.EmailConfirmed == true ? "yes" : "no")</strong></div>
-            <div><span>Two-factor</span><strong>@twoFactorLabel</strong></div>
-            <div><span>Role</span><strong>@EconomyNodeAuthPolicies.AdministratorRole</strong></div>
-        </div>
-        <Button Text="Authenticator setup" Icon="security" Href="/Account/Manage/EnableAuthenticator" Variant="Variant.Outlined" />
-    </section>
+        </HeaderActions>
+        <ChildContent>
+            <SummaryTiles ColumnsSm="2" ColumnsXl="4" GapScale="LayoutGap.Small">
+                <SummaryTile Label="User id" Value="@(currentUser?.Id ?? "unknown")" Compact="true" />
+                <SummaryTile Label="Email confirmed" Value="@(currentUser?.EmailConfirmed == true ? "yes" : "no")" Compact="true" />
+                <SummaryTile Label="Two-factor" Value="@twoFactorLabel" Compact="true" />
+                <SummaryTile Label="Role" Value="@EconomyNodeAuthPolicies.AdministratorRole" Compact="true" />
+            </SummaryTiles>
+            <Button Text="Authenticator setup" Icon="security" Href="/Account/Manage/EnableAuthenticator" Variant="Variant.Outlined" />
+        </ChildContent>
+    </SectionCard>
 </NodeAuthShell>
 
 @code {

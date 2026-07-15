@@ -9,9 +9,9 @@
 }
 else if (Mode == BusinessObjectRenderMode.Summary)
 {
-    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
-        <strong>@Typed.Name</strong>
-        <span>@Typed.Definition.DisplayName / @Typed.ObjectType</span>
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Typed.Name" />
+        <TextBlock TextStyle="TextStyle.Caption">@Typed.Definition.DisplayName / @Typed.ObjectType</TextBlock>
         <Cluster Gap="LayoutGap.Small">
             <StatusBadge Tone="info" Text="@Typed.Definition.Family" />
             <StatusBadge Tone="neutral" Text="@Typed.Operation.ToString()" />
@@ -63,4 +63,3 @@ else
     private ITypedBusinessObjectView? Typed
         => Object as ITypedBusinessObjectView;
 }
-

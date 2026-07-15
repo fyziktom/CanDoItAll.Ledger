@@ -86,10 +86,3 @@ public sealed record BusinessObjectCreationWizardModel(
             .Select(tag => $"#{tag}"));
     }
 }
-
-public sealed record BusinessObjectGalleryItem(
-    IMediaBusinessObjectView Object,
-    string PreviewUrl,
-    bool IsOwnObject,
-    bool IsOffered,
-    string Accent);

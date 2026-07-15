@@ -1,17 +1,13 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-account-history-chart-panel">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Account analytics</span>
-            <h2>Account history</h2>
-        </div>
-    </header>
-    <div class="cda-sdk-dashboard-grid">
+<div data-testid="cda-account-history-chart-panel">
+<SectionCard Title="Account history" Description="Account analytics">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
         <AccountBalanceTrendChart Workspace="Workspace" />
         <ChartInsightSummary Title="Account facts" Insights="Insights" />
-    </div>
-</section>
+    </Grid>
+</SectionCard>
+</div>
 
 @code {
     [Parameter, EditorRequired]

@@ -8,7 +8,7 @@
     <Stack GapScale="LayoutGap.Medium">
         @if (CurrentSale is not null)
         {
-            <div class="cda-vef-sale-current" data-testid="bo-current-sale">
+            <div class="cda-commerce-sale-current" data-testid="bo-current-sale">
                 <span>@CurrentSale.Status</span>
                 <strong>@CurrentSale.Mode / @FormatPrice(CurrentSale.PriceAmount, CurrentSale.TokenId)</strong>
                 @if (CurrentSale.MaxClones is not null)
@@ -59,7 +59,7 @@
             }
         </Grid>
 
-        <div class="cda-vef-sale-share" data-testid="bo-sale-share-link">
+        <div class="cda-commerce-sale-share" data-testid="bo-sale-share-link">
             <span>Buy link</span>
             <CopyableMonoValue Value="@BuyLink" StartChars="48" EndChars="16" AriaLabel="Copy buy link" />
             <CopyButton Text="Copy" Value="@BuyLink" ButtonStyle="ButtonStyle.Secondary" />

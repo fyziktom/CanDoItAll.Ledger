@@ -1,26 +1,26 @@
 @namespace CanDoItAll.Economy.Components
 
-<div class="cda-vef-theme">
+<div class="cda-economy-theme">
     <Layout FitViewport="true"
             LockOverflow="true"
-            Class="cda-vef-app"
-            data-testid="cda-vef-app">
+            Class="cda-economy-shell"
+            data-testid="cda-economy-shell">
     <SideMenu @ref="navigationMenu"
               MenuId="@MenuId"
-              Title="VENFT"
+              Title="Economy"
               Subtitle="@Workspace.AccountName"
               Icon="account_balance_wallet"
-              AriaLabel="VENFT economy app"
+              AriaLabel="Economy account app"
               Items="@NavigationItems"
               BottomItems="@AccountItems"
               FillHeight="true"
               ItemSelected="HandleNavigationSelectionAsync"
-              data-testid="cda-vef-navigation" />
+              data-testid="cda-economy-navigation" />
 
     <Body FillHeight="true" Scrollable="true" Class="min-w-0 p-3.5 sm:p-4 md:p-5">
         <PageScaffold Mode="PageScaffoldMode.FocusWorkbench"
                       MaxWidthClass="max-w-full"
-                      data-testid="cda-vef-main">
+                      data-testid="cda-economy-main">
             <Header>
                 <PageHeader Eyebrow="@HeaderEyebrow"
                             Title="@PageTitle"
@@ -76,11 +76,11 @@
                 }
                 else if (selectedView == "intro")
                 {
-                <SectionCard Title="Introduction" Description="VENFT-style SSR surface backed by the real in-memory economy session.">
+                <SectionCard Title="Introduction" Description="Economy account workspace backed by the real in-memory economy session.">
                     <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-                        <div class="cda-economy-fact"><span>Ledger</span><strong>@Workspace.Context.LedgerId</strong></div>
-                        <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
-                        <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
+                        <SummaryTile Label="Ledger" Value="@Workspace.Context.LedgerId.Value" Compact="true" />
+                        <SummaryTile Label="Scenario" Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" Compact="true" />
+                        <SummaryTile Label="Viewed at UTC" Value="@Workspace.ViewedAtUtc.ToString("u")" Compact="true" />
                     </Grid>
                 </SectionCard>
                 }
@@ -247,7 +247,7 @@
     }
 
     private string HeaderEyebrow
-        => $"VENFT / {Workspace.AccountAlias ?? Workspace.AccountName}";
+        => $"Economy / {Workspace.AccountAlias ?? Workspace.AccountName}";
 
     private string HeaderDescription
         => string.Join(
@@ -265,7 +265,7 @@
                     "rule" => "Add New Rule",
                     "intro" => "Introduction",
                     "messaging" => "Messaging",
-                    _ => "VENFT"
+                    _ => "Economy"
                 };
 
     private BusinessObjectCreationWizardModel CreationWizardForSelectedView
@@ -277,7 +277,7 @@
                 definition.ObjectType,
                 Step: 1,
                 BusinessObjectPayloadBuilder.DefaultName(definition),
-                "#VEFramework #NET #Blazor #OpenSource",
+                "#CanDoItAll #NET #Blazor #OpenSource",
                 definition.Description,
                 Workspace.TransactionDraft.StateJson,
                 [],

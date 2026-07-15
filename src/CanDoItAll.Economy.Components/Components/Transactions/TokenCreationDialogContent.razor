@@ -38,21 +38,18 @@
                         </FormField>
                     </FormSection>
 
-                    <div class="cda-transaction-guidance-surface">
-                        <span class="cda-eyebrow">What this controls</span>
-                        <h3>Authority is checked before minting</h3>
-                        <p>The ledger verifies the selected namespace and the account's current permission before it accepts the token definition.</p>
-                        <div class="cda-transaction-inline-facts">
-                            <div class="cda-economy-fact">
-                                <span>Available namespaces</span>
-                                <strong>@Authorities.Count</strong>
-                            </div>
-                            <div class="cda-economy-fact">
-                                <span>Selected</span>
-                                <strong>@(SelectedAuthority?.Namespace ?? "None")</strong>
-                            </div>
-                        </div>
-                    </div>
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Small">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="What this controls" />
+                            <TextBlock TextStyle="TextStyle.H3" Value="Authority is checked before minting" />
+                            <TextBlock TextStyle="TextStyle.Body2"
+                                       Value="The ledger verifies the selected namespace and the account's current permission before it accepts the token definition." />
+                            <Grid Columns="2" Gap="LayoutGap.Small">
+                                <SummaryTile Label="Available namespaces" Value="@Authorities.Count.ToString()" Compact="true" />
+                                <SummaryTile Label="Selected" Value="@(SelectedAuthority?.Namespace ?? "None")" Compact="true" />
+                            </Grid>
+                        </Stack>
+                    </SurfaceCard>
                 </Grid>
             }
         </StepsItem>
@@ -90,17 +87,20 @@
                     </Grid>
                 </FormSection>
 
-                <div class="cda-transaction-guidance-surface">
-                    <span class="cda-eyebrow">Identifier preview</span>
-                    <h3>@TokenIdentifierPreview</h3>
-                    <p>The namespace and token name form the identifier shown to users in balances and transfer screens.</p>
-                    @if (!DefinitionIsValid)
-                    {
-                        <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
-                            Enter a token name and a positive initial supply to continue.
-                        </Alert>
-                    }
-                </div>
+                <SurfaceCard Soft="true">
+                    <Stack GapScale="LayoutGap.Small">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Identifier preview" />
+                        <TextBlock TextStyle="TextStyle.H3" Value="@TokenIdentifierPreview" />
+                        <TextBlock TextStyle="TextStyle.Body2"
+                                   Value="The namespace and token name form the identifier shown to users in balances and transfer screens." />
+                        @if (!DefinitionIsValid)
+                        {
+                            <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
+                                Enter a token name and a positive initial supply to continue.
+                            </Alert>
+                        }
+                    </Stack>
+                </SurfaceCard>
             </Grid>
         </StepsItem>
 
@@ -109,21 +109,24 @@
                   Gap="LayoutGap.Medium"
                   AlignItems="AlignItems.Stretch">
                 <FormSection Title="Token to be created" Description="Confirm the values that will be sent to the ledger.">
-                    <div class="cda-token-creation-review">
-                        <div><span>Namespace</span><strong>@SelectedAuthority?.Namespace</strong></div>
-                        <div><span>Permission UTXO</span><strong>@SelectedAuthorityLabel</strong></div>
-                        <div><span>Token</span><strong>@TokenIdentifierPreview</strong></div>
-                        <div><span>Initial supply</span><strong>@tokenAmount</strong></div>
-                        <div><span>Description</span><strong>@description</strong></div>
-                    </div>
+                    <Grid Columns="2" Gap="LayoutGap.Small">
+                        <SummaryTile Label="Namespace" Value="@(SelectedAuthority?.Namespace ?? "None")" Compact="true" />
+                        <SummaryTile Label="Permission UTXO" Value="@SelectedAuthorityLabel" Compact="true" />
+                        <SummaryTile Label="Token" Value="@TokenIdentifierPreview" Compact="true" />
+                        <SummaryTile Label="Initial supply" Value="@tokenAmount" Compact="true" />
+                        <SummaryTile Label="Description" Value="@description" Compact="true" />
+                    </Grid>
                 </FormSection>
 
-                <div class="cda-transaction-guidance-surface cda-transaction-guidance-surface--accent">
-                    <span class="cda-eyebrow">Ready to create</span>
-                    <h3>Authority and definition are complete</h3>
-                    <p>Creating the token submits a mint request. Review the namespace and supply once more before continuing.</p>
-                    <Pill Text="Ready" Tone="PillTone.Ok" />
-                </div>
+                <SurfaceCard Soft="true">
+                    <Stack GapScale="LayoutGap.Small">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Ready to create" />
+                        <TextBlock TextStyle="TextStyle.H3" Value="Authority and definition are complete" />
+                        <TextBlock TextStyle="TextStyle.Body2"
+                                   Value="Creating the token submits a mint request. Review the namespace and supply once more before continuing." />
+                        <StatusBadge Text="Ready" Tone="success" />
+                    </Stack>
+                </SurfaceCard>
             </Grid>
         </StepsItem>
     </Steps>

@@ -1,29 +1,45 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-jwt-token-admin-list">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>JWT tokens</span>
-            <h2>Issued tokens</h2>
-        </div>
-        <Button Text="Create token" Icon="add" Variant="Variant.Outlined" />
-    </header>
-    <div class="cda-sdk-list">
-        <article class="cda-sdk-list__row">
-            <span class="material-icons" aria-hidden="true">vpn_key</span>
-            <div>
-                <strong>ops-dashboard</strong>
-                <small>read scope - expires 2026-05-20</small>
-            </div>
-            <StatusBadge Text="active" Tone="success" />
-        </article>
-        <article class="cda-sdk-list__row">
-            <span class="material-icons" aria-hidden="true">vpn_key</span>
-            <div>
-                <strong>maintenance</strong>
-                <small>admin scope - expires 2026-05-12</small>
-            </div>
-            <StatusBadge Text="expires soon" Tone="warning" />
-        </article>
-    </div>
-</section>
+<div data-testid="cda-jwt-token-admin-list">
+    <SectionCard Title="Issued tokens" Description="JWT tokens">
+        <HeaderActions>
+            <Button Text="Create token" Icon="add" Variant="Variant.Outlined" />
+        </HeaderActions>
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Small">
+                <SurfaceCard Soft="true">
+                    <Split Breakpoint="LayoutBreakpoint.None"
+                           Gap="LayoutGap.Small"
+                           AlignItems="AlignItems.Start"
+                           JustifyContent="JustifyContent.SpaceBetween"
+                           Wrap="FlexWrap.Wrap">
+                        <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                            <Icon Name="vpn_key" />
+                            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="ops-dashboard" />
+                                <SmallText Text="read scope - expires 2026-05-20" />
+                            </Stack>
+                        </Cluster>
+                        <StatusBadge Text="active" Tone="success" />
+                    </Split>
+                </SurfaceCard>
+                <SurfaceCard Soft="true">
+                    <Split Breakpoint="LayoutBreakpoint.None"
+                           Gap="LayoutGap.Small"
+                           AlignItems="AlignItems.Start"
+                           JustifyContent="JustifyContent.SpaceBetween"
+                           Wrap="FlexWrap.Wrap">
+                        <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                            <Icon Name="vpn_key" />
+                            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="maintenance" />
+                                <SmallText Text="admin scope - expires 2026-05-12" />
+                            </Stack>
+                        </Cluster>
+                        <StatusBadge Text="expires soon" Tone="warning" />
+                    </Split>
+                </SurfaceCard>
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>

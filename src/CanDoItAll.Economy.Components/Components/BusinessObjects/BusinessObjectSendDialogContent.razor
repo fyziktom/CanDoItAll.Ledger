@@ -41,10 +41,9 @@
                           aria-label="Bookmarked receiver address" />
             </FormField>
 
-            <div class="cda-economy-fact">
-                <span>Mode</span>
-                <strong>@(IsClone ? "Send clone" : "Send original")</strong>
-            </div>
+            <SummaryTile Label="Mode"
+                         Value="@(IsClone ? "Send clone" : "Send original")"
+                         Compact="true" />
         </Grid>
 
         <Cluster Gap="LayoutGap.Small">
@@ -110,7 +109,7 @@
                 Subtitle = Object?.ObjectId.Value,
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                Class = "cda-ledger-dialog cda-ledger-dialog--address-directory",
                 TestId = "cda-address-directory-dialog"
             });
 

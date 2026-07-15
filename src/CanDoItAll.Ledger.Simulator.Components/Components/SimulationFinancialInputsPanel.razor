@@ -1,7 +1,10 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 @using System.Globalization
 
-<div class="cda-sim-split-grid" data-testid="simulation-financial-inputs-tab">
+<Grid ColumnTemplateLg="minmax(18rem, 0.85fr) minmax(0, 1.5fr)"
+      Gap="LayoutGap.Large"
+      AlignItems="AlignItems.Start"
+      data-testid="simulation-financial-inputs-tab">
     <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
         <Stack FillHeight="true" GapScale="LayoutGap.Medium">
             <Split Breakpoint="LayoutBreakpoint.None"
@@ -22,16 +25,13 @@
                         @foreach (SimulationFinancialInputState input in profile.Inputs.OrderBy(x => x.Kind).ThenBy(x => x.DisplayName, StringComparer.Ordinal))
                         {
                             bool selected = string.Equals(input.InputId, SelectedInputId, StringComparison.Ordinal);
-                            <button type="button"
-                                    class="@ResolveInputButtonClass(selected)"
-                                    data-testid="@($"simulation-financial-input-{input.InputId}")"
-                                    @onclick="@(() => SelectInput(input.InputId))">
-                                <span class="flex min-w-0 flex-col items-start gap-1 text-left">
-                                    <span class="max-w-full truncate text-sm font-semibold text-slate-950">@input.DisplayName</span>
-                                    <span class="max-w-full truncate text-xs text-slate-500">@input.Kind</span>
-                                </span>
-                                <span class="text-right text-xs font-semibold text-slate-700">@FormatInputValue(input)</span>
-                            </button>
+                            <SelectionListItem IsSelected="@selected"
+                                               Dense="true"
+                                               Title="@input.DisplayName"
+                                               Meta="@input.Kind.ToString()"
+                                               Summary="@FormatInputValue(input)"
+                                               DataTestId="@($"simulation-financial-input-{input.InputId}")"
+                                               OnSelect="@(() => SelectInput(input.InputId))" />
                         }
                     </Stack>
                 </SectionCard>
@@ -117,7 +117,7 @@
             </Stack>
         }
     </WorkspacePanel>
-</div>
+</Grid>
 
 @code {
     private string? selectedInputId;
@@ -185,9 +185,4 @@
         };
     }
 
-    private static string ResolveInputButtonClass(bool selected)
-        => string.Join(' ', [
-            "flex w-full min-w-0 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition",
-            selected ? "border-sky-300 bg-sky-50" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-        ]);
 }

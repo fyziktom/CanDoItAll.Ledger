@@ -9,10 +9,10 @@
                 Description="Back up AccountApp UI preferences, tag usage, and address directory metadata without touching the encrypted account vault.">
     <ChildContent>
         <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-settings-backup" data-testid="cda-settings-backup-dialog">
-            <section class="cda-vef-panel">
-                <div class="cda-vef-panel-header">Export</div>
-                <div class="cda-vef-panel-body cda-settings-backup__section">
-                    <p class="cda-vef-empty-line">Exported settings include tag counters, tag color metadata, address favorites, user tags, and safe profile summaries.</p>
+            <section class="cda-ledger-panel">
+                <div class="cda-ledger-panel-header">Export</div>
+                <div class="cda-ledger-panel-body cda-settings-backup__section">
+                    <p class="cda-ledger-empty-line">Exported settings include tag counters, tag color metadata, address favorites, user tags, and safe profile summaries.</p>
                     <Button Text="Create export"
                             Icon="download"
                             ButtonStyle="ButtonStyle.Secondary"
@@ -27,9 +27,9 @@
                 </div>
             </section>
 
-            <section class="cda-vef-panel">
-                <div class="cda-vef-panel-header">Import</div>
-                <div class="cda-vef-panel-body cda-settings-backup__section">
+            <section class="cda-ledger-panel">
+                <div class="cda-ledger-panel-header">Import</div>
+                <div class="cda-ledger-panel-body cda-settings-backup__section">
                     <TextArea Value="@importJson"
                               ValueChanged="@(value => importJson = value ?? string.Empty)"
                               Rows="8"

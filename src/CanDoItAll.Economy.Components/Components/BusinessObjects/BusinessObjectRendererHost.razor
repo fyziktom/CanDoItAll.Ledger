@@ -3,15 +3,15 @@
 
 @if (Object is null)
 {
-    <div class="cda-economy-empty">No business object selected.</div>
+    <EmptyState Eyebrow="Business object" Title="No object selected" Description="No business object is available for this renderer." />
 }
 else
 {
     BusinessObjectRendererDescriptor descriptor = ResolveDescriptor();
 
-    <div class="cda-economy-renderer-host" data-renderer="@descriptor.Key">
+    <Stack GapScale="LayoutGap.Small" Class="min-w-0" data-renderer="@descriptor.Key">
         <DynamicComponent Type="descriptor.ComponentType" Parameters="BuildParameters(descriptor)" />
-    </div>
+    </Stack>
 }
 
 @code {

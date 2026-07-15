@@ -1,17 +1,19 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-ledger-operator-actions">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Operator actions</span>
-            <h2>Guarded ledger operations</h2>
-        </div>
-        <StatusBadge Text="Confirmation required" Tone="warning" />
-    </header>
-    <div class="cda-sdk-dashboard-grid">
-        <TimeControlPanel />
-        <SnapshotAdminPanel />
-        <ProjectionMaintenancePanel />
-        <LedgerResetDialog />
-    </div>
-</section>
+<div data-testid="cda-ledger-operator-actions">
+    <SectionCard Title="Guarded ledger operations" Description="Operator actions">
+        <HeaderActions>
+            <StatusBadge Text="Confirmation required" Tone="warning" />
+        </HeaderActions>
+        <ChildContent>
+            <Grid ColumnTemplate="repeat(auto-fit, minmax(min(100%, 22rem), 1fr))"
+                  Gap="LayoutGap.Medium"
+                  AlignItems="AlignItems.Start">
+                <TimeControlPanel />
+                <SnapshotAdminPanel />
+                <ProjectionMaintenancePanel />
+                <LedgerResetDialog />
+            </Grid>
+        </ChildContent>
+    </SectionCard>
+</div>

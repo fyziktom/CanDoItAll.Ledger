@@ -24,7 +24,7 @@ internal static class VefFinancialPlanScenarioData
         return new ScenarioBusinessModelState(
             project,
             "VEF",
-            "VEFramework Financial Plan",
+            "Reference Financial Plan",
             "EUR",
             new DateOnly(2021, 1, 1),
             new DateOnly(2025, 12, 31),
@@ -33,9 +33,9 @@ internal static class VefFinancialPlanScenarioData
             [treasury, management, development, it_support, sales, marketing, finance_hr_admin, legal_accounting, travel_facilities, hardware_production],
             [immediate],
             [
-                new(project, "vef-customers", "VEFramework product customers", "customer", sales.BusinessUnitId, immediate.PaymentTermId, "EUR", Empty()),
-                new(project, "vef-suppliers", "VEFramework suppliers and service providers", "supplier", null, immediate.PaymentTermId, "EUR", Empty()),
-                new(project, "vef-investors-lenders", "VEFramework investors or lenders", "financing", treasury.BusinessUnitId, immediate.PaymentTermId, "EUR", Empty())
+                new(project, "vef-customers", "Reference-plan product customers", "customer", sales.BusinessUnitId, immediate.PaymentTermId, "EUR", Empty()),
+                new(project, "vef-suppliers", "Reference-plan suppliers and service providers", "supplier", null, immediate.PaymentTermId, "EUR", Empty()),
+                new(project, "vef-investors-lenders", "Reference-plan investors or lenders", "financing", treasury.BusinessUnitId, immediate.PaymentTermId, "EUR", Empty())
             ],
             [],
             [],

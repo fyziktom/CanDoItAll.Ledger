@@ -1,8 +1,8 @@
 @if (!string.IsNullOrWhiteSpace(Message))
 {
-    <section class="cda-sdk-panel" role="status">
+    <SurfaceCard Soft="true" role="status">
         <StatusBadge Text="@Message" Tone="@Tone" />
-    </section>
+    </SurfaceCard>
 }
 
 @code {

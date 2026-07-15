@@ -1,7 +1,7 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 @using System.Globalization
 
-<div class="space-y-4" data-testid="economy-scenario-graph-panel">
+<Stack GapScale="LayoutGap.Large" data-testid="economy-scenario-graph-panel">
     <Split Breakpoint="LayoutBreakpoint.Lg"
            AlignItems="AlignItems.Start"
            JustifyContent="JustifyContent.SpaceBetween"
@@ -73,20 +73,6 @@
               Height="360"
               EmptyText="No graph rows match the current filters." />
 
-    <div class="cda-sim-chart-fallback" data-testid="economy-graph-fallback-chart" aria-label="@($"{SelectedMetricLabel} chart summary")">
-        @foreach (FallbackChartRow row in FallbackChartRows)
-        {
-            <div class="cda-sim-chart-fallback__row">
-                <span>@row.Name</span>
-                <div class="cda-sim-chart-fallback__track">
-                    <div class="@($"cda-sim-chart-fallback__bar cda-sim-chart-fallback__bar--{row.Tone}")"
-                         style="@($"width:{FallbackWidth(row.Value)}")"></div>
-                </div>
-                <strong>@Money(row.Value)</strong>
-            </div>
-        }
-    </div>
-
     <SectionCard Title="Graph drilldown" Description="Source economic events behind the selected graph.">
         <DataGrid TItem="EconomyGraphDrilldownRow" Data="FilteredDrilldownRows" AllowPaging="true" PageSize="8">
             <DataGridColumn TItem="EconomyGraphDrilldownRow" Title="Date">
@@ -109,7 +95,7 @@
             <DataGridColumn TItem="EconomyGraphDrilldownRow" Property="Description" Title="Description" />
         </DataGrid>
     </SectionCard>
-</div>
+</Stack>
 
 @code {
     private static readonly IReadOnlyList<GraphMetricOption> MetricOptions =
@@ -194,12 +180,6 @@
     private decimal TotalPnl => FilteredPoints.Sum(point => point.NonCashIncome - point.NonCashExpense);
     private decimal NetCashFlow => TotalInflow - TotalOutflow;
 
-    private IReadOnlyList<FallbackChartRow> FallbackChartRows => ChartSeries
-        .Select((series, index) => new FallbackChartRow(series.Name, series.Points.Sum(point => point.Value), ToneForIndex(index)))
-        .ToArray();
-
-    private decimal FallbackMax => Math.Max(1m, FallbackChartRows.Select(row => Math.Abs(row.Value)).DefaultIfEmpty(1m).Max());
-
     private string SelectedFilterSummary
     {
         get
@@ -252,20 +232,6 @@
     private static string Money(decimal value)
         => value.ToString("EUR #,0;EUR (#,0)", CultureInfo.InvariantCulture);
 
-    private string FallbackWidth(decimal value)
-    {
-        double percent = (double)(Math.Abs(value) / FallbackMax * 100m);
-        return $"{Math.Clamp(percent, 4d, 100d).ToString("0.##", CultureInfo.InvariantCulture)}%";
-    }
-
-    private static string ToneForIndex(int index)
-        => (index % 3) switch
-        {
-            1 => "green",
-            2 => "amber",
-            _ => "blue"
-        };
-
     private static string FormatDate(DateOnly value)
         => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -276,5 +242,4 @@
 
     private sealed record GraphFilterOption(string Label, string Value);
 
-    private sealed record FallbackChartRow(string Name, decimal Value, string Tone);
 }

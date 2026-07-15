@@ -108,7 +108,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             tab => Assert.Contains("Balances", tab.TextContent, StringComparison.Ordinal),
             tab => Assert.Contains("Commerce", tab.TextContent, StringComparison.Ordinal),
             tab => Assert.Contains("Transactions history", tab.TextContent, StringComparison.Ordinal));
-        Assert.NotEmpty(home.FindAll("[data-testid='cda-vef-account-analytics']"));
+        Assert.NotEmpty(home.FindAll("[data-testid='cda-account-analytics']"));
 
         await ClickTabAsync(home, "Balances");
         home.WaitForAssertion(() => Assert.Contains("Source UTXOs", home.Markup, StringComparison.Ordinal));

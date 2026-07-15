@@ -17,6 +17,7 @@ using CanDoItAll.Economy.Storage.InMemory;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
@@ -28,8 +29,8 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
 
     public AccountWorkspaceAdapterTests()
     {
-        JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
+        Services.AddSingleton<IJSRuntime>(new SideMenuTestJsRuntime());
         Services.AddEconomySsrAccountWorkspaceAdapters();
     }
 
@@ -1141,5 +1142,33 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
                     payloadHash,
                     Encoding.UTF8.GetBytes("admin-signature"))
             });
+    }
+
+    private sealed class SideMenuTestJsRuntime : IJSRuntime, IJSObjectReference
+    {
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
+            => InvokeAsync<TValue>(identifier, CancellationToken.None, args);
+
+        public ValueTask<TValue> InvokeAsync<TValue>(
+            string identifier,
+            CancellationToken cancellationToken,
+            object?[]? args)
+        {
+            if (identifier == "import" && typeof(TValue) == typeof(IJSObjectReference))
+            {
+                return ValueTask.FromResult((TValue)(object)this);
+            }
+
+            if (identifier == "initialize")
+            {
+                object initialization = Activator.CreateInstance(typeof(TValue), nonPublic: true)
+                    ?? throw new InvalidOperationException("Could not create SideMenu interop initialization state.");
+                return ValueTask.FromResult((TValue)initialization);
+            }
+
+            return ValueTask.FromResult(default(TValue)!);
+        }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }

@@ -5,42 +5,45 @@
 @inject IServiceProvider Services
 @inject ITagOccurrenceService TagOccurrences
 
-<Stack Section="true" GapScale="LayoutGap.Small" Class="cda-venft-wizard cda-venft-wizard--compact" data-testid="bo-create-wizard">
-    <section class="cda-venft-wizard-command">
+<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="bo-create-wizard">
+    <SurfaceCard Soft="true">
+        <Split Breakpoint="LayoutBreakpoint.Lg"
+               Gap="LayoutGap.Medium"
+               AlignItems="AlignItems.Center"
+               JustifyContent="JustifyContent.SpaceBetween"
+               Wrap="FlexWrap.Wrap">
         <Steps Value="@(currentStep - 1)"
                ValueChanged="SetStepIndex"
                CanSelect="true"
-               Class="cda-venft-compact-steps"
                aria-label="Create BusinessObject steps">
             <StepsItem Text="Upload" Icon="upload_file" />
             <StepsItem Text="Data Info" Icon="edit_note" />
             <StepsItem Text="Finish" Icon="flag" />
         </Steps>
 
-        <Cluster Gap="LayoutGap.Small" Class="cda-venft-wizard-actions cda-venft-wizard-actions--compact">
+        <Cluster Gap="LayoutGap.Small">
             <Button Text="Load Template" Icon="folder_open" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" />
             <Button Text="Back" Icon="arrow_back" Size="ButtonSize.Small" Variant="Variant.Outlined" Disabled="@(currentStep == 1)" Click="@PreviousStep" />
             <Button Text="@NextButtonText" Icon="@NextButtonIcon" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@NextStepAsync" />
         </Cluster>
-    </section>
+        </Split>
+    </SurfaceCard>
 
     @if (currentStep == 1)
     {
-        <section class="cda-vef-panel cda-venft-wizard-panel cda-venft-upload-panel">
-            <div class="cda-vef-panel-header">
-                <Stack GapScale="LayoutGap.Tiny">
-                    <span>Upload Data Items</span>
-                    <small>Images, media, PDF, JSON, HTML, and Mermaid files can become BO payload data.</small>
-                </Stack>
-                <span class="cda-vef-source-pill cda-vef-source-pill--source">@DisplayDataItems.Count item(s)</span>
-            </div>
-            <div class="cda-vef-panel-body">
+        <SectionCard Title="Upload Data Items"
+                     Description="Images, media, PDF, JSON, HTML, and Mermaid files can become business-object payload data.">
+            <HeaderActions>
+                <StatusBadge Text="@($"{DisplayDataItems.Count} item(s)")" Tone="info" />
+            </HeaderActions>
+            <ChildContent>
                 <Grid ColumnsLg="2"
                       ColumnTemplateLg="minmax(18rem, 0.8fr) minmax(0, 1.2fr)"
-                      Gap="LayoutGap.Medium"
-                      Class="cda-venft-upload-layout">
+                      Gap="LayoutGap.Medium">
                     <Stack GapScale="LayoutGap.Small" Class="min-w-0">
-                        <div class="cda-venft-info-alert cda-venft-info-alert--compact">Files are uploaded to IPFS immediately. The BO transaction stores only CIDs and metadata.</div>
+                        <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                            Files are uploaded to IPFS immediately. The business-object transaction stores only CIDs and metadata.
+                        </Alert>
                         <FileUpload PrimaryText="Drop or choose files"
                                     SecondaryText="PNG, JPEG, MP3, MP4, JSON, PDF, HTML, or MMD."
                                     ButtonText="Choose files"
@@ -52,74 +55,77 @@
                                     InputTestHookId="bo-upload-input"
                                     RootTestHookId="bo-upload"
                                     DropZoneTestHookId="bo-upload-zone" />
-                        <Grid ColumnsMd="3" Gap="LayoutGap.Small" Class="cda-venft-upload-facts">
-                            <div class="cda-economy-fact"><span>Type</span><strong>@SelectedDefinition.DisplayName</strong></div>
-                            <div class="cda-economy-fact"><span>Main</span><strong>@(MainDataItem?.Name ?? "none")</strong></div>
-                            <div class="cda-economy-fact"><span>Loaded</span><strong>@DisplayDataItems.Count</strong></div>
-                            <div class="cda-economy-fact"><span>Storage</span><strong>@UploadStorageLabel</strong></div>
-                        </Grid>
+                        <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                            <SummaryTile Label="Type" Value="@SelectedDefinition.DisplayName" Compact="true" />
+                            <SummaryTile Label="Main" Value="@(MainDataItem?.Name ?? "none")" Compact="true" />
+                            <SummaryTile Label="Loaded" Value="@DisplayDataItems.Count.ToString()" Compact="true" />
+                            <SummaryTile Label="Storage" Value="@UploadStorageLabel" Compact="true" />
+                        </SummaryTiles>
                     </Stack>
 
                     <Stack GapScale="LayoutGap.Small" Class="min-w-0">
-                        <Grid ColumnsLg="2" ColumnTemplateLg="minmax(0, 0.9fr) minmax(0, 1.1fr)" Gap="LayoutGap.Small" Class="cda-venft-upload-preview-grid">
-                            <section class="cda-venft-preview-tile">
-                                <div class="cda-venft-preview-tile__header">
-                                    <span>Selected Preview</span>
-                                    <strong>@(LastUploadedItem?.Name ?? "No file")</strong>
-                                </div>
+                        <Grid ColumnsLg="2" ColumnTemplateLg="minmax(0, 0.9fr) minmax(0, 1.1fr)" Gap="LayoutGap.Small">
+                            <SurfaceCard Soft="true">
+                                <Stack GapScale="LayoutGap.Small">
+                                    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Selected Preview" />
+                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@(LastUploadedItem?.Name ?? "No file")" />
+                                    </Split>
                                 @if (LastUploadedItem is not null)
                                 {
                                     <BusinessObjectDataItemPreview Item="LastUploadedItem" Large="true" />
                                 }
                                 else
                                 {
-                                    <div class="cda-venft-empty-preview">
-                                        <span class="material-icons" aria-hidden="true">upload_file</span>
-                                        <strong>No preview yet</strong>
-                                    </div>
+                                    <EmptyState Eyebrow="Preview"
+                                                Title="No preview yet"
+                                                Description="Choose a file to inspect it before staging the transaction." />
                                 }
-                            </section>
+                                </Stack>
+                            </SurfaceCard>
 
-                            <section class="cda-venft-loaded-panel">
-                                <div class="cda-venft-preview-tile__header">
-                                    <span>Loaded DataItems</span>
-                                    <strong>@DisplayDataItems.Count total</strong>
-                                </div>
+                            <SurfaceCard Soft="true">
+                                <Stack GapScale="LayoutGap.Small">
+                                    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Loaded Data Items" />
+                                        <StatusBadge Text="@($"{DisplayDataItems.Count} total")" Tone="neutral" />
+                                    </Split>
                                 @if (DisplayDataItems.Count == 0)
                                 {
-                                    <p class="cda-vef-empty-line">Choose files to prepare BO data items.</p>
+                                    <EmptyState Title="No data items"
+                                                Description="Choose files to prepare business-object data items." />
                                 }
                                 else
                                 {
-                                    <div class="cda-venft-dataitem-strip cda-venft-dataitem-strip--compact">
+                                    <Grid ColumnsSm="2" Gap="LayoutGap.Small">
                                         @foreach (BusinessObjectDataItem item in DisplayDataItems)
                                         {
-                                            <article class="cda-venft-dataitem-card cda-venft-dataitem-card--compact">
-                                                <BusinessObjectDataItemPreview Item="item" />
-                                                <div>
-                                                    <strong><HashDisplay Value="@item.Hash" /></strong>
-                                                    <Stack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" GapScale="LayoutGap.XSmall" Class="cda-economy-check-row">
+                                            <SurfaceCard Soft="true">
+                                                <Stack GapScale="LayoutGap.Small">
+                                                    <BusinessObjectDataItemPreview Item="item" />
+                                                    <HashDisplay Value="@item.Hash" />
+                                                    <Cluster AlignItems="AlignItems.Center" Gap="LayoutGap.XSmall">
                                                         <CheckBox TValue="bool" Value="@item.IsMain" Disabled="true" />
                                                         <span>Main</span>
-                                                    </Stack>
-                                                </div>
-                                            </article>
+                                                    </Cluster>
+                                                </Stack>
+                                            </SurfaceCard>
                                         }
-                                    </div>
+                                    </Grid>
                                 }
-                            </section>
+                                </Stack>
+                            </SurfaceCard>
                         </Grid>
                     </Stack>
                 </Grid>
-            </div>
-        </section>
+            </ChildContent>
+        </SectionCard>
     }
     else if (currentStep == 2)
     {
-        <section class="cda-vef-panel cda-venft-wizard-panel">
-            <div class="cda-vef-panel-header">Information about the data</div>
-            <div class="cda-vef-panel-body">
-                <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-venft-data-info-layout">
+        <SectionCard Title="Information about the data"
+                     Description="Describe the business object and fill any fields required by its selected type.">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
                     <Stack GapScale="LayoutGap.Small" Class="min-w-0">
                         <FormField Text="Type">
                             <DropDown TValue="string"
@@ -141,12 +147,12 @@
                                        InputTestId="bo-tag-editor-input"
                                        TestId="bo-tag-editor" />
                         </FormField>
-                        <div class="cda-venft-tag-row">
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
                             @foreach (string tag in Tags)
                             {
                                 <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="bo-tag-badge" />
                             }
-                        </div>
+                        </Cluster>
                         <FormField Text="Short description">
                             <TextBox Value="@description" ValueChanged="@(value => description = value ?? string.Empty)" Immediate="true" aria-label="BusinessObject description" />
                         </FormField>
@@ -267,9 +273,8 @@
                                                           data-testid="cda-ticket-multimint-recipient-list" />
                                             </FormField>
                                         }
-                                        <div class="cda-economy-fact cda-economy-fact--wide" data-testid="cda-ticket-multimint-summary">
-                                            <span>Batch preview</span>
-                                            <strong>@TicketMultimintSummary</strong>
+                                        <div class="cda-sdk-span-all" data-testid="cda-ticket-multimint-summary">
+                                            <SummaryTile Label="Batch preview" Value="@TicketMultimintSummary" />
                                         </div>
                                     </Grid>
                                 }
@@ -336,64 +341,63 @@
                         }
                     </Stack>
                 </Grid>
-            </div>
-        </section>
+        </SectionCard>
     }
     else
     {
-        <section class="cda-vef-panel cda-venft-wizard-panel">
-            <div class="cda-vef-panel-header">Finish</div>
-            <div class="cda-vef-panel-body">
-                <Grid ColumnsLg="2" ColumnTemplateLg="minmax(0, 1.4fr) minmax(320px, 0.8fr)" Gap="LayoutGap.Large" Class="cda-venft-finish-layout">
+        <SectionCard Title="Finish"
+                     Description="Review the preview, metadata, and creation source before staging the transaction.">
+                <Grid ColumnsLg="2" ColumnTemplateLg="minmax(0, 1.4fr) minmax(320px, 0.8fr)" Gap="LayoutGap.Large">
                     <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
-                        <button type="button" class="cda-vef-gallery-preview cda-venft-finish-preview-card" @onclick="OpenFinishDetailsAsync">
+                        <Button Look="ButtonLook.SheetCardGhost" Class="w-full" Click="@OpenFinishDetailsAsync">
                             @if (LastUploadedItem is not null)
                             {
                                 <BusinessObjectDataItemPreview Item="LastUploadedItem" Large="true" />
                             }
                             else
                             {
-                                <span class="material-icons" aria-hidden="true">@FinishIcon</span>
-                                <strong>@ShortType(selectedObjectType)</strong>
+                                <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Center">
+                                    <Icon Name="@FinishIcon" />
+                                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="@ShortType(selectedObjectType)" />
+                                </Stack>
                             }
-                        </button>
-                        <Stack GapScale="LayoutGap.Small" Class="cda-venft-finish-copy">
-                            <h3>@name</h3>
-                            <p>@description</p>
-                            <div class="cda-vef-badges">
-                                <span>VENFT</span>
-                                <span>BO</span>
-                                <span>@selectedObjectType</span>
-                            </div>
-                            <div class="cda-vef-tags">
+                        </Button>
+                        <Stack GapScale="LayoutGap.Small">
+                            <TextBlock TextStyle="TextStyle.H3" Value="@name" />
+                            <TextBlock TextStyle="TextStyle.Body2" Value="@description" />
+                            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
+                                <StatusBadge Text="Economy BO" Tone="info" />
+                                <StatusBadge Text="BO" Tone="neutral" />
+                                <StatusBadge Text="@selectedObjectType" Tone="neutral" />
+                            </Cluster>
+                            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
                                 @foreach (string tag in Tags)
                                 {
                                     <TagBadge Tag="@tag" AccountScope="@TagAccountScope" />
                                 }
-                            </div>
+                            </Cluster>
                         </Stack>
                     </Stack>
 
-                    <Stack GapScale="LayoutGap.Medium" Class="cda-venft-finish-inspector min-w-0">
-                        <Grid ColumnsMd="2" Gap="LayoutGap.Small">
-                            <div class="cda-economy-fact"><span>Type</span><strong>@SelectedDefinition.DisplayName</strong></div>
-                            <div class="cda-economy-fact"><span>DataItems</span><strong>@DisplayDataItems.Count</strong></div>
-                            <div class="cda-economy-fact cda-economy-fact--wide"><span>Name</span><strong>@name</strong></div>
-                        </Grid>
+                    <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
+                        <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                            <SummaryTile Label="Type" Value="@SelectedDefinition.DisplayName" Compact="true" />
+                            <SummaryTile Label="Data Items" Value="@DisplayDataItems.Count.ToString()" Compact="true" />
+                            <SummaryTile Label="Name" Value="@name" Compact="true" />
+                        </SummaryTiles>
                         @if (TypedFacts.Count > 0)
                         {
-                            <Grid ColumnsMd="2" Gap="LayoutGap.Small">
+                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
                                 @foreach (BusinessObjectDisplayFact fact in TypedFacts.Take(4))
                                 {
-                                    <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
+                                    <SummaryTile Label="@fact.Label" Value="@fact.Value" Compact="true" />
                                 }
-                            </Grid>
+                            </SummaryTiles>
                         }
                         @if (IsEditMode && Model.EditSource is not null)
                         {
-                            <div class="cda-economy-fact cda-economy-fact--wide" data-testid="bo-edit-source">
-                                <span>Update source</span>
-                                <strong>@ShortObjectId(Model.EditSource.ObjectId)</strong>
+                            <div data-testid="bo-edit-source">
+                                <SummaryTile Label="Update source" Value="@ShortObjectId(Model.EditSource.ObjectId)" Compact="true" />
                             </div>
                         }
                         else if (Workspace is not null)
@@ -403,10 +407,7 @@
                                                     SelectedKeyChanged="@(key => selectedTokenKey = key)"
                                                     Label="Creation asset"
                                                     DataTestId="bo-create-token-selector" />
-                            <div class="cda-economy-fact">
-                                <span>Source status</span>
-                                <strong>@CreationAssetHint</strong>
-                            </div>
+                            <SummaryTile Label="Source status" Value="@CreationAssetHint" Compact="true" />
                         }
                         <Cluster Gap="LayoutGap.Small">
                             <Button Text="@StageButtonText" Icon="receipt_long" ButtonStyle="ButtonStyle.Secondary" Disabled="@(!CanStageSelectedAsset)" Click="StageBusinessObjectAsync" />
@@ -414,8 +415,7 @@
                         </Cluster>
                     </Stack>
                 </Grid>
-            </div>
-        </section>
+        </SectionCard>
     }
 </Stack>
 
@@ -704,7 +704,7 @@
                 Subtitle = "Load an event BO and prefill ticket details.",
                 Size = ModalSize.Wide,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--details cda-event-picker-dialog",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-event-picker-dialog",
                 TestId = "cda-event-picker-dialog"
             }).ConfigureAwait(false);
 
@@ -854,7 +854,7 @@
                 Subtitle = "Choose own or external recipient",
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                Class = "cda-ledger-dialog cda-ledger-dialog--address-directory",
                 TestId = "cda-address-directory-dialog"
             });
 
@@ -988,7 +988,7 @@
             {
                 Subtitle = "Gallery preview before staging",
                 Size = ModalSize.Wide,
-                Class = "cda-vef-dialog cda-vef-dialog--details",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details",
                 TestId = "cda-bo-finish-preview-details-dialog"
             });
     }

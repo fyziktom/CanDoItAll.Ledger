@@ -1,40 +1,67 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-utxo-explorer">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Spendable outputs</span>
-            <h2>UTXO explorer</h2>
-        </div>
-        <StatusBadge Text="@($"{Outputs.Count} outputs")" Tone="info" />
-    </header>
+<div data-testid="cda-utxo-explorer">
+    <SectionCard Title="UTXO explorer" Description="Spendable outputs in the current account projection">
+        <HeaderActions>
+            <StatusBadge Text="@($"{Outputs.Count} outputs")" Tone="info" />
+        </HeaderActions>
 
-    @if (Outputs.Count == 0)
-    {
-        <EmptyState Eyebrow="UTXO" Title="No spendable outputs" Description="This account has no source outputs in the current projection." />
-    }
-    else
-    {
-        <div class="cda-sdk-list">
-            @foreach (LedgerSpendableOutput output in Outputs)
+        <ChildContent>
+            @if (Outputs.Count == 0)
             {
-                <article class="cda-sdk-list__row">
-                    <span class="material-icons" aria-hidden="true">receipt_long</span>
-                    <div>
-                        <strong>@output.OutPoint</strong>
-                        <span>@Short(output.Address.Value)</span>
-                        <small>@output.MainAmount main @FormatToken(output.Token)</small>
-                        @if (output.BusinessObject is not null)
-                        {
-                            <small>BO @BusinessObjectId.FromOutPoint(output.OutPoint).Value v@output.BusinessObject.Version</small>
-                        }
-                    </div>
-                    <CopyableMonoValue Value="@output.OutPointKey.Value.Value" />
-                </article>
+                <EmptyState Eyebrow="UTXO" Title="No spendable outputs" Description="This account has no source outputs in the current projection." />
             }
-        </div>
-    }
-</section>
+            else
+            {
+                <DataGrid TItem="LedgerSpendableOutput"
+                          Data="@Outputs"
+                          Caption="Spendable account outputs">
+                    <Columns>
+                        <DataGridColumn TItem="LedgerSpendableOutput" Title="Output">
+                            <Template Context="output">
+                                <Stack GapScale="LayoutGap.Tiny">
+                                    <TextBlock TextStyle="TextStyle.Mono">@output.OutPoint</TextBlock>
+                                    <CopyableMonoValue Value="@output.OutPointKey.Value.Value" />
+                                </Stack>
+                            </Template>
+                        </DataGridColumn>
+                        <DataGridColumn TItem="LedgerSpendableOutput" Title="Address">
+                            <Template Context="output">
+                                <TextBlock TextStyle="TextStyle.Mono" Value="@Short(output.Address.Value)" />
+                            </Template>
+                        </DataGridColumn>
+                        <DataGridColumn TItem="LedgerSpendableOutput" Title="Balance">
+                            <Template Context="output">
+                                <Stack GapScale="LayoutGap.Tiny">
+                                    <TextBlock TextStyle="TextStyle.Body2">@output.MainAmount main</TextBlock>
+                                    @if (output.Token is not null)
+                                    {
+                                        <TextBlock TextStyle="TextStyle.Caption" Value="@FormatToken(output.Token)" />
+                                    }
+                                </Stack>
+                            </Template>
+                        </DataGridColumn>
+                        <DataGridColumn TItem="LedgerSpendableOutput" Title="Business object">
+                            <Template Context="output">
+                                @if (output.BusinessObject is not null)
+                                {
+                                    <Stack GapScale="LayoutGap.Tiny">
+                                        <TextBlock TextStyle="TextStyle.Mono">@BusinessObjectId.FromOutPoint(output.OutPoint).Value</TextBlock>
+                                        <TextBlock TextStyle="TextStyle.Caption">Version @output.BusinessObject.Version</TextBlock>
+                                    </Stack>
+                                }
+                                else
+                                {
+                                    <TextBlock TextStyle="TextStyle.Muted" Value="None" />
+                                }
+                            </Template>
+                        </DataGridColumn>
+                    </Columns>
+                </DataGrid>
+            }
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]

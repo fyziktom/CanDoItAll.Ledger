@@ -1,43 +1,44 @@
 @namespace CanDoItAll.Economy.Components
 @inherits BusinessObjectDataItemAddressComponentBase
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-bo-data-item-strip">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Attached data</span>
-            <h2>Data items</h2>
-        </div>
+<div data-testid="cda-bo-data-item-strip">
+<SectionCard Title="Data items" Description="Attached data">
+    <HeaderActions>
         <StatusBadge Text="@($"{Items.Count} item(s)")" Tone="info" />
-    </header>
-
-    @if (Items.Count == 0)
-    {
-        <p class="cda-sdk-muted">No attached data items were found for this object.</p>
-    }
-    else
-    {
-        <div class="cda-sdk-asset-strip">
-            @foreach (BusinessObjectDataItem item in Items)
-            {
-                string? itemUri = ResolveDataItemUriString(item);
-                <article class="cda-sdk-asset-card">
-                    <span>@item.Type</span>
-                    <strong>@item.Name</strong>
-                    <em>@(item.Size?.ToString("N0") ?? "unknown") bytes</em>
-                    <HashDisplay Value="@item.Hash" />
-                    <Button Text="Download"
-                            Icon="download"
-                            Size="ButtonSize.Small"
-                            Variant="Variant.Outlined"
-                            Href="@itemUri"
-                            Target="_blank"
-                            Rel="noopener noreferrer"
-                            Disabled="@(itemUri is null)" />
-                </article>
-            }
-        </div>
-    }
-</section>
+    </HeaderActions>
+    <ChildContent>
+        @if (Items.Count == 0)
+        {
+            <EmptyState Eyebrow="Attached data" Title="No data items" Description="No attached data items were found for this object." />
+        }
+        else
+        {
+            <Grid ColumnTemplate="repeat(auto-fit, minmax(13rem, 1fr))" Gap="LayoutGap.Small">
+                @foreach (BusinessObjectDataItem item in Items)
+                {
+                    string? itemUri = ResolveDataItemUriString(item);
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Small">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="@item.Type.ToString()" />
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@item.Name" />
+                            <TextBlock TextStyle="TextStyle.Caption">@(item.Size?.ToString("N0") ?? "unknown") bytes</TextBlock>
+                            <HashDisplay Value="@item.Hash" />
+                            <Button Text="Download"
+                                    Icon="download"
+                                    Size="ButtonSize.Small"
+                                    Variant="Variant.Outlined"
+                                    Href="@itemUri"
+                                    Target="_blank"
+                                    Rel="noopener noreferrer"
+                                    Disabled="@(itemUri is null)" />
+                        </Stack>
+                    </SurfaceCard>
+                }
+            </Grid>
+        }
+    </ChildContent>
+</SectionCard>
+</div>
 
 @code {
     [Parameter]

@@ -47,8 +47,8 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
                 .Add(x => x.Object, eventObject));
 
         Assert.Single(component.FindAll("[data-testid='cda-bo-overview-no-data']"));
-        Assert.Empty(component.FindAll(".cda-vef-bo-selected-preview"));
-        Assert.Empty(component.FindAll(".cda-vef-bo-gallery-rail"));
+        Assert.Empty(component.FindAll(".cda-bo-selected-preview"));
+        Assert.Empty(component.FindAll(".cda-bo-gallery-rail"));
         Assert.Contains("Annual Developer Conference", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Berlin, Germany", component.Markup, StringComparison.Ordinal);
     }
@@ -82,8 +82,8 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
                 .Add(x => x.Object, mediaObject));
 
         Assert.Empty(component.FindAll("[data-testid='cda-bo-overview-no-data']"));
-        Assert.Single(component.FindAll(".cda-vef-bo-selected-preview"));
-        Assert.Single(component.FindAll(".cda-vef-bo-gallery-rail"));
+        Assert.Single(component.FindAll(".cda-bo-selected-preview"));
+        Assert.Single(component.FindAll(".cda-bo-gallery-rail"));
         Assert.Contains("Main photo", component.Markup, StringComparison.Ordinal);
     }
 
@@ -118,7 +118,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
 
         Assert.Single(component.FindAll("[data-testid='cda-bo-data-item-copy-cid']"));
         Assert.Single(component.FindAll("[data-testid='cda-bo-data-item-copy-link']"));
-        Assert.Empty(component.FindAll(".cda-vef-bo-gallery-item__select button"));
+        Assert.Empty(component.FindAll(".cda-bo-gallery-item__select button"));
 
         IReadOnlyList<IRenderedComponent<CopyButton>> copyButtons = component.FindComponents<CopyButton>();
         CopyButton cidButton = Assert.Single(copyButtons
@@ -188,7 +188,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
         Assert.Single(component.FindAll("[data-testid='cda-bo-overview-no-data']"));
         Assert.Single(component.FindAll("[data-testid='cda-bo-related-panel']"));
         Assert.Single(component.FindAll("[data-testid='cda-bo-related-card']"));
-        Assert.Empty(component.FindAll(".cda-vef-bo-selected-preview"));
+        Assert.Empty(component.FindAll(".cda-bo-selected-preview"));
         Assert.Contains("Conference Main Stage", component.Markup, StringComparison.Ordinal);
         Assert.Contains("A12", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Mint author address", component.Markup, StringComparison.Ordinal);
@@ -240,7 +240,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
         Assert.Single(component.FindAll("[data-testid='cda-bo-overview-no-data']"));
         Assert.Single(component.FindAll("[data-testid='cda-bo-related-panel']"));
         Assert.Single(component.FindAll("[data-testid='cda-bo-related-card']"));
-        Assert.Empty(component.FindAll(".cda-vef-bo-selected-preview"));
+        Assert.Empty(component.FindAll(".cda-bo-selected-preview"));
         Assert.Contains("Listed Compliance Report", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Payment for", component.Markup, StringComparison.Ordinal);
     }

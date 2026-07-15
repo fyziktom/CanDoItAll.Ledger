@@ -76,9 +76,8 @@
                 case BusinessObjectTransactionMode.CloneObject:
                     <FormSection Title="Clone definition" Description="Source metadata and state were preloaded. The clone receives its canonical ID after confirmation.">
                         <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-                            <div class="cda-economy-fact cda-economy-fact--wide" data-testid="bo-clone-object-id-pending">
-                                <span>Clone object ID</span>
-                                <strong>Assigned after confirmation</strong>
+                            <div class="cda-sdk-span-all" data-testid="bo-clone-object-id-pending">
+                                <SummaryTile Label="Clone object ID" Value="Assigned after confirmation" />
                             </div>
                             @RenderTextField("Object type", ActiveDraft.ObjectType, SetObjectTypeAsync, "purchase-order", "bo-clone-object-type")
                             @RenderTextField("Schema version", ActiveDraft.SchemaVersion, SetSchemaVersionAsync, "1.0", "bo-clone-schema")
@@ -89,9 +88,8 @@
 
                 case BusinessObjectTransactionMode.MergeObjects:
                     <FormSection Title="Merge result" Description="The selected pair will be consumed. The result receives its canonical ID after confirmation.">
-                        <div class="cda-economy-fact cda-economy-fact--wide" data-testid="bo-merge-object-id-pending">
-                            <span>Result object ID</span>
-                            <strong>Assigned after confirmation</strong>
+                        <div data-testid="bo-merge-object-id-pending">
+                            <SummaryTile Label="Result object ID" Value="Assigned after confirmation" />
                         </div>
                     </FormSection>
                     @RenderCommonStateFields("Merged object state", true, false)
@@ -273,7 +271,7 @@
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-transaction-picker-modal",
+                Class = "cda-ledger-dialog cda-transaction-picker-modal",
                 TestId = "bo-selection-dialog"
             });
 

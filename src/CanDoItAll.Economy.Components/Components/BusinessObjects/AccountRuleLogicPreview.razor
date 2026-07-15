@@ -1,11 +1,8 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel" data-testid="cda-account-rule-preview">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Rule logic</span>
-            <h2>@(Rule?.RuleId ?? "No rule")</h2>
-        </div>
+<div data-testid="cda-account-rule-preview">
+<SectionCard Title="@(Rule?.RuleId ?? "No rule")" Description="Rule logic">
+    <HeaderActions>
         @if (Rule is not null)
         {
             <Cluster Gap="LayoutGap.Small">
@@ -13,100 +10,96 @@
                 <StatusBadge Text="@Rule.RuleNamespace" Tone="info" />
             </Cluster>
         }
-    </header>
+    </HeaderActions>
+    <ChildContent>
+        @if (Rule is null)
+        {
+            <EmptyState Eyebrow="Rule" Title="No rule preview" Description="Complete the required fields to preview the rule logic." />
+        }
+        else
+        {
+            <Stack GapScale="@(Compact ? LayoutGap.Small : LayoutGap.Medium)">
+                @if (ValidationErrors.Count > 0)
+                {
+                    <Alert AlertStyle="AlertStyle.Warning">
+                        <strong>Rule needs attention</strong>
+                        <span>@string.Join(" ", ValidationErrors)</span>
+                    </Alert>
+                }
 
-    @if (Rule is null)
-    {
-        <EmptyState Eyebrow="Rule" Title="No rule preview" Description="Complete the required fields to preview the rule logic." />
-    }
-    else
-    {
-        <Stack GapScale="@(Compact ? LayoutGap.Small : LayoutGap.Medium)">
-            @if (ValidationErrors.Count > 0)
-            {
-                <Alert AlertStyle="AlertStyle.Warning">
-                    <strong>Rule needs attention</strong>
-                    <span>@string.Join(" ", ValidationErrors)</span>
-                </Alert>
-            }
+                <SummaryTiles ColumnsSm="2" ColumnsXl="3" GapScale="LayoutGap.Small">
+                    <SummaryTile Label="Trigger" Value="@TriggerLabel" Compact="true" />
+                    <SummaryTile Label="Conditions" Value="@Rule.Conditions.Count.ToString()" Compact="true" />
+                    <SummaryTile Label="Actions" Value="@Rule.Actions.Count.ToString()" Compact="true" />
+                    <SummaryTile Label="Processed flag" Value="@Processing.ProcessedProperty" Compact="true" />
+                    <SummaryTile Label="Keep trigger BO" Value="@(Processing.KeepProcessedBusinessObject ? "yes" : "close after processing")" Compact="true" />
+                    <SummaryTile Label="Max actions" Value="@Processing.MaxActionsPerRefresh.ToString()" Compact="true" />
+                </SummaryTiles>
 
-            <Grid ColumnsLg="3" Gap="LayoutGap.Small">
-                <div class="cda-economy-fact"><span>Trigger</span><strong>@TriggerLabel</strong></div>
-                <div class="cda-economy-fact"><span>Conditions</span><strong>@Rule.Conditions.Count</strong></div>
-                <div class="cda-economy-fact"><span>Actions</span><strong>@Rule.Actions.Count</strong></div>
-                <div class="cda-economy-fact"><span>Processed flag</span><strong>@Processing.ProcessedProperty</strong></div>
-                <div class="cda-economy-fact"><span>Keep trigger BO</span><strong>@(Processing.KeepProcessedBusinessObject ? "yes" : "close after processing")</strong></div>
-                <div class="cda-economy-fact"><span>Max actions</span><strong>@Processing.MaxActionsPerRefresh</strong></div>
-            </Grid>
-
-            <Grid ColumnsLg="3" Gap="LayoutGap.Small">
-                <section>
-                    <div class="cda-sdk-section__heading">
-                        <span>Variables</span>
-                        <h2>@Rule.Variables.Count variable(s)</h2>
-                    </div>
-                    <div class="cda-sdk-list">
+                <Grid ColumnsLg="3" Gap="LayoutGap.Small" AlignItems="AlignItems.Start">
+                    <SectionCard Title="@($"{Rule.Variables.Count} variable(s)")" Description="Variables">
                         @if (Rule.Variables.Count == 0)
                         {
-                            <p class="cda-vef-empty-line">No custom variables.</p>
+                            <EmptyState Title="No custom variables" Description="This rule does not define additional variables." />
                         }
                         else
                         {
+                            <ListGroup>
                             @foreach (KeyValuePair<string, string> variable in Rule.Variables)
                             {
-                                <article class="cda-sdk-list__row">
-                                    <span class="material-icons" aria-hidden="true">tag</span>
-                                    <div>
-                                        <strong>@variable.Key</strong>
-                                        <span>@variable.Value</span>
-                                    </div>
-                                </article>
+                                <ListItem>
+                                    <Cluster AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                                        <Icon Name="tag" />
+                                        <Stack GapScale="LayoutGap.Tiny">
+                                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@variable.Key" />
+                                            <TextBlock TextStyle="TextStyle.Body2" Value="@variable.Value" />
+                                        </Stack>
+                                    </Cluster>
+                                </ListItem>
                             }
+                            </ListGroup>
                         }
-                    </div>
-                </section>
+                    </SectionCard>
 
-                <section>
-                    <div class="cda-sdk-section__heading">
-                        <span>Conditions</span>
-                        <h2>NCalc expressions</h2>
-                    </div>
-                    <div class="cda-sdk-list">
+                    <SectionCard Title="NCalc expressions" Description="Conditions">
+                        <ListGroup>
                         @foreach (string condition in Rule.Conditions)
                         {
-                            <article class="cda-sdk-list__row">
-                                <span class="material-icons" aria-hidden="true">rule</span>
-                                <div>
-                                    <strong>@condition</strong>
-                                    <span>must evaluate true</span>
-                                </div>
-                            </article>
+                            <ListItem>
+                                <Cluster AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                                    <Icon Name="rule" />
+                                    <Stack GapScale="LayoutGap.Tiny">
+                                        <TextBlock TextStyle="TextStyle.Mono" Value="@condition" />
+                                        <TextBlock TextStyle="TextStyle.Caption" Value="must evaluate true" />
+                                    </Stack>
+                                </Cluster>
+                            </ListItem>
                         }
-                    </div>
-                </section>
+                        </ListGroup>
+                    </SectionCard>
 
-                <section>
-                    <div class="cda-sdk-section__heading">
-                        <span>Actions</span>
-                        <h2>Submitted by refresh</h2>
-                    </div>
-                    <div class="cda-sdk-list">
+                    <SectionCard Title="Submitted by refresh" Description="Actions">
+                        <ListGroup>
                         @foreach (AccountRuleAction action in Rule.Actions)
                         {
-                            <article class="cda-sdk-list__row">
-                                <span class="material-icons" aria-hidden="true">@ActionIcon(action.Kind)</span>
-                                <div>
-                                    <strong>@action.Kind</strong>
-                                    <span>@ActionDetails(action)</span>
-                                </div>
-                            </article>
+                            <ListItem>
+                                <Cluster AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                                    <Icon Name="@ActionIcon(action.Kind)" />
+                                    <Stack GapScale="LayoutGap.Tiny">
+                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@action.Kind.ToString()" />
+                                        <TextBlock TextStyle="TextStyle.Body2" Value="@ActionDetails(action)" />
+                                    </Stack>
+                                </Cluster>
+                            </ListItem>
                         }
-                    </div>
-                </section>
-            </Grid>
-        </Stack>
-    }
-</section>
+                        </ListGroup>
+                    </SectionCard>
+                </Grid>
+            </Stack>
+        }
+    </ChildContent>
+</SectionCard>
+</div>
 
 @code {
     [Parameter]

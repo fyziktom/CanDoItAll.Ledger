@@ -18,9 +18,9 @@
            MenuFooter="@MenuFooter">
     @if (snapshot is null)
     {
-        <section class="cda-sdk-panel cda-sdk-panel--compact">
-            <EmptyState Eyebrow="Node" Title="Loading ledger workspace" Description="The in-process node services are preparing the routed Blazor workspace." />
-        </section>
+        <LoadingState Eyebrow="Node"
+                      Title="Loading ledger workspace"
+                      Description="The in-process node services are preparing the routed Blazor workspace." />
     }
     else
     {
@@ -379,233 +379,229 @@
                                                                   ReadinessLabel="@snapshot.Health.ProjectionVerificationStatus"
                                                                   TransactionDetailsProvider="LoadAdminTransactionDetailsAsync" />;
 
-    private RenderFragment RenderNodeStatusPanel() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-status-panel">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Node status</span>
-                <h2>@snapshot!.Health.Status</h2>
-            </div>
-            <StatusBadge Text="@snapshot.Health.VerificationStatus" Tone="@HealthTone" />
-        </header>
-        <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight">
-            <div><span>Ledger</span><strong>@snapshot.Health.LedgerId</strong></div>
-            <div><span>Sequence</span><strong>@snapshot.Health.LatestLedgerSequence</strong></div>
-            <div><span>Projection</span><strong>@snapshot.Health.ProjectionVerificationStatus</strong></div>
-            <div><span>UTC</span><strong>@snapshot.Health.UtcNow.ToString("u")</strong></div>
-        </div>
-    </section>;
+    private RenderFragment RenderNodeStatusPanel() => @<div data-testid="node-status-panel">
+        <SectionCard Title="@snapshot!.Health.Status" Description="Node status">
+            <HeaderActions>
+                <StatusBadge Text="@snapshot.Health.VerificationStatus" Tone="@HealthTone" />
+            </HeaderActions>
+            <ChildContent>
+                <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                    <SummaryTile Label="Ledger" Value="@snapshot.Health.LedgerId" Compact="true" />
+                    <SummaryTile Label="Sequence" Value="@snapshot.Health.LatestLedgerSequence.ToString(CultureInfo.InvariantCulture)" Compact="true" />
+                    <SummaryTile Label="Projection" Value="@snapshot.Health.ProjectionVerificationStatus" Compact="true" />
+                    <SummaryTile Label="UTC" Value="@snapshot.Health.UtcNow.ToString("u")" Compact="true" />
+                </SummaryTiles>
+            </ChildContent>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderBootstrapPanel() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-bootstrap-panel">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Bootstrap</span>
-                <h2>@(snapshot!.Bootstrap.GenesisCreated ? "Genesis ready" : "Genesis missing")</h2>
-            </div>
-            <StatusBadge Text="@snapshot.Bootstrap.SecurityProfile" Tone="info" />
-        </header>
-        <div class="cda-sdk-fact-grid cda-sdk-fact-grid--tight">
-            <div><span>Admin</span><CopyableMonoValue Value="@snapshot.Bootstrap.AdminAddress" StartChars="10" EndChars="6" /></div>
-            <div><span>Reset</span><strong>@(snapshot.Bootstrap.LedgerResetEnabled ? "enabled" : "disabled")</strong></div>
-            <div><span>UI auth</span><strong>@snapshot.Bootstrap.UiAuthorizationMode</strong></div>
-            <div><span>API</span><strong>@snapshot.Bootstrap.ApiBasePath</strong></div>
-        </div>
-    </section>;
+    private RenderFragment RenderBootstrapPanel() => @<div data-testid="node-bootstrap-panel">
+        <SectionCard Title="@(snapshot!.Bootstrap.GenesisCreated ? "Genesis ready" : "Genesis missing")" Description="Bootstrap">
+            <HeaderActions>
+                <StatusBadge Text="@snapshot.Bootstrap.SecurityProfile" Tone="info" />
+            </HeaderActions>
+            <ChildContent>
+                <Stack GapScale="LayoutGap.Medium">
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Admin" />
+                            <CopyableMonoValue Value="@snapshot.Bootstrap.AdminAddress" StartChars="10" EndChars="6" />
+                        </Stack>
+                    </SurfaceCard>
+                    <SummaryTiles ColumnsSm="2" ColumnsXl="3" GapScale="LayoutGap.Small">
+                        <SummaryTile Label="Reset" Value="@(snapshot.Bootstrap.LedgerResetEnabled ? "enabled" : "disabled")" Compact="true" />
+                        <SummaryTile Label="UI auth" Value="@snapshot.Bootstrap.UiAuthorizationMode" Compact="true" />
+                        <SummaryTile Label="API" Value="@snapshot.Bootstrap.ApiBasePath" Compact="true" />
+                    </SummaryTiles>
+                </Stack>
+            </ChildContent>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderAddressGrid() => @<section class="cda-sdk-panel cda-sdk-panel--compact cda-node-address-data-grid" data-testid="node-account-address-grid">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Accounts</span>
-                <h2>Address directory</h2>
-            </div>
-            <StatusBadge Text="@($"{FilteredAccountAddresses.Count} match(es)")" Tone="info" />
-        </header>
-        <div class="cda-node-address-data-grid__toolbar">
-            <FormField Text="Search addresses" ContainerClass="cda-economy-field">
-                <TextBox Value="@addressSearch"
-                         ValueChanged="HandleAddressSearchChanged"
-                         Immediate="true"
-                         Placeholder="Address, balance, token..."
-                         aria-label="Search account addresses" />
-            </FormField>
-            <FormField Text="Rows per page" ContainerClass="cda-economy-field">
-                <DropDown TValue="string"
-                          Data="@AddressPageSizeOptions"
-                          TextProperty="@nameof(SelectOption.Text)"
-                          ValueProperty="@nameof(SelectOption.Value)"
-                          Value="@addressPageSize"
-                          ValueChanged="HandleAddressPageSizeChanged"
-                          Placeholder="Rows"
-                          aria-label="Address rows per page" />
-            </FormField>
-            <div class="cda-node-address-data-grid__summary" data-testid="node-address-page-summary">
-                <span>Showing</span>
-                <strong>@AddressFirstRow-@AddressLastRow of @FilteredAccountAddresses.Count</strong>
-            </div>
-        </div>
+    private RenderFragment RenderAddressGrid() => @<div data-testid="node-account-address-grid">
+        <SectionCard Title="Address directory" Description="Search and select an account visible to this node.">
+            <HeaderActions>
+                <StatusBadge Text="@($"{FilteredAccountAddresses.Count} match(es)")" Tone="info" />
+            </HeaderActions>
+            <ChildContent>
+                <Stack GapScale="LayoutGap.Medium">
+                    <Grid ColumnsLg="3"
+                          ColumnTemplateLg="minmax(18rem, 1fr) minmax(9rem, 0.28fr) minmax(10rem, 0.32fr)"
+                          Gap="LayoutGap.Medium"
+                          AlignItems="AlignItems.End">
+                        <FormField Text="Search addresses">
+                            <TextBox Value="@addressSearch"
+                                     ValueChanged="HandleAddressSearchChanged"
+                                     Immediate="true"
+                                     Placeholder="Address, balance, token..."
+                                     aria-label="Search account addresses" />
+                        </FormField>
+                        <FormField Text="Rows per page">
+                            <DropDown TValue="string"
+                                      Data="@AddressPageSizeOptions"
+                                      TextProperty="@nameof(SelectOption.Text)"
+                                      ValueProperty="@nameof(SelectOption.Value)"
+                                      Value="@addressPageSize"
+                                      ValueChanged="HandleAddressPageSizeChanged"
+                                      Placeholder="Rows"
+                                      aria-label="Address rows per page" />
+                        </FormField>
+                        <div data-testid="node-address-page-summary">
+                            <SummaryTile Label="Showing"
+                                         Value="@($"{AddressFirstRow}-{AddressLastRow} of {FilteredAccountAddresses.Count}")"
+                                         Compact="true" />
+                        </div>
+                    </Grid>
 
-        @if (FilteredAccountAddresses.Count == 0)
-        {
-            <EmptyState Eyebrow="Addresses" Title="No addresses match" Description="Adjust the search query to review ledger accounts." />
-        }
-        else
-        {
-            <div class="cda-node-address-table-wrap">
-                <table class="cda-node-address-table" aria-label="Paged node addresses">
-                    <thead>
-                        <tr>
-                            <th>Address</th>
-                            <th>Role</th>
-                            <th>Main</th>
-                            <th>Tokens</th>
-                            <th>UTXOs</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (AccountSummary account in PagedAccountAddresses)
-                        {
-                            <tr class="@AddressRowClass(account)" data-testid="node-address-row">
-                                <td>
-                                    <strong>@ShortIdentifier(account.Address)</strong>
-                                    <small>@account.Address</small>
-                                </td>
-                                <td><span class="cda-node-address-role">@AccountRole(account)</span></td>
-                                <td>@account.MainBalanceText</td>
-                                <td>@account.TokenBalances.Count.ToString(CultureInfo.InvariantCulture)</td>
-                                <td>@account.UtxoCount.ToString(CultureInfo.InvariantCulture)</td>
-                                <td>
-                                    <Button Text="Select"
-                                            Icon="check_circle"
-                                            Size="ButtonSize.Small"
-                                            Variant="@(account.Address == snapshot!.SelectedAddress ? Variant.Filled : Variant.Outlined)"
-                                            ButtonStyle="@(account.Address == snapshot.SelectedAddress ? ButtonStyle.Info : ButtonStyle.Secondary)"
-                                            Click="@(() => SelectAddressAsync(account.Address))" />
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
+                    @if (FilteredAccountAddresses.Count == 0)
+                    {
+                        <EmptyState Eyebrow="Addresses" Title="No addresses match" Description="Adjust the search query to review ledger accounts." />
+                    }
+                    else
+                    {
+                        <DataGrid TItem="AccountSummary"
+                                  Data="@PagedAccountAddresses"
+                                  Caption="Paged node addresses"
+                                  RowSelect="@(account => SelectAddressAsync(account.Address))"
+                                  data-testid="node-address-grid">
+                            <Columns>
+                                <DataGridColumn TItem="AccountSummary" Title="Address">
+                                    <Template Context="account">
+                                        <Stack GapScale="LayoutGap.Tiny" data-testid="node-address-row">
+                                            <TextBlock TextStyle="TextStyle.Mono" Value="@ShortIdentifier(account.Address)" />
+                                            <SmallText Text="@account.Address" />
+                                        </Stack>
+                                    </Template>
+                                </DataGridColumn>
+                                <DataGridColumn TItem="AccountSummary" Title="Role">
+                                    <Template Context="account"><Pill Tone="PillTone.Label" Text="@AccountRole(account)" /></Template>
+                                </DataGridColumn>
+                                <DataGridColumn TItem="AccountSummary" Property="MainBalanceText" Title="Main" />
+                                <DataGridColumn TItem="AccountSummary" Title="Tokens">
+                                    <Template Context="account">@account.TokenBalances.Count.ToString(CultureInfo.InvariantCulture)</Template>
+                                </DataGridColumn>
+                                <DataGridColumn TItem="AccountSummary" Title="UTXOs">
+                                    <Template Context="account">@account.UtxoCount.ToString(CultureInfo.InvariantCulture)</Template>
+                                </DataGridColumn>
+                                <DataGridColumn TItem="AccountSummary" Title="Action">
+                                    <Template Context="account">
+                                        <div @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                                            <Button Text="@(account.Address == snapshot!.SelectedAddress ? "Selected" : "Select")"
+                                                    Icon="check_circle"
+                                                    Size="ButtonSize.Small"
+                                                    Variant="@(account.Address == snapshot.SelectedAddress ? Variant.Filled : Variant.Outlined)"
+                                                    ButtonStyle="@(account.Address == snapshot.SelectedAddress ? ButtonStyle.Info : ButtonStyle.Secondary)"
+                                                    Click="@(() => SelectAddressAsync(account.Address))" />
+                                        </div>
+                                    </Template>
+                                </DataGridColumn>
+                            </Columns>
+                        </DataGrid>
+                    }
 
-        <div class="cda-node-address-pager" data-testid="node-address-pager">
-            <Button Text="Previous"
-                    Icon="chevron_left"
-                    Size="ButtonSize.Small"
-                    Variant="Variant.Outlined"
-                    Disabled="@(CurrentAddressPageIndex == 0)"
-                    Click="@PreviousAddressPage" />
-            <span>Page @(CurrentAddressPageIndex + 1) of @AddressPageCount</span>
-            <Button Text="Next"
-                    Icon="chevron_right"
-                    Size="ButtonSize.Small"
-                    Variant="Variant.Outlined"
-                    Disabled="@(CurrentAddressPageIndex >= AddressPageCount - 1)"
-                    Click="@NextAddressPage" />
-        </div>
-    </section>;
+                    <Cluster Gap="LayoutGap.Small" JustifyContent="JustifyContent.End" data-testid="node-address-pager">
+                        <Button Text="Previous"
+                                Icon="chevron_left"
+                                Size="ButtonSize.Small"
+                                Variant="Variant.Outlined"
+                                Disabled="@(CurrentAddressPageIndex == 0)"
+                                Click="@PreviousAddressPage" />
+                        <TextBlock TextStyle="TextStyle.Body2" Value="@($"Page {CurrentAddressPageIndex + 1} of {AddressPageCount}")" />
+                        <Button Text="Next"
+                                Icon="chevron_right"
+                                Size="ButtonSize.Small"
+                                Variant="Variant.Outlined"
+                                Disabled="@(CurrentAddressPageIndex >= AddressPageCount - 1)"
+                                Click="@NextAddressPage" />
+                    </Cluster>
+                </Stack>
+            </ChildContent>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderOperationsAccount() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-operations-account">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Operations account</span>
-                <h2>Derived address</h2>
-            </div>
-            <StatusBadge Text="C# derived" Tone="success" />
-        </header>
-        <EditForm Model="operationsForm" OnValidSubmit="DeriveOperationsAccountAsync">
-            <DataAnnotationsValidator />
-            <Stack GapScale="LayoutGap.Small">
-                <FormField Text="Key id"><InputText class="@FieldInputClass" @bind-Value="operationsForm.KeyId" /></FormField>
-                <FormField Text="Public key material"><InputText class="@FieldInputClass" @bind-Value="operationsForm.PublicKeyMaterial" /></FormField>
-                <FormField Text="Address"><input class="@FieldInputClass" value="@operationsAccount.Address" readonly /></FormField>
-                <Button Text="Derive" Icon="vpn_key" Type="submit" Variant="Variant.Outlined" />
-            </Stack>
-        </EditForm>
-    </section>;
+    private RenderFragment RenderOperationsAccount() => @<div data-testid="node-operations-account">
+        <SectionCard Title="Derived address" Description="Operations account">
+            <HeaderActions><StatusBadge Text="C# derived" Tone="success" /></HeaderActions>
+            <ChildContent>
+                <EditForm Model="operationsForm" OnValidSubmit="DeriveOperationsAccountAsync">
+                    <DataAnnotationsValidator />
+                    <Stack GapScale="LayoutGap.Small">
+                        <FormField Text="Key id"><InputText class="@FieldInputClass" @bind-Value="operationsForm.KeyId" /></FormField>
+                        <FormField Text="Public key material"><InputText class="@FieldInputClass" @bind-Value="operationsForm.PublicKeyMaterial" /></FormField>
+                        <FormField Text="Address"><input class="@FieldInputClass" value="@operationsAccount.Address" readonly /></FormField>
+                        <Button Text="Derive" Icon="vpn_key" Type="submit" Variant="Variant.Outlined" />
+                    </Stack>
+                </EditForm>
+            </ChildContent>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderGrantForm() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-grant-form">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Permission</span>
-                <h2>Grant token authority</h2>
-            </div>
-        </header>
-        <EditForm Model="grantForm" OnValidSubmit="GrantPermissionAsync">
-            <DataAnnotationsValidator />
-            <Stack GapScale="LayoutGap.Small">
-                <FormField Text="Namespace"><InputText class="@FieldInputClass" @bind-Value="grantForm.TokenNamespace" /></FormField>
-                <FormField Text="Action">
-                    <DropDown TValue="string"
-                              Data="@PermissionActionOptions"
-                              TextProperty="@nameof(SelectOption.Text)"
-                              ValueProperty="@nameof(SelectOption.Value)"
-                              Value="@grantForm.Action"
-                              ValueChanged="HandlePermissionActionChanged"
-                              Placeholder="Select action"
-                              aria-label="Permission token action" />
-                </FormField>
-                <FormField Text="Amount"><InputText class="@FieldInputClass" @bind-Value="grantForm.Amount" /></FormField>
-                <FormField Text="Receiver"><InputText class="@FieldInputClass" @bind-Value="grantForm.Address" /></FormField>
-                <Button Text="Grant permission" Icon="key" Type="submit" />
-            </Stack>
-        </EditForm>
-    </section>;
+    private RenderFragment RenderGrantForm() => @<div data-testid="node-grant-form">
+        <SectionCard Title="Grant token authority" Description="Permission">
+            <EditForm Model="grantForm" OnValidSubmit="GrantPermissionAsync">
+                <DataAnnotationsValidator />
+                <Stack GapScale="LayoutGap.Small">
+                    <FormField Text="Namespace"><InputText class="@FieldInputClass" @bind-Value="grantForm.TokenNamespace" /></FormField>
+                    <FormField Text="Action">
+                        <DropDown TValue="string"
+                                  Data="@PermissionActionOptions"
+                                  TextProperty="@nameof(SelectOption.Text)"
+                                  ValueProperty="@nameof(SelectOption.Value)"
+                                  Value="@grantForm.Action"
+                                  ValueChanged="HandlePermissionActionChanged"
+                                  Placeholder="Select action"
+                                  aria-label="Permission token action" />
+                    </FormField>
+                    <FormField Text="Amount"><InputText class="@FieldInputClass" @bind-Value="grantForm.Amount" /></FormField>
+                    <FormField Text="Receiver"><InputText class="@FieldInputClass" @bind-Value="grantForm.Address" /></FormField>
+                    <Button Text="Grant permission" Icon="key" Type="submit" />
+                </Stack>
+            </EditForm>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderTimeForm() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-time-form">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Simulation</span>
-                <h2>Advance time</h2>
-            </div>
-        </header>
-        <EditForm Model="timeForm" OnValidSubmit="AdvanceTimeAsync">
-            <Stack GapScale="LayoutGap.Small">
-                <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="min-w-0">
-                    <FormField Text="Days"><InputText class="@FieldInputClass" @bind-Value="timeForm.Days" /></FormField>
-                    <FormField Text="Hours"><InputText class="@FieldInputClass" @bind-Value="timeForm.Hours" /></FormField>
-                </Grid>
-                <Button Text="Advance" Icon="schedule" Type="submit" Variant="Variant.Outlined" />
-            </Stack>
-        </EditForm>
-    </section>;
+    private RenderFragment RenderTimeForm() => @<div data-testid="node-time-form">
+        <SectionCard Title="Advance time" Description="Simulation">
+            <EditForm Model="timeForm" OnValidSubmit="AdvanceTimeAsync">
+                <Stack GapScale="LayoutGap.Small">
+                    <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="min-w-0">
+                        <FormField Text="Days"><InputText class="@FieldInputClass" @bind-Value="timeForm.Days" /></FormField>
+                        <FormField Text="Hours"><InputText class="@FieldInputClass" @bind-Value="timeForm.Hours" /></FormField>
+                    </Grid>
+                    <Button Text="Advance" Icon="schedule" Type="submit" Variant="Variant.Outlined" />
+                </Stack>
+            </EditForm>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderMintForm() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-mint-form">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Treasury</span>
-                <h2>Mint</h2>
-            </div>
-        </header>
-        <EditForm Model="mintForm" OnValidSubmit="MintAsync">
-            <Stack GapScale="LayoutGap.Small">
-                <FormField Text="Address"><InputText class="@FieldInputClass" @bind-Value="mintForm.Address" /></FormField>
-                <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="min-w-0">
-                    <FormField Text="Main amount"><InputText class="@FieldInputClass" @bind-Value="mintForm.MainAmount" /></FormField>
-                    <FormField Text="Token id"><InputText class="@FieldInputClass" @bind-Value="mintForm.TokenId" /></FormField>
-                    <FormField Text="Token amount"><InputText class="@FieldInputClass" @bind-Value="mintForm.TokenAmount" /></FormField>
-                </Grid>
-                <Button Text="Submit mint" Icon="add_circle" Type="submit" />
-            </Stack>
-        </EditForm>
-    </section>;
+    private RenderFragment RenderMintForm() => @<div data-testid="node-mint-form">
+        <SectionCard Title="Mint" Description="Treasury">
+            <EditForm Model="mintForm" OnValidSubmit="MintAsync">
+                <Stack GapScale="LayoutGap.Small">
+                    <FormField Text="Address"><InputText class="@FieldInputClass" @bind-Value="mintForm.Address" /></FormField>
+                    <Grid ColumnsMd="2" Gap="LayoutGap.Small" Class="min-w-0">
+                        <FormField Text="Main amount"><InputText class="@FieldInputClass" @bind-Value="mintForm.MainAmount" /></FormField>
+                        <FormField Text="Token id"><InputText class="@FieldInputClass" @bind-Value="mintForm.TokenId" /></FormField>
+                        <FormField Text="Token amount"><InputText class="@FieldInputClass" @bind-Value="mintForm.TokenAmount" /></FormField>
+                    </Grid>
+                    <Button Text="Submit mint" Icon="add_circle" Type="submit" />
+                </Stack>
+            </EditForm>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderTransferForm() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-transfer-form">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Ledger movement</span>
-                <h2>Transfer</h2>
-            </div>
-        </header>
-        <EditForm Model="transferForm" OnValidSubmit="TransferAsync">
-            <Stack GapScale="LayoutGap.Small">
-                <FormField Text="From"><InputText class="@FieldInputClass" @bind-Value="transferForm.FromAddress" /></FormField>
-                <FormField Text="To"><InputText class="@FieldInputClass" @bind-Value="transferForm.ToAddress" /></FormField>
-                <FormField Text="Main amount"><InputText class="@FieldInputClass" @bind-Value="transferForm.MainAmount" /></FormField>
-                <Button Text="Submit transfer" Icon="swap_horiz" Type="submit" />
-            </Stack>
-        </EditForm>
-    </section>;
+    private RenderFragment RenderTransferForm() => @<div data-testid="node-transfer-form">
+        <SectionCard Title="Transfer" Description="Ledger movement">
+            <EditForm Model="transferForm" OnValidSubmit="TransferAsync">
+                <Stack GapScale="LayoutGap.Small">
+                    <FormField Text="From"><InputText class="@FieldInputClass" @bind-Value="transferForm.FromAddress" /></FormField>
+                    <FormField Text="To"><InputText class="@FieldInputClass" @bind-Value="transferForm.ToAddress" /></FormField>
+                    <FormField Text="Main amount"><InputText class="@FieldInputClass" @bind-Value="transferForm.MainAmount" /></FormField>
+                    <Button Text="Submit transfer" Icon="swap_horiz" Type="submit" />
+                </Stack>
+            </EditForm>
+        </SectionCard>
+    </div>;
 
     private RenderFragment RenderTransactionHistoryWorkbench() => @<Stack GapScale="LayoutGap.Medium" Class="min-w-0">
         @if (snapshot!.Workspace is null)
@@ -624,43 +620,39 @@
         }
     </Stack>;
 
-    private RenderFragment RenderTransactionDetailLauncher() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-transaction-actions">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Transaction detail</span>
-                <h2>Prepared inspector</h2>
-            </div>
-            <StatusBadge Text="@($"{snapshot!.Workspace?.Transactions.Count ?? 0} rows")" Tone="info" />
-        </header>
-        <Stack GapScale="LayoutGap.XSmall">
-            @foreach (LedgerTransactionSummary tx in snapshot!.Workspace?.Transactions.Take(5) ?? [])
-            {
-                <Button Text="@TransactionButtonText(tx)"
-                        title="@tx.TxId.Value"
-                        Icon="open_in_full"
-                        Variant="Variant.Outlined"
-                        Click="@(() => OpenTransactionDetailsAsync(tx.TxId.Value))" />
-            }
-        </Stack>
-    </section>;
+    private RenderFragment RenderTransactionDetailLauncher() => @<div data-testid="node-transaction-actions">
+        <SectionCard Title="Prepared inspector" Description="Transaction detail">
+            <HeaderActions>
+                <StatusBadge Text="@($"{snapshot!.Workspace?.Transactions.Count ?? 0} rows")" Tone="info" />
+            </HeaderActions>
+            <ChildContent>
+                <Stack GapScale="LayoutGap.XSmall">
+                    @foreach (LedgerTransactionSummary tx in snapshot!.Workspace?.Transactions.Take(5) ?? [])
+                    {
+                        <Button Text="@TransactionButtonText(tx)"
+                                title="@tx.TxId.Value"
+                                Icon="open_in_full"
+                                Variant="Variant.Outlined"
+                                Click="@(() => OpenTransactionDetailsAsync(tx.TxId.Value))" />
+                    }
+                </Stack>
+            </ChildContent>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderScenarioActionsPanel() => @<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-scenario-actions">
-        <header class="cda-sdk-panel__header">
-            <div>
-                <span>Scenario actions</span>
-                <h2>Demo and reset</h2>
-            </div>
-            <StatusBadge Text="C# actions" Tone="info" />
-        </header>
-        <Cluster Gap="LayoutGap.Small">
-            <Button Text="Run demo" Icon="play_arrow" ButtonStyle="ButtonStyle.Info" IsBusy="isBusy" Click="@RunDemoAsync" />
-            <Button Text="Reset ledger" Icon="restart_alt" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Outlined" IsBusy="isBusy" Click="@ResetLedgerAsync" />
-        </Cluster>
-    </section>;
+    private RenderFragment RenderScenarioActionsPanel() => @<div data-testid="node-scenario-actions">
+        <SectionCard Title="Demo and reset" Description="Scenario actions">
+            <HeaderActions><StatusBadge Text="C# actions" Tone="info" /></HeaderActions>
+            <ChildContent>
+                <Cluster Gap="LayoutGap.Small">
+                    <Button Text="Run demo" Icon="play_arrow" ButtonStyle="ButtonStyle.Info" IsBusy="isBusy" Click="@RunDemoAsync" />
+                    <Button Text="Reset ledger" Icon="restart_alt" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Outlined" IsBusy="isBusy" Click="@ResetLedgerAsync" />
+                </Cluster>
+            </ChildContent>
+        </SectionCard>
+    </div>;
 
-    private RenderFragment RenderUnavailable(string eyebrow, string title, string description) => @<section class="cda-sdk-panel cda-sdk-panel--compact">
-        <EmptyState Eyebrow="@eyebrow" Title="@title" Description="@description" />
-    </section>;
+    private RenderFragment RenderUnavailable(string eyebrow, string title, string description) => @<EmptyState Eyebrow="@eyebrow" Title="@title" Description="@description" />;
 
     private async Task RefreshAsync()
     {
@@ -835,7 +827,7 @@
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-vef-dialog--details cda-vef-dialog--tx-detail",
+                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--tx-detail",
                 TestId = "cda-node-transaction-details-dialog"
             }).ConfigureAwait(false);
     }
@@ -909,11 +901,6 @@
         => snapshot is not null && account.Address.Equals(snapshot.Bootstrap.AdminAddress, StringComparison.OrdinalIgnoreCase)
             ? "Treasury admin"
             : "Ledger account";
-
-    private string AddressRowClass(AccountSummary account)
-        => account.Address.Equals(snapshot?.SelectedAddress, StringComparison.OrdinalIgnoreCase)
-            ? "is-selected"
-            : string.Empty;
 
     private static string AccountSearchProbe(AccountSummary account)
         => string.Join(' ', account.Address, account.MainBalanceText, account.UtxoCount, string.Join(' ', account.TokenBalances.Keys));

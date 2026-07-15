@@ -10,7 +10,7 @@
 }
 else if (Mode == BusinessObjectRenderMode.Summary)
 {
-    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
+    <Stack GapScale="LayoutGap.Tiny">
         <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Media.Name" />
         <TextBlock TextStyle="TextStyle.Caption" Value="@DataItemCountLabel" />
         <Cluster Gap="LayoutGap.Small">
@@ -45,7 +45,7 @@ else
 
         @if (Media.Tags.Count > 0)
         {
-            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-vef-tags">
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-bo-tags">
                 @foreach (string tag in Media.Tags)
                 {
                     <StatusBadge Tone="neutral" Text="@($"#{tag}")" />
@@ -70,7 +70,8 @@ else
                 @foreach (BusinessObjectDataItem item in Media.DataItems)
                 {
                     string? itemUri = ResolveDataItemUriString(item);
-                    <Stack GapScale="LayoutGap.Small" Class="cda-venft-dataitem-card">
+                    <SurfaceCard Soft="true">
+                    <Stack GapScale="LayoutGap.Small">
                         <BusinessObjectDataItemPreview Item="item" />
                         <Grid ColumnsMd="2" Gap="LayoutGap.Small">
                             <SummaryTile Label="Type" Value="@ItemTypeLabel(item)" Compact="true" />
@@ -106,6 +107,7 @@ else
                                     Disabled="@(itemUri is null)" />
                         </Cluster>
                     </Stack>
+                    </SurfaceCard>
                 }
             </Grid>
         }

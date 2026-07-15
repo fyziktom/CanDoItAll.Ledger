@@ -1,0 +1,13 @@
+.available-token-selector__dropdown {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .available-token-selector__cards {
+        display: none;
+    }
+
+    .available-token-selector__dropdown {
+        display: block;
+    }
+}

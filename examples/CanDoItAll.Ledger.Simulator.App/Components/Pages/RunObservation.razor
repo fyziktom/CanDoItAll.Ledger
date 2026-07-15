@@ -63,10 +63,15 @@
         }
     }
 
-    protected override void OnInitialized()
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
-        refreshLoopCancellation = new CancellationTokenSource();
-        _ = RefreshLiveRunsAsync(refreshLoopCancellation.Token);
+        if (firstRender && refreshLoopCancellation is null)
+        {
+            refreshLoopCancellation = new CancellationTokenSource();
+            _ = RefreshLiveRunsAsync(refreshLoopCancellation.Token);
+        }
+
+        return Task.CompletedTask;
     }
 
     private Task SelectRunAsync(string runId)

@@ -29,9 +29,8 @@
                   Class="cda-transaction-detail-grid">
             <FormSection Title="Object definition" Description="Type and schema describe the payload. The canonical object ID comes from its confirmed output.">
                 <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-                    <div class="cda-economy-fact cda-economy-fact--wide" data-testid="bo-create-object-id-pending">
-                        <span>Business object ID</span>
-                        <strong>Assigned after confirmation</strong>
+                    <div class="cda-sdk-span-all" data-testid="bo-create-object-id-pending">
+                        <SummaryTile Label="Business object ID" Value="Assigned after confirmation" Compact="true" />
                     </div>
                     @RenderTextField("Object type", ActiveDraft.ObjectType, SetObjectTypeAsync, "purchase-order", "bo-create-object-type")
                     @RenderTextField("Schema version", ActiveDraft.SchemaVersion, SetSchemaVersionAsync, "1.0", "bo-create-schema")

@@ -9,9 +9,9 @@
 }
 else if (Mode == BusinessObjectRenderMode.Summary)
 {
-    <Stack GapScale="LayoutGap.Tiny" Class="cda-economy-renderer-summary">
-        <strong>@Commerce.Name</strong>
-        <span>@RecordKind / @Commerce.ObjectType</span>
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Commerce.Name" />
+        <TextBlock TextStyle="TextStyle.Caption">@RecordKind / @Commerce.ObjectType</TextBlock>
         <Cluster Gap="LayoutGap.Small">
             <StatusBadge Tone="info" Text="@RecordKind" />
             <StatusBadge Tone="neutral" Text="@StatusText" />
@@ -75,4 +75,3 @@ else
             _ => "Unknown"
         };
 }
-

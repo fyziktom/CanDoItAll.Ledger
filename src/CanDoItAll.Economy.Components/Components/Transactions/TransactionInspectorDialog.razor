@@ -12,9 +12,9 @@
     }
     else
     {
-        <div class="cda-sdk-section-stack">
+        <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
             <TxFlowGraph Inputs="Details.Inputs" Outputs="Details.Outputs" />
-            <div class="cda-sdk-card-grid">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
                 @foreach (EconomyTransactionInputDetails input in Details.Inputs)
                 {
                     <TxInputCard Input="input" />
@@ -23,14 +23,14 @@
                 {
                     <TxOutputCard Output="output" TransactionId="Details.TxId" />
                 }
-            </div>
+            </Grid>
             <TxDataPayloadViewer Data="Details.Data" />
             <TransactionTimeline Details="Details" />
             @foreach (EconomyTransactionInputDetails input in Details.Inputs)
             {
                 <TxSignatureCard Input="input" />
             }
-        </div>
+        </Stack>
     }
 </InspectorDialogLayout>
 

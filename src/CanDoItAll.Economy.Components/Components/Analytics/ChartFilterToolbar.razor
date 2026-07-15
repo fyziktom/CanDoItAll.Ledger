@@ -1,6 +1,6 @@
 @namespace CanDoItAll.Economy.Components
 
-<Toolbar Class="cda-sdk-toolbar" data-testid="cda-chart-filter-toolbar">
+<Toolbar data-testid="cda-chart-filter-toolbar">
     <ToolbarFields>
         <TextBox @bind-Value="scope" Placeholder="Account, ledger, or scenario" aria-label="Chart scope" />
         <DropDown TItem="string" Value="@range" ValueChanged="@((string value) => range = value)" Items="Ranges" aria-label="Chart range" />

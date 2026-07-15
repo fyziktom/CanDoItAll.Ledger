@@ -1,16 +1,18 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-projection-maintenance-panel">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Maintenance</span>
-            <h2>Projection maintenance</h2>
-        </div>
-        <StatusBadge Text="Manual" Tone="warning" />
-    </header>
-    <StatusCheckList Items="Items" />
-    <Button Text="Review projection rebuild" Icon="replay" ButtonStyle="ButtonStyle.Secondary" />
-</section>
+<div data-testid="cda-projection-maintenance-panel">
+    <SectionCard Title="Projection maintenance" Description="Maintenance">
+        <HeaderActions>
+            <StatusBadge Text="Manual" Tone="warning" />
+        </HeaderActions>
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Small">
+                <StatusCheckList Items="Items" />
+                <Button Text="Review projection rebuild" Icon="replay" ButtonStyle="ButtonStyle.Secondary" />
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     private static readonly IReadOnlyList<StatusCheckItem> Items =

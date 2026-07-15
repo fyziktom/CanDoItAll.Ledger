@@ -1,15 +1,15 @@
 @namespace CanDoItAll.Economy.Components
 
-<section class="cda-sdk-panel cda-sdk-panel--compact" data-testid="cda-security-profile-panel">
-    <header class="cda-sdk-panel__header">
-        <div>
-            <span>Security</span>
-            <h2>@ProfileName</h2>
-        </div>
-        <StatusBadge Text="@(ProductionMode ? "Production-like" : "Development")" Tone="@(ProductionMode ? "warning" : "info")" />
-    </header>
-    <StatusCheckList Items="Items" />
-</section>
+<div data-testid="cda-security-profile-panel">
+    <SectionCard Title="@ProfileName" Description="Security">
+        <HeaderActions>
+            <StatusBadge Text="@(ProductionMode ? "Production-like" : "Development")" Tone="@(ProductionMode ? "warning" : "info")" />
+        </HeaderActions>
+        <ChildContent>
+            <StatusCheckList Items="Items" />
+        </ChildContent>
+    </SectionCard>
+</div>
 
 @code {
     [Parameter]

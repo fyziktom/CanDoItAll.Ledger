@@ -52,7 +52,11 @@ public sealed class EconomySimulatorComponentTests : TestContext
 
         await component.InvokeAsync(() => component.Find("[data-testid='simulation-run-selected']").Click());
         Assert.Contains("Start simulation", component.Markup, StringComparison.Ordinal);
+        Assert.Equal("false", component.Find("[data-testid='simulation-start-automatic']").GetAttribute("aria-pressed"));
+        Assert.Equal("true", component.Find("[data-testid='simulation-start-manual']").GetAttribute("aria-pressed"));
         await component.InvokeAsync(() => component.Find("[data-testid='simulation-start-automatic']").Click());
+        Assert.Equal("true", component.Find("[data-testid='simulation-start-automatic']").GetAttribute("aria-pressed"));
+        Assert.Equal("false", component.Find("[data-testid='simulation-start-manual']").GetAttribute("aria-pressed"));
         await component.InvokeAsync(() => component.Find("[data-testid='simulation-start-confirm']").Click());
 
         Assert.NotNull(captured);
@@ -278,6 +282,14 @@ public sealed class EconomySimulatorComponentTests : TestContext
         Assert.Contains("Manual interventions", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Demand", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Production line", component.Markup, StringComparison.Ordinal);
+        Assert.Equal("true", component.Find("[data-testid='simulation-intervention-demand']").GetAttribute("aria-pressed"));
+        Assert.Equal("false", component.Find("[data-testid='simulation-intervention-capacity']").GetAttribute("aria-pressed"));
+
+        await component.InvokeAsync(() => component.Find("[data-testid='simulation-intervention-capacity']").Click());
+        Assert.Equal("false", component.Find("[data-testid='simulation-intervention-demand']").GetAttribute("aria-pressed"));
+        Assert.Equal("true", component.Find("[data-testid='simulation-intervention-capacity']").GetAttribute("aria-pressed"));
+
+        await component.InvokeAsync(() => component.Find("[data-testid='simulation-intervention-demand']").Click());
 
         await component.InvokeAsync(() => component.Find("[data-testid='simulation-apply-intervention']").Click());
 

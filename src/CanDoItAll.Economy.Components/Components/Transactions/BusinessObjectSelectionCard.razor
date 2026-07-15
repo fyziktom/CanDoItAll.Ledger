@@ -91,7 +91,7 @@
 
     private string PreviewClass
         => BusinessObjectCardDisplay.PreviewClass(Item)
-            .Replace("cda-vef-gallery-preview", "cda-transaction-bo-picker-card__preview", StringComparison.Ordinal);
+            .Replace("cda-bo-gallery-preview", "cda-transaction-bo-picker-card__preview", StringComparison.Ordinal);
 
     private BusinessObjectDataItem? PreviewImage
         => BusinessObjectCardDisplay.ImageFor(Item);

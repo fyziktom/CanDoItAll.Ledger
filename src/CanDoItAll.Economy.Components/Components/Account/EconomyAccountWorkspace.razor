@@ -1,198 +1,209 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
 
-<section class="cda-vef-home cda-vef-account-overview" data-testid="ssr-vef-home">
-    <section class="cda-vef-panel cda-vef-account-command">
-        <div class="cda-vef-account-identity">
-            <div class="cda-vef-profile-avatar">
-                @if (!string.IsNullOrWhiteSpace(ProfileImageLink))
-                {
-                    <img src="@ProfileImageLink" alt="@Workspace.AccountName" />
-                }
-                else
-                {
-                    <span>@ProfileInitials</span>
-                }
-            </div>
-            <div>
-                <span class="cda-vef-account-state">@(Workspace.Context.ScenarioId?.Value ?? "live")</span>
-                <h2>@Workspace.AccountName</h2>
-                <p>
-                    <CopyableMonoValue Value="@Workspace.Address.Value" StartChars="10" EndChars="5" AriaLabel="Copy account address" />
-                    <QrCodeButton Payload="@AccountAddressQrPayload"
-                                  Label="Show account address QR"
-                                  TooltipText="Show account address as QR code"
-                                  TestId="cda-account-address-qr-button" />
-                    <PageHeaderActionButton Icon="badge"
-                                            Label="Profile"
-                                            TooltipText="Open account profile"
-                                            Variant="Variant.Outlined"
-                                            Click="ValidateRequested"
-                                            TestId="cda-account-profile-button" />
-                </p>
-            </div>
-        </div>
+<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="economy-account-home">
+    <SurfaceCard>
+        <Stack GapScale="LayoutGap.Medium">
+            <Grid ColumnsLg="2"
+                  ColumnTemplateLg="minmax(17rem, 0.72fr) minmax(0, 2.28fr)"
+                  Gap="LayoutGap.Medium"
+                  AlignItems="AlignItems.Center">
+                <Cluster Gap="LayoutGap.Medium" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                    <Avatar ImageUrl="@ProfileImageLink"
+                            Alt="@Workspace.AccountName"
+                            FallbackText="@ProfileInitials"
+                            UseDefaultImageWhenMissing="false"
+                            Size="AvatarSize.Large"
+                            Shape="AvatarShape.Rounded" />
+                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                        <StatusBadge Text="@(Workspace.Context.ScenarioId?.Value ?? "live")" Tone="info" />
+                        <h2 class="text-base font-semibold text-slate-900">@Workspace.AccountName</h2>
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
+                            <CopyableMonoValue Value="@Workspace.Address.Value" StartChars="10" EndChars="5" AriaLabel="Copy account address" />
+                            <QrCodeButton Payload="@AccountAddressQrPayload"
+                                          Label="Show account address QR"
+                                          TooltipText="Show account address as QR code"
+                                          TestId="cda-account-address-qr-button" />
+                            <PageHeaderActionButton Icon="badge"
+                                                    Label="Profile"
+                                                    TooltipText="Open account profile"
+                                                    Variant="Variant.Outlined"
+                                                    Click="ValidateRequested"
+                                                    TestId="cda-account-profile-button" />
+                        </Cluster>
+                    </Stack>
+                </Cluster>
 
-        <div class="cda-vef-account-metrics">
-            <div class="cda-economy-fact"><span>Main</span><strong>@FormatAmount(Workspace.Balance.MainBalance)</strong></div>
-            <div class="cda-economy-fact"><span>Token types</span><strong>@Workspace.TokenTypesOrEmpty.Count</strong></div>
-            <div class="cda-economy-fact"><span>BOs</span><strong>@Workspace.BusinessObjects.Count</strong></div>
-            <div class="cda-economy-fact"><span>UTXOs</span><strong>@Workspace.Balance.UtxoCount</strong></div>
-            <div class="cda-economy-fact"><span>Txs</span><strong>@Workspace.Transactions.Count</strong></div>
-            <div class="cda-economy-fact"><span>Ledger</span><strong><CopyableMonoValue Value="@Workspace.Context.LedgerId.Value" StartChars="8" EndChars="4" AriaLabel="Copy ledger id" /></strong></div>
-            <div class="cda-economy-fact"><span>Scenario</span><strong><CopyableMonoValue Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" Truncate="false" AriaLabel="Copy scenario id" /></strong></div>
-            <div class="cda-economy-fact"><span>Node</span><strong>@(Workspace.NodeBaseUri?.ToString() ?? "local")</strong></div>
-        </div>
+                <Grid ColumnsSm="2" ColumnsMd="4" Gap="LayoutGap.Small">
+                    <MetricCard Label="Main" Value="@FormatAmount(Workspace.Balance.MainBalance)" />
+                    <MetricCard Label="Token types" Value="@Workspace.TokenTypesOrEmpty.Count.ToString()" />
+                    <MetricCard Label="BOs" Value="@Workspace.BusinessObjects.Count.ToString()" />
+                    <MetricCard Label="UTXOs" Value="@Workspace.Balance.UtxoCount.ToString()" />
+                    <MetricCard Label="Txs" Value="@Workspace.Transactions.Count.ToString()" />
+                    <MetricCard Label="Ledger">
+                        <ValueContent>
+                            <CopyableMonoValue Value="@Workspace.Context.LedgerId.Value" StartChars="8" EndChars="4" AriaLabel="Copy ledger id" />
+                        </ValueContent>
+                    </MetricCard>
+                    <MetricCard Label="Scenario">
+                        <ValueContent>
+                            <CopyableMonoValue Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" Truncate="false" AriaLabel="Copy scenario id" />
+                        </ValueContent>
+                    </MetricCard>
+                    <MetricCard Label="Node" Value="@(Workspace.NodeBaseUri?.ToString() ?? "local")" />
+                </Grid>
+            </Grid>
 
-        <div class="cda-vef-account-actions">
-            <Button Icon="send" Text="Send" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="AddTransactionRequested" title="Send transaction" aria-label="Send transaction" data-testid="cda-action-send" />
-            <Button Icon="add_circle" Text="Token" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateTokenRequested" title="Create token" aria-label="Create token" data-testid="cda-action-token" />
-            <Button Icon="contacts" Text="Addresses" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenAddressDirectoryAsync" title="Manage address directory" aria-label="Manage address directory" data-testid="cda-action-address-directory" />
-            <Button Icon="security" Text="Security" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenMessageSecurityDialogAsync" title="Open message security" aria-label="Open message security" data-testid="cda-action-security" />
-            <Button Icon="tune" Text="Settings" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsDialogAsync" title="Open account settings" aria-label="Open account settings" data-testid="cda-action-settings" />
-            <Button Icon="archive" Text="Backup" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsBackupDialogAsync" title="Import or export browser-local settings" aria-label="Import or export browser-local settings" data-testid="cda-action-settings-backup" />
-            <Button Icon="refresh" Text="Refresh" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="RefreshRequested" title="Refresh workspace" aria-label="Refresh workspace" data-testid="cda-action-refresh" />
-            <Button Icon="add" Text="Subaccount" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateSubAccountRequested" title="Create subaccount" aria-label="Create subaccount" data-testid="cda-action-subaccount" />
-        </div>
-    </section>
+            <Grid ColumnsSm="2" ColumnsMd="4" ColumnsXl="8" Gap="LayoutGap.Small">
+                <Button Class="w-full" Icon="send" Text="Send" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="AddTransactionRequested" title="Send transaction" aria-label="Send transaction" data-testid="cda-action-send" />
+                <Button Class="w-full" Icon="add_circle" Text="Token" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateTokenRequested" title="Create token" aria-label="Create token" data-testid="cda-action-token" />
+                <Button Class="w-full" Icon="contacts" Text="Addresses" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenAddressDirectoryAsync" title="Manage address directory" aria-label="Manage address directory" data-testid="cda-action-address-directory" />
+                <Button Class="w-full" Icon="security" Text="Security" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenMessageSecurityDialogAsync" title="Open message security" aria-label="Open message security" data-testid="cda-action-security" />
+                <Button Class="w-full" Icon="tune" Text="Settings" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsDialogAsync" title="Open account settings" aria-label="Open account settings" data-testid="cda-action-settings" />
+                <Button Class="w-full" Icon="archive" Text="Backup" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsBackupDialogAsync" title="Import or export browser-local settings" aria-label="Import or export browser-local settings" data-testid="cda-action-settings-backup" />
+                <Button Class="w-full" Icon="refresh" Text="Refresh" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="RefreshRequested" title="Refresh workspace" aria-label="Refresh workspace" data-testid="cda-action-refresh" />
+                <Button Class="w-full" Icon="add" Text="Subaccount" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateSubAccountRequested" title="Create subaccount" aria-label="Create subaccount" data-testid="cda-action-subaccount" />
+            </Grid>
+        </Stack>
+    </SurfaceCard>
 
     <Tabs Variant="TabsVariant.WorkspaceSecondary"
           BorderMode="TabsBorderMode.Soft"
           OverflowMode="TabsOverflowMode.Scroll"
           PanelOverflowMode="TabsPanelOverflowMode.Visible"
-          Class="cda-economy-tabs cda-vef-account-home-tabs"
           data-testid="cda-account-home-tabs"
           AriaLabel="Account home sections">
         <TabsItem Text="Overview" Icon="query_stats">
-            <div class="cda-vef-account-tab-panel">
-                <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-vef-account-analytics-grid" data-testid="cda-vef-account-analytics">
+            <Stack GapScale="LayoutGap.Medium">
+                <Grid ColumnsLg="3" Gap="LayoutGap.Medium" data-testid="cda-account-analytics">
                     <AccountBalanceTrendChart Workspace="Workspace" />
                     <TokenAllocationDonut TokenOptions="Workspace.TokenOptions" />
                     <TransactionKindStackedChart Transactions="Workspace.Transactions" />
                 </Grid>
-            </div>
+            </Stack>
         </TabsItem>
 
         <TabsItem Text="Balances" Icon="account_balance_wallet">
-            <div class="cda-vef-account-tab-panel">
-                <section class="cda-vef-panel cda-vef-account-panel--dense">
-                    <div class="cda-vef-panel-header">
-                        <span>Balances</span>
+            <Stack GapScale="LayoutGap.Medium">
+                <SectionCard Title="Balances" Description="Native, token, and source outputs available to this account.">
+                    <HeaderActions>
                         <QrCodeButton Payload="@AccountAddressQrPayload"
                                       Label="Show account address QR"
                                       TooltipText="Show account address as QR code"
                                       TestId="cda-balance-address-qr-button" />
-                    </div>
-                    <div class="cda-vef-panel-body">
-                        <div class="cda-economy-ledger-table-wrap cda-vef-compact-table-wrap">
-                            <table class="cda-economy-ledger-table cda-vef-compact-table">
-                                <thead>
-                                    <tr>
-                                        <th>Asset</th>
-                                        <th>Amount</th>
-                                        <th>Shape</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Main</td>
-                                        <td>@FormatAmount(Workspace.Balance.MainBalance)</td>
-                                        <td>native</td>
-                                    </tr>
-                                    @foreach (LedgerTokenType tokenType in DisplayTokenTypes)
-                                    {
-                                        <tr>
-                                            <td>@tokenType.TokenId.Value</td>
-                                            <td>@tokenType.TotalAmount</td>
-                                            <td>@tokenType.SourceAmount source / @tokenType.UniqueAmount unique</td>
-                                        </tr>
-                                    }
-                                    @foreach (KeyValuePair<TokenId, Amount> token in BalanceOnlyTokens)
-                                    {
-                                        <tr>
-                                            <td>@token.Key.Value</td>
-                                            <td>@FormatAmount(token.Value)</td>
-                                            <td>balance</td>
-                                        </tr>
-                                    }
-                                    @if (TokenSourceOutputs.Count > 0)
-                                    {
-                                        <tr class="cda-vef-balance-section-row">
-                                            <td colspan="3">Source UTXOs</td>
-                                        </tr>
-                                        @foreach (LedgerSpendableOutput output in TokenSourceOutputs)
-                                        {
-                                            <tr class="cda-vef-balance-source-row">
-                                                <td>
-                                                    <div class="cda-vef-balance-source-cell">
-                                                        <strong>@output.Token!.TokenId.Value</strong>
-                                                        <CopyableMonoValue Value="@output.OutPoint.ToString()" StartChars="8" EndChars="6" AriaLabel="Copy token source outpoint" />
-                                                    </div>
-                                                </td>
-                                                <td>@output.Token.Amount</td>
-                                                <td><span class="cda-vef-source-pill cda-vef-source-pill--source">Source</span></td>
-                                            </tr>
-                                        }
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-            </div>
+                    </HeaderActions>
+                    <ChildContent>
+                        <Stack GapScale="LayoutGap.Medium">
+                            <DataGrid TItem="AccountBalanceRow"
+                                      Data="@BalanceRows"
+                                      Caption="Account balances"
+                                      EmptyText="No balances are available for this account.">
+                                <Columns>
+                                    <DataGridColumn TItem="AccountBalanceRow" Property="Asset" Title="Asset" />
+                                    <DataGridColumn TItem="AccountBalanceRow" Property="Amount" Title="Amount" />
+                                    <DataGridColumn TItem="AccountBalanceRow" Property="Shape" Title="Shape" />
+                                </Columns>
+                            </DataGrid>
+
+                            @if (SourceRows.Count > 0)
+                            {
+                                <FormSection Title="Source UTXOs" Description="Spendable token outputs available as transaction sources.">
+                                    <DataGrid TItem="AccountBalanceRow"
+                                              Data="@SourceRows"
+                                              Caption="Source UTXOs">
+                                        <Columns>
+                                            <DataGridColumn TItem="AccountBalanceRow" Title="Asset">
+                                                <Template Context="row">
+                                                    <Stack GapScale="LayoutGap.Tiny">
+                                                        <strong>@row.Asset</strong>
+                                                        <CopyableMonoValue Value="@row.OutPoint" StartChars="8" EndChars="6" AriaLabel="Copy token source outpoint" />
+                                                    </Stack>
+                                                </Template>
+                                            </DataGridColumn>
+                                            <DataGridColumn TItem="AccountBalanceRow" Property="Amount" Title="Amount" />
+                                            <DataGridColumn TItem="AccountBalanceRow" Title="Shape">
+                                                <Template Context="row">
+                                                    <StatusBadge Text="Source" Tone="info" />
+                                                </Template>
+                                            </DataGridColumn>
+                                        </Columns>
+                                    </DataGrid>
+                                </FormSection>
+                            }
+                        </Stack>
+                    </ChildContent>
+                </SectionCard>
+            </Stack>
         </TabsItem>
 
         <TabsItem Text="Commerce" Icon="payments" BadgeText="@CommerceRecordCount.ToString()">
-            <div class="cda-vef-account-tab-panel" data-testid="cda-commerce-tab-panel">
+            <Stack GapScale="LayoutGap.Medium" data-testid="cda-commerce-tab-panel">
                 <BusinessObjectCommerceDashboard Workspace="Workspace"
                                                  EditRequested="TransactionSubmitRequested"
                                                  TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested" />
-            </div>
+            </Stack>
         </TabsItem>
 
         <TabsItem Text="Transactions history" Icon="receipt_long" BadgeText="@Workspace.Transactions.Count.ToString()">
-            <div class="cda-vef-account-tab-panel">
-                <section class="cda-vef-panel cda-vef-account-panel--dense cda-vef-recent-transactions" data-testid="cda-recent-transactions">
-                    <div class="cda-vef-panel-header">
-                        <span>Transactions history</span>
+            <Stack GapScale="LayoutGap.Medium" data-testid="cda-recent-transactions">
+                <SectionCard Title="Transactions history"
+                             Description="The five most recent account-visible ledger transactions.">
+                    <HeaderActions>
                         <PageHeaderActionButton Icon="open_in_full"
                                                 Label="Show all transactions"
                                                 TooltipText="Show all transactions"
                                                 Variant="Variant.Outlined"
                                                 Click="OpenAllTransactionsAsync"
                                                 TestId="cda-show-all-transactions" />
-                    </div>
-                    <div class="cda-vef-panel-body cda-vef-transaction-rail">
+                    </HeaderActions>
+                    <ChildContent>
                         @if (Workspace.Transactions.Count == 0)
                         {
-                            <p class="cda-vef-empty-line">No account-visible transactions loaded yet.</p>
+                            <EmptyState Title="No transactions yet"
+                                        Description="No account-visible transactions have been loaded for this workspace." />
                         }
                         else
                         {
-                            @foreach (LedgerTransactionSummary transaction in RecentTransactions)
-                            {
-                                <article class="cda-vef-transaction-item">
-                                    <span class="material-icons" aria-hidden="true">@HistoryIcon(transaction)</span>
-                                    <div>
-                                        <strong><CopyableMonoValue Value="@transaction.TxId.Value" StartChars="8" EndChars="6" AriaLabel="Copy transaction id" /></strong>
-                                        <CopyableMonoValue Value="@FormatRoute(transaction)" StartChars="18" EndChars="10" AriaLabel="Copy transaction route" />
-                                        <small>@transaction.Kind / @transaction.Status / @transaction.Timestamp.ToString("HH:mm")</small>
-                                    </div>
-                                    <PageHeaderActionButton Icon="info"
-                                                            Label="Transaction details"
-                                                            TooltipText="Open transaction details"
-                                                            Variant="Variant.Outlined"
-                                                            Click="@(() => TransactionDetailsRequested.InvokeAsync(transaction))"
-                                                            TestId="cda-transaction-details-button" />
-                                </article>
-                            }
+                            <Stack GapScale="LayoutGap.Small">
+                                @foreach (LedgerTransactionSummary transaction in RecentTransactions)
+                                {
+                                     <SelectionListItem Title="@transaction.TxId.Value"
+                                                        Eyebrow="@transaction.Kind.ToString()"
+                                                        Meta="@($"{transaction.Status} / {transaction.Timestamp:HH:mm}")"
+                                                        Summary="@FormatRoute(transaction)"
+                                                        Dense="true"
+                                                        OnSelect="@(() => TransactionDetailsRequested.InvokeAsync(transaction))">
+                                        <Status>
+                                            <Icon Name="@HistoryIcon(transaction)" />
+                                        </Status>
+                                        <Actions>
+                                             <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                                                 <CopyButton Value="@FormatRoute(transaction)"
+                                                             DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                                             Size="CopyButtonSize.Small"
+                                                             AriaLabel="Copy transaction route" />
+                                                 <CopyButton Value="@transaction.TxId.Value"
+                                                             DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                                             Size="CopyButtonSize.Small"
+                                                            AriaLabel="Copy transaction id" />
+                                                <PageHeaderActionButton Icon="info"
+                                                                        Label="Transaction details"
+                                                                        TooltipText="Open transaction details"
+                                                                        Variant="Variant.Outlined"
+                                                                        Click="@(() => TransactionDetailsRequested.InvokeAsync(transaction))"
+                                                                        TestId="cda-transaction-details-button" />
+                                            </Cluster>
+                                        </Actions>
+                                    </SelectionListItem>
+                                }
+                            </Stack>
                         }
-                    </div>
-                </section>
-            </div>
+                    </ChildContent>
+                </SectionCard>
+            </Stack>
         </TabsItem>
     </Tabs>
-</section>
+</Stack>
 
 @code {
     [Parameter, EditorRequired]
@@ -269,6 +280,31 @@
             .Take(5)
             .ToArray();
 
+    private IReadOnlyList<AccountBalanceRow> BalanceRows
+        =>
+        [
+            new("Main", FormatAmount(Workspace.Balance.MainBalance), "native"),
+            .. DisplayTokenTypes.Select(tokenType => new AccountBalanceRow(
+                tokenType.TokenId.Value,
+                tokenType.TotalAmount.ToString(),
+                $"{tokenType.SourceAmount} source / {tokenType.UniqueAmount} unique")),
+            .. BalanceOnlyTokens.Select(token => new AccountBalanceRow(
+                token.Key.Value,
+                FormatAmount(token.Value),
+                "balance"))
+        ];
+
+    private IReadOnlyList<AccountBalanceRow> SourceRows
+        =>
+        [
+            .. TokenSourceOutputs.Select(output => new AccountBalanceRow(
+                output.Token!.TokenId.Value,
+                output.Token.Amount.ToString(),
+                "source",
+                output.OutPoint.ToString(),
+                true))
+        ];
+
     private int CommerceRecordCount
         => Workspace.BusinessObjects
             .OfType<ICommerceBusinessObjectView>()
@@ -328,7 +364,7 @@
                 Subtitle = Workspace.Address.Value,
                 Size = ModalSize.Medium,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--form cda-vef-dialog--settings",
+                Class = "cda-ledger-dialog cda-ledger-dialog--form cda-ledger-dialog--settings",
                 TestId = "cda-account-settings-dialog"
             });
 
@@ -344,7 +380,7 @@
                 Subtitle = $"{Workspace.AccountName} - local browser settings",
                 Size = ModalSize.Wide,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--settings-backup",
+                Class = "cda-ledger-dialog cda-ledger-dialog--settings-backup",
                 TestId = "cda-settings-backup-dialog"
             });
 
@@ -361,7 +397,7 @@
                 Subtitle = "Own and external address management",
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--address-directory",
+                Class = "cda-ledger-dialog cda-ledger-dialog--address-directory",
                 TestId = "cda-address-directory-dialog"
             });
 
@@ -387,7 +423,7 @@
                 Subtitle = $"Signing and encryption tools for {Workspace.AccountName}",
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-vef-dialog cda-vef-dialog--security",
+                Class = "cda-ledger-dialog cda-ledger-dialog--security",
                 TestId = "cda-message-security-dialog"
             });
 
@@ -406,7 +442,7 @@
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-vef-dialog cda-vef-dialog--transactions",
+                Class = "cda-ledger-dialog cda-ledger-dialog--transactions",
                 TestId = "cda-transaction-history-dialog"
             });
 
@@ -431,4 +467,11 @@
         => output.BusinessObject is null
             && output.Token is not null
             && output.Token.Amount.Value > 1m;
+
+    private sealed record AccountBalanceRow(
+        string Asset,
+        string Amount,
+        string Shape,
+        string? OutPoint = null,
+        bool IsSource = false);
 }

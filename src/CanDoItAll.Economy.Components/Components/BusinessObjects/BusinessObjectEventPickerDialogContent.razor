@@ -2,14 +2,14 @@
 @inject DialogService DialogService
 @inject NotificationService Notifications
 
-<Stack GapScale="LayoutGap.Medium" Class="cda-event-picker" data-testid="cda-event-picker-content">
-    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-event-picker__layout">
-        <section class="cda-vef-panel">
-            <div class="cda-vef-panel-header">
-                <span>Available Events</span>
-                <span class="cda-vef-source-pill cda-vef-source-pill--source">@FilteredEvents.Count event(s)</span>
-            </div>
-            <div class="cda-vef-panel-body">
+<Stack GapScale="LayoutGap.Medium" data-testid="cda-event-picker-content">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" AlignItems="AlignItems.Start">
+        <SectionCard Title="Available events" Description="Choose an event business object to preload the ticket.">
+            <HeaderActions>
+                <StatusBadge Text="@($"{FilteredEvents.Count} event(s)")" Tone="info" />
+            </HeaderActions>
+            <ChildContent>
+                <Stack GapScale="LayoutGap.Medium">
                 <FormField Text="Search events">
                     <TextBox Value="@searchText"
                              ValueChanged="@(value => searchText = value ?? string.Empty)"
@@ -20,33 +20,34 @@
 
                 @if (FilteredEvents.Count == 0)
                 {
-                    <p class="cda-vef-empty-line">No event BOs match the current search.</p>
+                    <EmptyState Title="No matching events"
+                                Description="No event business objects match the current search." />
                 }
                 else
                 {
-                    <div class="cda-event-picker__list">
+                    <Stack GapScale="LayoutGap.Small" Class="max-h-[26rem] overflow-auto">
                         @foreach (IBusinessObjectView item in FilteredEvents)
                         {
-                            <button type="button"
-                                    class="@EventButtonClass(item)"
-                                    @onclick="@(() => SelectEvent(item))"
-                                    data-testid="cda-event-picker-event">
-                                <span class="material-icons" aria-hidden="true">event</span>
-                                <span>
-                                    <strong>@DisplayName(item)</strong>
-                                    <small>@DisplaySubtitle(item)</small>
-                                </span>
-                            </button>
+                            <SelectionListItem Title="@DisplayName(item)"
+                                               Meta="@DisplaySubtitle(item)"
+                                               IsSelected="@(selectedEvent?.ObjectId == item.ObjectId)"
+                                               Dense="true"
+                                               OnSelect="@(() => SelectEvent(item))"
+                                               DataTestId="cda-event-picker-event">
+                                <Status>
+                                    <Icon Name="event" />
+                                </Status>
+                            </SelectionListItem>
                         }
-                    </div>
+                    </Stack>
                 }
-            </div>
-        </section>
+                </Stack>
+            </ChildContent>
+        </SectionCard>
 
         <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
-            <section class="cda-vef-panel">
-                <div class="cda-vef-panel-header">Load By Hash</div>
-                <div class="cda-vef-panel-body">
+            <SectionCard Title="Load by hash" Description="Resolve an event directly from its business-object id or transaction hash.">
+                <Stack GapScale="LayoutGap.Medium">
                     <FormField Text="Event BO id or transaction hash">
                         <TextBox Value="@lookupText"
                                  ValueChanged="@(value => lookupText = value ?? string.Empty)"
@@ -65,40 +66,42 @@
                     </Cluster>
                     @if (!string.IsNullOrWhiteSpace(lookupSummary))
                     {
-                        <p class="cda-vef-empty-line">@lookupSummary</p>
+                        <Alert AlertStyle="AlertStyle.Info">@lookupSummary</Alert>
                     }
-                </div>
-            </section>
+                </Stack>
+            </SectionCard>
 
-            <section class="cda-vef-panel" data-testid="cda-event-picker-selected">
-                <div class="cda-vef-panel-header">Selected Event</div>
-                <div class="cda-vef-panel-body">
+            <div data-testid="cda-event-picker-selected">
+                <SectionCard Title="Selected event" Description="Review the event that will be attached to the ticket draft.">
                     @if (selectedEvent is null)
                     {
-                        <p class="cda-vef-empty-line">Select or load an event BO to preload ticket data.</p>
+                        <EmptyState Title="No event selected"
+                                    Description="Select or load an event business object to preload ticket data." />
                     }
                     else
                     {
-                        <Stack GapScale="LayoutGap.Small">
-                            <div class="cda-event-picker__selected-title">
-                                <span class="material-icons" aria-hidden="true">event_available</span>
-                                <div>
-                                    <strong>@DisplayName(selectedEvent)</strong>
-                                    <small>@selectedEvent.ObjectId.Value</small>
-                                </div>
-                            </div>
-                            <Grid ColumnsMd="2" Gap="LayoutGap.Small">
-                                <div class="cda-economy-fact"><span>Owner</span><strong>@ShortAddress(selectedEvent.OwnerAddress.Value)</strong></div>
-                                <div class="cda-economy-fact"><span>Created</span><strong>@selectedEvent.CreatedAt.ToString("MM.dd HH:mm")</strong></div>
+                        <Stack GapScale="LayoutGap.Medium">
+                            <SurfaceCard Soft="true">
+                                <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap">
+                                    <Icon Name="event_available" />
+                                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@DisplayName(selectedEvent)" />
+                                        <CopyableMonoValue Value="@selectedEvent.ObjectId.Value" StartChars="10" EndChars="6" AriaLabel="Copy selected event id" />
+                                    </Stack>
+                                </Cluster>
+                            </SurfaceCard>
+                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                                <SummaryTile Label="Owner" Value="@ShortAddress(selectedEvent.OwnerAddress.Value)" Compact="true" />
+                                <SummaryTile Label="Created" Value="@selectedEvent.CreatedAt.ToString("MM.dd HH:mm")" Compact="true" />
                                 @foreach (BusinessObjectDisplayFact fact in DisplayFacts(selectedEvent).Take(6))
                                 {
-                                    <div class="cda-economy-fact"><span>@fact.Label</span><strong>@fact.Value</strong></div>
+                                    <SummaryTile Label="@fact.Label" Value="@fact.Value" Compact="true" />
                                 }
-                            </Grid>
+                            </SummaryTiles>
                         </Stack>
                     }
-                </div>
-            </section>
+                </SectionCard>
+            </div>
         </Stack>
     </Grid>
 
@@ -189,11 +192,6 @@
 
     private Task CancelAsync()
         => DialogService.CloseAsync((object?)null);
-
-    private string EventButtonClass(IBusinessObjectView item)
-        => selectedEvent?.ObjectId == item.ObjectId
-            ? "cda-event-picker__event is-selected"
-            : "cda-event-picker__event";
 
     private bool MatchesSearch(IBusinessObjectView item)
     {

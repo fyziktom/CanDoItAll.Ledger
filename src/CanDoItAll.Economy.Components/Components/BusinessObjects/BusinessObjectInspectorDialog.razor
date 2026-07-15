@@ -12,7 +12,7 @@
     }
     else
     {
-        <div class="cda-sdk-section-stack">
+        <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
             <SectionCard Title="Renderer" Description="Custom renderers remain registry-owned; generic state stays below.">
                 <BusinessObjectRendererHost Object="Object" Mode="BusinessObjectRenderMode.Detail" ViewedAtUtc="Object.ViewedAt" />
             </SectionCard>
@@ -22,7 +22,7 @@
             <BusinessObjectVersionTimeline Object="Object" Transactions="Transactions" />
             <BusinessObjectDiffViewer PreviousStateJson="@PreviousStateJson" CurrentStateJson="@(Object.StateJson ?? "{}")" />
             <ObjectActionReviewPanel Object="Object" Draft="Draft" />
-        </div>
+        </Stack>
     }
 </InspectorDialogLayout>
 
