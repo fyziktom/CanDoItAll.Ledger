@@ -1,0 +1,169 @@
+.cda-sdk-theme {
+    display: contents;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell {
+    background: #f4f7f2;
+    color: #17211c;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .material-icons,
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-material-icon {
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-copyable-mono-value {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.25rem;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-copyable-mono-value .cda-text-block--mono {
+    color: #17211c;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: none;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-copyable-mono-value .cda-copy-button-icon {
+    flex: 0 0 auto;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-button {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-button .rz-button-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile__row,
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile__value,
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile__helper {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .cda-summary-tile__value {
+    letter-spacing: 0;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell pre,
+.cda-sdk-theme ::deep .cda-sdk-shell code {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell pre {
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell .sr-only {
+    left: 0;
+    right: auto;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell__nav {
+    align-self: start;
+    background: #17211c;
+    border-right: 1px solid #d8e0d9;
+    color: #f7faf8;
+    display: grid;
+    gap: 1rem;
+    min-height: 100vh;
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell__brand {
+    align-items: center;
+    display: grid;
+    gap: 0.15rem 0.6rem;
+    grid-template-columns: auto minmax(0, 1fr);
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell__brand > span {
+    aspect-ratio: 1;
+    background: #0f766e;
+    border-radius: var(--cad-radius-control);
+    color: #ffffff;
+    display: inline-grid;
+    font-weight: 820;
+    place-items: center;
+    width: 2.35rem;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell__brand strong,
+.cda-sdk-theme ::deep .cda-sdk-shell__brand small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell__brand small {
+    color: #b8c4bc;
+    grid-column: 2;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell__nav nav {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell__nav a {
+    border-radius: var(--cad-radius-control);
+    color: #dcebe3;
+    font-weight: 740;
+    padding: 0.55rem 0.65rem;
+    text-decoration: none;
+}
+
+.cda-sdk-theme ::deep .cda-sdk-shell__nav a:hover,
+.cda-sdk-theme ::deep .cda-sdk-shell__nav a:focus-visible {
+    background: #26362d;
+    outline: 2px solid rgb(220 235 227 / 32%);
+    outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+    .cda-sdk-theme ::deep .cda-sdk-shell {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 900px) {
+    .cda-sdk-theme ::deep .cda-sdk-shell--custom-nav {
+        flex-direction: column;
+    }
+
+    .cda-sdk-theme ::deep .cda-sdk-shell__nav {
+        border-bottom: 1px solid #2f4238;
+        border-right: 0;
+        min-height: auto;
+        position: static;
+    }
+
+    .cda-sdk-theme ::deep .cda-sdk-shell__nav nav {
+        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    }
+}

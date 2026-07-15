@@ -1,85 +1,110 @@
 @namespace CanDoItAll.Economy.Node.Components.Shared
+@using CanDoItAll.Components.Common
+@implements IDisposable
 @inject NavigationManager Navigation
+@inject SideMenuService SideMenus
 
-<section class="cda-sdk-section cda-node-route-shell min-w-0" data-testid="@TestId">
-    <span class="sr-only" data-route-focus>@Heading</span>
-    <Grid ColumnsLg="2"
-          ColumnTemplateLg="minmax(15rem, 0.32fr) minmax(0, 1.68fr)"
-          Gap="LayoutGap.Medium"
-          Class="cda-node-route-grid min-w-0">
-        <aside class="cda-sdk-panel cda-sdk-panel--compact cda-node-main-menu" data-testid="node-route-navigation">
-            <a class="cda-node-main-menu__brand" href="/accounts">
-                <span class="cda-node-main-menu__eyebrow">@Subtitle</span>
-                <span class="cda-node-main-menu__title">@Title</span>
+<div class="cda-node-shell-theme">
+    <Layout FitViewport="true"
+            LockOverflow="true"
+            Class="cda-node-shell min-w-0"
+            data-testid="@TestId">
+    <SideMenu MenuId="@MenuId"
+              Title="@Title"
+              Subtitle="@Subtitle"
+              Icon="account_balance"
+              AriaLabel="Node workspace sections"
+              Items="@NavigationItems"
+              BottomItems="@BottomNavigationItems"
+              FillHeight="true"
+              ItemSelected="NavigateAsync">
+        <HeaderContent>
+            <a href="/accounts"
+               class="cda-node-route-brand-link"
+               data-testid="node-route-navigation">
+                <Stack GapScale="LayoutGap.Small" Class="min-w-0">
+                    <TextBlock TextStyle="TextStyle.Caption" Value="@Subtitle" />
+                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Title" />
+                </Stack>
             </a>
+        </HeaderContent>
+    </SideMenu>
 
-            <nav class="cda-node-main-menu__nav" aria-label="Node workspace sections">
-                @foreach (NodeNavItem item in NavigationItems)
-                {
-                    <Button Text="@item.Label"
-                            Icon="@item.Icon"
-                            Href="@item.Href"
-                            Variant="@(IsActive(item) ? Variant.Filled : Variant.Outlined)"
-                            ButtonStyle="@(IsActive(item) ? ButtonStyle.Info : ButtonStyle.Secondary)" />
-                }
-            </nav>
+    <Body FillHeight="true" Scrollable="true" Class="min-w-0 p-3 sm:p-4">
+        <PageScaffold MaxWidthClass="max-w-full" Class="cda-node-route-shell">
+            <Header>
+                <span class="sr-only" data-route-focus>@Heading</span>
+                <div data-testid="node-route-header">
+                    <PageHeader Eyebrow="@Eyebrow"
+                                Title="@Heading"
+                                Description="@Description"
+                                Actions="@HeaderActions" />
+                </div>
+            </Header>
 
-            @if (!string.IsNullOrWhiteSpace(StatusText))
-            {
-                <section class="cda-node-main-menu__status" data-testid="node-route-status">
-                    <div>
-                        <span>Node status</span>
-                        <strong>@StatusText</strong>
-                    </div>
-                    <StatusBadge Text="@StatusText" Tone="@StatusTone" />
-                    @if (!string.IsNullOrWhiteSpace(StatusDescription))
-                    {
-                        <p>@StatusDescription</p>
-                    }
-                </section>
-            }
-
-            @if (MenuFooter is not null)
-            {
-                <footer class="cda-node-main-menu__footer" data-testid="node-menu-footer">
-                    @MenuFooter
-                </footer>
-            }
-        </aside>
-
-        <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
-            <header class="cda-sdk-panel cda-sdk-panel--compact" data-testid="node-route-header">
-                <Cluster Gap="LayoutGap.Medium">
-                    <div class="min-w-0">
-                        <span>@Eyebrow</span>
-                        <h1>@Heading</h1>
-                        @if (!string.IsNullOrWhiteSpace(Description))
-                        {
-                            <p>@Description</p>
-                        }
-                    </div>
-
-                    @if (HeaderActions is not null)
-                    {
-                        <div class="min-w-0">@HeaderActions</div>
-                    }
-                </Cluster>
-            </header>
-
-            @ChildContent
-        </Stack>
-    </Grid>
-</section>
+            <ChildContent>
+                @ChildContent
+            </ChildContent>
+        </PageScaffold>
+    </Body>
+    </Layout>
+</div>
 
 @code {
-    private static readonly IReadOnlyList<NodeNavItem> NavigationItems =
+    private const string MenuId = "economy-node-primary";
+
+    private static readonly IReadOnlyList<ISideMenuItem> NavigationItems =
     [
-        new("Accounts", "account_balance_wallet", "/accounts"),
-        new("Transactions", "receipt_long", "/transactions"),
-        new("Business objects", "inventory_2", "/business-objects"),
-        new("Analytics", "query_stats", "/analytics"),
-        new("Simulation", "travel_explore", "/economy/simulation-sandbox"),
-        new("Node admin", "admin_panel_settings", "/admin")
+        new SideMenuItemDefinition
+        {
+            Id = "accounts",
+            Text = "Accounts",
+            Icon = "account_balance_wallet",
+            Description = "Accounts, addresses, balances, and operator actions.",
+            Payload = "/accounts",
+            OverflowBehavior = SideMenuOverflowBehavior.PreferVisible
+        },
+        new SideMenuItemDefinition
+        {
+            Id = "transactions",
+            Text = "Transactions",
+            Icon = "receipt_long",
+            Description = "Inspect and submit ledger transactions.",
+            Payload = "/transactions",
+            OverflowBehavior = SideMenuOverflowBehavior.PreferVisible
+        },
+        new SideMenuItemDefinition
+        {
+            Id = "business-objects",
+            Text = "Business objects",
+            Icon = "inventory_2",
+            Description = "Browse and manage ledger-backed business objects.",
+            Payload = "/business-objects"
+        },
+        new SideMenuItemDefinition
+        {
+            Id = "analytics",
+            Text = "Analytics",
+            Icon = "query_stats",
+            Description = "Review ledger and account analytics.",
+            Payload = "/analytics"
+        },
+        new SideMenuItemDefinition
+        {
+            Id = "simulation",
+            Text = "Simulation",
+            Icon = "travel_explore",
+            Description = "Open the economy simulation workspace.",
+            Payload = "/economy/simulation-sandbox"
+        },
+        new SideMenuItemDefinition
+        {
+            Id = "admin",
+            Text = "Node admin",
+            Icon = "admin_panel_settings",
+            Description = "Node health, verification, security, and maintenance.",
+            Payload = "/admin"
+        }
     ];
 
     [Parameter]
@@ -118,17 +143,139 @@
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
-    private bool IsActive(NodeNavItem item)
+    private IReadOnlyList<ISideMenuItem> BottomNavigationItems
     {
-        string relative = Navigation.ToBaseRelativePath(Navigation.Uri);
-        string path = "/" + relative.Split('?', '#')[0].Trim('/');
-        if (path == "/" && item.Href == "/accounts")
+        get
         {
-            return true;
-        }
+            var items = new List<ISideMenuItem>();
 
-        return string.Equals(path, item.Href, StringComparison.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(StatusText))
+            {
+                items.Add(new SideMenuItemDefinition
+                {
+                    Id = "node-status",
+                    Text = "Node status",
+                    Icon = "monitor_heart",
+                    Description = StatusDescription ?? "Review the current node health status.",
+                    BadgeText = StatusText,
+                    PanelTitle = "Node status",
+                    Activation = SideMenuItemActivation.OpenPanel,
+                    PanelContent = StatusPanel
+                });
+            }
+
+            if (MenuFooter is not null)
+            {
+                items.Add(new SideMenuItemDefinition
+                {
+                    Id = "session",
+                    Text = "Session",
+                    Icon = "account_circle",
+                    Description = "Account and session actions.",
+                    PanelTitle = "Session",
+                    Activation = SideMenuItemActivation.OpenPanel,
+                    PanelContent = MenuFooterPanel
+                });
+            }
+
+            return items;
+        }
     }
 
-    private sealed record NodeNavItem(string Label, string Icon, string Href);
+    private RenderFragment StatusPanel => @<Stack Section="true"
+                                                   GapScale="LayoutGap.Small"
+                                                   AlignItems="AlignItems.Stretch"
+                                                   data-testid="node-route-status">
+        <Cluster Gap="LayoutGap.Small"
+                 AlignItems="AlignItems.Center"
+                 JustifyContent="JustifyContent.SpaceBetween">
+            <Stack GapScale="LayoutGap.Tiny">
+                <TextBlock TextStyle="TextStyle.Caption" Value="Node status" />
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@StatusText" />
+            </Stack>
+            <StatusBadge Text="@StatusText" Tone="@StatusTone" />
+        </Cluster>
+        @if (!string.IsNullOrWhiteSpace(StatusDescription))
+        {
+            <TextBlock TextStyle="TextStyle.Body2" Value="@StatusDescription" />
+        }
+    </Stack>;
+
+    private RenderFragment MenuFooterPanel => @<Stack GapScale="LayoutGap.Small"
+                                                       AlignItems="AlignItems.Stretch"
+                                                       data-testid="node-menu-footer">
+        @MenuFooter
+    </Stack>;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += HandleLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await SynchronizeSelectionAsync();
+        }
+    }
+
+    private Task NavigateAsync(SideMenuSelection selection)
+    {
+        if (selection.Source == SideMenuSelectionSource.External
+            || selection.Item.Payload is not string href
+            || string.IsNullOrWhiteSpace(href))
+        {
+            return Task.CompletedTask;
+        }
+
+        if (!string.Equals(CurrentPath, href, StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo(href);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task SynchronizeSelectionAsync()
+    {
+        string? itemId = ResolveCurrentItemId();
+        if (itemId is null
+            || string.Equals(SideMenus.GetSnapshot(MenuId).SelectedItemId, itemId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        await SideMenus.SelectAsync(MenuId, itemId, SideMenuSelectionSource.External);
+    }
+
+    private string? ResolveCurrentItemId()
+    {
+        if (CurrentPath == "/")
+        {
+            return "accounts";
+        }
+
+        return NavigationItems
+            .FirstOrDefault(item => string.Equals(item.Payload as string, CurrentPath, StringComparison.OrdinalIgnoreCase))
+            ?.Id;
+    }
+
+    private string CurrentPath
+    {
+        get
+        {
+            string relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+            string path = "/" + relative.Split('?', '#')[0].Trim('/');
+            return path == "/" ? path : path.TrimEnd('/');
+        }
+    }
+
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs args)
+        => _ = InvokeAsync(SynchronizeSelectionAsync);
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
+    }
 }

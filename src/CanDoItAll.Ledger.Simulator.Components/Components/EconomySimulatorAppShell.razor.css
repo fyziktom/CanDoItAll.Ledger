@@ -1,0 +1,9 @@
+.cda-sim-shell-theme {
+    display: contents;
+}
+
+@media (max-width: 767px) {
+    .cda-sim-shell-theme ::deep .cda-sim-shell {
+        flex-direction: column;
+    }
+}

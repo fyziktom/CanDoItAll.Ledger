@@ -9,151 +9,166 @@
 
 <PageTitle>Buy BusinessObject</PageTitle>
 
-<div class="account-app account-app--buy" data-testid="buy-bo-page">
-    <header class="account-app__topbar">
-        <div>
-            <span class="account-app__eyebrow">Buy BusinessObject</span>
-            <h1>@DisplayTitle</h1>
-        </div>
-        <div class="account-app__connection" data-testid="buy-bo-node-api">
-            <span class="material-icons" aria-hidden="true">hub</span>
-            <div>
-                <strong>@Session.Options.NodeBaseUri</strong>
-                <span>@Session.Options.ApiBasePath / @Session.Options.LedgerId / @(Session.Options.ScenarioId ?? "live")</span>
-            </div>
-        </div>
-    </header>
+<main class="buy-bo-page">
+<PageScaffold data-testid="buy-bo-page">
+    <Header>
+        <PageHeader Eyebrow="Buy BusinessObject"
+                    Title="@DisplayTitle"
+                    Description="Review the listing, unlock a buyer vault, and submit the payment through the configured ledger node." />
+    </Header>
+
+    <ChildContent>
+        <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined" data-testid="buy-bo-node-api">
+        Node API: @Session.Options.NodeBaseUri / @Session.Options.ApiBasePath / @Session.Options.LedgerId / @(Session.Options.ScenarioId ?? "live")
+    </Alert>
 
     @if (!string.IsNullOrWhiteSpace(errorMessage))
     {
-        <section class="account-app__alert" data-testid="buy-bo-error">
-            <span class="material-icons" aria-hidden="true">error</span>
-            <span>@errorMessage</span>
-        </section>
+        <Alert AlertStyle="AlertStyle.Danger" data-testid="buy-bo-error">
+            @errorMessage
+        </Alert>
     }
 
     @if (isLoading)
     {
-        <section class="account-card account-card--wide" data-testid="buy-bo-loading">
-            <header>
-                <span class="material-icons" aria-hidden="true">sync</span>
-                <h2>Loading listing</h2>
-            </header>
-        </section>
+        <SectionCard Title="Loading listing" Description="Reading the canonical BusinessObject and sale terms from the ledger." data-testid="buy-bo-loading">
+            <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                Loading the listing and canonical sale terms...
+            </Alert>
+        </SectionCard>
     }
     else if (targetView is not null && saleTerms is not null)
     {
-        <section class="buy-bo-grid">
-            <section class="buy-bo-detail-shell" data-testid="buy-bo-listing">
+        <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Large">
+                <section data-testid="buy-bo-listing">
                 <BusinessObjectLedgerDetailsDialogContent Object="targetView"
                                                           ViewedAtUtc="targetHolding?.CreatedAt"
                                                           ShowActions="false" />
-            </section>
+                </section>
 
-            <article class="account-card" data-testid="buy-bo-account">
-                <header>
-                    <span class="material-icons" aria-hidden="true">encrypted</span>
-                    <h2>@(Session.IsUnlocked ? "Buyer account" : "Unlock buyer account")</h2>
-                </header>
-                <div class="buy-bo-facts buy-bo-facts--single">
-                    <div><span>Mode</span><strong>@saleTerms.Mode</strong></div>
-                    <div><span>Price</span><strong>@FormatPrice(saleTerms.PriceAmount, saleTerms.TokenId)</strong></div>
-                    <div><span>Seller</span><strong>@saleTerms.SellerAddress</strong></div>
-                    @if (saleTerms.MaxClones is not null)
-                    {
-                        <div><span>Copies</span><strong>@saleTerms.SoldCount / @saleTerms.MaxClones</strong></div>
-                    }
-                </div>
-                @if (Session.IsUnlocked)
-                {
-                    <div class="buy-bo-facts">
-                        <div><span>Buyer</span><strong>@Session.Account?.Address.Value</strong></div>
-                        <div><span>Vault</span><strong>@Session.Account?.DisplayName</strong></div>
-                    </div>
-                    <button data-testid="buy-bo-submit"
-                            class="account-button account-button--primary"
-                            disabled="@(!CanSubmitPurchase)"
-                            @onclick="SubmitPurchaseAsync">
-                        <span class="material-icons" aria-hidden="true">payments</span>
-                        <span>Submit payment</span>
-                    </button>
-                }
-                else
-                {
-                    <p class="account-card__hint">@Session.StatusMessage</p>
-                    <label>
-                        <span>Vault password</span>
-                        <input data-testid="buy-unlock-password" type="password" @bind="Session.UnlockPassword" autocomplete="current-password" />
-                    </label>
-                    <button data-testid="buy-unlock-account" class="account-button" disabled="@(!Session.HasStoredVault)" @onclick="UnlockAccountAsync">
-                        <span class="material-icons" aria-hidden="true">vpn_key</span>
-                        <span>Unlock vault</span>
-                    </button>
-                }
-            </article>
+                <SectionCard Title="@(Session.IsUnlocked ? "Buyer account" : "Unlock buyer account")"
+                             Description="Sale terms and the local browser vault used to authorize payment."
+                             data-testid="buy-bo-account">
+                    <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                        <SummaryTiles>
+                            <SummaryTile Label="Mode" Value="@saleTerms.Mode.ToString()" Compact="true" />
+                            <SummaryTile Label="Price" Value="@FormatPrice(saleTerms.PriceAmount, saleTerms.TokenId)" Tone="info" Compact="true" />
+                            <SummaryTile Label="Seller" Value="@saleTerms.SellerAddress" Compact="true" />
+                            @if (saleTerms.MaxClones is not null)
+                            {
+                                <SummaryTile Label="Copies" Value="@($"{saleTerms.SoldCount} / {saleTerms.MaxClones}")" Compact="true" />
+                            }
+                            @if (Session.IsUnlocked)
+                            {
+                                <SummaryTile Label="Buyer" Value="@Session.Account?.Address.Value" Compact="true" />
+                                <SummaryTile Label="Vault" Value="@Session.Account?.DisplayName" Compact="true" />
+                            }
+                        </SummaryTiles>
+
+                        @if (Session.IsUnlocked)
+                        {
+                            <Button Text="Submit payment"
+                                    Icon="payments"
+                                    Disabled="@(!CanSubmitPurchase)"
+                                    Click="SubmitPurchaseAsync"
+                                    data-testid="buy-bo-submit" />
+                        }
+                        else
+                        {
+                            <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
+                                @Session.StatusMessage
+                            </Alert>
+                            <FormField Text="Vault password">
+                                <TextBox type="password"
+                                         Immediate="true"
+                                         @bind-Value="Session.UnlockPassword"
+                                         autocomplete="current-password"
+                                         data-testid="buy-unlock-password" />
+                            </FormField>
+                            <Button Text="Unlock vault"
+                                    Icon="vpn_key"
+                                    Disabled="@(!Session.HasStoredVault)"
+                                    Click="UnlockAccountAsync"
+                                    data-testid="buy-unlock-account" />
+                        }
+                    </Stack>
+                </SectionCard>
+            </Grid>
 
             @if (!Session.IsUnlocked)
             {
-                <article class="account-card account-card--wide" data-testid="buy-import-backup">
-                    <header>
-                        <span class="material-icons" aria-hidden="true">upload_file</span>
-                        <h2>Import encrypted backup</h2>
-                    </header>
-                    <label>
-                        <span>Backup JSON</span>
-                        <textarea data-testid="buy-backup-import-json" rows="8" @bind="Session.ImportBackupJson"></textarea>
-                    </label>
-                    <div class="account-form-grid">
-                        <label>
-                            <span>Backup password</span>
-                            <input data-testid="buy-backup-import-password" type="password" @bind="Session.ImportBackupPassword" />
-                        </label>
-                        <label>
-                            <span>New vault password</span>
-                            <input data-testid="buy-backup-new-password" type="password" @bind="Session.ImportNewPassword" />
-                        </label>
-                        <label>
-                            <span>Confirm new password</span>
-                            <input data-testid="buy-backup-confirm-password" type="password" @bind="Session.ImportConfirmPassword" />
-                        </label>
-                    </div>
-                    <button data-testid="buy-import-backup-submit" class="account-button" @onclick="ImportBackupAsync">
-                        <span class="material-icons" aria-hidden="true">restore</span>
-                        <span>Import and unlock</span>
-                    </button>
-                </article>
+                <SectionCard Title="Import encrypted backup"
+                             Description="Restore an existing account into a new encrypted browser vault."
+                             data-testid="buy-import-backup">
+                    <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                        <FormField Text="Backup JSON">
+                            <TextArea Rows="8"
+                                      Immediate="true"
+                                      @bind-Value="Session.ImportBackupJson"
+                                      data-testid="buy-backup-import-json" />
+                        </FormField>
+                        <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+                            <FormField Text="Backup password">
+                                <TextBox type="password"
+                                         Immediate="true"
+                                         @bind-Value="Session.ImportBackupPassword"
+                                         data-testid="buy-backup-import-password" />
+                            </FormField>
+                            <FormField Text="New vault password">
+                                <TextBox type="password"
+                                         Immediate="true"
+                                         @bind-Value="Session.ImportNewPassword"
+                                         data-testid="buy-backup-new-password" />
+                            </FormField>
+                            <FormField Text="Confirm new password">
+                                <TextBox type="password"
+                                         Immediate="true"
+                                         @bind-Value="Session.ImportConfirmPassword"
+                                         data-testid="buy-backup-confirm-password" />
+                            </FormField>
+                        </Grid>
+                        <Button Text="Import and unlock"
+                                Icon="restore"
+                                Click="ImportBackupAsync"
+                                data-testid="buy-import-backup-submit" />
+                    </Stack>
+                </SectionCard>
             }
-        </section>
+        </Stack>
     }
 
     @if (purchaseResult is not null)
     {
-        <section class="account-card account-card--wide" data-testid="buy-bo-payment-result">
-            <header>
-                <span class="material-icons" aria-hidden="true">receipt_long</span>
-                <h2>@(purchaseResult.Accepted ? "Payment submitted" : "Payment rejected")</h2>
-            </header>
-            <p>@purchaseResult.Message</p>
-            @if (purchaseResult.TxId is not null)
-            {
-                <p><strong>@purchaseResult.TxId.Value</strong></p>
-            }
-            @if (purchaseResult.ResultBusinessObjectId is { } paymentObjectId)
-            {
-                <p><span>Payment BO</span> <strong>@paymentObjectId.Value</strong></p>
-            }
-            @if (purchaseResult.Accepted)
-            {
-                <div class="buy-bo-result-actions">
-                    <button data-testid="buy-bo-open-gallery" class="account-button account-button--primary" @onclick="OpenGallery">
-                        <span class="material-icons" aria-hidden="true">photo_library</span>
-                        <span>Open gallery</span>
-                    </button>
-                </div>
-            }
-        </section>
+        <SectionCard Title="@(purchaseResult.Accepted ? "Payment submitted" : "Payment rejected")"
+                     Description="@purchaseResult.Message"
+                     data-testid="buy-bo-payment-result">
+            <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                @if (purchaseResult.TxId is not null)
+                {
+                    <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                        Transaction: @purchaseResult.TxId.Value
+                    </Alert>
+                }
+                @if (purchaseResult.ResultBusinessObjectId is { } paymentObjectId)
+                {
+                    <Alert AlertStyle="AlertStyle.Success" Variant="Variant.Outlined">
+                        Payment BO: @paymentObjectId.Value
+                    </Alert>
+                }
+                @if (purchaseResult.Accepted)
+                {
+                    <Button Text="Open gallery"
+                            Icon="photo_library"
+                            Click="OpenGallery"
+                            data-testid="buy-bo-open-gallery" />
+                }
+            </Stack>
+        </SectionCard>
     }
-</div>
+    </ChildContent>
+</PageScaffold>
+</main>
 
 @code {
     [Parameter]

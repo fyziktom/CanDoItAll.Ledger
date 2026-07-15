@@ -1,56 +1,65 @@
 @namespace CanDoItAll.Economy.Components
+@implements IDisposable
+@inject NavigationManager UrlNavigation
+@inject SideMenuService SideMenus
 
-<section class="cda-sdk-shell" data-testid="@TestId">
-    <aside class="cda-sdk-shell__nav" aria-label="@NavigationLabel">
-        <div class="cda-sdk-shell__brand">
-            <span>@BrandMark</span>
-            <strong>@Title</strong>
-            <small>@Subtitle</small>
-        </div>
-
-        @if (Navigation is not null)
-        {
-            @Navigation
-        }
-        else
-        {
-            <nav>
-                @foreach (var item in DefaultNav)
-                {
-                    <a href="@BuildNavHref(item.Key)">@item.Label</a>
-                }
-            </nav>
-        }
-    </aside>
-
-    <main class="cda-sdk-shell__main">
-        <header class="cda-sdk-shell__header">
-            <div>
-                <span>@Eyebrow</span>
-                <h1>@Heading</h1>
-                @if (!string.IsNullOrWhiteSpace(Description))
-                {
-                    <p>@Description</p>
-                }
+<div class="cda-sdk-theme">
+    <Layout FitViewport="true"
+            LockOverflow="true"
+            Class="@ShellClass"
+            data-testid="@TestId">
+    @if (Navigation is not null)
+    {
+        <Sidebar Scrollable="true"
+                 Class="cda-sdk-shell__nav"
+                 aria-label="@NavigationLabel">
+            <div class="cda-sdk-shell__brand">
+                <span>@BrandMark</span>
+                <strong>@Title</strong>
+                <small>@Subtitle</small>
             </div>
-            @if (HeaderActions is not null)
-            {
-                <div class="cda-sdk-shell__actions">@HeaderActions</div>
-            }
-        </header>
 
-        @ChildContent
-    </main>
-</section>
+            @Navigation
+        </Sidebar>
+    }
+    else
+    {
+        <SideMenu MenuId="@MenuId"
+                  Title="@Title"
+                  Subtitle="@Subtitle"
+                  Icon="account_balance"
+                  AriaLabel="@NavigationLabel"
+                  Items="@DefaultNav"
+                  ItemSelected="HandleDefaultNavigation"
+                  FillHeight="true" />
+    }
+
+    <Body FillHeight="true" Scrollable="true" Class="min-w-0 p-3 sm:p-4">
+        <PageScaffold MaxWidthClass="max-w-full">
+            <Header>
+                <PageHeader Eyebrow="@Eyebrow"
+                            Title="@Heading"
+                            Description="@Description"
+                            Actions="@HeaderActions" />
+            </Header>
+            <ChildContent>
+                @ChildContent
+            </ChildContent>
+        </PageScaffold>
+    </Body>
+    </Layout>
+</div>
 
 @code {
-    private static readonly IReadOnlyList<(string Key, string Label)> DefaultNav =
+    private const string MenuId = "economy-sdk-demo";
+
+    private static readonly IReadOnlyList<ISideMenuItem> DefaultNav =
     [
-        ("account", "Account"),
-        ("transactions", "Transactions"),
-        ("objects", "Business objects"),
-        ("analytics", "Analytics"),
-        ("admin", "Node admin")
+        new SideMenuItemDefinition { Id = "account", Text = "Account", Icon = "account_balance_wallet", Description = "Account state, addresses, balances, and security." },
+        new SideMenuItemDefinition { Id = "transactions", Text = "Transactions", Icon = "receipt_long", Description = "Transaction composition, review, and ledger details." },
+        new SideMenuItemDefinition { Id = "objects", Text = "Business objects", Icon = "deployed_code", Description = "Business-object state, history, diffs, and actions." },
+        new SideMenuItemDefinition { Id = "analytics", Text = "Analytics", Icon = "analytics", Description = "Ledger and account analytics." },
+        new SideMenuItemDefinition { Id = "admin", Text = "Node admin", Icon = "admin_panel_settings", Description = "Confirmation-gated node operations." }
     ];
 
     [Parameter]
@@ -89,6 +98,24 @@
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    private string ShellClass
+        => Navigation is null
+            ? "cda-sdk-shell"
+            : "cda-sdk-shell cda-sdk-shell--custom-nav";
+
+    protected override void OnInitialized()
+    {
+        UrlNavigation.LocationChanged += HandleLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Navigation is null)
+        {
+            await SynchronizeSelectionAsync();
+        }
+    }
+
     private string BuildNavHref(string key)
     {
         if (string.IsNullOrWhiteSpace(NavigationHrefPrefix))
@@ -98,5 +125,63 @@
 
         var prefix = NavigationHrefPrefix.TrimEnd('/');
         return $"{prefix}#{key}";
+    }
+
+    private Task HandleDefaultNavigation(SideMenuSelection selection)
+    {
+        if (selection.Source == SideMenuSelectionSource.External)
+        {
+            return Task.CompletedTask;
+        }
+
+        var target = BuildNavHref(selection.ItemId);
+        if (target.StartsWith('#'))
+        {
+            var current = new Uri(UrlNavigation.Uri);
+            target = $"{current.GetLeftPart(UriPartial.Path)}{current.Query}{target}";
+        }
+
+        UrlNavigation.NavigateTo(target);
+        return Task.CompletedTask;
+    }
+
+    private async Task SynchronizeSelectionAsync()
+    {
+        if (Navigation is not null)
+        {
+            return;
+        }
+
+        string itemId = ResolveCurrentItemId();
+        if (string.Equals(
+            SideMenus.GetSnapshot(MenuId).SelectedItemId,
+            itemId,
+            StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        await SideMenus.SelectAsync(MenuId, itemId, SideMenuSelectionSource.External);
+    }
+
+    private string ResolveCurrentItemId()
+    {
+        string fragment = new Uri(UrlNavigation.Uri).Fragment.TrimStart('#');
+        return DefaultNav.Any(item => string.Equals(item.Id, fragment, StringComparison.OrdinalIgnoreCase))
+            ? DefaultNav.First(item => string.Equals(item.Id, fragment, StringComparison.OrdinalIgnoreCase)).Id
+            : "account";
+    }
+
+    private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs args)
+    {
+        if (Navigation is null)
+        {
+            _ = InvokeAsync(SynchronizeSelectionAsync);
+        }
+    }
+
+    public void Dispose()
+    {
+        UrlNavigation.LocationChanged -= HandleLocationChanged;
     }
 }

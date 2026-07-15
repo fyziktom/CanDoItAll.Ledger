@@ -267,101 +267,6 @@
   color: #64748b;
 }
 
-.cda-sim-app-shell {
-  display: grid;
-  min-height: 100vh;
-  grid-template-columns: minmax(0, 1fr);
-  background: #f8fafc;
-}
-
-.cda-sim-app-nav {
-  display: flex;
-  min-width: 0;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #dbe4ef;
-  background: #ffffff;
-  padding: 0.75rem 1rem;
-}
-
-.cda-sim-app-brand,
-.cda-sim-app-nav-link {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.65rem;
-  color: #0f172a;
-  text-decoration: none;
-}
-
-.cda-sim-brand-bars {
-  display: inline-flex;
-  height: 1.7rem;
-  align-items: end;
-  gap: 0.18rem;
-}
-
-.cda-sim-brand-bars span {
-  width: 0.34rem;
-  border-radius: 2px 2px 0 0;
-}
-
-.cda-sim-brand-bars span:nth-child(1) {
-  height: 0.8rem;
-  background: #f59e0b;
-}
-
-.cda-sim-brand-bars span:nth-child(2) {
-  height: 1.2rem;
-  background: #0ea5e9;
-}
-
-.cda-sim-brand-bars span:nth-child(3) {
-  height: 1.7rem;
-  background: #22c55e;
-}
-
-.cda-sim-brand-copy {
-  display: none;
-  min-width: 0;
-  flex-direction: column;
-  line-height: 1.05;
-}
-
-.cda-sim-brand-copy span:first-child {
-  font-weight: 700;
-}
-
-.cda-sim-brand-copy span:last-child {
-  color: #475569;
-  font-size: 0.78rem;
-}
-
-.cda-sim-app-nav-items {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.cda-sim-app-nav-link {
-  border-radius: 0.45rem;
-  padding: 0.65rem;
-  color: #475569;
-}
-
-.cda-sim-app-nav-link span:last-child {
-  display: none;
-}
-
-.cda-sim-app-nav-link--active {
-  background: #0f62d6;
-  color: #ffffff;
-}
-
-.cda-sim-app-main {
-  min-width: 0;
-}
-
 .cda-sim-run-console-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -699,45 +604,7 @@
   background: #dc2626;
 }
 
-@media (min-width: 768px) {
-  .cda-sim-brand-copy {
-    display: flex;
-  }
-}
-
 @media (min-width: 1024px) {
-  .cda-sim-app-shell {
-    grid-template-columns: 4rem minmax(0, 1fr);
-  }
-
-  .cda-sim-app-nav {
-    position: sticky;
-    top: 0;
-    min-height: 100vh;
-    flex-direction: column;
-    justify-content: start;
-    border-right: 1px solid #dbe4ef;
-    border-bottom: 0;
-    padding: 1rem 0.55rem;
-  }
-
-  .cda-sim-app-brand {
-    justify-content: center;
-  }
-
-  .cda-sim-brand-copy {
-    display: none;
-  }
-
-  .cda-sim-app-nav-items {
-    width: 100%;
-    flex-direction: column;
-  }
-
-  .cda-sim-app-nav-link {
-    justify-content: center;
-  }
-
   .cda-sim-run-console-layout {
     grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
   }

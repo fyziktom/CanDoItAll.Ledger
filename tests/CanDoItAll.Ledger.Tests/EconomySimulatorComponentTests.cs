@@ -5,6 +5,8 @@ using CanDoItAll.Economy.Simulator.Components.Components;
 using CanDoItAll.Economy.Simulator.Components.Models;
 using CanDoItAll.Economy.Simulator.Components.Samples;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
@@ -155,6 +157,9 @@ public sealed class EconomySimulatorComponentTests : TestContext
     [Fact]
     public void EconomySimulatorAppShell_RendersProjectsAndRunsNavigation()
     {
+        Services.AddCanDoItAllBaseLib();
+        Services.AddSingleton<IJSRuntime>(new SideMenuTestJsRuntime());
+
         IRenderedComponent<EconomySimulatorAppShell> component = RenderComponent<EconomySimulatorAppShell>(parameters => parameters
             .Add(x => x.ActivePage, "runs")
             .AddChildContent("<span>Runs content</span>"));
@@ -162,7 +167,12 @@ public sealed class EconomySimulatorComponentTests : TestContext
         Assert.Contains("CanDoItAll", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Projects", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Runs", component.Markup, StringComparison.Ordinal);
-        Assert.Contains("cda-sim-app-nav-link--active", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("simulation-app-shell", component.Markup, StringComparison.Ordinal);
+        component.WaitForAssertion(() =>
+        {
+            var runsItem = component.Find("[data-testid='side-menu-economy-simulator-primary-item-runs']");
+            Assert.True(runsItem.ClassList.Contains("is-selected"));
+        });
     }
 
     [Fact]
@@ -293,5 +303,34 @@ public sealed class EconomySimulatorComponentTests : TestContext
         Assert.Contains("Revenue by category", component.Markup, StringComparison.Ordinal);
         Assert.Contains("revenue-subscription", component.Markup, StringComparison.Ordinal);
         Assert.Contains("EUR 116,000", component.Markup, StringComparison.Ordinal);
+    }
+
+    private sealed class SideMenuTestJsRuntime : IJSRuntime, IJSObjectReference
+    {
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
+        {
+            if (string.Equals(identifier, "import", StringComparison.Ordinal))
+            {
+                return ValueTask.FromResult((TValue)(object)(IJSObjectReference)this);
+            }
+
+            if (string.Equals(identifier, "initialize", StringComparison.Ordinal))
+            {
+                object initialization = Activator.CreateInstance(typeof(TValue), nonPublic: true)
+                    ?? throw new InvalidOperationException($"Cannot create {typeof(TValue).FullName}.");
+                typeof(TValue).GetProperty("Metrics")?.SetValue(initialization, new SideMenuLayoutMetrics());
+                return ValueTask.FromResult((TValue)initialization);
+            }
+
+            return ValueTask.FromResult(default(TValue)!);
+        }
+
+        public ValueTask<TValue> InvokeAsync<TValue>(
+            string identifier,
+            CancellationToken cancellationToken,
+            object?[]? args)
+            => InvokeAsync<TValue>(identifier, args);
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }

@@ -1,132 +1,161 @@
 @namespace CanDoItAll.Economy.Components
 
-<div class="cda-vef-app">
-    <aside class="cda-vef-sidebar">
-        <div class="cda-vef-brand">
-            <span class="cda-vef-brand-mark">VE</span>
-            <strong>VENFT</strong>
-            <span class="material-icons" aria-hidden="true">menu</span>
-        </div>
+<div class="cda-vef-theme">
+    <Layout FitViewport="true"
+            LockOverflow="true"
+            Class="cda-vef-app"
+            data-testid="cda-vef-app">
+    <SideMenu @ref="navigationMenu"
+              MenuId="@MenuId"
+              Title="VENFT"
+              Subtitle="@Workspace.AccountName"
+              Icon="account_balance_wallet"
+              AriaLabel="VENFT economy app"
+              Items="@NavigationItems"
+              BottomItems="@AccountItems"
+              FillHeight="true"
+              ItemSelected="HandleNavigationSelectionAsync"
+              data-testid="cda-vef-navigation" />
 
-        <nav class="cda-vef-nav" aria-label="VENFT economy app">
-            @foreach (VenftNavItem item in NavItems)
-            {
-                <button type="button"
-                        class="@NavClass(item.Key)"
-                        @onclick="@(() => SelectView(item.Key))">
-                    <span class="material-icons" aria-hidden="true">@item.Icon</span>
-                    <span>@item.Label</span>
-                </button>
-            }
-        </nav>
+    <Body FillHeight="true" Scrollable="true" Class="min-w-0 p-3.5 sm:p-4 md:p-5">
+        <PageScaffold Mode="PageScaffoldMode.FocusWorkbench"
+                      MaxWidthClass="max-w-full"
+                      data-testid="cda-vef-main">
+            <Header>
+                <PageHeader Eyebrow="@HeaderEyebrow"
+                            Title="@PageTitle"
+                            Description="@HeaderDescription">
+                    <Stats>
+                        @if (!string.IsNullOrWhiteSpace(HostModeLabel) || !string.IsNullOrWhiteSpace(SigningModeLabel))
+                        {
+                            <Cluster Gap="LayoutGap.Small" data-testid="adapter-host-mode">
+                                @if (!string.IsNullOrWhiteSpace(HostModeLabel))
+                                {
+                                    <StatusBadge Text="@HostModeLabel" Tone="info" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(SigningModeLabel))
+                                {
+                                    <StatusBadge Text="@SigningModeLabel" Tone="neutral" />
+                                }
+                            </Cluster>
+                        }
+                    </Stats>
+                </PageHeader>
+            </Header>
 
-        <button type="button" class="cda-vef-account-switch" @onclick="SelectHome">
-            <span class="material-icons" aria-hidden="true">account_balance_wallet</span>
-            <span>Account</span>
-            <span class="material-icons" aria-hidden="true">expand_more</span>
-        </button>
-    </aside>
-
-    <main class="cda-vef-main">
-        <header class="cda-vef-page-header">
-            <div>
-                <h1>@PageTitle</h1>
-                <p class="cda-vef-page-subtitle">@Workspace.ConnectionLabel</p>
-            </div>
-            <div class="cda-vef-breadcrumb" aria-label="Breadcrumb">
-                <span class="material-icons" aria-hidden="true">home</span>
-                <span>VENFT</span>
-                <span>/</span>
-                <strong>@(Workspace.AccountAlias ?? PageTitle)</strong>
-            </div>
-        </header>
-
-        @if (selectedView == "gallery")
-        {
-            <BusinessObjectLedgerGallery Workspace="Workspace"
-                                         SendRequested="BusinessObjectSendRequested"
-                                         SetPriceRequested="BusinessObjectSetPriceRequested"
-                                         EditRequested="StageBusinessObjectAsync"
-                                         TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested"
-                                         TicketVerificationRequested="BusinessObjectTicketVerificationRequested"
-                                         TicketUseRequested="BusinessObjectTicketUseRequested" />
-        }
-        else if (selectedView == "messaging")
-        {
-            <SecureMessagingWorkspace Workspace="Workspace"
-                                      SendRequested="SecureMessageSendRequested"
-                                      OpenRequested="SecureMessageOpenRequested"
-                                      AttachmentOpenRequested="SecureMessageAttachmentOpenRequested" />
-        }
-        else if (IsCreationView)
-        {
-            <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
-                                          Workspace="Workspace"
-                                          StageBusinessObjectRequested="StageBusinessObjectAsync"
-                                          StageBusinessObjectBatchRequested="StageBusinessObjectBatchAsync"
-                                          EventBusinessObjectLookupRequested="BusinessObjectEventLookupRequested" />
-        }
-        else if (selectedView == "rule")
-        {
-            <AccountRuleDesigner Workspace="Workspace"
-                                 SubmitRequested="RuleTokenCreateRequested" />
-        }
-        else if (selectedView == "intro")
-        {
-            <SectionCard Title="Introduction" Description="VENFT-style SSR surface backed by the real in-memory economy session.">
-                <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-                    <div class="cda-economy-fact"><span>Ledger</span><strong>@Workspace.Context.LedgerId</strong></div>
-                    <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
-                    <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
-                </Grid>
-            </SectionCard>
-        }
-        else
-        {
-            <EconomyAccountWorkspace Workspace="Workspace"
-                                     RefreshRequested="RefreshRequested"
-                                     CreateSubAccountRequested="CreateSubAccountRequested"
-                                     ValidateRequested="ValidateRequested"
-                                     CreateTokenRequested="CreateTokenRequested"
-                                     AddTransactionRequested="OpenSendTransactionRequested"
-                                     TransactionDetailsRequested="TransactionDetailsRequested"
-                                     BusinessObjectTransactionDetailsRequested="BusinessObjectTransactionDetailsRequested"
-                                     BusinessObjectSendRequested="BusinessObjectSendRequested"
-                                     BusinessObjectSetPriceRequested="BusinessObjectSetPriceRequested"
-                                     TransactionSubmitRequested="TransactionSubmitRequested"
-                                     BusinessObjectTicketVerificationRequested="BusinessObjectTicketVerificationRequested"
-                                     BusinessObjectTicketUseRequested="BusinessObjectTicketUseRequested"
-                                     MessageSignRequested="MessageSignRequested"
-                                     MessageVerifyRequested="MessageVerifyRequested"
-                                     MessageEncryptRequested="MessageEncryptRequested"
-                                     MessageDecryptRequested="MessageDecryptRequested" />
-        }
-    </main>
+            <ChildContent>
+                @if (selectedView == "gallery")
+                {
+                <BusinessObjectLedgerGallery Workspace="Workspace"
+                                             SendRequested="BusinessObjectSendRequested"
+                                             SetPriceRequested="BusinessObjectSetPriceRequested"
+                                             EditRequested="StageBusinessObjectAsync"
+                                             TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested"
+                                             TicketVerificationRequested="BusinessObjectTicketVerificationRequested"
+                                             TicketUseRequested="BusinessObjectTicketUseRequested" />
+                }
+                else if (selectedView == "messaging")
+                {
+                <SecureMessagingWorkspace Workspace="Workspace"
+                                          SendRequested="SecureMessageSendRequested"
+                                          OpenRequested="SecureMessageOpenRequested"
+                                          AttachmentOpenRequested="SecureMessageAttachmentOpenRequested" />
+                }
+                else if (IsCreationView)
+                {
+                <BusinessObjectCreationWizard Model="CreationWizardForSelectedView"
+                                              Workspace="Workspace"
+                                              StageBusinessObjectRequested="StageBusinessObjectAsync"
+                                              StageBusinessObjectBatchRequested="StageBusinessObjectBatchAsync"
+                                              EventBusinessObjectLookupRequested="BusinessObjectEventLookupRequested" />
+                }
+                else if (selectedView == "rule")
+                {
+                <AccountRuleDesigner Workspace="Workspace"
+                                     SubmitRequested="RuleTokenCreateRequested" />
+                }
+                else if (selectedView == "intro")
+                {
+                <SectionCard Title="Introduction" Description="VENFT-style SSR surface backed by the real in-memory economy session.">
+                    <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+                        <div class="cda-economy-fact"><span>Ledger</span><strong>@Workspace.Context.LedgerId</strong></div>
+                        <div class="cda-economy-fact"><span>Scenario</span><strong>@(Workspace.Context.ScenarioId?.Value ?? "live")</strong></div>
+                        <div class="cda-economy-fact"><span>Viewed at UTC</span><strong>@Workspace.ViewedAtUtc.ToString("u")</strong></div>
+                    </Grid>
+                </SectionCard>
+                }
+                else
+                {
+                <EconomyAccountWorkspace Workspace="Workspace"
+                                         RefreshRequested="RefreshRequested"
+                                         CreateSubAccountRequested="CreateSubAccountRequested"
+                                         ValidateRequested="ValidateRequested"
+                                         CreateTokenRequested="CreateTokenRequested"
+                                         AddTransactionRequested="OpenSendTransactionRequested"
+                                         TransactionDetailsRequested="TransactionDetailsRequested"
+                                         BusinessObjectTransactionDetailsRequested="BusinessObjectTransactionDetailsRequested"
+                                         BusinessObjectSendRequested="BusinessObjectSendRequested"
+                                         BusinessObjectSetPriceRequested="BusinessObjectSetPriceRequested"
+                                         TransactionSubmitRequested="TransactionSubmitRequested"
+                                         BusinessObjectTicketVerificationRequested="BusinessObjectTicketVerificationRequested"
+                                         BusinessObjectTicketUseRequested="BusinessObjectTicketUseRequested"
+                                         MessageSignRequested="MessageSignRequested"
+                                         MessageVerifyRequested="MessageVerifyRequested"
+                                         MessageEncryptRequested="MessageEncryptRequested"
+                                         MessageDecryptRequested="MessageDecryptRequested" />
+                }
+            </ChildContent>
+        </PageScaffold>
+    </Body>
+    </Layout>
 </div>
 
 @code {
-    private static readonly IReadOnlyList<VenftNavItem> NavItems = new[]
+    private const string MenuId = "economy-account-primary";
+
+    private static readonly IReadOnlyList<ISideMenuItem> NavigationItems = new[]
         {
-            new VenftNavItem("home", "Home", "home"),
-            new VenftNavItem("gallery", "Gallery", "photo_library"),
-            new VenftNavItem("messaging", "Messaging", "mail")
+            CreateNavigationItem("home", "Home", "home", "Account overview and balances.", SideMenuOverflowBehavior.PreferVisible),
+            CreateNavigationItem("gallery", "Gallery", "photo_library", "Browse owned business objects.", SideMenuOverflowBehavior.PreferVisible),
+            CreateNavigationItem("messaging", "Messaging", "mail", "Open secure account messaging.", SideMenuOverflowBehavior.PreferVisible)
         }
-        .Concat(BusinessObjectFamilyCatalog.UserMintableFamilies.Select(family => new VenftNavItem(family.ObjectType, $"New {family.DisplayName}", family.Icon)))
+        .Concat(BusinessObjectFamilyCatalog.UserMintableFamilies.Select(family =>
+            CreateNavigationItem(family.ObjectType, $"New {family.DisplayName}", family.Icon, family.Description)))
         .Concat(
         [
-            new VenftNavItem("rule", "New Rule", "account_tree"),
-            new VenftNavItem("intro", "Introduction", "help")
+            CreateNavigationItem("rule", "New Rule", "account_tree", "Create a new account rule."),
+            CreateNavigationItem("intro", "Introduction", "help", "Review the active ledger context.", SideMenuOverflowBehavior.AlwaysInMore)
         ])
         .ToArray();
 
+    private static readonly IReadOnlyList<ISideMenuItem> AccountItems =
+    [
+        new SideMenuItemDefinition
+        {
+            Id = "account-home",
+            Text = "Account",
+            Icon = "account_balance_wallet",
+            Description = "Return to the account overview.",
+            Payload = "home"
+        }
+    ];
+
     private string selectedView = "home";
     private string? appliedInitialView;
+    private string? pendingMenuSelection = "home";
+    private SideMenu? navigationMenu;
 
     [Parameter, EditorRequired]
     public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
 
     [Parameter]
     public string? InitialView { get; set; }
+
+    [Parameter]
+    public string? HostModeLabel { get; set; }
+
+    [Parameter]
+    public string? SigningModeLabel { get; set; }
 
     [Parameter]
     public EventCallback RefreshRequested { get; set; }
@@ -201,8 +230,30 @@
         {
             selectedView = normalizedInitialView;
             appliedInitialView = normalizedInitialView;
+            pendingMenuSelection = normalizedInitialView;
         }
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (navigationMenu is null || pendingMenuSelection is null)
+        {
+            return;
+        }
+
+        string itemId = pendingMenuSelection;
+        pendingMenuSelection = null;
+        await navigationMenu.SelectAsync(itemId);
+    }
+
+    private string HeaderEyebrow
+        => $"VENFT / {Workspace.AccountAlias ?? Workspace.AccountName}";
+
+    private string HeaderDescription
+        => string.Join(
+            " / ",
+            new[] { Workspace.ConnectionLabel, HostModeLabel, SigningModeLabel }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
 
     private string PageTitle
         => selectedView == "gallery"
@@ -253,30 +304,54 @@
             : null;
     }
 
-    private string NavClass(string view)
-        => selectedView == view ? "cda-vef-nav-item is-active" : "cda-vef-nav-item";
-
-    private void SelectView(string view)
+    private Task HandleNavigationSelectionAsync(SideMenuSelection selection)
     {
-        selectedView = view;
+        string? view = selection.Item.Payload as string ?? NormalizeView(selection.ItemId);
+        if (view is not null)
+        {
+            selectedView = view;
+        }
+
+        return Task.CompletedTask;
     }
 
     private async Task StageBusinessObjectAsync(BusinessObjectTransactionDraft draft)
     {
         await TransactionSubmitRequested.InvokeAsync(draft);
-        selectedView = "gallery";
+        await SelectViewAsync("gallery");
     }
 
     private async Task StageBusinessObjectBatchAsync(BusinessObjectBatchTransactionRequest request)
     {
         await TransactionBatchSubmitRequested.InvokeAsync(request);
-        selectedView = "gallery";
+        await SelectViewAsync("gallery");
     }
 
-    private void SelectHome()
+    private async Task SelectViewAsync(string view)
     {
-        selectedView = "home";
+        selectedView = view;
+        if (navigationMenu is null)
+        {
+            pendingMenuSelection = view;
+            return;
+        }
+
+        await navigationMenu.SelectAsync(view);
     }
 
-    private sealed record VenftNavItem(string Key, string Label, string Icon);
+    private static SideMenuItemDefinition CreateNavigationItem(
+        string id,
+        string text,
+        string icon,
+        string description,
+        SideMenuOverflowBehavior overflowBehavior = SideMenuOverflowBehavior.Auto)
+        => new()
+        {
+            Id = id,
+            Text = text,
+            Icon = icon,
+            Description = description,
+            OverflowBehavior = overflowBehavior,
+            Payload = id
+        };
 }

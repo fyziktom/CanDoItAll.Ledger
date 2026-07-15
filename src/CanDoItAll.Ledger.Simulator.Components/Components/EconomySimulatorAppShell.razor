@@ -1,45 +1,94 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
+@inject NavigationManager Navigation
 
-<div class="cda-sim-app-shell" data-testid="simulation-app-shell">
-    <aside class="cda-sim-app-nav" aria-label="Economy simulator navigation">
-        <a class="cda-sim-app-brand" href="/" aria-label="CanDoItAll Economy Simulator">
-            <span class="cda-sim-brand-bars" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-            </span>
-            <span class="cda-sim-brand-copy">
-                <span>CanDoItAll</span>
-                <span>Economy Simulator</span>
-            </span>
-        </a>
+<div class="cda-sim-shell-theme">
+    <Layout FitViewport="true"
+            LockOverflow="true"
+            Class="cda-sim-shell"
+            data-testid="simulation-app-shell">
+    <SideMenu @ref="sideMenu"
+              MenuId="economy-simulator-primary"
+              Title="CanDoItAll"
+              Subtitle="Economy Simulator"
+              Icon="bar_chart"
+              AriaLabel="Economy simulator navigation"
+              Items="@NavigationItems"
+              FillHeight="true"
+              ItemSelected="HandleItemSelected" />
 
-        <nav class="cda-sim-app-nav-items">
-            <a class="@NavClass("projects")" href="/" data-testid="simulation-nav-projects" title="Projects" aria-label="Projects">
-                <span class="material-icons" aria-hidden="true">folder_open</span>
-                <span>Projects</span>
-            </a>
-            <a class="@NavClass("runs")" href="/runs" data-testid="simulation-nav-runs" title="Runs" aria-label="Runs">
-                <span class="material-icons" aria-hidden="true">play_circle</span>
-                <span>Runs</span>
-            </a>
-        </nav>
-    </aside>
-
-    <main class="cda-sim-app-main">
+    <Body FillHeight="true" Scrollable="true">
         @ChildContent
-    </main>
+    </Body>
+    </Layout>
 </div>
 
 @code {
+    private static readonly IReadOnlyList<ISideMenuItem> NavigationItems =
+    [
+        new SideMenuItemDefinition
+        {
+            Id = "projects",
+            Text = "Projects",
+            Icon = "folder_open",
+            Description = "Simulation projects and setup.",
+            OverflowBehavior = SideMenuOverflowBehavior.PreferVisible,
+            Payload = "/"
+        },
+        new SideMenuItemDefinition
+        {
+            Id = "runs",
+            Text = "Runs",
+            Icon = "play_circle",
+            Description = "Simulation runs and observations.",
+            OverflowBehavior = SideMenuOverflowBehavior.PreferVisible,
+            Payload = "/runs"
+        }
+    ];
+
+    private SideMenu? sideMenu;
+    private string? appliedActivePage;
+    private bool synchronizingActivePage;
+
     [Parameter]
     public string ActivePage { get; set; } = "projects";
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
-    private string NavClass(string page)
-        => string.Equals(ActivePage, page, StringComparison.Ordinal)
-            ? "cda-sim-app-nav-link cda-sim-app-nav-link--active"
-            : "cda-sim-app-nav-link";
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        string activePage = NormalizeActivePage(ActivePage);
+        if (sideMenu is null || string.Equals(appliedActivePage, activePage, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        synchronizingActivePage = true;
+        try
+        {
+            if (await sideMenu.SelectAsync(activePage))
+            {
+                appliedActivePage = activePage;
+            }
+        }
+        finally
+        {
+            synchronizingActivePage = false;
+        }
+    }
+
+    private void HandleItemSelected(SideMenuSelection selection)
+    {
+        if (synchronizingActivePage || selection.Item.Payload is not string route)
+        {
+            return;
+        }
+
+        Navigation.NavigateTo(route);
+    }
+
+    private static string NormalizeActivePage(string? activePage)
+        => string.Equals(activePage, "runs", StringComparison.OrdinalIgnoreCase)
+            ? "runs"
+            : "projects";
 }

@@ -7,7 +7,7 @@
     <EnableBusinessObjectIpfsStorage>false</EnableBusinessObjectIpfsStorage>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <UseComponentsBaseLibPackage Condition="'$(UseComponentsBaseLibPackage)' == ''">false</UseComponentsBaseLibPackage>
+    <UseComponentsBaseLibPackage Condition="'$(UseComponentsBaseLibPackage)' == ''">true</UseComponentsBaseLibPackage>
     <ComponentsRepoRoot Condition="'$(ComponentsRepoRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\CanDoItAll.Components</ComponentsRepoRoot>
     <ComponentsQrCodeProject>$(ComponentsRepoRoot)\src\CanDoItAll.Components.QRCode\CanDoItAll.Components.QRCode.csproj</ComponentsQrCodeProject>
     <ComponentsQrCodePackageVersion Condition="'$(ComponentsQrCodePackageVersion)' == ''">$(CanDoItAllComponentsPackageVersion)</ComponentsQrCodePackageVersion>

@@ -1,0 +1,26 @@
+.cda-vef-theme {
+    display: contents;
+    --cda-vef-accent: #6f65f4;
+    --cda-vef-accent-dark: #4f46d6;
+    --cda-vef-border: #d8dee7;
+    --cda-vef-border-strong: #c8d0dc;
+    --cda-vef-text: #2f3440;
+    --cda-vef-muted: #687282;
+    --cda-vef-soft: #f5f6f9;
+    --cda-vef-panel: #ffffff;
+    --cad-tone-primary-solid-bg: var(--cda-vef-accent);
+    --cad-tone-primary-solid-hover: var(--cda-vef-accent-dark);
+    --cad-tone-primary-solid-border: var(--cda-vef-accent);
+    --cad-tone-primary-solid-fg: #ffffff;
+}
+
+.cda-vef-theme ::deep .cda-vef-app {
+    color: var(--cda-vef-text);
+    font-family: "Segoe UI", Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (max-width: 767px) {
+    .cda-vef-theme ::deep .cda-vef-app {
+        flex-direction: column;
+    }
+}

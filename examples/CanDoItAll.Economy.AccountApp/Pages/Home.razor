@@ -8,53 +8,49 @@
 <div class="account-app @(Session.IsUnlocked ? "account-app--unlocked" : "account-app--locked")" data-testid="account-app-root">
     @if (!Session.IsUnlocked)
     {
-        <section class="account-entry @(Session.HasStoredVault ? "account-entry--stored" : "account-entry--first-run")" data-testid="account-entry">
+        <main class="account-entry" data-testid="account-entry">
+            <PageScaffold>
             @if (Session.HasStoredVault)
             {
                 <div class="account-entry__center-shell account-entry__center-shell--login" data-testid="stored-vault-login">
-                    <div class="account-entry__brand-block">
-                        <span class="account-app__eyebrow">AccountApp WASM PWA</span>
-                        <h1>Unlock account</h1>
-                        <p>@Session.StatusMessage</p>
-                    </div>
+                    <PageHeader Eyebrow="AccountApp WASM PWA"
+                                Title="Unlock account"
+                                Description="@Session.StatusMessage" />
 
                     @if (Session.ErrorMessage is not null)
                     {
-                        <section class="account-app__alert" data-testid="account-error">
-                            <span class="material-icons" aria-hidden="true">error</span>
-                            <span>@Session.ErrorMessage</span>
-                        </section>
+                        <Alert AlertStyle="AlertStyle.Danger" data-testid="account-error">
+                            @Session.ErrorMessage
+                        </Alert>
                     }
 
                     <FormSection Title="Stored browser vault"
                                  Icon="lock_open"
                                  Description="Use the password for the encrypted account stored in this browser.">
                         <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
-                            <label class="account-entry__field">
-                                <span>Vault password</span>
-                                <input data-testid="unlock-password"
-                                       type="password"
-                                       @bind="Session.UnlockPassword"
-                                       @bind:event="oninput"
-                                       autocomplete="current-password" />
-                            </label>
-                            <div class="account-entry__button-row">
-                                <button data-testid="unlock-account"
-                                        class="account-button account-button--primary"
-                                        @onclick="UnlockAccountAsync">
-                                    <span class="material-icons" aria-hidden="true">vpn_key</span>
-                                    <span>Unlock vault</span>
-                                </button>
-                                <button data-testid="unlock-cancel"
-                                        class="account-button account-button--secondary"
-                                        type="button"
-                                        @onclick="CancelUnlockAsync">
-                                    <span>Cancel</span>
-                                </button>
-                            </div>
+                            <FormField Text="Vault password">
+                                <TextBox type="password"
+                                         Immediate="true"
+                                         @bind-Value="Session.UnlockPassword"
+                                         autocomplete="current-password"
+                                         data-testid="unlock-password" />
+                            </FormField>
+                            <Cluster Gap="LayoutGap.Small">
+                                <Button Text="Unlock vault"
+                                        Icon="vpn_key"
+                                        Click="UnlockAccountAsync"
+                                        data-testid="unlock-account" />
+                                <Button Text="Cancel"
+                                        Variant="Variant.Outlined"
+                                        ButtonStyle="ButtonStyle.Secondary"
+                                        Click="CancelUnlockAsync"
+                                        data-testid="unlock-cancel" />
+                            </Cluster>
                             @if (!string.IsNullOrWhiteSpace(recoveryHint))
                             {
-                                <p class="account-entry__recovery-hint" data-testid="reset-recovery-hint">@recoveryHint</p>
+                                <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined" data-testid="reset-recovery-hint">
+                                    @recoveryHint
+                                </Alert>
                             }
                         </Stack>
                     </FormSection>
@@ -62,113 +58,105 @@
 
                 @if (showResetRecoveryDialog)
                 {
-                    <div class="account-entry__modal-backdrop" data-testid="reset-recovery-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-recovery-title">
-                        <section class="account-entry__modal">
-                            <header class="account-entry__modal-header">
-                                <div>
-                                    <span class="account-app__eyebrow">Local recovery</span>
-                                    <h2 id="reset-recovery-title">Reset stored browser vault</h2>
-                                </div>
-                                <button class="account-entry__modal-close"
-                                        data-testid="reset-recovery-close"
-                                        type="button"
-                                        aria-label="Keep account"
-                                        @onclick="CloseResetRecoveryDialog">
-                                    <span class="material-icons" aria-hidden="true">close</span>
-                                </button>
-                            </header>
+                    <Dialog IsOpen="true"
+                            Eyebrow="Local recovery"
+                            Title="Reset stored browser vault"
+                            Subtitle="This action affects only the encrypted vault stored in this browser."
+                            Size="ModalSize.Compact"
+                            CloseOnBackdrop="false"
+                            ShowCloseButton="false"
+                            OnClose="CloseResetRecoveryDialog"
+                            TestId="reset-recovery-dialog">
+                        <HeaderActions>
+                            <Button Text="Keep account"
+                                    Icon="close"
+                                    Variant="Variant.Text"
+                                    ButtonStyle="ButtonStyle.Secondary"
+                                    Click="CloseResetRecoveryDialog"
+                                    aria-label="Keep account"
+                                    data-testid="reset-recovery-close" />
+                        </HeaderActions>
+                        <ChildContent>
+                            <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                                <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
+                                    Ledger history and node data are not deleted.
+                                </Alert>
 
-                            <div class="account-entry__danger-copy">
-                                <span class="material-icons" aria-hidden="true">warning</span>
-                                <p>This removes only the encrypted vault from this browser. Ledger history and node data are not deleted.</p>
-                            </div>
+                                <section class="account-entry__countdown" data-testid="reset-recovery-countdown">
+                                    <strong>@(resetCountdownRemaining > 0 ? resetCountdownRemaining.ToString() : "Ready")</strong>
+                                    <span>@(resetCountdownRemaining > 0 ? "Wait before the next confirmation." : "You can continue this recovery step.")</span>
+                                </section>
 
-                            <div class="account-entry__countdown" data-testid="reset-recovery-countdown">
-                                <strong>@(resetCountdownRemaining > 0 ? resetCountdownRemaining.ToString() : "Ready")</strong>
-                                <span>@(resetCountdownRemaining > 0 ? "Wait before the next confirmation." : "You can continue this recovery step.")</span>
-                            </div>
-
-                            @if (resetRecoveryStep == 1)
-                            {
-                                <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                                @if (resetRecoveryStep == 1)
+                                {
                                     <label class="account-entry__reset-check">
-                                        <input data-testid="reset-acknowledge"
-                                               type="checkbox"
-                                               @bind="Session.ResetAcknowledged"
-                                               disabled="@ResetCountdownActive" />
+                                        <CheckBox TValue="bool"
+                                                  @bind-Value="Session.ResetAcknowledged"
+                                                  Disabled="@ResetCountdownActive"
+                                                  aria-label="Acknowledge local reset"
+                                                  data-testid="reset-acknowledge" />
                                         <span>I understand this is a local browser reset and not an account recovery service.</span>
                                     </label>
-                                    <div class="account-entry__button-row account-entry__button-row--modal">
-                                        <button data-testid="reset-recovery-continue"
-                                                class="account-button account-button--danger"
-                                                disabled="@(!CanContinueResetRecovery)"
-                                                type="button"
-                                                @onclick="ContinueResetRecovery">
-                                            <span class="material-icons" aria-hidden="true">timer</span>
-                                            <span>Continue reset check</span>
-                                        </button>
-                                        <button class="account-button account-button--secondary"
-                                                type="button"
-                                                @onclick="CloseResetRecoveryDialog">
-                                            Keep account
-                                        </button>
-                                    </div>
-                                </Stack>
-                            }
-                            else
-                            {
-                                <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
-                                    <label class="account-entry__field">
-                                        <span>Type @AccountAppSession.ResetConfirmationPhrase to enable reset</span>
-                                        <input data-testid="reset-confirmation"
-                                               @bind="Session.ResetConfirmation"
-                                               @bind:event="oninput"
-                                               disabled="@ResetCountdownActive"
-                                               autocomplete="off" />
-                                    </label>
+                                    <Cluster Gap="LayoutGap.Small">
+                                        <Button Text="Continue reset check"
+                                                Icon="timer"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Disabled="@(!CanContinueResetRecovery)"
+                                                Click="ContinueResetRecovery"
+                                                data-testid="reset-recovery-continue" />
+                                        <Button Text="Keep account"
+                                                Variant="Variant.Outlined"
+                                                ButtonStyle="ButtonStyle.Secondary"
+                                                Click="CloseResetRecoveryDialog" />
+                                    </Cluster>
+                                }
+                                else
+                                {
+                                    <FormField Text="@ResetConfirmationPrompt">
+                                        <TextBox Immediate="true"
+                                                 @bind-Value="Session.ResetConfirmation"
+                                                 Disabled="@ResetCountdownActive"
+                                                 autocomplete="off"
+                                                 data-testid="reset-confirmation" />
+                                    </FormField>
                                     <label class="account-entry__reset-check">
-                                        <input data-testid="reset-final-acknowledge"
-                                               type="checkbox"
-                                               @bind="resetFinalAcknowledged"
-                                               disabled="@ResetCountdownActive" />
+                                        <CheckBox TValue="bool"
+                                                  @bind-Value="resetFinalAcknowledged"
+                                                  Disabled="@ResetCountdownActive"
+                                                  aria-label="Confirm local vault reset"
+                                                  data-testid="reset-final-acknowledge" />
                                         <span>I confirm this browser should forget the stored encrypted vault now.</span>
                                     </label>
-                                    <div class="account-entry__button-row account-entry__button-row--modal">
-                                        <button data-testid="reset-local-vault"
-                                                class="account-button account-button--danger"
-                                                disabled="@(!CanExecuteResetRecovery)"
-                                                type="button"
-                                                @onclick="ExecuteResetRecoveryAsync">
-                                            <span class="material-icons" aria-hidden="true">delete_forever</span>
-                                            <span>Reset local vault</span>
-                                        </button>
-                                        <button class="account-button account-button--secondary"
-                                                type="button"
-                                                @onclick="CloseResetRecoveryDialog">
-                                            Keep account
-                                        </button>
-                                    </div>
-                                </Stack>
-                            }
-                        </section>
-                    </div>
+                                    <Cluster Gap="LayoutGap.Small">
+                                        <Button Text="Reset local vault"
+                                                Icon="delete_forever"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Disabled="@(!CanExecuteResetRecovery)"
+                                                Click="ExecuteResetRecoveryAsync"
+                                                data-testid="reset-local-vault" />
+                                        <Button Text="Keep account"
+                                                Variant="Variant.Outlined"
+                                                ButtonStyle="ButtonStyle.Secondary"
+                                                Click="CloseResetRecoveryDialog" />
+                                    </Cluster>
+                                }
+                            </Stack>
+                        </ChildContent>
+                    </Dialog>
                 }
             }
             else
             {
                 <div class="account-entry__center-shell account-entry__center-shell--first-run" data-testid="first-run-account-flow">
-                    <div class="account-entry__brand-block">
-                        <span class="account-app__eyebrow">AccountApp WASM PWA</span>
-                        <h1>Browser account workspace</h1>
-                        <p>@Session.StatusMessage</p>
-                    </div>
+                    <PageHeader Eyebrow="AccountApp WASM PWA"
+                                Title="Browser account workspace"
+                                Description="@Session.StatusMessage" />
 
                     @if (Session.ErrorMessage is not null)
                     {
-                        <section class="account-app__alert" data-testid="account-error">
-                            <span class="material-icons" aria-hidden="true">error</span>
-                            <span>@Session.ErrorMessage</span>
-                        </section>
+                        <Alert AlertStyle="AlertStyle.Danger" data-testid="account-error">
+                            @Session.ErrorMessage
+                        </Alert>
                     }
 
                     <FormSection Title="Create account"
@@ -176,34 +164,31 @@
                                  Description="Create a new encrypted browser vault for this device. There is no third-party password recovery.">
                         <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
                             <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-                                <label class="account-entry__field">
-                                    <span>Account name</span>
-                                    <input data-testid="account-name"
-                                           @bind="Session.AccountName"
-                                           @bind:event="oninput"
-                                           autocomplete="username" />
-                                </label>
-                                <label class="account-entry__field">
-                                    <span>Private key password</span>
-                                    <input data-testid="create-password"
-                                           type="password"
-                                           @bind="Session.CreatePassword"
-                                           @bind:event="oninput"
-                                           autocomplete="new-password" />
-                                </label>
-                                <label class="account-entry__field">
-                                    <span>Confirm password</span>
-                                    <input data-testid="create-confirm-password"
-                                           type="password"
-                                           @bind="Session.CreateConfirmPassword"
-                                           @bind:event="oninput"
-                                           autocomplete="new-password" />
-                                </label>
+                                <FormField Text="Account name">
+                                    <TextBox Immediate="true"
+                                             @bind-Value="Session.AccountName"
+                                             autocomplete="username"
+                                             data-testid="account-name" />
+                                </FormField>
+                                <FormField Text="Private key password">
+                                    <TextBox type="password"
+                                             Immediate="true"
+                                             @bind-Value="Session.CreatePassword"
+                                             autocomplete="new-password"
+                                             data-testid="create-password" />
+                                </FormField>
+                                <FormField Text="Confirm password">
+                                    <TextBox type="password"
+                                             Immediate="true"
+                                             @bind-Value="Session.CreateConfirmPassword"
+                                             autocomplete="new-password"
+                                             data-testid="create-confirm-password" />
+                                </FormField>
                             </Grid>
-                            <button data-testid="create-account" class="account-button account-button--primary" @onclick="CreateAccountAsync">
-                                <span class="material-icons" aria-hidden="true">check_circle</span>
-                                <span>Create encrypted vault</span>
-                            </button>
+                            <Button Text="Create encrypted vault"
+                                    Icon="check_circle"
+                                    Click="CreateAccountAsync"
+                                    data-testid="create-account" />
                         </Stack>
                     </FormSection>
 
@@ -250,38 +235,34 @@
 
                                     @if (importMode == AccountImportMode.Backup)
                                     {
-                                        <label class="account-entry__field">
-                                            <span>Backup JSON</span>
-                                            <textarea data-testid="backup-import-json"
-                                                      rows="10"
-                                                      @bind="Session.ImportBackupJson"
-                                                      @bind:event="oninput"></textarea>
-                                        </label>
+                                        <FormField Text="Backup JSON">
+                                            <TextArea Rows="10"
+                                                      Immediate="true"
+                                                      @bind-Value="Session.ImportBackupJson"
+                                                      data-testid="backup-import-json" />
+                                        </FormField>
                                     }
                                     else
                                     {
                                         <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-                                            <label class="account-entry__field">
-                                                <span>Display name</span>
-                                                <input data-testid="pasted-key-name"
-                                                       @bind="Session.PastedKeyName"
-                                                       @bind:event="oninput" />
-                                            </label>
-                                            <label class="account-entry__field">
-                                                <span>Public key material base64</span>
-                                                <textarea data-testid="pasted-public-key"
-                                                          rows="5"
-                                                          @bind="Session.PastedPublicKeyBase64"
-                                                          @bind:event="oninput"></textarea>
-                                            </label>
+                                            <FormField Text="Display name">
+                                                <TextBox Immediate="true"
+                                                         @bind-Value="Session.PastedKeyName"
+                                                         data-testid="pasted-key-name" />
+                                            </FormField>
+                                            <FormField Text="Public key material base64">
+                                                <TextArea Rows="5"
+                                                          Immediate="true"
+                                                          @bind-Value="Session.PastedPublicKeyBase64"
+                                                          data-testid="pasted-public-key" />
+                                            </FormField>
                                         </Grid>
-                                        <label class="account-entry__field">
-                                            <span>Private key material base64</span>
-                                            <textarea data-testid="pasted-private-key"
-                                                      rows="6"
-                                                      @bind="Session.PastedPrivateKeyBase64"
-                                                      @bind:event="oninput"></textarea>
-                                        </label>
+                                        <FormField Text="Private key material base64">
+                                            <TextArea Rows="6"
+                                                      Immediate="true"
+                                                      @bind-Value="Session.PastedPrivateKeyBase64"
+                                                      data-testid="pasted-private-key" />
+                                        </FormField>
                                     }
                                 </Stack>
                             </StepsItem>
@@ -290,101 +271,96 @@
                                 <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
                                     @if (importMode == AccountImportMode.Backup)
                                     {
-                                        <label class="account-entry__field">
-                                            <span>Backup password</span>
-                                            <input data-testid="backup-import-password"
-                                                   type="password"
-                                                   @bind="Session.ImportBackupPassword"
-                                                   @bind:event="oninput"
-                                                   autocomplete="current-password" />
-                                        </label>
-                                        <label class="account-entry__field">
-                                            <span>New vault password</span>
-                                            <input data-testid="backup-new-password"
-                                                   type="password"
-                                                   @bind="Session.ImportNewPassword"
-                                                   @bind:event="oninput"
-                                                   autocomplete="new-password" />
-                                        </label>
-                                        <label class="account-entry__field">
-                                            <span>Confirm new password</span>
-                                            <input data-testid="backup-confirm-password"
-                                                   type="password"
-                                                   @bind="Session.ImportConfirmPassword"
-                                                   @bind:event="oninput"
-                                                   autocomplete="new-password" />
-                                        </label>
+                                        <FormField Text="Backup password">
+                                            <TextBox type="password"
+                                                     Immediate="true"
+                                                     @bind-Value="Session.ImportBackupPassword"
+                                                     autocomplete="current-password"
+                                                     data-testid="backup-import-password" />
+                                        </FormField>
+                                        <FormField Text="New vault password">
+                                            <TextBox type="password"
+                                                     Immediate="true"
+                                                     @bind-Value="Session.ImportNewPassword"
+                                                     autocomplete="new-password"
+                                                     data-testid="backup-new-password" />
+                                        </FormField>
+                                        <FormField Text="Confirm new password">
+                                            <TextBox type="password"
+                                                     Immediate="true"
+                                                     @bind-Value="Session.ImportConfirmPassword"
+                                                     autocomplete="new-password"
+                                                     data-testid="backup-confirm-password" />
+                                        </FormField>
                                     }
                                     else
                                     {
-                                        <label class="account-entry__field">
-                                            <span>New vault password</span>
-                                            <input data-testid="pasted-key-password"
-                                                   type="password"
-                                                   @bind="Session.PastedKeyPassword"
-                                                   @bind:event="oninput"
-                                                   autocomplete="new-password" />
-                                        </label>
-                                        <label class="account-entry__field">
-                                            <span>Confirm password</span>
-                                            <input data-testid="pasted-key-confirm-password"
-                                                   type="password"
-                                                   @bind="Session.PastedKeyConfirmPassword"
-                                                   @bind:event="oninput"
-                                                   autocomplete="new-password" />
-                                        </label>
+                                        <FormField Text="New vault password">
+                                            <TextBox type="password"
+                                                     Immediate="true"
+                                                     @bind-Value="Session.PastedKeyPassword"
+                                                     autocomplete="new-password"
+                                                     data-testid="pasted-key-password" />
+                                        </FormField>
+                                        <FormField Text="Confirm password">
+                                            <TextBox type="password"
+                                                     Immediate="true"
+                                                     @bind-Value="Session.PastedKeyConfirmPassword"
+                                                     autocomplete="new-password"
+                                                     data-testid="pasted-key-confirm-password" />
+                                        </FormField>
                                     }
                                 </Grid>
 
-                                <div class="account-entry__validation @(HasImportPasswordStep ? "account-entry__validation--ok" : "account-entry__validation--warning")" data-testid="import-password-status">
-                                    <span class="material-icons" aria-hidden="true">@(HasImportPasswordStep ? "check_circle" : "info")</span>
-                                    <span>@ImportPasswordStatus</span>
-                                </div>
+                                <Alert AlertStyle="@(HasImportPasswordStep ? AlertStyle.Success : AlertStyle.Warning)"
+                                       Variant="Variant.Outlined"
+                                       data-testid="import-password-status">
+                                    @ImportPasswordStatus
+                                </Alert>
                             </StepsItem>
 
                             <StepsItem Text="Finish" Icon="check_circle" Description="Review the selected source and import it into the encrypted browser vault.">
                                 <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch">
-                                    <div class="account-entry__review" data-testid="import-review">
-                                        <div>
-                                            <span>Import source</span>
-                                            <strong>@ImportModeLabel</strong>
-                                        </div>
-                                        <div>
-                                            <span>Material status</span>
-                                            <strong>@(HasImportMaterial ? "Ready" : "Missing")</strong>
-                                        </div>
-                                        <div>
-                                            <span>Password status</span>
-                                            <strong>@(HasImportPasswordStep ? "Ready" : "Needs attention")</strong>
-                                        </div>
-                                    </div>
-                                    <button data-testid="import-account-submit"
-                                            class="account-button account-button--primary"
-                                            disabled="@(!CanSubmitImport)"
-                                            @onclick="ImportSelectedAccountAsync">
-                                        <span class="material-icons" aria-hidden="true">restore</span>
-                                        <span>@ImportButtonText</span>
-                                    </button>
+                                    <SummaryTiles data-testid="import-review">
+                                        <SummaryTile Label="Import source" Value="@ImportModeLabel" Compact="true" />
+                                        <SummaryTile Label="Material status"
+                                                     Value="@(HasImportMaterial ? "Ready" : "Missing")"
+                                                     Tone="@(HasImportMaterial ? "success" : "warning")"
+                                                     Compact="true" />
+                                        <SummaryTile Label="Password status"
+                                                     Value="@(HasImportPasswordStep ? "Ready" : "Needs attention")"
+                                                     Tone="@(HasImportPasswordStep ? "success" : "warning")"
+                                                     Compact="true" />
+                                    </SummaryTiles>
+                                    <Button Text="@ImportButtonText"
+                                            Icon="restore"
+                                            Disabled="@(!CanSubmitImport)"
+                                            Click="ImportSelectedAccountAsync"
+                                            data-testid="import-account-submit" />
                                 </Stack>
                             </StepsItem>
                         </Steps>
                     </FormSection>
                 </div>
             }
-        </section>
+            </PageScaffold>
+        </main>
     }
     else
     {
-        @if (!string.IsNullOrWhiteSpace(Session.BackupJson))
+        @if (ShowBackupDialog)
         {
-            <section class="account-card account-card--wide" data-testid="backup-export">
-                <header>
-                    <span class="material-icons" aria-hidden="true">shield</span>
-                    <h2>Encrypted backup</h2>
-                </header>
-                <p class="account-card__hint">@Session.BackupStatus</p>
-                <textarea readonly rows="10">@Session.BackupJson</textarea>
-            </section>
+            <Dialog IsOpen="true"
+                    Eyebrow="Account backup"
+                    Title="Encrypted backup"
+                    Subtitle="@Session.BackupStatus"
+                    Size="ModalSize.Wide"
+                    OnClose="DismissBackupDialog"
+                    TestId="backup-export">
+                <ChildContent>
+                    <TextArea Value="@Session.BackupJson" ReadOnly="true" Rows="10" />
+                </ChildContent>
+            </Dialog>
         }
 
         <section data-testid="wasm-workspace">
@@ -395,11 +371,21 @@
                                                 TransactionSubmitted="OnTransactionSubmitted" />
         </section>
 
-        @if (Session.SelectedTransactionDetails is not null)
+        @if (ShowTransactionDetailsDialog)
         {
-            <section class="account-card account-card--wide" data-testid="transaction-detail">
-                <TransactionDetailsDialogContent Details="Session.SelectedTransactionDetails" />
-            </section>
+            <Dialog IsOpen="true"
+                    Eyebrow="Confirmed ledger transaction"
+                    Title="Transaction detail"
+                    Subtitle="Review the confirmed ledger outputs."
+                    Size="ModalSize.Full"
+                    DenseChrome="true"
+                    CloseOnBackdrop="false"
+                    OnClose="DismissTransactionDetailsDialog"
+                    TestId="transaction-detail">
+                <ChildContent>
+                    <TransactionDetailsDialogContent Details="Session.SelectedTransactionDetails" />
+                </ChildContent>
+            </Dialog>
         }
     }
 </div>
@@ -426,12 +412,28 @@
     private int resetCountdownRemaining;
     private int resetCountdownToken;
     private bool resetFinalAcknowledged;
+    private string? dismissedBackupJson;
+    private EconomyTransactionDetailsModel? dismissedTransactionDetails;
 
     protected override async Task OnInitializedAsync()
         => await Session.InitializeAsync();
 
     private bool HasBackupMaterial
         => !string.IsNullOrWhiteSpace(Session.ImportBackupJson);
+
+    private bool ShowBackupDialog
+        => !string.IsNullOrWhiteSpace(Session.BackupJson)
+            && !string.Equals(Session.BackupJson, dismissedBackupJson, StringComparison.Ordinal);
+
+    private bool ShowTransactionDetailsDialog
+        => Session.SelectedTransactionDetails is not null
+            && !ReferenceEquals(Session.SelectedTransactionDetails, dismissedTransactionDetails);
+
+    private void DismissBackupDialog()
+        => dismissedBackupJson = Session.BackupJson;
+
+    private void DismissTransactionDetailsDialog()
+        => dismissedTransactionDetails = Session.SelectedTransactionDetails;
 
     private bool HasPastedKeyMaterial
         => !string.IsNullOrWhiteSpace(Session.PastedPublicKeyBase64)
@@ -479,6 +481,9 @@
         => HasImportPasswordStep
             ? "Password fields are ready for import."
             : "Complete the required password fields before finishing import.";
+
+    private static string ResetConfirmationPrompt
+        => $"Type {AccountAppSession.ResetConfirmationPhrase} to enable reset";
 
     private static bool PasswordsMatch(string password, string confirmation)
         => !string.IsNullOrWhiteSpace(password)

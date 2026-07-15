@@ -20,15 +20,12 @@ else if (workspace is null)
 else
 {
     <section class="cda-economy-adapter-workspace" data-testid="adapter-workspace-host">
-        <div class="cda-economy-adapter-host-mode" data-testid="adapter-host-mode">
-            <span>@Adapter.HostMode</span>
-            <strong>@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")</strong>
-        </div>
-
         @if (UseFullAppShell)
         {
             <VenftSsrEconomyApp Workspace="workspace"
                                 InitialView="@InitialView"
+                                HostModeLabel="@Adapter.HostMode"
+                                SigningModeLabel="@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")"
                                 RefreshRequested="RefreshAsync"
                                 CreateSubAccountRequested="OpenSubAccountDialogAsync"
                                 ValidateRequested="OpenProfileEditDialogAsync"
@@ -54,6 +51,11 @@ else
         }
         else
         {
+            <div class="cda-economy-adapter-host-mode" data-testid="adapter-host-mode">
+                <span>@Adapter.HostMode</span>
+                <strong>@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")</strong>
+            </div>
+
             <EconomyAccountWorkspace Workspace="workspace"
                                      RefreshRequested="RefreshAsync"
                                      AddTransactionRequested="SubmitCurrentDraftAsync"
