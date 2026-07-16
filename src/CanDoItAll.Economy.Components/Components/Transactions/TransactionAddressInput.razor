@@ -3,7 +3,9 @@
 @inject NotificationService Notifications
 
 <FormField Text="@Label" ContainerClass="@ContainerClass">
-    <div class="cda-address-input-row">
+    <Grid ColumnTemplate="minmax(0, 1fr) auto auto"
+          Gap="LayoutGap.Tiny"
+          AlignItems="AlignItems.Center">
         <TextBox Value="@Value"
                  ValueChanged="@(EventCallback.Factory.Create<string?>(this, ValueChanged))"
                  Immediate="true"
@@ -20,7 +22,7 @@
                       TooltipText="Scan address QR"
                       Scanned="ApplyAddressScanAsync"
                       TestId="@($"{TestId}-scan")" />
-    </div>
+    </Grid>
 </FormField>
 
 @code {
@@ -37,7 +39,7 @@
     public string Placeholder { get; set; } = "cdia1...";
 
     [Parameter]
-    public string ContainerClass { get; set; } = "cda-economy-field";
+    public string? ContainerClass { get; set; }
 
     [Parameter]
     public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
@@ -66,7 +68,7 @@
                 Subtitle = DialogSubtitle,
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--address-directory",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-address-directory-dialog"
             });
 

@@ -12,7 +12,7 @@
         }
 
         <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-            <FormField Text="Template" ContainerClass="cda-economy-field">
+            <FormField Text="Template">
                 <DropDown TValue="string"
                           Data="TemplateOptions"
                           TextProperty="Text"
@@ -21,13 +21,13 @@
                           ValueChanged="@(value => SetTemplate(value))"
                           aria-label="Rule template" />
             </FormField>
-            <FormField Text="Rule id" ContainerClass="cda-economy-field">
+            <FormField Text="Rule id">
                 <TextBox Value="@ruleId" ValueChanged="@(value => ruleId = value ?? string.Empty)" Immediate="true" Placeholder="cashpool-sweep" aria-label="Rule id" />
             </FormField>
-            <FormField Text="Namespace" ContainerClass="cda-economy-field">
+            <FormField Text="Namespace">
                 <TextBox Value="@ruleNamespace" ValueChanged="@(value => SetNamespace(value))" Immediate="true" Placeholder="rules.company" aria-label="Rule namespace" />
             </FormField>
-            <FormField Text="Permission source" ContainerClass="cda-economy-field">
+            <FormField Text="Permission source">
                 <DropDown TValue="string"
                           Data="PermissionOptions"
                           TextProperty="Text"
@@ -37,7 +37,7 @@
                           Placeholder="Auto select"
                           aria-label="Rule permission source" />
             </FormField>
-            <FormField Text="Trigger" ContainerClass="cda-economy-field">
+            <FormField Text="Trigger">
                 <DropDown TValue="string"
                           Data="TriggerOptions"
                           TextProperty="Text"
@@ -46,10 +46,10 @@
                           ValueChanged="@(value => selectedTriggerKind = value ?? nameof(AccountRuleTriggerKind.BusinessObject))"
                           aria-label="Rule trigger kind" />
             </FormField>
-            <FormField Text="Trigger object type" ContainerClass="cda-economy-field">
+            <FormField Text="Trigger object type">
                 <TextBox Value="@triggerObjectType" ValueChanged="@(value => triggerObjectType = value ?? string.Empty)" Immediate="true" Placeholder="purchase-request" aria-label="Trigger object type" />
             </FormField>
-            <FormField Text="Action" ContainerClass="cda-economy-field">
+            <FormField Text="Action">
                 <DropDown TValue="string"
                           Data="ActionOptions"
                           TextProperty="Text"
@@ -58,48 +58,48 @@
                           ValueChanged="@(value => selectedActionKind = value ?? nameof(AccountRuleActionKind.Payment))"
                           aria-label="Rule action kind" />
             </FormField>
-            <FormField Text="Receiver address" ContainerClass="cda-economy-field">
+            <FormField Text="Receiver address">
                 <TextBox Value="@receiverAddress" ValueChanged="@(value => receiverAddress = value ?? string.Empty)" Immediate="true" Placeholder="cdia..." aria-label="Rule receiver address" />
             </FormField>
-            <FormField Text="Amount expression" ContainerClass="cda-economy-field">
+            <FormField Text="Amount expression">
                 <TextBox Value="@amountExpression" ValueChanged="@(value => amountExpression = value ?? string.Empty)" Immediate="true" Placeholder="account_main - limit" aria-label="Rule amount expression" />
             </FormField>
-            <FormField Text="Token id" ContainerClass="cda-economy-field">
+            <FormField Text="Token id">
                 <TextBox Value="@tokenId" ValueChanged="@(value => tokenId = value ?? string.Empty)" Immediate="true" Placeholder="USD-CREDIT" aria-label="Rule token id" />
             </FormField>
-            <FormField Text="Processed property" ContainerClass="cda-economy-field">
+            <FormField Text="Processed property">
                 <TextBox Value="@processedProperty" ValueChanged="@(value => processedProperty = value ?? string.Empty)" Immediate="true" Placeholder="processed" aria-label="Rule processed property" />
             </FormField>
-            <FormField Text="Max actions" ContainerClass="cda-economy-field">
+            <FormField Text="Max actions">
                 <TextBox Value="@maxActionsText" ValueChanged="@(value => maxActionsText = value ?? string.Empty)" Immediate="true" Placeholder="5" aria-label="Rule max actions" />
             </FormField>
         </Grid>
 
         <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-            <FormField Text="Variables" ContainerClass="cda-economy-field">
+            <FormField Text="Variables">
                 <TextArea Value="@variablesText" ValueChanged="@(value => variablesText = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Rule variables" />
             </FormField>
-            <FormField Text="Conditions" ContainerClass="cda-economy-field">
+            <FormField Text="Conditions">
                 <TextArea Value="@conditionsText" ValueChanged="@(value => conditionsText = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Rule conditions" />
             </FormField>
-            <FormField Text="Action state JSON" ContainerClass="cda-economy-field">
+            <FormField Text="Action state JSON">
                 <TextArea Value="@stateJson" ValueChanged="@(value => stateJson = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Rule action state JSON" />
             </FormField>
         </Grid>
 
         <Cluster Gap="LayoutGap.Medium">
-            <Stack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" GapScale="LayoutGap.XSmall" Class="cda-economy-check-row">
+            <label class="inline-flex items-center gap-3">
                 <CheckBox TValue="bool" Value="@enabled" ValueChanged="@(value => enabled = value)" />
-                <span>Enabled</span>
-            </Stack>
-            <Stack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" GapScale="LayoutGap.XSmall" Class="cda-economy-check-row">
+                <TextBlock TextStyle="TextStyle.Body2" Value="Enabled" />
+            </label>
+            <label class="inline-flex items-center gap-3">
                 <CheckBox TValue="bool" Value="@markTriggerProcessed" ValueChanged="@(value => markTriggerProcessed = value)" />
-                <span>Mark trigger processed</span>
-            </Stack>
-            <Stack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" GapScale="LayoutGap.XSmall" Class="cda-economy-check-row">
+                <TextBlock TextStyle="TextStyle.Body2" Value="Mark trigger processed" />
+            </label>
+            <label class="inline-flex items-center gap-3">
                 <CheckBox TValue="bool" Value="@keepProcessedBusinessObject" ValueChanged="@(value => keepProcessedBusinessObject = value)" />
-                <span>Keep processed BO</span>
-            </Stack>
+                <TextBlock TextStyle="TextStyle.Body2" Value="Keep processed BO" />
+            </label>
         </Cluster>
 
         <AccountRuleLogicPreview Rule="PreviewRule" ValidationErrors="ValidationErrors" Compact="true" />

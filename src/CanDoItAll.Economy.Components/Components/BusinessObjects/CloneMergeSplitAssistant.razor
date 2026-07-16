@@ -8,20 +8,22 @@
                 ValidationContent="@RenderValidation"
                 Footer="@RenderFooter"
                 data-testid="cda-clone-merge-split-assistant">
-    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-        <FormField Text="Action">
-            <DropDown TItem="string" Value="@mode" ValueChanged="@((string value) => mode = value)" Items="Modes" />
-        </FormField>
-        <FormField Text="Result business-object ID">
-            <div class="cda-ledger-empty-line">Assigned after confirmation from the transaction output.</div>
-        </FormField>
-        <FormField Text="Payment amount">
-            <TextBox @bind-Value="amount" />
-        </FormField>
-        <FormField Text="Notes" ContainerClass="cda-sdk-span-all">
+    <Stack GapScale="LayoutGap.Medium">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <FormField Text="Action">
+                <DropDown TItem="string" Value="@mode" ValueChanged="@((string value) => mode = value)" Items="Modes" />
+            </FormField>
+            <FormField Text="Result business-object ID">
+                <TextBlock TextStyle="TextStyle.Muted" Value="Assigned after confirmation from the transaction output." />
+            </FormField>
+            <FormField Text="Payment amount">
+                <TextBox @bind-Value="amount" />
+            </FormField>
+        </Grid>
+        <FormField Text="Notes">
             <TextArea @bind-Value="notes" Rows="4" />
         </FormField>
-    </Grid>
+    </Stack>
 </DialogScaffold>
 
 @code {

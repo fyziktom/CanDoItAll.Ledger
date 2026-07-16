@@ -5,13 +5,9 @@
 
 <Stack GapScale="LayoutGap.Medium"
        AlignItems="AlignItems.Stretch"
-       Class="cda-transaction-wizard cda-token-creation-wizard"
+       Class="w-full"
        data-testid="token-creation-wizard">
-    <Steps Value="currentStep"
-           CanSelect="false"
-           Linear="true"
-           ShowDescriptions="true"
-           class="cda-transaction-workflow-steps">
+    <TransactionWorkflowSteps Value="currentStep">
         <StepsItem Text="Authority" Icon="verified_user" Description="Choose the issuing namespace">
             @if (Authorities.Count == 0)
             {
@@ -25,7 +21,7 @@
                       Gap="LayoutGap.Medium"
                       AlignItems="AlignItems.Stretch">
                     <FormSection Title="Issuing authority" Description="The namespace controls which token identifiers this account may create.">
-                        <FormField Text="Namespace" ContainerClass="cda-economy-field">
+                        <FormField Text="Namespace">
                             <DropDown TValue="string"
                                       Data="AuthorityOptions"
                                       TextProperty="Text"
@@ -60,7 +56,7 @@
                   AlignItems="AlignItems.Stretch">
                 <FormSection Title="Token definition" Description="Use a concise name and enter the initial supply to mint.">
                     <Grid ColumnTemplateLg="minmax(14rem,1fr) minmax(10rem,.55fr)" Gap="LayoutGap.Medium">
-                        <FormField Text="Token name" ContainerClass="cda-economy-field">
+                        <FormField Text="Token name">
                             <TextBox Value="@tokenName"
                                      ValueChanged="@(value => tokenName = value ?? string.Empty)"
                                      Immediate="true"
@@ -68,7 +64,7 @@
                                      aria-label="Token name"
                                      data-testid="token-creation-name" />
                         </FormField>
-                        <FormField Text="Initial supply" ContainerClass="cda-economy-field">
+                        <FormField Text="Initial supply">
                             <TextBox Value="@tokenAmount"
                                      ValueChanged="@(value => tokenAmount = value ?? string.Empty)"
                                      Immediate="true"
@@ -76,7 +72,7 @@
                                      aria-label="Token amount"
                                      data-testid="token-creation-amount" />
                         </FormField>
-                        <FormField Text="Description" ContainerClass="cda-economy-field cda-economy-field--wide">
+                        <FormField Text="Description">
                             <TextArea Value="@description"
                                       ValueChanged="@(value => description = value ?? string.Empty)"
                                       Immediate="true"
@@ -129,9 +125,11 @@
                 </SurfaceCard>
             </Grid>
         </StepsItem>
-    </Steps>
+    </TransactionWorkflowSteps>
 
-    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Class="cda-transaction-wizard-nav">
+    <Split Breakpoint="LayoutBreakpoint.None"
+           Gap="LayoutGap.Small"
+           Class="w-full items-center justify-between border-t border-slate-200 pt-3">
         <Cluster Gap="LayoutGap.Small">
             <Button Text="Cancel"
                     Icon="close"

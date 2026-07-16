@@ -3,19 +3,18 @@
 @inject NotificationService Notifications
 @inject IAddressDirectoryService AddressDirectory
 
-<FormStack Class="cda-address-directory-add-form"
-           data-testid="cda-address-directory-add-dialog-content">
-    <FormField Text="Display name" ContainerClass="cda-economy-field">
+<FormStack data-testid="cda-address-directory-add-dialog-content">
+    <FormField Text="Display name">
         <TextBox Value="@displayName"
                  ValueChanged="HandleDisplayNameChanged"
                  Immediate="true"
                  Placeholder="e.g., My exchange account"
                  autocomplete="off"
                  data-testid="cda-address-directory-add-name" />
-        <p class="mt-1 text-xs text-slate-500">A friendly name to help you recognize this address.</p>
+        <SmallText Text="A friendly name to help you recognize this address." />
     </FormField>
 
-    <FormField Text="Ledger address" ContainerClass="cda-economy-field">
+    <FormField Text="Ledger address">
         <TextBox Value="@address"
                  ValueChanged="HandleAddressChanged"
                  Immediate="true"
@@ -24,16 +23,17 @@
                  autocapitalize="none"
                  spellcheck="false"
                  data-testid="cda-address-directory-add-address" />
-        <p class="mt-1 text-xs text-slate-500">Paste the complete Cronos zkEVM ledger address.</p>
+        <SmallText Text="Paste the complete Cronos zkEVM ledger address." />
     </FormField>
 
     @if (!string.IsNullOrWhiteSpace(validationMessage))
     {
-        <p class="text-sm font-medium text-rose-700"
-           role="alert"
-           data-testid="cda-address-directory-add-validation">
+        <Alert AlertStyle="AlertStyle.Danger"
+               Variant="Variant.Outlined"
+               role="alert"
+               data-testid="cda-address-directory-add-validation">
             @validationMessage
-        </p>
+        </Alert>
     }
 
     <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
@@ -42,7 +42,7 @@
 
     <Cluster JustifyContent="JustifyContent.SpaceBetween"
              Gap="LayoutGap.Small"
-             Class="cda-address-directory-add-form__actions border-t border-slate-200 pt-4">
+             Class="border-t border-slate-200 pt-4">
         <Button Text="Cancel"
                 Icon="close"
                 Size="ButtonSize.Small"

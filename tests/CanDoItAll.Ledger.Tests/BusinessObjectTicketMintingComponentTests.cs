@@ -208,8 +208,8 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
 
         component.Find("[data-testid='cda-ticket-multimint-enabled']").Change(true);
         component.Find("[data-testid='cda-ticket-multimint-count']").Input("5");
-        component.Find("[data-testid='cda-ticket-multimint-recipient-mode']").Change("subaccount");
-        component.Find("[data-testid='cda-ticket-multimint-subaccount']").Change(SubAccount.Value);
+        SelectDropDownOption(component, "cda-ticket-multimint-recipient-mode", "Subaccount");
+        SelectDropDownOption(component, "cda-ticket-multimint-subaccount", "Ticket desk");
         await ClickButtonAsync(component, "Next");
         await ClickButtonAsync(component, "Stage BO Transaction");
 
@@ -258,7 +258,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
 
         component.Find("[data-testid='cda-ticket-multimint-enabled']").Change(true);
         component.Find("[data-testid='cda-ticket-multimint-count']").Input("3");
-        component.Find("[data-testid='cda-ticket-multimint-recipient-mode']").Change("manual");
+        SelectDropDownOption(component, "cda-ticket-multimint-recipient-mode", "Recipient list");
         component.Find("[data-testid='cda-ticket-multimint-recipient-list']").Input(Bob.Value);
         await ClickButtonAsync(component, "Next");
         await ClickButtonAsync(component, "Stage BO Transaction");
@@ -344,6 +344,19 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
         IElement button = component.FindAll("button")
             .Single(item => item.TextContent.Contains(text, StringComparison.Ordinal));
         await button.ClickAsync(new MouseEventArgs());
+    }
+
+    private static void SelectDropDownOption(
+        IRenderedComponent<BusinessObjectCreationWizard> component,
+        string testId,
+        string optionText)
+    {
+        IElement select = component.Find($"[data-testid='{testId}']");
+        IElement option = select.QuerySelectorAll("option")
+            .Single(item => item.TextContent.Contains(optionText, StringComparison.Ordinal));
+        string optionKey = Assert.IsType<string>(option.GetAttribute("value"));
+
+        select.Change(optionKey);
     }
 
     private static BusinessObjectWorkspaceModel CreateWorkspace(

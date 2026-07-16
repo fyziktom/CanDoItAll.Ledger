@@ -1,57 +1,84 @@
 @namespace CanDoItAll.Economy.Components
 
-<article class="@CardClass" data-testid="@TestId">
+<SurfaceCard Class="@CardClass"
+             Style="padding:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto"
+             role="article"
+             data-testid="@TestId">
     @if (PreviewImage is not null)
     {
-        <button type="button" class="cda-bo-gallery-preview cda-bo-gallery-preview--media" @onclick="OpenAsync">
-            <BusinessObjectDataItemPreview Item="PreviewImage" />
+        <button type="button"
+                class="grid w-full min-w-0 cursor-pointer overflow-hidden border-0 border-b border-slate-200 bg-slate-100"
+                style="padding:0"
+                aria-label="@InfoLabel"
+                @onclick="OpenAsync">
+            <BusinessObjectDataItemPreview Item="PreviewImage" Flush="true" />
         </button>
     }
     else
     {
-        <button type="button" class="@BusinessObjectCardDisplay.PreviewClass(Item)" @onclick="OpenAsync">
-            <span class="material-icons" aria-hidden="true">@BusinessObjectCardDisplay.PreviewIcon(Item)</span>
-        </button>
+        <div class="p-3">
+            <Button Icon="@BusinessObjectCardDisplay.PreviewIcon(Item)"
+                    Variant="Variant.Outlined"
+                    Size="ButtonSize.Small"
+                    Click="OpenAsync"
+                    aria-label="@InfoLabel" />
+        </div>
     }
-    <div class="cda-bo-gallery-card-body">
-        <h3>@DisplayName</h3>
-        <p>@Description</p>
-        <div class="cda-bo-badges">
-            <span>@Item.Operation</span>
-            <span>BO</span>
-            <span>@Item.ObjectType</span>
+    <Stack GapScale="LayoutGap.Small"
+           AlignItems="AlignItems.Stretch"
+           Class="p-3 min-w-0">
+        <h3 class="cda-text-block cda-text-block--subtitle2 min-w-0 break-words">@DisplayName</h3>
+        <p class="cda-text-block cda-text-block--body2 cda-bo-gallery-description break-words">@Description</p>
+        <Cluster Gap="LayoutGap.Tiny">
+            <Pill Text="@Item.Operation.ToString()" Tone="PillTone.Info" />
+            <Pill Text="BO" Tone="PillTone.Neutral" />
+            <Pill Text="@Item.ObjectType" Tone="PillTone.Neutral" />
             @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
             {
-                <span class="cda-commerce-sale-badge" data-testid="cda-bo-sale-badge">@sale.Mode / @BusinessObjectCardDisplay.FormatPrice(sale.PriceAmount, sale.TokenId)</span>
+                <Pill Text="@($"{sale.Mode} / {BusinessObjectCardDisplay.FormatPrice(sale.PriceAmount, sale.TokenId)}")"
+                      Tone="PillTone.Ok"
+                      data-testid="cda-bo-sale-badge" />
             }
-        </div>
-        <div class="cda-bo-gallery-meta">
-            <span>@BusinessObjectCardDisplay.ShortObjectId(Item.ObjectId)</span>
-            <span>@SortTimestamp.ToString("MM.dd.yyyy HH:mm")</span>
-        </div>
+        </Cluster>
+        <Grid ColumnTemplate="minmax(0,1fr) auto" Gap="LayoutGap.Small">
+            <TextBlock TextStyle="TextStyle.Caption"
+                       Value="@BusinessObjectCardDisplay.ShortObjectId(Item.ObjectId)"
+                       Class="min-w-0 overflow-hidden"
+                       Style="white-space:nowrap;text-overflow:ellipsis" />
+            <TextBlock TextStyle="TextStyle.Caption"
+                       Value="@SortTimestamp.ToString("MM.dd.yyyy HH:mm")"
+                       Class="min-w-0 overflow-hidden"
+                       Style="white-space:nowrap;text-overflow:ellipsis" />
+        </Grid>
         @if (Facts.Count > 0)
         {
-            <div class="cda-bo-gallery-meta">
+            <Grid ColumnTemplate="repeat(2,minmax(0,1fr))" Gap="LayoutGap.Small">
                 @foreach (BusinessObjectDisplayFact fact in Facts.Take(MaxFacts))
                 {
-                    <span>@fact.Label: @fact.Value</span>
+                    <TextBlock TextStyle="TextStyle.Caption"
+                               Class="min-w-0 overflow-hidden"
+                               Style="white-space:nowrap;text-overflow:ellipsis">
+                        @fact.Label: @fact.Value
+                    </TextBlock>
                 }
-            </div>
+            </Grid>
         }
-        <div class="cda-bo-tags">
+        <Cluster Gap="LayoutGap.Tiny">
             @foreach (string tag in Tags)
             {
-                <span>#@tag</span>
+                <Pill Text="@($"#{tag}")" Tone="PillTone.Neutral" />
             }
-        </div>
-    </div>
+        </Cluster>
+    </Stack>
     @if (ShowInfoButton)
     {
-        <button type="button" class="cda-ledger-info-button" @onclick="OpenAsync" aria-label="@InfoLabel">
-            <span class="material-icons" aria-hidden="true">info</span>
-        </button>
+        <Button Icon="info"
+                Variant="Variant.Filled"
+                Class="w-full"
+                Click="OpenAsync"
+                aria-label="@InfoLabel" />
     }
-</article>
+</SurfaceCard>
 
 @code {
     [Parameter, EditorRequired]
@@ -77,8 +104,8 @@
 
     private string CardClass
         => string.IsNullOrWhiteSpace(Class)
-            ? "cda-bo-gallery-card"
-            : $"cda-bo-gallery-card {Class}";
+            ? "overflow-hidden"
+            : $"overflow-hidden {Class}";
 
     private BusinessObjectDataItem? PreviewImage
         => BusinessObjectCardDisplay.ImageFor(Item);
@@ -109,4 +136,3 @@
             ? OpenRequested.InvokeAsync(Item)
             : Task.CompletedTask;
 }
-

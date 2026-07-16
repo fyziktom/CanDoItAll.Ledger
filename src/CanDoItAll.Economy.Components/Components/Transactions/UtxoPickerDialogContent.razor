@@ -1,25 +1,29 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
 
-<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="cda-transaction-picker-dialog" data-testid="utxo-picker-dialog-content">
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="h-full min-h-0 w-full" data-testid="utxo-picker-dialog-content">
     <UtxoSelectionList Outputs="Outputs"
                        SelectedOutPoints="selected"
                        SelectedOutPointsChanged="SetSelected"
                        Label="@Label"
                        TestId="utxo-picker-list" />
 
-    <div class="cda-transaction-picker-dialog__actions">
-        <Button Text="Cancel"
-                ButtonStyle="ButtonStyle.Secondary"
-                Variant="Variant.Outlined"
-                Click="CancelAsync"
-                data-testid="utxo-picker-cancel" />
-        <Button Text="@ConfirmLabel"
-                Icon="check"
-                Disabled="@(selected.Count < MinimumSelections)"
-                Click="ConfirmAsync"
-                data-testid="utxo-picker-confirm" />
-    </div>
+    <StickyActionFooter StatusLabel="Selection" StatusMessage="@ConfirmLabel">
+        <SecondaryActions>
+            <Button Text="Cancel"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Variant="Variant.Outlined"
+                    Click="CancelAsync"
+                    data-testid="utxo-picker-cancel" />
+        </SecondaryActions>
+        <PrimaryActions>
+            <Button Text="@ConfirmLabel"
+                    Icon="check"
+                    Disabled="@(selected.Count < MinimumSelections)"
+                    Click="ConfirmAsync"
+                    data-testid="utxo-picker-confirm" />
+        </PrimaryActions>
+    </StickyActionFooter>
 </Stack>
 
 @code {

@@ -9,15 +9,16 @@
                                      MinimumSelections="2"
                                      TestId="cda-merge-utxo-selector" />
 
-        <TransactionAddressInput Label="Output address"
-                                 Value="@Draft.PaymentReceiverAddress.Value"
-                                 ValueChanged="SetReceiverAddressAsync"
-                                 Placeholder="@Draft.OwnerAddress.Value"
-                                 ContainerClass="cda-economy-field cda-economy-field--wide cda-transaction-address-surface"
-                                 Bookmarks="Bookmarks"
-                                 AccountScope="@AccountScope"
-                                 DialogSubtitle="Merge"
-                                 TestId="cda-merge-output-address" />
+        <SurfaceCard Soft="true" Style="grid-column: 1 / -1;">
+            <TransactionAddressInput Label="Output address"
+                                     Value="@Draft.PaymentReceiverAddress.Value"
+                                     ValueChanged="SetReceiverAddressAsync"
+                                     Placeholder="@Draft.OwnerAddress.Value"
+                                     Bookmarks="Bookmarks"
+                                     AccountScope="@AccountScope"
+                                     DialogSubtitle="Merge"
+                                     TestId="cda-merge-output-address" />
+        </SurfaceCard>
     </Grid>
 
     <Grid ColumnTemplate="repeat(2,minmax(0,12rem))" Gap="LayoutGap.Small">

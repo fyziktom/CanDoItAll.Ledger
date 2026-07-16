@@ -9,14 +9,16 @@
                        SelectedKeyChanged="@(key => selectedMode = key)"
                        Dense="true" />
 
-        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-            <FormField Text="Receiver address" ContainerClass="cda-economy-field cda-economy-field--wide">
-                <div class="cda-address-input-row">
+        <FormField Text="Receiver address">
+            <ChildContent>
                     <TextBox Value="@receiverAddress"
                              ValueChanged="@(value => receiverAddress = value ?? string.Empty)"
                              Immediate="true"
                              Placeholder="cdia1..."
                              aria-label="Receiver address" />
+            </ChildContent>
+            <End>
+                <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
                     <PageHeaderActionButton Icon="contacts"
                                             Label="Choose receiver"
                                             TooltipText="Choose receiver from address directory"
@@ -27,10 +29,12 @@
                                   TooltipText="Scan receiver address QR"
                                   Scanned="ApplyScanAsync"
                                   TestId="cda-bo-send-scan-receiver" />
-                </div>
-            </FormField>
+                </Cluster>
+            </End>
+        </FormField>
 
-            <FormField Text="Bookmarked address" ContainerClass="cda-economy-field">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <FormField Text="Bookmarked address">
                 <DropDown TValue="string"
                           Data="BookmarkOptions"
                           TextProperty="Text"
@@ -109,7 +113,7 @@
                 Subtitle = Object?.ObjectId.Value,
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--address-directory",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-address-directory-dialog"
             });
 

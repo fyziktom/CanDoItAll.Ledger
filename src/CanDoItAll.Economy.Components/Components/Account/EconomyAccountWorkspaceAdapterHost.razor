@@ -19,7 +19,7 @@ else if (workspace is null)
 }
 else
 {
-    <section class="cda-economy-adapter-workspace" data-testid="adapter-workspace-host">
+    <section data-testid="adapter-workspace-host">
         @if (UseFullAppShell)
         {
             <EconomyAccountAppShell Workspace="workspace"
@@ -51,10 +51,10 @@ else
         }
         else
         {
-            <div class="cda-economy-adapter-host-mode" data-testid="adapter-host-mode">
-                <span>@Adapter.HostMode</span>
-                <strong>@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")</strong>
-            </div>
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" data-testid="adapter-host-mode">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="@Adapter.HostMode" />
+                <StatusBadge Text="@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")" Tone="info" />
+            </Cluster>
 
             <EconomyAccountWorkspace Workspace="workspace"
                                      RefreshRequested="RefreshAsync"
@@ -67,7 +67,7 @@ else
                                      MessageEncryptRequested="EncryptMessageAsync"
                                      MessageDecryptRequested="DecryptMessageAsync" />
 
-            <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-economy-adapter-grid">
+            <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
                 <section data-testid="adapter-utxo-explorer">
                     <UtxoExplorer Outputs="workspace.SpendableOutputsOrEmpty" />
                 </section>
@@ -266,7 +266,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-ledger-dialog--send",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-send-transaction-dialog"
             });
     }
@@ -290,8 +290,8 @@ else
             new DialogOptions
             {
                 Subtitle = "Create a child account under the current browser vault.",
-                Size = ModalSize.Medium,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form",
+                Size = ModalSize.Compact,
+                Class = "cda-ledger-dialog max-w-lg",
                 ShowCloseButton = false,
                 TestId = "cda-subaccount-dialog"
             }).ConfigureAwait(false);
@@ -329,7 +329,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--tx-detail",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-transaction-details-dialog"
             }).ConfigureAwait(false);
     }
@@ -353,8 +353,8 @@ else
             new DialogOptions
             {
                 Subtitle = item.ObjectId.Value,
-                Size = ModalSize.Medium,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form",
+                Size = ModalSize.Compact,
+                Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-bo-send-dialog"
             });
     }
@@ -378,8 +378,8 @@ else
             new DialogOptions
             {
                 Subtitle = item.ObjectId.Value,
-                Size = ModalSize.Medium,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form",
+                Size = ModalSize.Compact,
+                Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-bo-set-price-dialog"
             });
     }
@@ -406,8 +406,8 @@ else
             new DialogOptions
             {
                 Subtitle = profileObject?.ObjectId.Value ?? "New profile BusinessObject",
-                Size = ModalSize.Medium,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form",
+                Size = ModalSize.Compact,
+                Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-profile-edit-dialog"
             });
     }
@@ -433,7 +433,7 @@ else
                 Size = ModalSize.Wide,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-token-creation-modal",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-token-create-dialog"
             });
     }

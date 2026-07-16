@@ -210,7 +210,7 @@
             <Grid ColumnsLg="@NodeAccountColumns"
                   ColumnTemplateLg="@NodeAccountTemplate"
                   Gap="LayoutGap.Small"
-                  Class="cda-node-account-overview min-w-0">
+                  Class="items-start min-w-0">
                 @RenderNodeStatusPanel()
                 @RenderBootstrapPanel()
 
@@ -279,7 +279,7 @@
                                                           PanelOverflowMode="TabsPanelOverflowMode.Visible"
                                                           AriaLabel="Transaction workspace categories">
         <TabsItem Text="Submit" Icon="bolt">
-            <Grid ColumnsLg="4" Gap="LayoutGap.Small" Class="cda-node-submit-grid min-w-0">
+            <Grid ColumnsLg="4" Gap="LayoutGap.Small" Class="items-start min-w-0">
                 @RenderGrantForm()
                 @RenderMintForm()
                 @RenderTransferForm()
@@ -827,7 +827,7 @@
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--tx-detail",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-node-transaction-details-dialog"
             }).ConfigureAwait(false);
     }

@@ -21,7 +21,7 @@
         }
         @if (!string.IsNullOrWhiteSpace(localError))
         {
-            <small class="cda-transaction-field-error" role="alert">@localError</small>
+            <small class="font-semibold text-rose-700" role="alert">@localError</small>
         }
     </Stack>
 </FormField>
@@ -52,7 +52,7 @@
     public string Placeholder { get; set; } = "0";
 
     [Parameter]
-    public string ContainerClass { get; set; } = "cda-economy-field";
+    public string? ContainerClass { get; set; }
 
     [Parameter]
     public string? TestId { get; set; }

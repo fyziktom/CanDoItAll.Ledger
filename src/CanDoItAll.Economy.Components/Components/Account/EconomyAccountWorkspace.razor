@@ -17,7 +17,7 @@
                             Shape="AvatarShape.Rounded" />
                     <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
                         <StatusBadge Text="@(Workspace.Context.ScenarioId?.Value ?? "live")" Tone="info" />
-                        <h2 class="text-base font-semibold text-slate-900">@Workspace.AccountName</h2>
+                        <TextBlock TextStyle="TextStyle.H4" Value="@Workspace.AccountName" />
                         <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
                             <CopyableMonoValue Value="@Workspace.Address.Value" StartChars="10" EndChars="5" AriaLabel="Copy account address" />
                             <QrCodeButton Payload="@AccountAddressQrPayload"
@@ -362,9 +362,9 @@
             new DialogOptions
             {
                 Subtitle = Workspace.Address.Value,
-                Size = ModalSize.Medium,
+                Size = ModalSize.Compact,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form cda-ledger-dialog--settings",
+                Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-account-settings-dialog"
             });
 
@@ -380,7 +380,7 @@
                 Subtitle = $"{Workspace.AccountName} - local browser settings",
                 Size = ModalSize.Wide,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--settings-backup",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-settings-backup-dialog"
             });
 
@@ -397,7 +397,7 @@
                 Subtitle = "Own and external address management",
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--address-directory",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-address-directory-dialog"
             });
 
@@ -423,7 +423,7 @@
                 Subtitle = $"Signing and encryption tools for {Workspace.AccountName}",
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--security",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-message-security-dialog"
             });
 
@@ -442,7 +442,7 @@
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-ledger-dialog--transactions",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-transaction-history-dialog"
             });
 

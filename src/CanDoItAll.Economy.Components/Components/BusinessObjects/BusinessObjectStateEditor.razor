@@ -6,17 +6,19 @@
         <StatusBadge Text="@SchemaVersion" Tone="neutral" />
     </HeaderActions>
     <ChildContent>
-        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-            <FormField Text="Object type">
-                <TextBox @bind-Value="ObjectType" />
-            </FormField>
-            <FormField Text="Schema version">
-                <TextBox @bind-Value="SchemaVersion" />
-            </FormField>
-            <FormField Text="State JSON" ContainerClass="cda-sdk-span-all">
+        <Stack GapScale="LayoutGap.Medium">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                <FormField Text="Object type">
+                    <TextBox @bind-Value="ObjectType" />
+                </FormField>
+                <FormField Text="Schema version">
+                    <TextBox @bind-Value="SchemaVersion" />
+                </FormField>
+            </Grid>
+            <FormField Text="State JSON">
                 <TextArea @bind-Value="StateJson" Rows="8" />
             </FormField>
-        </Grid>
+        </Stack>
     </ChildContent>
 </SectionCard>
 </div>

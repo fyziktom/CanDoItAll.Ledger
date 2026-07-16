@@ -8,17 +8,19 @@
                 ValidationContent="@RenderValidation"
                 Footer="@RenderFooter"
                 data-testid="cda-sdk-dialog-system">
-    <Grid ColumnsMd="2" Gap="LayoutGap.Medium">
-        <FormField Text="Destination">
-            <TextBox @bind-Value="destination" Placeholder="Address or bookmark" />
-        </FormField>
-        <FormField Text="Amount">
-            <TextBox @bind-Value="amount" Placeholder="125.00" />
-        </FormField>
-        <FormField Text="Memo" ContainerClass="cda-sdk-span-all">
+    <Stack GapScale="LayoutGap.Medium">
+        <Grid ColumnsMd="2" Gap="LayoutGap.Medium">
+            <FormField Text="Destination">
+                <TextBox @bind-Value="destination" Placeholder="Address or bookmark" />
+            </FormField>
+            <FormField Text="Amount">
+                <TextBox @bind-Value="amount" Placeholder="125.00" />
+            </FormField>
+        </Grid>
+        <FormField Text="Memo">
             <TextArea @bind-Value="memo" Rows="4" />
         </FormField>
-    </Grid>
+    </Stack>
 </DialogScaffold>
 
 @code {

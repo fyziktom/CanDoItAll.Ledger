@@ -8,34 +8,39 @@
     <Stack GapScale="LayoutGap.Medium">
         @if (CurrentSale is not null)
         {
-            <div class="cda-commerce-sale-current" data-testid="bo-current-sale">
-                <span>@CurrentSale.Status</span>
-                <strong>@CurrentSale.Mode / @FormatPrice(CurrentSale.PriceAmount, CurrentSale.TokenId)</strong>
+            <PriceBar Tone="PriceBarTone.Success" data-testid="bo-current-sale">
+                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="@CurrentSale.Status.ToString()" />
+                    <TextBlock TextStyle="TextStyle.Subtitle2"
+                               Value="@($"{CurrentSale.Mode} / {FormatPrice(CurrentSale.PriceAmount, CurrentSale.TokenId)}")" />
                 @if (CurrentSale.MaxClones is not null)
                 {
-                    <small>@CurrentSale.SoldCount / @CurrentSale.MaxClones copies</small>
+                        <TextBlock TextStyle="TextStyle.Small"
+                                   Value="@($"{CurrentSale.SoldCount} / {CurrentSale.MaxClones} copies")" />
                 }
-            </div>
+                </Stack>
+            </PriceBar>
         }
 
         <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-            <FormField Text="Sale mode" ContainerClass="cda-economy-field">
-                <select class="cda-economy-input"
-                        data-testid="bo-sale-mode"
-                        aria-label="Sale mode"
-                        @bind="saleModeKey">
-                    <option value="@nameof(BusinessObjectSaleMode.Original)">Original</option>
-                    <option value="@nameof(BusinessObjectSaleMode.Copy)">Copies</option>
-                </select>
+            <FormField Text="Sale mode">
+                <DropDown TValue="string"
+                          Data="@SaleModeOptions"
+                          TextProperty="Text"
+                          ValueProperty="Value"
+                          Value="@saleModeKey"
+                          ValueChanged="@(value => saleModeKey = value ?? nameof(BusinessObjectSaleMode.Original))"
+                          data-testid="bo-sale-mode"
+                          aria-label="Sale mode" />
             </FormField>
 
-            <FormField Text="Price amount" ContainerClass="cda-economy-field">
-                <input class="cda-economy-input"
-                       data-testid="bo-sale-price"
-                       value="@priceAmount"
-                       @oninput="OnPriceInput"
-                       placeholder="100"
-                       aria-label="Price amount" />
+            <FormField Text="Price amount">
+                <TextBox Value="@priceAmount"
+                         ValueChanged="@(value => priceAmount = value ?? string.Empty)"
+                         Immediate="true"
+                         Placeholder="100"
+                         data-testid="bo-sale-price"
+                         aria-label="Price amount" />
             </FormField>
         </Grid>
 
@@ -48,22 +53,26 @@
 
             @if (IsCopyMode)
             {
-                <FormField Text="Max copies" ContainerClass="cda-economy-field">
-                    <input class="cda-economy-input"
-                           data-testid="bo-sale-max-clones"
-                           value="@maxClones"
-                           @oninput="OnMaxClonesInput"
-                           placeholder="10"
-                           aria-label="Max copies" />
+                <FormField Text="Max copies">
+                    <TextBox Value="@maxClones"
+                             ValueChanged="@(value => maxClones = value ?? string.Empty)"
+                             Immediate="true"
+                             Placeholder="10"
+                             data-testid="bo-sale-max-clones"
+                             aria-label="Max copies" />
                 </FormField>
             }
         </Grid>
 
-        <div class="cda-commerce-sale-share" data-testid="bo-sale-share-link">
-            <span>Buy link</span>
-            <CopyableMonoValue Value="@BuyLink" StartChars="48" EndChars="16" AriaLabel="Copy buy link" />
-            <CopyButton Text="Copy" Value="@BuyLink" ButtonStyle="ButtonStyle.Secondary" />
-        </div>
+        <SurfaceCard Soft="true" data-testid="bo-sale-share-link">
+            <Stack GapScale="LayoutGap.Small">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Buy link" />
+                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                    <CopyableMonoValue Value="@BuyLink" StartChars="48" EndChars="16" AriaLabel="Copy buy link" />
+                    <CopyButton Text="Copy" Value="@BuyLink" ButtonStyle="ButtonStyle.Secondary" />
+                </Cluster>
+            </Stack>
+        </SurfaceCard>
 
         <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
             <Button Text="Set Sale" Icon="sell" Click="SubmitAsync" data-testid="bo-set-sale-submit" />
@@ -79,6 +88,12 @@
     private string saleModeKey = nameof(BusinessObjectSaleMode.Original);
     private string? selectedTokenKey = EconomyTokenOption.MainKey;
     private BusinessObjectId? initializedObjectId;
+
+    private static readonly IReadOnlyList<SaleModeOption> SaleModeOptions =
+    [
+        new(nameof(BusinessObjectSaleMode.Original), "Original"),
+        new(nameof(BusinessObjectSaleMode.Copy), "Copies")
+    ];
 
     [Parameter]
     public IBusinessObjectView? Object { get; set; }
@@ -140,12 +155,6 @@
             selectedTokenKey = TokenOptions.FirstOrDefault()?.Key ?? EconomyTokenOption.MainKey;
         }
     }
-
-    private void OnPriceInput(ChangeEventArgs args)
-        => priceAmount = args.Value?.ToString() ?? string.Empty;
-
-    private void OnMaxClonesInput(ChangeEventArgs args)
-        => maxClones = args.Value?.ToString() ?? string.Empty;
 
     private async Task SubmitAsync()
     {
@@ -219,4 +228,6 @@
 
     private static string BuyPathFor(OutPoint outPoint)
         => $"/buy-bo/tx/{Uri.EscapeDataString(outPoint.TxId.Value)}/{outPoint.OutputIndex}";
+
+    private sealed record SaleModeOption(string Value, string Text);
 }

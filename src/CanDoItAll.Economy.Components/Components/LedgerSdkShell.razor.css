@@ -4,13 +4,7 @@
 
 .cda-sdk-theme ::deep .cda-sdk-shell {
     background: #f4f7f2;
-    color: #17211c;
-}
-
-.cda-sdk-theme ::deep .cda-sdk-shell .material-icons,
-.cda-sdk-theme ::deep .cda-sdk-shell .cda-material-icon {
-    letter-spacing: 0;
-    text-transform: none;
+    color: var(--cad-color-text-strong, #17211c);
 }
 
 .cda-sdk-theme ::deep .cda-sdk-shell .cda-copyable-mono-value {
@@ -22,7 +16,7 @@
 }
 
 .cda-sdk-theme ::deep .cda-sdk-shell .cda-copyable-mono-value .cda-text-block--mono {
-    color: #17211c;
+    color: var(--cad-color-text-strong, #17211c);
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
@@ -46,11 +40,6 @@
 .cda-sdk-theme ::deep .cda-sdk-shell pre {
     overflow-x: auto;
     white-space: pre-wrap;
-}
-
-.cda-sdk-theme ::deep .cda-sdk-shell .sr-only {
-    left: 0;
-    right: auto;
 }
 
 .cda-sdk-theme ::deep .cda-sdk-shell__nav {

@@ -8,11 +8,10 @@
                 Title="Import and export local settings"
                 Description="Back up AccountApp UI preferences, tag usage, and address directory metadata without touching the encrypted account vault.">
     <ChildContent>
-        <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-settings-backup" data-testid="cda-settings-backup-dialog">
-            <section class="cda-ledger-panel">
-                <div class="cda-ledger-panel-header">Export</div>
-                <div class="cda-ledger-panel-body cda-settings-backup__section">
-                    <p class="cda-ledger-empty-line">Exported settings include tag counters, tag color metadata, address favorites, user tags, and safe profile summaries.</p>
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium" data-testid="cda-settings-backup-dialog">
+            <SectionCard Title="Export"
+                         Description="Exported settings include tag counters, tag color metadata, address favorites, user tags, and safe profile summaries.">
+                <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
                     <Button Text="Create export"
                             Icon="download"
                             ButtonStyle="ButtonStyle.Secondary"
@@ -24,12 +23,12 @@
                               Rows="14"
                               Placeholder="Export JSON appears here."
                               aria-label="Settings export JSON" />
-                </div>
-            </section>
+                </Stack>
+            </SectionCard>
 
-            <section class="cda-ledger-panel">
-                <div class="cda-ledger-panel-header">Import</div>
-                <div class="cda-ledger-panel-body cda-settings-backup__section">
+            <SectionCard Title="Import"
+                         Description="Preview a backup, choose the sections to restore, and resolve existing values explicitly.">
+                <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
                     <TextArea Value="@importJson"
                               ValueChanged="@(value => importJson = value ?? string.Empty)"
                               Rows="8"
@@ -53,28 +52,27 @@
                                 data-testid="cda-settings-backup-import" />
                     </Cluster>
 
-                    <FormField Text="Conflict strategy" ContainerClass="cda-economy-field">
-                        <select class="cda-economy-input"
-                                value="@strategy"
-                                @onchange="OnStrategyChanged"
-                                aria-label="Import conflict strategy">
-                            <option value="@SettingsImportConflictStrategy.Merge">Merge</option>
-                            <option value="@SettingsImportConflictStrategy.ReplaceSection">Replace section</option>
-                            <option value="@SettingsImportConflictStrategy.SkipExisting">Skip existing</option>
-                        </select>
+                    <FormField Text="Conflict strategy">
+                        <DropDown TValue="SettingsImportConflictStrategy"
+                                  Data="StrategyOptions"
+                                  TextProperty="Text"
+                                  ValueProperty="Value"
+                                  Value="@strategy"
+                                  ValueChanged="@((SettingsImportConflictStrategy value) => strategy = value)"
+                                  aria-label="Import conflict strategy" />
                     </FormField>
 
-                    <div class="cda-settings-backup__checks">
+                    <Stack GapScale="LayoutGap.Small">
                         @foreach (SettingsBackupSection section in AllSections)
                         {
-                            <label class="cda-economy-check-row">
-                                <input type="checkbox"
-                                       checked="@selectedSections.Contains(section)"
-                                       @onchange="@((ChangeEventArgs args) => ToggleSection(section, args))" />
+                            <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <CheckBox TValue="bool"
+                                          Value="@selectedSections.Contains(section)"
+                                          ValueChanged="@((bool value) => ToggleSection(section, value))" />
                                 <span>@SectionLabel(section)</span>
                             </label>
                         }
-                    </div>
+                    </Stack>
 
                     @if (preview is not null)
                     {
@@ -83,8 +81,8 @@
                             <span>@preview.Summary @(preview.Error ?? string.Empty)</span>
                         </Alert>
                     }
-                </div>
-            </section>
+                </Stack>
+            </SectionCard>
         </Grid>
     </ChildContent>
     <Footer>
@@ -103,6 +101,13 @@
         SettingsBackupSection.TagUsage,
         SettingsBackupSection.AddressDirectory,
         SettingsBackupSection.UiPreferences
+    ];
+
+    private static readonly StrategyOption[] StrategyOptions =
+    [
+        new(SettingsImportConflictStrategy.Merge, "Merge"),
+        new(SettingsImportConflictStrategy.ReplaceSection, "Replace section"),
+        new(SettingsImportConflictStrategy.SkipExisting, "Skip existing")
     ];
 
     private string exportJson = string.Empty;
@@ -146,9 +151,8 @@
         }
     }
 
-    private void ToggleSection(SettingsBackupSection section, ChangeEventArgs args)
+    private void ToggleSection(SettingsBackupSection section, bool selected)
     {
-        bool selected = args.Value is bool value && value;
         if (selected)
         {
             selectedSections.Add(section);
@@ -156,14 +160,6 @@
         else
         {
             selectedSections.Remove(section);
-        }
-    }
-
-    private void OnStrategyChanged(ChangeEventArgs args)
-    {
-        if (Enum.TryParse(Convert.ToString(args.Value), out SettingsImportConflictStrategy parsed))
-        {
-            strategy = parsed;
         }
     }
 
@@ -178,4 +174,6 @@
 
     private Task CloseAsync()
         => DialogService.CloseAsync();
+
+    private sealed record StrategyOption(SettingsImportConflictStrategy Value, string Text);
 }

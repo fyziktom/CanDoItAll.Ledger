@@ -8,11 +8,11 @@
     <ChildContent>
         @if (Result?.PayloadJson is not null)
         {
-            <pre class="cda-sdk-code">@Result.PayloadJson</pre>
+            <LedgerCodeBlock Text="@Result.PayloadJson" />
         }
         else if (Result?.PlainText is not null)
         {
-            <pre class="cda-sdk-code">@Result.PlainText</pre>
+            <LedgerCodeBlock Text="@Result.PlainText" />
         }
         else
         {

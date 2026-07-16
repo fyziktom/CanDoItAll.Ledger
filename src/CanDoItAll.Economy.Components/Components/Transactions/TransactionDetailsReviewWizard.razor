@@ -2,22 +2,20 @@
 
 <Stack GapScale="LayoutGap.Medium"
        AlignItems="AlignItems.Stretch"
-       Class="cda-transaction-wizard"
+       Class="w-full"
        data-testid="transaction-details-review-wizard">
-    <Steps Value="currentStep"
-           CanSelect="false"
-           Linear="true"
-           ShowDescriptions="true"
-           class="cda-transaction-workflow-steps">
+    <TransactionWorkflowSteps Value="currentStep">
         <StepsItem Text="Details" Icon="tune" Description="Configure the transaction">
             @ChildContent
         </StepsItem>
         <StepsItem Text="Review" Icon="fact_check" Description="Verify effects before submission">
             <TransactionReviewPanel Draft="Draft" />
         </StepsItem>
-    </Steps>
+    </TransactionWorkflowSteps>
 
-    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Class="cda-transaction-wizard-nav">
+    <Split Breakpoint="LayoutBreakpoint.None"
+           Gap="LayoutGap.Small"
+           Class="w-full items-center justify-between border-t border-slate-200 pt-3">
         <Button Text="Back"
                 Icon="arrow_back"
                 Disabled="@(currentStep == 0)"

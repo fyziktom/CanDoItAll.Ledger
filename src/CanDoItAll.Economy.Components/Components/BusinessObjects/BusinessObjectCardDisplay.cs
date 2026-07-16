@@ -160,17 +160,6 @@ internal static class BusinessObjectCardDisplay
                 _ => "widgets"
             };
 
-    public static string PreviewClass(IBusinessObjectView item)
-        => BusinessObjectFamilyCatalog.TryFindByObjectType(item.ObjectType, out _)
-            ? "cda-bo-gallery-preview cda-bo-gallery-preview--icon"
-            : item.ObjectType switch
-            {
-                "settings" or "account-settings" => "cda-bo-gallery-preview cda-bo-gallery-preview--icon cda-bo-gallery-preview--settings",
-                "purchase-order" => "cda-bo-gallery-preview cda-bo-gallery-preview--icon cda-bo-gallery-preview--order",
-                "inventory-lot" => "cda-bo-gallery-preview cda-bo-gallery-preview--icon cda-bo-gallery-preview--inventory",
-                _ => "cda-bo-gallery-preview cda-bo-gallery-preview--icon"
-            };
-
     public static string ShortObjectId(BusinessObjectId objectId)
         => objectId.Value.Length > 18 ? $"{objectId.Value[..10]}...{objectId.Value[^6..]}" : objectId.Value;
 

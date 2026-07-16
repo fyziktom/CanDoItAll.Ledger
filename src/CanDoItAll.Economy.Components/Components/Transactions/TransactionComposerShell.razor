@@ -1,10 +1,10 @@
 @using System.Globalization
 @namespace CanDoItAll.Economy.Components
 
-<SectionCard Title="@ComposerTitle" Description="@ComposerDescription">
+<TransactionComposerFrame Dense="@Dense" Title="@ComposerTitle" Description="@ComposerDescription">
     <Stack GapScale="LayoutGap.Medium"
            AlignItems="AlignItems.Stretch"
-           Class="cda-transaction-composer">
+           Class="w-full">
         @if (selectingMode)
         {
             <TransactionFlowChooser SelectedMode="SelectedMode"
@@ -12,25 +12,30 @@
         }
         else
         {
-            <div class="cda-transaction-config-header" data-testid="transaction-config-header">
-                <div class="cda-transaction-config-header__icon" aria-hidden="true">
+            <SurfaceCard Soft="true" data-testid="transaction-config-header">
+                <Grid ColumnTemplateLg="auto minmax(0, 1fr) auto"
+                      Gap="LayoutGap.Medium"
+                      AlignItems="AlignItems.Center">
                     <Icon Name="@SelectedDefinition.Icon" />
-                </div>
-                <div>
-                    <span>Selected @FamilyLabel transaction</span>
-                    <h2>@SelectedDefinition.Label</h2>
-                    <p>@SelectedDefinition.Description</p>
-                </div>
-                <Button Text="Change transaction type"
-                        Icon="swap_horiz"
-                        ButtonStyle="ButtonStyle.Secondary"
-                        Variant="Variant.Outlined"
-                        Click="ChooseAnotherMode"
-                        data-testid="transaction-change-mode" />
-            </div>
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.Eyebrow">Selected @FamilyLabel transaction</TextBlock>
+                        <TextBlock TextStyle="TextStyle.H2" Value="@SelectedDefinition.Label" />
+                        <TextBlock TextStyle="TextStyle.Muted" Value="@SelectedDefinition.Description" />
+                    </Stack>
+                    <Button Text="Change transaction type"
+                            Icon="swap_horiz"
+                            ButtonStyle="ButtonStyle.Secondary"
+                            Variant="Variant.Outlined"
+                            Click="ChooseAnotherMode"
+                            data-testid="transaction-change-mode" />
+                </Grid>
+            </SurfaceCard>
 
-            <div class="cda-transaction-workbench" data-testid="transaction-workbench">
-                <main class="cda-economy-tab-panel cda-transaction-flow-panel cda-transaction-workbench__canvas">
+            <Grid ColumnTemplateLg="minmax(0, 1fr) minmax(19rem, 22rem)"
+                  Gap="LayoutGap.Medium"
+                  AlignItems="AlignItems.Start"
+                  data-testid="transaction-workbench">
+                <main class="min-w-0 w-full max-w-full overflow-hidden">
                 @switch (SelectedMode)
                 {
                     case BusinessObjectTransactionMode.Create:
@@ -114,15 +119,16 @@
                         break;
 
                     case BusinessObjectTransactionMode.CreateRuleToken:
-                        <div class="cda-transaction-delegated-flow">
-                            <EmptyState Eyebrow="Token authority"
-                                        Title="Continue in the guided token creator"
-                                        Description="Configure authority, rules, supply, and review in the specialized token workflow." />
-                            <Button Text="Open Create token"
-                                    Icon="open_in_new"
-                                    Click="CreateTokenRequested"
-                                    data-testid="transaction-open-token-creator" />
-                        </div>
+                        <EmptyState Eyebrow="Token authority"
+                                    Title="Continue in the guided token creator"
+                                    Description="Configure authority, rules, supply, and review in the specialized token workflow.">
+                            <Actions>
+                                <Button Text="Open Create token"
+                                        Icon="open_in_new"
+                                        Click="CreateTokenRequested"
+                                        data-testid="transaction-open-token-creator" />
+                            </Actions>
+                        </EmptyState>
                         break;
                 }
                 </main>
@@ -137,10 +143,10 @@
                                         SubmitRequested="SubmitAsync"
                                         AssembleRequested="AssembleRequested"
                                         BroadcastRequested="BroadcastRequested" />
-            </div>
+            </Grid>
         }
     </Stack>
-</SectionCard>
+</TransactionComposerFrame>
 
 @code {
     private BusinessObjectTransactionDraft? localDraft;

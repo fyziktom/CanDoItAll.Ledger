@@ -9,11 +9,11 @@
                              MinimumSelections="1"
                              TestId="cda-split-utxo-selector" />
 
+<SurfaceCard Soft="true">
 <Grid ColumnTemplateLg="minmax(8rem,.35fr) minmax(10rem,.45fr) minmax(22rem,1.2fr) auto"
       Gap="LayoutGap.Medium"
-      AlignItems="AlignItems.End"
-      Class="cda-transaction-split-controls">
-<FormField Text="Equal output count" ContainerClass="cda-economy-field">
+      AlignItems="AlignItems.End">
+<FormField Text="Equal output count">
     <TextBox Value="@equalCountText"
              ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => equalCountText = value ?? string.Empty))"
              Immediate="true"
@@ -22,7 +22,7 @@
              data-testid="cda-split-equal-count" />
 </FormField>
 
-<FormField Text="Equal amount" ContainerClass="cda-economy-field">
+<FormField Text="Equal amount">
     <TextBox Value="@equalAmountText"
              ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => equalAmountText = value ?? string.Empty))"
              Immediate="true"
@@ -35,37 +35,35 @@
                          Value="@equalReceiverText"
                          ValueChanged="@(value => equalReceiverText = value ?? string.Empty)"
                          Placeholder="@Draft.OwnerAddress.Value"
-                         ContainerClass="cda-economy-field"
                          Bookmarks="Bookmarks"
                          AccountScope="@AccountScope"
                          DialogSubtitle="Split"
                          TestId="cda-split-equal-receiver" />
 
-<div class="cda-economy-field">
+<Stack JustifyContent="JustifyContent.End">
     <Button Text="Apply equal outputs"
             Icon="call_split"
             ButtonStyle="ButtonStyle.Secondary"
             Variant="Variant.Outlined"
             Click="ApplyEqualOutputsAsync"
             data-testid="cda-split-apply-equal" />
-</div>
+</Stack>
 </Grid>
+</SurfaceCard>
 
-<div class="cda-split-output-grid cda-economy-field--wide" data-testid="cda-split-output-list">
-    <div class="cda-utxo-selector__summary">
-        <div>
-            <span>Output plan</span>
-            <strong>@Draft.UtxoSplitOutputsOrEmpty.Count output(s)</strong>
-            <small>@OutputTotal planned from @SelectedTotal selected</small>
-        </div>
+<div data-testid="cda-split-output-list">
+<SectionCard Title="Output plan"
+             Description="@($"{Draft.UtxoSplitOutputsOrEmpty.Count} output(s) · {OutputTotal} planned from {SelectedTotal} selected")">
+    <HeaderActions>
         <Button Text="Add output"
                 Icon="add"
                 ButtonStyle="ButtonStyle.Secondary"
                 Variant="Variant.Outlined"
                 Click="AddOutputAsync"
                 data-testid="cda-split-add-output" />
-    </div>
+    </HeaderActions>
 
+    <ChildContent>
     @if (OutputTotal > SelectedTotal && SelectedTotal > 0m)
     {
         <Alert AlertStyle="AlertStyle.Warning">
@@ -75,29 +73,31 @@
 
     @if (Draft.UtxoSplitOutputsOrEmpty.Count == 0)
     {
-        <div class="cda-split-output-empty">
-            <span>Output plan is empty</span>
-            <p>Add a specific output or use the equal-output controls above.</p>
-        </div>
+        <EmptyState Eyebrow="Outputs"
+                    Title="Output plan is empty"
+                    Description="Add a specific output or use the equal-output controls above." />
     }
     else
     {
-        <div class="cda-split-output-grid__items">
+        <div class="transaction-split-output-list">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
             @for (int index = 0; index < Draft.UtxoSplitOutputsOrEmpty.Count; index++)
             {
                 UtxoSplitOutput output = Draft.UtxoSplitOutputsOrEmpty[index];
                 int rowIndex = index;
-                <article class="cda-split-output-row" data-testid="cda-split-output-row">
+                <SurfaceCard data-testid="cda-split-output-row">
+                    <Grid ColumnTemplateLg="minmax(0, 1fr) minmax(8rem, .4fr) auto"
+                          Gap="LayoutGap.Medium"
+                          AlignItems="AlignItems.End">
                     <TransactionAddressInput Label="@($"Output {rowIndex + 1} address")"
                                              Value="@output.ReceiverAddress.Value"
                                              ValueChanged="@(value => SetOutputAddressAsync(rowIndex, value))"
                                              Placeholder="@Draft.OwnerAddress.Value"
-                                             ContainerClass="cda-economy-field"
                                              Bookmarks="Bookmarks"
                                              AccountScope="@AccountScope"
                                              DialogSubtitle="Split output"
                                              TestId="@($"cda-split-output-address-{rowIndex}")" />
-                    <FormField Text="@($"Output {rowIndex + 1} amount")" ContainerClass="cda-economy-field">
+                    <FormField Text="@($"Output {rowIndex + 1} amount")">
                         <TextBox Value="@output.Amount.ToString()"
                                  ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => SetOutputAmountAsync(rowIndex, value)))"
                                  Immediate="true"
@@ -105,18 +105,22 @@
                                  aria-label="@($"Output {rowIndex + 1} amount")"
                                  data-testid="@($"cda-split-output-amount-{rowIndex}")" />
                     </FormField>
-                    <div class="cda-economy-field cda-split-output-row__remove">
+                    <Stack JustifyContent="JustifyContent.End">
                         <Button Text="Remove"
                                 Icon="delete"
                                 ButtonStyle="ButtonStyle.Secondary"
                                 Variant="Variant.Text"
                                 Click="@(() => RemoveOutputAsync(rowIndex))"
                                 data-testid="@($"cda-split-output-remove-{rowIndex}")" />
-                    </div>
-                </article>
+                    </Stack>
+                    </Grid>
+                </SurfaceCard>
             }
+        </Grid>
         </div>
     }
+    </ChildContent>
+</SectionCard>
 </div>
 </Stack>
 

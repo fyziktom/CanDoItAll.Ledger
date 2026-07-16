@@ -8,17 +8,19 @@
                 ValidationContent="@RenderValidation"
                 Footer="@RenderFooter"
                 data-testid="cda-subaccount-create-dialog">
-    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-        <FormField Text="Subaccount name">
-            <TextBox @bind-Value="name" Placeholder="Treasury approval" />
-        </FormField>
-        <FormField Text="Initial label">
-            <TextBox @bind-Value="label" Placeholder="Operations approval" />
-        </FormField>
-        <FormField Text="Parent address" ContainerClass="cda-sdk-span-all">
+    <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <FormField Text="Subaccount name">
+                <TextBox @bind-Value="name" Placeholder="Treasury approval" />
+            </FormField>
+            <FormField Text="Initial label">
+                <TextBox @bind-Value="label" Placeholder="Operations approval" />
+            </FormField>
+        </Grid>
+        <FormField Text="Parent address">
             <TextBox Value="@ParentAddress.Value" ReadOnly="true" />
         </FormField>
-    </Grid>
+    </Stack>
 </DialogScaffold>
 
 @code {

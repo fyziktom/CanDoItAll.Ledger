@@ -1,8 +1,13 @@
 @namespace CanDoItAll.Economy.Components
 
-<article class="@CardClass" data-testid="@TestId">
+<ActionCard Active="@Selected"
+            Class="overflow-hidden"
+            Style="@CardStyle"
+            role="article"
+            data-testid="@TestId">
     <button type="button"
-            class="cda-transaction-bo-picker-card__select"
+            class="cda-transaction-bo-picker-card__button grid h-full w-full min-w-0 cursor-pointer overflow-hidden border-0 bg-transparent p-0 text-left"
+            style="grid-template-rows:6.25rem minmax(0,1fr);@SelectionCursorStyle"
             @onclick="SelectedChanged"
             disabled="@(!Interactive)"
             aria-pressed="@(Selected ? "true" : "false")"
@@ -11,45 +16,60 @@
             aria-label="@SelectionLabel">
         @if (PreviewImage is not null)
         {
-            <span class="cda-transaction-bo-picker-card__preview cda-transaction-bo-picker-card__preview--media">
-                <BusinessObjectDataItemPreview Item="PreviewImage" />
+            <span class="cda-transaction-bo-picker-card__preview-media grid min-w-0 overflow-hidden border-b border-slate-200 bg-slate-100">
+                <BusinessObjectDataItemPreview Item="PreviewImage" Flush="true" />
             </span>
         }
         else
         {
-            <span class="@PreviewClass">
-                <span class="material-icons" aria-hidden="true">@BusinessObjectCardDisplay.PreviewIcon(Item)</span>
-            </span>
+            <Stack AlignItems="AlignItems.Center"
+                   JustifyContent="JustifyContent.Center"
+                   FillHeight="true"
+                   Class="min-w-0 overflow-hidden border-b border-slate-200"
+                   Style="background:linear-gradient(135deg,#5f58cf,#659bd8);color:#fff">
+                <Icon Name="@BusinessObjectCardDisplay.PreviewIcon(Item)" />
+            </Stack>
         }
 
-        <span class="cda-transaction-bo-picker-card__body">
-            <span class="cda-transaction-bo-picker-card__heading">
-                <strong>@DisplayTitle</strong>
-                <span class="material-icons" aria-hidden="true">@SelectionIcon</span>
-            </span>
-            <span class="cda-transaction-bo-picker-card__description">@Summary</span>
+        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0 p-3">
+            <Split Breakpoint="LayoutBreakpoint.None"
+                   Gap="LayoutGap.Tiny"
+                   AlignItems="AlignItems.Start"
+                   JustifyContent="JustifyContent.SpaceBetween"
+                   Class="w-full">
+                <TextBlock TextStyle="TextStyle.Subtitle2"
+                           Value="@DisplayTitle"
+                           Class="cda-transaction-bo-picker-card__title" />
+                <Icon Name="@SelectionIcon" Class="shrink-0 text-violet-700" />
+            </Split>
+            <TextBlock TextStyle="TextStyle.Body2"
+                       Value="@Summary"
+                       Class="cda-transaction-bo-picker-card__description" />
             @if (!string.IsNullOrWhiteSpace(DisabledReason))
             {
-                <span id="@RestrictionId" class="cda-transaction-bo-picker-card__restriction">@DisabledReason</span>
+                <TextBlock id="@RestrictionId"
+                           TextStyle="TextStyle.Caption"
+                           Value="@DisabledReason"
+                           Class="font-semibold text-amber-700" />
             }
-            <span class="cda-transaction-bo-picker-card__meta">
-                <span>@Item.ObjectType</span>
-                <span>@($"v{Item.Version}")</span>
-                <span>@Item.Operation</span>
-                <span title="@Item.CurrentOutPoint.ToString()">@ShortOutPoint</span>
-            </span>
+            <Cluster Gap="LayoutGap.Tiny">
+                <Pill Text="@Item.ObjectType" Tone="PillTone.Neutral" />
+                <Pill Text="@($"v{Item.Version}")" Tone="PillTone.Neutral" />
+                <Pill Text="@Item.Operation.ToString()" Tone="PillTone.Info" />
+                <Pill Text="@ShortOutPoint" Tone="PillTone.Neutral" title="@Item.CurrentOutPoint.ToString()" />
+            </Cluster>
             @if (Tags.Count > 0)
             {
-                <span class="cda-transaction-bo-picker-card__tags">
+                <Cluster Gap="LayoutGap.Tiny">
                     @foreach (string tag in Tags.Take(3))
                     {
-                        <span>#@tag</span>
+                        <Pill Text="@($"#{tag}")" Tone="PillTone.Label" />
                     }
-                </span>
+                </Cluster>
             }
-        </span>
+        </Stack>
     </button>
-</article>
+</ActionCard>
 
 @code {
     [Parameter, EditorRequired]
@@ -70,12 +90,13 @@
     [Parameter]
     public string? TestId { get; set; }
 
-    private string CardClass
-        => CssClassBuilder.Join(
-            "cda-transaction-bo-picker-card",
-            Selected ? "is-selected" : null,
-            Interactive ? null : "is-readonly",
-            string.IsNullOrWhiteSpace(DisabledReason) ? null : "is-incompatible");
+    private string CardStyle
+        => string.IsNullOrWhiteSpace(DisabledReason)
+            ? "padding:0"
+            : "padding:0;opacity:.62";
+
+    private string SelectionCursorStyle
+        => Interactive ? string.Empty : "cursor:default";
 
     private string SelectionIcon
         => !string.IsNullOrWhiteSpace(DisabledReason)
@@ -88,10 +109,6 @@
         => string.IsNullOrWhiteSpace(DisabledReason)
             ? null
             : $"bo-card-restriction-{SafeId(Item.CurrentOutPoint.ToString())}";
-
-    private string PreviewClass
-        => BusinessObjectCardDisplay.PreviewClass(Item)
-            .Replace("cda-bo-gallery-preview", "cda-transaction-bo-picker-card__preview", StringComparison.Ordinal);
 
     private BusinessObjectDataItem? PreviewImage
         => BusinessObjectCardDisplay.ImageFor(Item);

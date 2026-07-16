@@ -79,7 +79,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(older, newest, middle)));
 
-        string[] headings = component.FindAll(".cda-bo-gallery-card h3")
+        string[] headings = component.FindAll("[data-testid='cda-bo-gallery-card'] h3")
             .Select(element => element.TextContent.Trim())
             .ToArray();
 
@@ -114,7 +114,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(middle, ListedAtUtc.AddMinutes(2))
                         ])));
 
-        string[] headings = component.FindAll(".cda-bo-gallery-card h3")
+        string[] headings = component.FindAll("[data-testid='cda-bo-gallery-card'] h3")
             .Select(element => element.TextContent.Trim())
             .ToArray();
 
@@ -150,7 +150,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(older, ListedAtUtc)
                         ])));
 
-        string[] headings = component.FindAll(".cda-bo-gallery-card h3")
+        string[] headings = component.FindAll("[data-testid='cda-bo-gallery-card'] h3")
             .Select(element => element.TextContent.Trim())
             .ToArray();
 
@@ -177,7 +177,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(payment, ListedAtUtc.AddMinutes(2))
                         ])));
 
-        IElement card = Assert.Single(component.FindAll(".cda-bo-gallery-card"));
+        IElement card = Assert.Single(component.FindAll("[data-testid='cda-bo-gallery-card']"));
 
         Assert.Contains("Visible gallery post", card.TextContent, StringComparison.Ordinal);
         Assert.DoesNotContain("Payment for", component.Markup, StringComparison.Ordinal);
@@ -214,7 +214,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(wrappedMessage, ListedAtUtc.AddMinutes(3))
                         ])));
 
-        IElement card = Assert.Single(component.FindAll(".cda-bo-gallery-card"));
+        IElement card = Assert.Single(component.FindAll("[data-testid='cda-bo-gallery-card']"));
 
         Assert.Contains("Visible non-message post", card.TextContent, StringComparison.Ordinal);
         Assert.DoesNotContain("Hidden secure message", component.Markup, StringComparison.Ordinal);
@@ -234,7 +234,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
 
         Assert.Empty(component.FindAll("[data-testid='bo-sale-max-clones']"));
 
-        component.Find("[data-testid='bo-sale-mode']").Change(nameof(BusinessObjectSaleMode.Copy));
+        SelectOptionByText(component, "[data-testid='bo-sale-mode']", "Copies");
 
         Assert.Single(component.FindAll("[data-testid='bo-sale-max-clones']"));
     }
@@ -255,7 +255,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                         this,
                         request => captured = request)));
 
-        component.Find("[data-testid='bo-sale-mode']").Change(nameof(BusinessObjectSaleMode.Copy));
+        SelectOptionByText(component, "[data-testid='bo-sale-mode']", "Copies");
         component.Find("[data-testid='bo-sale-price']").Input("14.75");
         component.Find("[data-testid='bo-sale-max-clones']").Input("4");
         component.FindAll("button")
@@ -639,6 +639,16 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
 
     private static string BuyPathFor(OutPoint outPoint)
         => $"/buy-bo/tx/{Uri.EscapeDataString(outPoint.TxId.Value)}/{outPoint.OutputIndex}";
+
+    private static void SelectOptionByText(IRenderedFragment component, string selector, string text)
+    {
+        IElement select = component.Find(selector);
+        IElement option = Assert.Single(
+            select.QuerySelectorAll("option"),
+            candidate => candidate.TextContent.Equals(text, StringComparison.Ordinal));
+
+        select.Change(option.GetAttribute("value"));
+    }
 
     private static IReadOnlyList<EconomyTokenOption> CreateTokenOptions()
         =>

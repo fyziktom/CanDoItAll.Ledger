@@ -6,7 +6,9 @@
                        InspectorRail="@RenderSummary"
                        HeaderActions="@RenderActions"
                        TestId="cda-account-settings-dialog">
-    <AccountSettingsDialogContent Workspace="Workspace" />
+    <SectionCard Title="Account Settings" Description="Current ledger session and UI account context.">
+        <AccountSettingsDialogContent Workspace="Workspace" />
+    </SectionCard>
 </InspectorDialogLayout>
 
 @code {

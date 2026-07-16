@@ -1,7 +1,7 @@
 @namespace CanDoItAll.Economy.Components
 @inherits BusinessObjectDataItemAddressComponentBase
 
-<Stack Class="@(Large ? "cda-bo-data-preview cda-bo-data-preview--large" : "cda-bo-data-preview")">
+<div class="@PreviewClass">
     @if (Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null)
     {
         <img src="@PreviewUri" alt="@Item.Name" />
@@ -12,24 +12,20 @@
     }
     else if (IsAudio && PreviewUri is not null)
     {
-        <Stack GapScale="LayoutGap.Tiny"
-               AlignItems="AlignItems.Center"
-               Class="cda-bo-file-preview cda-bo-file-preview--audio">
+        <div class="cda-bo-file-preview cda-bo-file-preview--audio">
             <Icon Name="graphic_eq" />
             <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Item.Name" />
             <audio src="@PreviewUri" controls preload="metadata"></audio>
-        </Stack>
+        </div>
     }
     else
     {
-        <Stack GapScale="LayoutGap.Tiny"
-               AlignItems="AlignItems.Center"
-               Class="cda-bo-file-preview">
+        <div class="cda-bo-file-preview">
             <Icon Name="@Icon" />
             <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Label" />
-        </Stack>
+        </div>
     }
-</Stack>
+</div>
 
 @code {
     [Parameter, EditorRequired]
@@ -37,6 +33,15 @@
 
     [Parameter]
     public bool Large { get; set; }
+
+    [Parameter]
+    public bool Flush { get; set; }
+
+    private string PreviewClass
+        => CssClassBuilder.Join(
+            "cda-bo-data-preview w-full",
+            Large ? "cda-bo-data-preview--large" : null,
+            Flush ? "cda-bo-data-preview--flush" : null);
 
     private string? PreviewUri
         => ResolveDataItemUriString(Item);

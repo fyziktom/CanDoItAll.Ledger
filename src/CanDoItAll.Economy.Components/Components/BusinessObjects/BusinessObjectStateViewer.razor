@@ -38,7 +38,7 @@
             </Grid>
             @if (!string.IsNullOrWhiteSpace(Object.StateJson))
             {
-                <pre class="cda-sdk-code">@Object.StateJson</pre>
+                <LedgerCodeBlock Text="@Object.StateJson" />
             }
         }
     </ChildContent>

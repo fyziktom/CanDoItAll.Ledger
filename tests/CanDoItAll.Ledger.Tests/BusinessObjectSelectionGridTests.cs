@@ -38,9 +38,9 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
         Assert.True(unavailableButton.HasAttribute("disabled"));
         Assert.Equal("false", unavailableButton.GetAttribute("aria-pressed"));
         Assert.Contains("Selection limit reached (2)", unavailableCard.TextContent, StringComparison.Ordinal);
-        Assert.Equal(
-            unavailableCard.QuerySelector(".cda-transaction-bo-picker-card__restriction")!.Id,
-            unavailableButton.GetAttribute("aria-describedby"));
+        string? restrictionId = unavailableButton.GetAttribute("aria-describedby");
+        Assert.False(string.IsNullOrWhiteSpace(restrictionId));
+        Assert.NotNull(unavailableCard.QuerySelector($"#{restrictionId}"));
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
             .Add(value => value.Selected, new[] { selected })
             .Add(value => value.MaximumSelections, 2));
 
-        IElement selectionGroup = component.Find(".cda-transaction-bo-grid");
+        IElement selectionGroup = component.Find("[data-testid='bo-selection-results']");
         IElement selectedButton = component.Find($"[data-testid='{SelectionTestId(selected)}'] button");
         IElement availableButton = component.Find($"[data-testid='{SelectionTestId(available)}'] button");
 
@@ -82,7 +82,8 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
 
         Assert.Equal("false", allTags.GetAttribute("aria-pressed"));
         Assert.Equal("true", purchaseTag.GetAttribute("aria-pressed"));
-        Assert.True(purchaseTag.ClassList.Contains("is-active"));
+        Assert.True(purchaseTag.ClassList.Contains("cda-button--filled"));
+        Assert.True(allTags.ClassList.Contains("cda-button--outlined"));
     }
 
     [Fact]

@@ -1,68 +1,68 @@
 @namespace CanDoItAll.Economy.Components
 
-<aside class="cda-transaction-context-rail" data-testid="transaction-context-rail">
-    <div class="cda-transaction-context-rail__heading">
-        <div>
-            <span>Transaction summary</span>
-            <strong>@ModeLabel</strong>
-        </div>
-        <Pill Text="@StatusText"
-              Tone="@(SubmissionEnabled ? PillTone.Ok : PillTone.Label)" />
-    </div>
+<aside class="transaction-context-rail" data-testid="transaction-context-rail">
+    <SurfaceCard Soft="true">
+        <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+            <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" AlignItems="AlignItems.Start">
+                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Transaction summary" />
+                    <TextBlock TextStyle="TextStyle.H3" Value="@ModeLabel" />
+                </Stack>
+                <Pill Text="@StatusText"
+                      Tone="@(SubmissionEnabled ? PillTone.Ok : PillTone.Label)" />
+            </Split>
 
-    @if (!Delegated)
-    {
-        <dl class="cda-transaction-context-rail__facts">
-            <div>
-                <dt>Receiver</dt>
-                <dd title="@Receiver">@Receiver</dd>
-            </div>
-            <div>
-                <dt>Amount</dt>
-                <dd>@Amount</dd>
-            </div>
-        </dl>
-    }
+            @if (!Delegated)
+            {
+                <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                    <SummaryTile Label="Receiver"
+                                 Value="@Receiver"
+                                 HelperText="@Receiver"
+                                 ShowHelperTextAsTooltip="true"
+                                 Compact="true" />
+                    <SummaryTile Label="Amount" Value="@Amount" Compact="true" />
+                </SummaryTiles>
+            }
 
-    <div class="cda-transaction-context-rail__body">
-        @if (Delegated)
-        {
-            <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
-                This operation continues in its specialized guided dialog.
-            </Alert>
-        }
-        else if (ReviewRequired && Validation.IsValid && !SubmissionEnabled)
-        {
-            <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
-                Complete the guided steps and open Review before submitting this transaction.
-            </Alert>
-        }
-        else
-        {
-            <TransactionValidationSummary Validation="Validation" />
-        }
-    </div>
+            @if (Delegated)
+            {
+                <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                    This operation continues in its specialized guided dialog.
+                </Alert>
+            }
+            else if (ReviewRequired && Validation.IsValid && !SubmissionEnabled)
+            {
+                <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                    Complete the guided steps and open Review before submitting this transaction.
+                </Alert>
+            }
+            else
+            {
+                <TransactionValidationSummary Validation="Validation" />
+            }
 
-    <div class="cda-transaction-context-rail__actions">
-        @if (!Delegated)
-        {
-            <Button Text="Submit transaction"
-                    Icon="send"
-                    Click="SubmitRequested"
-                    Disabled="@(!SubmissionEnabled)"
-                    data-testid="transaction-submit" />
-            <Button Text="Assemble draft"
-                    Icon="build"
-                    ButtonStyle="ButtonStyle.Secondary"
-                    Variant="Variant.Outlined"
-                    Click="AssembleRequested" />
-        }
-        <Button Text="Refresh account"
-                Icon="refresh"
-                ButtonStyle="ButtonStyle.Secondary"
-                Variant="Variant.Text"
-                Click="BroadcastRequested" />
-    </div>
+            <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+                @if (!Delegated)
+                {
+                    <Button Text="Submit transaction"
+                            Icon="send"
+                            Click="SubmitRequested"
+                            Disabled="@(!SubmissionEnabled)"
+                            data-testid="transaction-submit" />
+                    <Button Text="Assemble draft"
+                            Icon="build"
+                            ButtonStyle="ButtonStyle.Secondary"
+                            Variant="Variant.Outlined"
+                            Click="AssembleRequested" />
+                }
+                <Button Text="Refresh account"
+                        Icon="refresh"
+                        ButtonStyle="ButtonStyle.Secondary"
+                        Variant="Variant.Text"
+                        Click="BroadcastRequested" />
+            </Stack>
+        </Stack>
+    </SurfaceCard>
 </aside>
 
 @code {

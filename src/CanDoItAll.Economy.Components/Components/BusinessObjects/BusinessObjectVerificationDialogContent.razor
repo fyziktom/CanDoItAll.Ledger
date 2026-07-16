@@ -14,10 +14,10 @@
         }
         else
         {
-            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="cda-bo-verification" data-testid="cda-bo-verification-dialog">
-                <section class="cda-ledger-panel">
-                    <div class="cda-ledger-panel-header">Payload</div>
-                    <div class="cda-ledger-panel-body cda-bo-verification__section">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" data-testid="cda-bo-verification-dialog">
+                <PanelCard Class="min-w-0">
+                    <Stack GapScale="LayoutGap.Medium">
+                        <TextBlock TextStyle="TextStyle.Subtitle1" Value="Payload" />
                         <TextArea Value="@payload"
                                   ValueChanged="@(value => payload = value ?? string.Empty)"
                                   Rows="12"
@@ -42,15 +42,16 @@
                                     Click="VerifyAsync"
                                     data-testid="cda-bo-verification-run" />
                         </Cluster>
-                    </div>
-                </section>
+                    </Stack>
+                </PanelCard>
 
-                <section class="cda-ledger-panel">
-                    <div class="cda-ledger-panel-header">Result</div>
-                    <div class="cda-ledger-panel-body cda-bo-verification__section">
+                <PanelCard Class="min-w-0">
+                    <Stack GapScale="LayoutGap.Medium">
+                        <TextBlock TextStyle="TextStyle.Subtitle1" Value="Result" />
                         @if (result is null)
                         {
-                            <p class="cda-ledger-empty-line">Run verification to check payload format, object id, owner, outpoint, and data hash.</p>
+                            <TextBlock TextStyle="TextStyle.Muted"
+                                       Value="Run verification to check payload format, object id, owner, outpoint, and data hash." />
                         }
                         else
                         {
@@ -58,21 +59,23 @@
                                 <strong>@(result.Success ? "Verification passed" : "Verification failed")</strong>
                                 <span>@result.Summary</span>
                             </Alert>
-                            <div class="cda-bo-verification__steps">
+                            <Stack GapScale="LayoutGap.Small">
                                 @foreach (VerificationStepResult step in result.Steps)
                                 {
-                                    <div class="cda-bo-verification-step">
-                                        <StatusBadge Text="@step.Status.ToString()" Tone="@StepTone(step)" />
-                                        <div>
-                                            <strong>@step.Label</strong>
-                                            <span>@step.Summary</span>
-                                        </div>
-                                    </div>
+                                    <SurfaceCard Soft="true">
+                                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.NoWrap" Class="w-full">
+                                            <StatusBadge Text="@step.Status.ToString()" Tone="@StepTone(step)" />
+                                            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0 flex-1">
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@step.Label" />
+                                                <TextBlock TextStyle="TextStyle.Muted" Value="@step.Summary" />
+                                            </Stack>
+                                        </Cluster>
+                                    </SurfaceCard>
                                 }
-                            </div>
+                            </Stack>
                         }
-                    </div>
-                </section>
+                    </Stack>
+                </PanelCard>
             </Grid>
         }
     </ChildContent>

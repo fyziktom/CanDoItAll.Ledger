@@ -2,12 +2,12 @@
 
 <Stack GapScale="LayoutGap.Medium"
        AlignItems="AlignItems.Stretch"
-       Class="cda-transaction-wizard"
+       Class="w-full"
        data-testid="bo-create-wizard">
-    <Steps Value="currentStep" CanSelect="false" Linear="true" ShowDescriptions="true" class="cda-transaction-workflow-steps">
+    <TransactionWorkflowSteps Value="currentStep">
         <StepsItem Text="Template" Icon="dashboard_customize" Description="Choose a useful starting point">
             <FormSection Title="What are you creating?" Description="Templates preload type, schema, and a valid starter payload; every value remains editable.">
-                <CardGrid Class="cda-transaction-template-grid">
+                <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
                     @foreach (ObjectTemplate template in Templates)
                     {
                         <SelectionListItem Title="@template.Label"
@@ -19,19 +19,18 @@
                             <Status><Icon Name="@template.Icon" /></Status>
                         </SelectionListItem>
                     }
-                </CardGrid>
+                </Grid>
             </FormSection>
         </StepsItem>
         <StepsItem Text="Details" Icon="edit_note" Description="Identity, owner, and state">
             <Grid ColumnTemplateXl="minmax(0,1.25fr) minmax(24rem,.75fr)"
                   Gap="LayoutGap.Medium"
-                  AlignItems="AlignItems.Start"
-                  Class="cda-transaction-detail-grid">
+                  AlignItems="AlignItems.Start">
             <FormSection Title="Object definition" Description="Type and schema describe the payload. The canonical object ID comes from its confirmed output.">
+                <div data-testid="bo-create-object-id-pending">
+                    <SummaryTile Label="Business object ID" Value="Assigned after confirmation" Compact="true" />
+                </div>
                 <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
-                    <div class="cda-sdk-span-all" data-testid="bo-create-object-id-pending">
-                        <SummaryTile Label="Business object ID" Value="Assigned after confirmation" Compact="true" />
-                    </div>
                     @RenderTextField("Object type", ActiveDraft.ObjectType, SetObjectTypeAsync, "purchase-order", "bo-create-object-type")
                     @RenderTextField("Schema version", ActiveDraft.SchemaVersion, SetSchemaVersionAsync, "1.0", "bo-create-schema")
                     <TransactionAddressInput Label="Owner address"
@@ -63,9 +62,9 @@
             </FormSection>
             <FormSection Title="State and audit" Description="The template provides valid JSON. Expand the advanced editor only when the payload needs changing.">
                 @RenderTextField("External reference", ActiveDraft.ExternalRef, SetExternalRefAsync, "erp://purchase-orders/1043", "bo-create-external-ref")
-                <details class="cda-transaction-advanced">
-                    <summary>Advanced state JSON</summary>
-                    <FormField Text="State JSON" ContainerClass="cda-economy-field cda-economy-field--wide">
+                <details class="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <summary class="cursor-pointer font-semibold text-slate-700">Advanced state JSON</summary>
+                    <FormField Text="State JSON" Class="mt-3">
                         <TextArea Value="@ActiveDraft.StateJson"
                                   ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetStateJsonAsync))"
                                   Immediate="true"
@@ -80,9 +79,11 @@
         <StepsItem Text="Review" Icon="fact_check" Description="Validate before signing">
             <TransactionReviewPanel Draft="ActiveDraft" />
         </StepsItem>
-    </Steps>
+    </TransactionWorkflowSteps>
 
-    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Class="cda-transaction-wizard-nav">
+    <Split Breakpoint="LayoutBreakpoint.None"
+           Gap="LayoutGap.Small"
+           Class="w-full items-center justify-between border-t border-slate-200 pt-3">
         <Button Text="Back"
                 Icon="arrow_back"
                 Disabled="@(currentStep == 0)"
@@ -219,7 +220,7 @@
         Func<string?, Task> changed,
         string placeholder,
         string testId)
-        => @<FormField Text="@label" ContainerClass="cda-economy-field">
+        => @<FormField Text="@label">
             <TextBox Value="@value"
                      ValueChanged="@(EventCallback.Factory.Create<string?>(this, changed))"
                      Immediate="true"

@@ -30,7 +30,7 @@
 
     @if (sourceMode != BusinessObjectSourceMode.Mine)
     {
-        <FormField Text="@QueryLabel" ContainerClass="cda-economy-field cda-economy-field--wide">
+        <FormField Text="@QueryLabel">
             <TextBox Value="@query"
                      ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetQuery))"
                      Immediate="true"

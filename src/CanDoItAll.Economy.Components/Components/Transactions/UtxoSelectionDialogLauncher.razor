@@ -1,19 +1,21 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
 
-<section class="cda-transaction-selection-launcher cda-economy-field--wide" data-testid="@TestId">
-    <div>
-        <span>@Label</span>
-        <strong>@SelectionSummary</strong>
-        <small>@AvailableSummary</small>
-    </div>
-    <Button Text="@(SelectedOutPoints.Count == 0 ? "Select UTXOs" : "Change selection")"
-            Icon="checklist"
-            ButtonStyle="ButtonStyle.Secondary"
-            Variant="Variant.Outlined"
-            Click="OpenPickerAsync"
-            data-testid="@($"{TestId}-open")" />
-</section>
+<SurfaceCard Soft="true" Class="w-full" Style="grid-column: 1 / -1;" data-testid="@TestId">
+    <Split Breakpoint="LayoutBreakpoint.Md" Gap="LayoutGap.Medium" AlignItems="AlignItems.Center">
+        <Stack GapScale="LayoutGap.Tiny">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="@Label" />
+            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@SelectionSummary" />
+            <TextBlock TextStyle="TextStyle.Muted" Value="@AvailableSummary" />
+        </Stack>
+        <Button Text="@(SelectedOutPoints.Count == 0 ? "Select UTXOs" : "Change selection")"
+                Icon="checklist"
+                ButtonStyle="ButtonStyle.Secondary"
+                Variant="Variant.Outlined"
+                Click="OpenPickerAsync"
+                data-testid="@($"{TestId}-open")" />
+    </Split>
+</SurfaceCard>
 
 @code {
     [Parameter]
@@ -65,7 +67,7 @@
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-transaction-picker-modal",
+                Class = "cda-ledger-dialog",
                 TestId = "utxo-selection-dialog"
             });
 

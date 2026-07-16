@@ -45,7 +45,7 @@ else
 
         @if (Media.Tags.Count > 0)
         {
-            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-bo-tags">
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                 @foreach (string tag in Media.Tags)
                 {
                     <StatusBadge Tone="neutral" Text="@($"#{tag}")" />
@@ -60,9 +60,9 @@ else
 
         @if (Media.DataItems.Count == 0)
         {
-            <TextBlock TextStyle="TextStyle.Body2"
-                       Class="cda-economy-empty"
-                       Value="No DataItems are attached to this BusinessObject." />
+            <EmptyState Eyebrow="DataItems"
+                        Title="No attached data"
+                        Description="No DataItems are attached to this BusinessObject." />
         }
         else
         {

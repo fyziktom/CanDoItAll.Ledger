@@ -25,18 +25,7 @@ else
                 {
                     <section class="cda-bo-overview-workspace">
                         <div class="cda-bo-selected-preview">
-                            @if (SelectedItem is not null)
-                            {
-                                <BusinessObjectDataItemInteractivePreview Item="SelectedItem" />
-                            }
-                            else
-                            {
-                                <div class="cda-bo-preview-empty">
-                                    <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
-                                    <strong>@DisplayName</strong>
-                                    <small>No data items are attached.</small>
-                                </div>
-                            }
+                            <BusinessObjectDataItemInteractivePreview Item="SelectedItem!" />
                         </div>
 
                         <aside class="cda-bo-overview-aside">
@@ -56,7 +45,7 @@ else
                                         </Stack>
                                     </SurfaceCard>
                                 }
-                                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-bo-tags">
+                                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                                     @foreach (string tag in Tags.Take(6))
                                     {
                                         <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="cda-bo-detail-tag-badge" />
@@ -154,7 +143,7 @@ else
                         <div data-testid="cda-bo-overview-summary">
                           <SectionCard Title="@Object.ObjectType">
                             <HeaderActions>
-                                <span class="material-icons" aria-hidden="true">@ObjectIcon</span>
+                                <Icon Name="@ObjectIcon" />
                             </HeaderActions>
                             <ChildContent>
                                 <Stack GapScale="LayoutGap.Small">
@@ -173,7 +162,7 @@ else
                                             </Stack>
                                         </SurfaceCard>
                                     }
-                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" Class="cda-bo-tags">
+                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                                         @foreach (string tag in Tags.Take(8))
                                         {
                                             <TagBadge Tag="@tag" AccountScope="@TagAccountScope" TestId="cda-bo-detail-tag-badge" />
@@ -371,10 +360,14 @@ else
                                                 <HashDisplay Value="@(ticketVerification.MessageHash?.Value ?? string.Empty)" />
                                             </ValueContent>
                                         </MetricCard>
-                                        <pre class="cda-bo-state-json" data-testid="cda-ticket-verification-message">@ticketVerification.Message</pre>
+                                        <LedgerCodeBlock Text="@ticketVerification.Message"
+                                                         Style="max-height:min(36rem,calc(100vh - 23rem))"
+                                                         data-testid="cda-ticket-verification-message" />
                                         @if (!string.IsNullOrWhiteSpace(ticketVerification.SignatureJson))
                                         {
-                                            <pre class="cda-bo-state-json" data-testid="cda-ticket-verification-signature">@ticketVerification.SignatureJson</pre>
+                                            <LedgerCodeBlock Text="@ticketVerification.SignatureJson"
+                                                             Style="max-height:min(36rem,calc(100vh - 23rem))"
+                                                             data-testid="cda-ticket-verification-signature" />
                                         }
                                         <Grid ColumnsMd="2"
                                               Gap="LayoutGap.Small"
@@ -436,7 +429,8 @@ else
                             }
                             else
                             {
-                                <pre class="cda-bo-state-json">@Object.StateJson</pre>
+                                <LedgerCodeBlock Text="@Object.StateJson"
+                                                 Style="max-height:min(36rem,calc(100vh - 23rem))" />
                             }
                     </SectionCard>
                 </Grid>
@@ -658,10 +652,10 @@ else
             new DialogOptions
             {
                 Subtitle = $"{Object.ObjectType} - {Object.ObjectId.Value}",
-                Size = ModalSize.Full,
+                Size = ModalSize.Medium,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--bo-edit",
+                Class = "cda-ledger-dialog h-[94vh]",
                 TestId = "cda-bo-edit-dialog"
             });
     }
@@ -740,7 +734,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--bo-detail",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-bo-details-dialog"
             });
 

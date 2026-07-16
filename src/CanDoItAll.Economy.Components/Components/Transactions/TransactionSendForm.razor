@@ -7,7 +7,6 @@
                                      Value="@Draft.PaymentReceiverAddress.Value"
                                      ValueChanged="SetPaymentReceiverAddressAsync"
                                      Placeholder="cdia1…"
-                                     ContainerClass="cda-economy-field"
                                      Bookmarks="Bookmarks"
                                      AccountScope="@AccountScope"
                                      DialogSubtitle="Send"
@@ -17,11 +16,10 @@
                                     Value="Draft.PaymentAmount"
                                     ValueChanged="SetPaymentAmountAsync"
                                     MaxAmount="Balance?.MainBalance"
-                                    ContainerClass="cda-economy-field"
                                     Placeholder="250"
                                     TestId="cda-send-payment-amount" />
 
-            <FormField Text="Memo" ContainerClass="cda-economy-field">
+            <FormField Text="Memo">
                 <TextBox Value="@Draft.ExternalRef"
                          ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetExternalRefAsync))"
                          Immediate="true"

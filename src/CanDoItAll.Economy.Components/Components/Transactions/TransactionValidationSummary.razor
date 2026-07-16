@@ -6,7 +6,7 @@
         <Alert AlertStyle="AlertStyle.Danger" Variant="Variant.Outlined">
             <Stack GapScale="LayoutGap.Tiny">
                 <strong>Complete these details before submitting</strong>
-                <ul class="cda-transaction-validation__list">
+                <ul class="m-0 mt-1 list-disc space-y-1 pl-5">
                     @foreach (TransactionFlowIssue issue in DistinctErrors)
                     {
                         <li data-validation-code="@issue.Code">@issue.Message</li>
@@ -24,9 +24,9 @@
 
     @if (Validation.Warnings.Count > 0)
     {
-        <details class="cda-transaction-validation__warnings">
-            <summary>@DistinctWarnings.Count recommendation(s)</summary>
-            <ul>
+        <details class="mt-2 min-w-0 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <summary class="cursor-pointer font-semibold">@DistinctWarnings.Count recommendation(s)</summary>
+            <ul class="m-0 mt-2 list-disc space-y-1 pl-5">
                 @foreach (TransactionFlowIssue issue in DistinctWarnings)
                 {
                     <li data-validation-code="@issue.Code">@issue.Message</li>

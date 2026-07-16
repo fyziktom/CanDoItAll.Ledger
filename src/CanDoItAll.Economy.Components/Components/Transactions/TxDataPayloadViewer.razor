@@ -28,7 +28,8 @@
             </Grid>
             @if (!string.IsNullOrWhiteSpace(Data.InlineJson))
             {
-                <pre class="cda-sdk-code" data-testid="tx-payload-inline-json">@TransactionRawJsonFormatter.FormatInlineJson(Data.InlineJson)</pre>
+                <LedgerCodeBlock Text="@TransactionRawJsonFormatter.FormatInlineJson(Data.InlineJson)"
+                                 data-testid="tx-payload-inline-json" />
             }
         }
     </ChildContent>

@@ -1,8 +1,8 @@
 @namespace CanDoItAll.Economy.Components
 
-<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="cda-transaction-bo-search" data-testid="bo-selection-step">
-    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" Class="cda-transaction-bo-search__toolbar">
-        <FormField Text="Search" ContainerClass="cda-economy-field">
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="w-full" data-testid="bo-selection-step">
+    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" AlignItems="AlignItems.End">
+        <FormField Text="Search">
             <TextBox Value="@filter"
                      ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => filter = value ?? string.Empty))"
                      Immediate="true"
@@ -11,7 +11,7 @@
                      data-testid="bo-selection-filter" />
         </FormField>
 
-        <FormField Text="Object type" ContainerClass="cda-economy-field">
+        <FormField Text="Object type">
             <DropDown TValue="string"
                       Data="TypeOptions"
                       TextProperty="Text"
@@ -22,30 +22,34 @@
                       data-testid="bo-selection-type" />
         </FormField>
 
-        <div class="cda-transaction-bo-search__selection-count">
-            <span>Selection</span>
-            <strong>@Selected.Count of @MaximumSelections</strong>
-            <small>@FilteredItems.Count matching object(s)</small>
-        </div>
+        <SummaryTile Label="Selection"
+                     Value="@($"{Selected.Count} of {MaximumSelections}")"
+                     HelperText="@($"{FilteredItems.Count} matching object(s)")"
+                     Compact="true" />
     </Grid>
 
     @if (FeaturedTags.Count > 0)
     {
-        <div class="cda-transaction-bo-search__tags" role="group" aria-label="Filter by tag">
-            <button type="button"
-                    class="@(string.IsNullOrWhiteSpace(selectedTag) ? "is-active" : null)"
+        <Cluster Gap="LayoutGap.Tiny" role="group" aria-label="Filter by tag">
+            <Button Text="All tags"
+                    Size="ButtonSize.Small"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Variant="@(string.IsNullOrWhiteSpace(selectedTag) ? Variant.Filled : Variant.Outlined)"
+                    Click="@(() => selectedTag = string.Empty)"
                     aria-pressed="@(string.IsNullOrWhiteSpace(selectedTag) ? "true" : "false")"
-                    data-testid="bo-tag-all"
-                    @onclick="@(() => selectedTag = string.Empty)">All tags</button>
+                    data-testid="bo-tag-all" />
             @foreach (string tag in FeaturedTags)
             {
-                <button type="button"
-                        class="@(selectedTag.Equals(tag, StringComparison.OrdinalIgnoreCase) ? "is-active" : null)"
+                <Button Text="@($"#{tag}")"
+                        Size="ButtonSize.Small"
+                        ButtonStyle="ButtonStyle.Secondary"
+                        Variant="@(selectedTag.Equals(tag, StringComparison.OrdinalIgnoreCase) ? Variant.Filled : Variant.Outlined)"
+                        Click="@(() => selectedTag = tag)"
                         aria-pressed="@(selectedTag.Equals(tag, StringComparison.OrdinalIgnoreCase) ? "true" : "false")"
                         data-testid="@($"bo-tag-{SafeTestId(tag)}")"
-                        @onclick="@(() => selectedTag = tag)">#@tag</button>
+                        />
             }
-        </div>
+        </Cluster>
     }
 
     @if (RequireCompatibleSelection && Selected.Count > 0)
@@ -61,7 +65,15 @@
     }
     else
     {
-        <div class="cda-transaction-bo-grid" role="group" aria-label="Business objects available for selection">
+        <Grid Columns="2"
+              ColumnsMd="4"
+              ColumnsXl="6"
+              Gap="LayoutGap.Small"
+              AlignItems="AlignItems.Stretch"
+              Style="max-height:min(58vh,39rem);overflow-y:auto;padding:.12rem .2rem .2rem .12rem"
+              role="group"
+              aria-label="Business objects available for selection"
+              data-testid="bo-selection-results">
             @foreach (IBusinessObjectView item in FilteredItems)
             {
                 <BusinessObjectSelectionCard Item="item"
@@ -71,7 +83,7 @@
                                              SelectedChanged="@(() => ToggleAsync(item))"
                                              TestId="@($"bo-select-{SafeTestId(item.CurrentOutPoint.ToString())}")" />
             }
-        </div>
+        </Grid>
     }
 </Stack>
 

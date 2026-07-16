@@ -1,0 +1,9 @@
+.transaction-context-rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    min-width: 0;
+    max-height: calc(94vh - 10rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+}

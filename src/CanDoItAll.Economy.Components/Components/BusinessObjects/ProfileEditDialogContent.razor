@@ -3,67 +3,66 @@
 
 <SectionCard Title="@DialogTitle" Description="@ProfileDescription">
     <Stack GapScale="LayoutGap.Medium">
-        <section class="cda-profile-edit-picture" data-testid="cda-profile-picture-preview">
-            @if (ProfileImageUri is not null)
-            {
-                <img src="@ProfileImageUri" alt="@displayName" />
-            }
-            else
-            {
-                <div>
-                    <span class="material-icons" aria-hidden="true">account_circle</span>
-                </div>
-            }
-            <div>
-                <strong>Profile picture</strong>
-                <span>@(ProfileImageUri is null ? "Paste an image link to load a profile picture preview." : "Loaded from the image link field.")</span>
-            </div>
-        </section>
+        <SurfaceCard Soft="true" data-testid="cda-profile-picture-preview">
+            <Cluster Gap="LayoutGap.Medium" Wrap="FlexWrap.NoWrap" Class="w-full">
+                <Avatar ImageUrl="@ProfileImageUri?.ToString()"
+                        Alt="@displayName"
+                        FallbackText="@ProfileInitials"
+                        UseDefaultImageWhenMissing="false"
+                        Size="AvatarSize.Large"
+                        Shape="AvatarShape.Rounded" />
+                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0 flex-1">
+                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="Profile picture" />
+                    <TextBlock TextStyle="TextStyle.Muted"
+                               Value="@(ProfileImageUri is null ? "Paste an image link to load a profile picture preview." : "Loaded from the image link field.")" />
+                </Stack>
+            </Cluster>
+        </SurfaceCard>
 
+        <FormField Text="Display name">
+            <TextBox Value="@displayName" ValueChanged="@(value => displayName = value ?? string.Empty)" Immediate="true" aria-label="Profile display name" />
+        </FormField>
         <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-            <FormField Text="Display name" ContainerClass="cda-economy-field cda-economy-field--wide">
-                <TextBox Value="@displayName" ValueChanged="@(value => displayName = value ?? string.Empty)" Immediate="true" aria-label="Profile display name" />
-            </FormField>
-            <FormField Text="First name" ContainerClass="cda-economy-field">
+            <FormField Text="First name">
                 <TextBox Value="@firstName" ValueChanged="@(value => firstName = value ?? string.Empty)" Immediate="true" aria-label="Profile first name" />
             </FormField>
-            <FormField Text="Surname" ContainerClass="cda-economy-field">
+            <FormField Text="Surname">
                 <TextBox Value="@surname" ValueChanged="@(value => surname = value ?? string.Empty)" Immediate="true" aria-label="Profile surname" />
             </FormField>
-            <FormField Text="Nickname" ContainerClass="cda-economy-field">
+            <FormField Text="Nickname">
                 <TextBox Value="@nickname" ValueChanged="@(value => nickname = value ?? string.Empty)" Immediate="true" aria-label="Profile nickname" />
             </FormField>
-            <FormField Text="Image link" ContainerClass="cda-economy-field">
+            <FormField Text="Image link">
                 <TextBox Value="@imageLink" ValueChanged="@(value => imageLink = value ?? string.Empty)" Immediate="true" aria-label="Profile image link" />
             </FormField>
-            <FormField Text="Contact" ContainerClass="cda-economy-field">
+            <FormField Text="Contact">
                 <TextBox Value="@contact" ValueChanged="@(value => contact = value ?? string.Empty)" Immediate="true" aria-label="Profile contact" />
             </FormField>
-            <FormField Text="Website" ContainerClass="cda-economy-field">
+            <FormField Text="Website">
                 <TextBox Value="@website" ValueChanged="@(value => website = value ?? string.Empty)" Immediate="true" aria-label="Profile website" />
             </FormField>
-            <FormField Text="Role" ContainerClass="cda-economy-field">
+            <FormField Text="Role">
                 <TextBox Value="@role" ValueChanged="@(value => role = value ?? string.Empty)" Immediate="true" aria-label="Profile role" />
             </FormField>
-            <FormField Text="Age" ContainerClass="cda-economy-field">
+            <FormField Text="Age">
                 <TextBox Value="@age" ValueChanged="@(value => age = value ?? string.Empty)" Immediate="true" aria-label="Profile age" />
             </FormField>
-            <FormField Text="Relationship status" ContainerClass="cda-economy-field">
+            <FormField Text="Relationship status">
                 <TextBox Value="@relationshipStatus" ValueChanged="@(value => relationshipStatus = value ?? string.Empty)" Immediate="true" aria-label="Profile relationship status" />
             </FormField>
-            <FormField Text="Currency" ContainerClass="cda-economy-field">
+            <FormField Text="Currency">
                 <TextBox Value="@currency" ValueChanged="@(value => currency = value ?? string.Empty)" Immediate="true" aria-label="Profile currency" />
             </FormField>
-            <FormField Text="Approval mode" ContainerClass="cda-economy-field">
+            <FormField Text="Approval mode">
                 <TextBox Value="@approvalMode" ValueChanged="@(value => approvalMode = value ?? string.Empty)" Immediate="true" aria-label="Profile approval mode" />
             </FormField>
-            <FormField Text="Simulation clock" ContainerClass="cda-economy-field">
+            <FormField Text="Simulation clock">
                 <TextBox Value="@simulationClock" ValueChanged="@(value => simulationClock = value ?? string.Empty)" Immediate="true" aria-label="Profile simulation clock" />
             </FormField>
-            <FormField Text="Bio" ContainerClass="cda-economy-field cda-economy-field--wide">
-                <TextArea Value="@bio" ValueChanged="@(value => bio = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Profile bio" />
-            </FormField>
         </Grid>
+        <FormField Text="Bio">
+            <TextArea Value="@bio" ValueChanged="@(value => bio = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Profile bio" />
+        </FormField>
 
         <Cluster Gap="LayoutGap.Small">
             <PageHeaderActionButton Icon="save"
@@ -118,6 +117,12 @@
         => Uri.TryCreate(imageLink, UriKind.Absolute, out Uri? uri)
             ? uri
             : null;
+
+    private string ProfileInitials
+        => string.Concat(displayName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(part => char.ToUpperInvariant(part[0])));
 
     protected override void OnParametersSet()
     {

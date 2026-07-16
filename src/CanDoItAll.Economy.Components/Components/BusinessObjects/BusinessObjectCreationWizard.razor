@@ -12,14 +12,16 @@
                AlignItems="AlignItems.Center"
                JustifyContent="JustifyContent.SpaceBetween"
                Wrap="FlexWrap.Wrap">
-        <Steps Value="@(currentStep - 1)"
-               ValueChanged="SetStepIndex"
-               CanSelect="true"
-               aria-label="Create BusinessObject steps">
+        <TransactionWorkflowSteps Value="@(currentStep - 1)"
+                                  ValueChanged="SetStepIndex"
+                                  CanSelect="true"
+                                  Linear="false"
+                                  ShowDescriptions="false"
+                                  aria-label="Create BusinessObject steps">
             <StepsItem Text="Upload" Icon="upload_file" />
             <StepsItem Text="Data Info" Icon="edit_note" />
             <StepsItem Text="Finish" Icon="flag" />
-        </Steps>
+        </TransactionWorkflowSteps>
 
         <Cluster Gap="LayoutGap.Small">
             <Button Text="Load Template" Icon="folder_open" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" />
@@ -158,131 +160,135 @@
                         </FormField>
                         @if (IsTicketSelected)
                         {
-                            <section class="cda-ticket-event-panel" data-testid="cda-ticket-event-panel">
-                                <div>
-                                    <span class="material-icons" aria-hidden="true">event</span>
-                                    <div>
-                                        <strong>@(selectedTicketEvent is null ? "No event selected" : TicketEventDisplayName)</strong>
-                                        <small>@(selectedTicketEvent?.ObjectId.Value ?? "Select an event BO or load it by transaction hash.")</small>
-                                    </div>
-                                </div>
-                                <Button Text="Select Event"
-                                        Icon="travel_explore"
-                                        Size="ButtonSize.Small"
-                                        ButtonStyle="ButtonStyle.Secondary"
-                                        Click="OpenTicketEventPickerAsync"
-                                        data-testid="cda-ticket-select-event" />
-                            </section>
-                            <section class="cda-ticket-multimint-panel" data-testid="cda-ticket-multimint-panel">
-                                <label class="cda-economy-check-row">
-                                    <input type="checkbox"
-                                           @bind="multimintEnabled"
-                                           data-testid="cda-ticket-multimint-enabled" />
-                                    <span>Multimint tickets</span>
-                                </label>
+                            <SurfaceCard Soft="true" data-testid="cda-ticket-event-panel">
+                                <Cluster Gap="LayoutGap.Medium"
+                                         JustifyContent="JustifyContent.SpaceBetween"
+                                         Wrap="FlexWrap.Wrap"
+                                         Class="w-full">
+                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.NoWrap" Class="min-w-0 flex-1">
+                                        <Icon Name="event" />
+                                        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0 flex-1">
+                                            <TextBlock TextStyle="TextStyle.Subtitle2"
+                                                       Value="@(selectedTicketEvent is null ? "No event selected" : TicketEventDisplayName)" />
+                                            <TextBlock TextStyle="TextStyle.Muted"
+                                                       Value="@(selectedTicketEvent?.ObjectId.Value ?? "Select an event BO or load it by transaction hash.")" />
+                                        </Stack>
+                                    </Cluster>
+                                    <Button Text="Select Event"
+                                            Icon="travel_explore"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Secondary"
+                                            Click="OpenTicketEventPickerAsync"
+                                            data-testid="cda-ticket-select-event" />
+                                </Cluster>
+                            </SurfaceCard>
+                            <SurfaceCard data-testid="cda-ticket-multimint-panel">
+                                <Stack GapScale="LayoutGap.Medium">
+                                    <label class="inline-flex items-center gap-3">
+                                        <CheckBox TValue="bool"
+                                                  Value="@multimintEnabled"
+                                                  ValueChanged="@(value => multimintEnabled = value)"
+                                                  data-testid="cda-ticket-multimint-enabled" />
+                                        <TextBlock TextStyle="TextStyle.Body2" Value="Multimint tickets" />
+                                    </label>
                                 @if (multimintEnabled)
                                 {
                                     <Grid ColumnsMd="2" Gap="LayoutGap.Small">
                                         @if (!IsManualRecipientMode)
                                         {
-                                            <FormField Text="Ticket count" ContainerClass="cda-economy-field">
+                                            <FormField Text="Ticket count">
                                                 <input type="number"
-                                                       class="cda-ticket-multimint-number"
+                                                       class="rz-numeric min-w-0 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
                                                        min="1"
-                                                       max="100"
+                                                       max="@MaxTicketMultimintCount"
                                                        value="@ticketMultimintCount"
                                                        @oninput="OnTicketMultimintCountInput"
                                                        data-testid="cda-ticket-multimint-count" />
                                             </FormField>
                                         }
-                                        <FormField Text="Recipients" ContainerClass="cda-economy-field">
-                                            <select class="cda-ticket-multimint-select"
-                                                    value="@recipientMode"
-                                                    @onchange="OnRecipientModeChanged"
-                                                    aria-label="Ticket multimint recipients"
-                                                    data-testid="cda-ticket-multimint-recipient-mode">
-                                                @foreach (FilterOption option in RecipientModeOptions)
-                                                {
-                                                    <option value="@option.Value">@option.Text</option>
-                                                }
-                                            </select>
+                                        <FormField Text="Recipients">
+                                            <DropDown TValue="string"
+                                                      Data="@RecipientModeOptions"
+                                                      TextProperty="Text"
+                                                      ValueProperty="Value"
+                                                      Value="@recipientMode"
+                                                      ValueChanged="SelectRecipientMode"
+                                                      aria-label="Ticket multimint recipients"
+                                                      data-testid="cda-ticket-multimint-recipient-mode" />
                                         </FormField>
-                                        @if (IsSubAccountRecipientMode)
-                                        {
-                                            <FormField Text="Subaccount" ContainerClass="cda-economy-field cda-economy-field--wide">
-                                                @if (SubAccountOptions.Count == 0)
-                                                {
-                                                    <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
-                                                        No linked subaccounts are available in this workspace.
-                                                    </Alert>
-                                                }
-                                                else
-                                                {
-                                                    <select class="cda-ticket-multimint-select"
-                                                            value="@selectedSubAccountAddress"
-                                                            @onchange="OnSubAccountAddressChanged"
-                                                            aria-label="Ticket multimint subaccount"
-                                                            data-testid="cda-ticket-multimint-subaccount">
-                                                        @foreach (FilterOption option in SubAccountOptions)
-                                                        {
-                                                            <option value="@option.Value">@option.Text</option>
-                                                        }
-                                                    </select>
-                                                }
-                                            </FormField>
-                                        }
-                                        else if (IsAddressBookRecipientMode)
-                                        {
-                                            <FormField Text="Address book" ContainerClass="cda-economy-field cda-economy-field--wide">
-                                                @if (AddressBookOptions.Count == 0)
-                                                {
-                                                    <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
-                                                        No address-book entries are available in this workspace.
-                                                    </Alert>
-                                                }
-                                                else
-                                                {
-                                                    <select class="cda-ticket-multimint-select"
-                                                            value="@selectedAddressBookAddress"
-                                                            @onchange="OnAddressBookAddressChanged"
-                                                            aria-label="Ticket multimint address book"
-                                                            data-testid="cda-ticket-multimint-address-book">
-                                                        @foreach (FilterOption option in AddressBookOptions)
-                                                        {
-                                                            <option value="@option.Value">@option.Text</option>
-                                                        }
-                                                    </select>
-                                                }
-                                                <PageHeaderActionButton Icon="contacts"
-                                                                        Label="Directory"
-                                                                        TooltipText="Choose recipient from address directory"
-                                                                        Variant="Variant.Outlined"
-                                                                        Click="OpenRecipientAddressDirectoryAsync"
-                                                                        TestId="cda-ticket-multimint-address-directory" />
-                                            </FormField>
-                                        }
-                                        else if (IsManualRecipientMode)
-                                        {
-                                            <FormField Text="Recipient addresses" ContainerClass="cda-economy-field cda-economy-field--wide">
-                                                <TextArea Value="@recipientListText"
-                                                          ValueChanged="@(value => recipientListText = value ?? string.Empty)"
-                                                          Immediate="true"
-                                                          Rows="4"
-                                                          Placeholder="One address per line. A single address repeats by ticket count."
-                                                          aria-label="Ticket multimint recipient addresses"
-                                                          data-testid="cda-ticket-multimint-recipient-list" />
-                                            </FormField>
-                                        }
-                                        <div class="cda-sdk-span-all" data-testid="cda-ticket-multimint-summary">
-                                            <SummaryTile Label="Batch preview" Value="@TicketMultimintSummary" />
-                                        </div>
                                     </Grid>
+                                    @if (IsSubAccountRecipientMode)
+                                    {
+                                        <FormField Text="Subaccount">
+                                            @if (SubAccountOptions.Count == 0)
+                                            {
+                                                <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
+                                                    No linked subaccounts are available in this workspace.
+                                                </Alert>
+                                            }
+                                            else
+                                            {
+                                                <DropDown TValue="string"
+                                                          Data="@SubAccountOptions"
+                                                          TextProperty="Text"
+                                                          ValueProperty="Value"
+                                                          Value="@selectedSubAccountAddress"
+                                                          ValueChanged="SelectSubAccountAddress"
+                                                          aria-label="Ticket multimint subaccount"
+                                                          data-testid="cda-ticket-multimint-subaccount" />
+                                            }
+                                        </FormField>
+                                    }
+                                    else if (IsAddressBookRecipientMode)
+                                    {
+                                        <FormField Text="Address book">
+                                            @if (AddressBookOptions.Count == 0)
+                                            {
+                                                <Alert AlertStyle="AlertStyle.Warning" Variant="Variant.Outlined">
+                                                    No address-book entries are available in this workspace.
+                                                </Alert>
+                                            }
+                                            else
+                                            {
+                                                <DropDown TValue="string"
+                                                          Data="@AddressBookOptions"
+                                                          TextProperty="Text"
+                                                          ValueProperty="Value"
+                                                          Value="@selectedAddressBookAddress"
+                                                          ValueChanged="SelectAddressBookAddress"
+                                                          aria-label="Ticket multimint address book"
+                                                          data-testid="cda-ticket-multimint-address-book" />
+                                            }
+                                            <PageHeaderActionButton Icon="contacts"
+                                                                    Label="Directory"
+                                                                    TooltipText="Choose recipient from address directory"
+                                                                    Variant="Variant.Outlined"
+                                                                    Click="OpenRecipientAddressDirectoryAsync"
+                                                                    TestId="cda-ticket-multimint-address-directory" />
+                                        </FormField>
+                                    }
+                                    else if (IsManualRecipientMode)
+                                    {
+                                        <FormField Text="Recipient addresses">
+                                            <TextArea Value="@recipientListText"
+                                                      ValueChanged="@(value => recipientListText = value ?? string.Empty)"
+                                                      Immediate="true"
+                                                      Rows="4"
+                                                      Placeholder="One address per line. A single address repeats by ticket count."
+                                                      aria-label="Ticket multimint recipient addresses"
+                                                      data-testid="cda-ticket-multimint-recipient-list" />
+                                        </FormField>
+                                    }
+                                    <div data-testid="cda-ticket-multimint-summary">
+                                        <SummaryTile Label="Batch preview" Value="@TicketMultimintSummary" />
+                                    </div>
                                 }
-                            </section>
+                                </Stack>
+                            </SurfaceCard>
                         }
                     </Stack>
                     <Stack GapScale="LayoutGap.Small" Class="min-w-0">
-                        <FormField Text="Long description" ContainerClass="cda-economy-field cda-economy-field--wide">
+                        <FormField Text="Long description">
                             <TextArea Value="@text" ValueChanged="@(value => text = value ?? string.Empty)" Immediate="true" Rows="10" aria-label="BusinessObject text" />
                         </FormField>
                         @if (SelectedDefinition.Fields.Count > 0)
@@ -290,7 +296,7 @@
                             <Grid ColumnsMd="2" Gap="LayoutGap.Small">
                                 @foreach (BusinessObjectFieldDefinition field in SelectedDefinition.Fields)
                                 {
-                                    <FormField Text="@field.Label" ContainerClass="cda-economy-field">
+                                    <FormField Text="@field.Label">
                                         @if (IsAutoMintAuthorField(field))
                                         {
                                             <TextBox Value="@FieldValue(field.Key)"
@@ -301,7 +307,7 @@
                                         else if (IsDateTimeField(field))
                                         {
                                             <input type="datetime-local"
-                                                   class="cda-ticket-multimint-select"
+                                                   class="rz-input min-w-0 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
                                                    value="@DateTimeInputValue(field.Key)"
                                                    @onchange="@(args => OnDateTimeFieldChanged(field.Key, args))"
                                                    aria-label="@field.Label"
@@ -702,9 +708,9 @@
             new DialogOptions
             {
                 Subtitle = "Load an event BO and prefill ticket details.",
-                Size = ModalSize.Wide,
+                Size = ModalSize.Medium,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-event-picker-dialog",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-event-picker-dialog"
             }).ConfigureAwait(false);
 
@@ -784,21 +790,6 @@
         }
     }
 
-    private void OnRecipientModeChanged(ChangeEventArgs args)
-    {
-        SelectRecipientMode(Convert.ToString(args.Value));
-    }
-
-    private void OnSubAccountAddressChanged(ChangeEventArgs args)
-    {
-        SelectSubAccountAddress(Convert.ToString(args.Value));
-    }
-
-    private void OnAddressBookAddressChanged(ChangeEventArgs args)
-    {
-        SelectAddressBookAddress(Convert.ToString(args.Value));
-    }
-
     private void SelectRecipientMode(string? mode)
     {
         recipientMode = mode is RecipientModeSubAccount or RecipientModeAddressBook or RecipientModeManual
@@ -854,7 +845,7 @@
                 Subtitle = "Choose own or external recipient",
                 Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--address-directory",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-address-directory-dialog"
             });
 
@@ -987,8 +978,8 @@
             new DialogOptions
             {
                 Subtitle = "Gallery preview before staging",
-                Size = ModalSize.Wide,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details",
+                Size = ModalSize.Medium,
+                Class = "cda-ledger-dialog",
                 TestId = "cda-bo-finish-preview-details-dialog"
             });
     }

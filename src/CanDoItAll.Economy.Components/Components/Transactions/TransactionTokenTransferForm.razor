@@ -25,13 +25,11 @@
                                     Value="Draft.TokenAmount"
                                     ValueChanged="SetTokenAmountAsync"
                                     MaxAmount="SelectedOption?.AvailableAmount"
-                                    ContainerClass="cda-economy-field"
                                     TestId="composer-token-amount" />
             <TransactionAddressInput Label="Receiver address"
                                      Value="@Draft.PaymentReceiverAddress.Value"
                                      ValueChanged="SetReceiverAsync"
                                      Placeholder="cdia1…"
-                                     ContainerClass="cda-economy-field"
                                      Bookmarks="Bookmarks"
                                      AccountScope="@AccountScope"
                                      DialogSubtitle="Token transfer"
@@ -42,7 +40,7 @@
                                     MaxAmount="Balance?.MainBalance"
                                     AllowEmpty="true"
                                     TestId="composer-token-main-amount" />
-                <FormField Text="Memo" ContainerClass="cda-economy-field">
+                <FormField Text="Memo">
                     <TextBox Value="@Draft.ExternalRef"
                              ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetMemoAsync))"
                              Immediate="true"

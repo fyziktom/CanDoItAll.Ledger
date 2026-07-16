@@ -2,6 +2,10 @@
     display: contents;
 }
 
+.cda-sim-shell-theme ::deep .cda-sim-shell {
+    font-family: "Segoe UI", Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
 @media (max-width: 767px) {
     .cda-sim-shell-theme ::deep .cda-sim-shell {
         flex-direction: column;

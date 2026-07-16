@@ -2,7 +2,7 @@
 @using CanDoItAll.Economy.Components.Samples
 @inject DialogService DialogService
 
-<Stack Section="true" GapScale="LayoutGap.Medium" Class="cda-node-console" data-testid="cda-node-admin-dashboard">
+<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="cda-node-admin-dashboard">
     <Split Breakpoint="LayoutBreakpoint.None"
            Gap="LayoutGap.Medium"
            AlignItems="AlignItems.Center"
@@ -22,11 +22,10 @@
           SelectedIndex="@selectedNodeTab"
           SelectedIndexChanged="@(index => selectedNodeTab = index)"
           Variant="TabsVariant.Workstation"
-          BorderMode="TabsBorderMode.Soft"
-          OverflowMode="TabsOverflowMode.Scroll"
-          PanelOverflowMode="TabsPanelOverflowMode.Visible"
-          Class="cda-node-console__tabs"
-          AriaLabel="Node console sections">
+           BorderMode="TabsBorderMode.Soft"
+           OverflowMode="TabsOverflowMode.Scroll"
+           PanelOverflowMode="TabsPanelOverflowMode.Visible"
+           AriaLabel="Node console sections">
         <TabsItem Text="Overview" Icon="dashboard">
             <Stack GapScale="LayoutGap.Medium">
                 <Grid ColumnsLg="2" Gap="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
@@ -328,9 +327,9 @@
             new DialogOptions
             {
                 Subtitle = address.Address,
-                Size = ModalSize.Wide,
+                Size = ModalSize.Medium,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-node-dialog",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-node-address-dialog"
             });
 
@@ -357,7 +356,7 @@
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--tx-detail",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-node-transaction-details-dialog"
             }).ConfigureAwait(false);
     }

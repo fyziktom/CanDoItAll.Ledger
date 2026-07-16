@@ -9,31 +9,28 @@ public sealed class AddressDirectoryLayoutContractTests
             "src", "CanDoItAll.Economy.Components", "Components", "Account", "AddressDirectoryDialogContent.razor");
         string addDialog = ReadRepoFile(
             "src", "CanDoItAll.Economy.Components", "Components", "Account", "AddressDirectoryAddDialogContent.razor");
-        string css = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "wwwroot", "css", "economy-components.css");
-
-        Assert.Contains("<Toolbar Class=\"cda-address-directory__control-band\"", directory, StringComparison.Ordinal);
+        Assert.Contains("<Toolbar data-testid=\"cda-address-directory-toolbar\">", directory, StringComparison.Ordinal);
         Assert.Contains("<ToolbarRow>", directory, StringComparison.Ordinal);
         Assert.Contains("<ToolbarFields", directory, StringComparison.Ordinal);
         Assert.Contains("<ToolbarActions>", directory, StringComparison.Ordinal);
         Assert.Contains("<Grid ColumnTemplate=\"repeat(auto-fit, minmax(min(100%, 20rem), 1fr))\"", directory, StringComparison.Ordinal);
+        Assert.Contains("Class=\"min-h-0 flex-1 overflow-y-auto\"", directory, StringComparison.Ordinal);
+        Assert.Contains("<SurfaceCard Class=\"h-full\"", directory, StringComparison.Ordinal);
+        Assert.Contains("<Avatar ImageUrl=\"@entry.ProfileImageLink\"", directory, StringComparison.Ordinal);
         Assert.Contains("OpenAsync<AddressDirectoryAddDialogContent>", directory, StringComparison.Ordinal);
+        Assert.Contains("Size = ModalSize.Compact", directory, StringComparison.Ordinal);
         Assert.Contains("CloseOnBackdrop = false", directory, StringComparison.Ordinal);
         Assert.Contains("CurrentDialog.CloseAsync(result)", directory, StringComparison.Ordinal);
         Assert.DoesNotContain("<DialogScaffold", directory, StringComparison.Ordinal);
-        Assert.DoesNotContain("cda-address-directory__add", directory, StringComparison.Ordinal);
+        Assert.DoesNotContain("Class=\"cda-address-directory", directory, StringComparison.Ordinal);
 
-        Assert.Contains("<FormStack Class=\"cda-address-directory-add-form\"", addDialog, StringComparison.Ordinal);
+        Assert.Contains("<FormStack data-testid=\"cda-address-directory-add-dialog-content\">", addDialog, StringComparison.Ordinal);
         Assert.Contains("Text=\"Display name\"", addDialog, StringComparison.Ordinal);
         Assert.Contains("Text=\"Ledger address\"", addDialog, StringComparison.Ordinal);
         Assert.Contains("<Alert AlertStyle=\"AlertStyle.Info\"", addDialog, StringComparison.Ordinal);
         Assert.Contains("data-testid=\"cda-address-directory-add-save\"", addDialog, StringComparison.Ordinal);
         Assert.Contains("CurrentDialog.CloseAsync(result)", addDialog, StringComparison.Ordinal);
-
-        Assert.Matches(@"(?s)\.cda-address-directory__grid\s*\{[^}]*flex:\s*1\s+1\s+auto;[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;", css);
-        Assert.Matches(@"(?s)\.cda-address-directory-card\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*min-height:\s*12rem;", css);
-        Assert.DoesNotMatch(@"(?s)\.cda-address-directory-card\s*\{[^}]*aspect-ratio", css);
-        Assert.Matches(@"(?m)^section\.cda-address-directory-add-modal\s*\{", css);
+        Assert.DoesNotContain("Class=\"cda-address-directory", addDialog, StringComparison.Ordinal);
     }
 
     private static string ReadRepoFile(params string[] relativeParts)

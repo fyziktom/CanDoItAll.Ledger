@@ -7,17 +7,16 @@
 <Stack GapScale="LayoutGap.Medium"
        AlignItems="AlignItems.Stretch"
        FillHeight="true"
-       Class="cda-address-directory"
+       Class="w-full min-h-0 min-w-0"
        data-testid="cda-address-directory-dialog-content">
-    <Toolbar Class="cda-address-directory__control-band"
-             data-testid="cda-address-directory-toolbar">
+    <Toolbar data-testid="cda-address-directory-toolbar">
         <ToolbarRow>
-            <ToolbarFields Class="cda-address-directory__toolbar-fields">
+            <ToolbarFields>
                 <SecondaryTabs Items="FilterItems"
                                SelectedKey="@selectedFilter"
                                SelectedKeyChanged="SelectFilterAsync"
                                Dense="true" />
-                <FormField Text="Search" ContainerClass="cda-economy-field cda-address-directory__search">
+                <FormField Text="Search">
                     <TextBox Value="@search"
                              ValueChanged="@(value => search = value ?? string.Empty)"
                              Immediate="true"
@@ -26,10 +25,13 @@
                 </FormField>
             </ToolbarFields>
             <ToolbarActions>
-                <div class="cda-address-directory__summary" role="status" aria-live="polite">
-                    <span>Showing</span>
-                    <strong>@FilteredEntries.Count / @entries.Count</strong>
-                </div>
+                <Stack GapScale="LayoutGap.XSmall"
+                       Class="min-w-0"
+                       role="status"
+                       aria-live="polite">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Showing" />
+                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="@($"{FilteredEntries.Count} / {entries.Count}")" />
+                </Stack>
                 @if (Mode == AddressDirectoryDialogMode.Manage)
                 {
                     <Button Text="Add address"
@@ -46,51 +48,55 @@
     <Grid ColumnTemplate="repeat(auto-fit, minmax(min(100%, 20rem), 1fr))"
           Gap="LayoutGap.Medium"
           AlignItems="AlignItems.Stretch"
-          Class="cda-address-directory__grid"
+          Class="min-h-0 flex-1 overflow-y-auto"
           data-testid="cda-address-directory-grid">
         @foreach (AddressDirectoryEntry entry in FilteredEntries)
         {
-            <article class="cda-address-directory-card" data-testid="cda-address-directory-card">
-                <div class="cda-address-directory-card__header">
-                    <div class="cda-address-directory-card__avatar">
-                        @if (!string.IsNullOrWhiteSpace(entry.ProfileImageLink))
-                        {
-                            <img src="@entry.ProfileImageLink" alt="@entry.DisplayName" />
-                        }
-                        else
-                        {
-                            <span>@Initials(entry)</span>
-                        }
-                    </div>
-                    <div>
-                        <strong>@entry.DisplayName</strong>
-                        <CopyableMonoValue Value="@entry.Address" StartChars="10" EndChars="6" AriaLabel="Copy directory address" />
-                    </div>
-                    <PageHeaderActionButton Icon="@(entry.Favorite ? "star" : "star_border")"
-                                            Label="Favorite"
-                                            TooltipText="Toggle favorite"
-                                            Variant="Variant.Outlined"
-                                            Click="@(() => ToggleFavoriteAsync(entry))"
-                                            TestId="cda-address-directory-favorite" />
-                </div>
+            <SurfaceCard Class="h-full" data-testid="cda-address-directory-card">
+                <Stack GapScale="LayoutGap.Small"
+                       AlignItems="AlignItems.Stretch"
+                       JustifyContent="JustifyContent.SpaceBetween"
+                       FillHeight="true">
+                    <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+                        <Grid ColumnTemplate="auto minmax(0, 1fr) auto"
+                              Gap="LayoutGap.Small"
+                              AlignItems="AlignItems.Center">
+                            <Avatar ImageUrl="@entry.ProfileImageLink"
+                                    Alt="@entry.DisplayName"
+                                    FallbackText="@Initials(entry)"
+                                    UseDefaultImageWhenMissing="false"
+                                    Size="AvatarSize.Medium"
+                                    Shape="AvatarShape.Rounded" />
+                            <Stack GapScale="LayoutGap.XSmall" Class="min-w-0">
+                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@entry.DisplayName" />
+                                <CopyableMonoValue Value="@entry.Address" StartChars="10" EndChars="6" AriaLabel="Copy directory address" />
+                            </Stack>
+                            <PageHeaderActionButton Icon="@(entry.Favorite ? "star" : "star_border")"
+                                                    Label="Favorite"
+                                                    TooltipText="Toggle favorite"
+                                                    Variant="Variant.Outlined"
+                                                    Click="@(() => ToggleFavoriteAsync(entry))"
+                                                    TestId="cda-address-directory-favorite" />
+                        </Grid>
 
-                <div class="cda-address-directory-card__meta">
-                    <StatusBadge Text="@entry.Kind.ToString()" Tone="@(entry.Kind == AddressDirectoryEntryKind.Own ? "info" : "neutral")" />
-                    @if (!string.IsNullOrWhiteSpace(entry.ProfileDisplayName) || !string.IsNullOrWhiteSpace(entry.ProfileObjectId))
-                    {
-                        <StatusBadge Text="Profile cached" Tone="success" />
-                    }
-                </div>
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
+                            <StatusBadge Text="@entry.Kind.ToString()" Tone="@(entry.Kind == AddressDirectoryEntryKind.Own ? "info" : "neutral")" />
+                            @if (!string.IsNullOrWhiteSpace(entry.ProfileDisplayName) || !string.IsNullOrWhiteSpace(entry.ProfileObjectId))
+                            {
+                                <StatusBadge Text="Profile cached" Tone="success" />
+                            }
+                        </Cluster>
 
-                <FormField Text="Tags" ContainerClass="cda-economy-field cda-address-directory-card__tags">
-                    <TagEditor Value="@entry.TagsOrEmpty"
-                               ValueChanged="@((IReadOnlyList<string> value) => SaveTagsAsync(entry, value))"
-                               Suggestions="@tagSuggestions"
-                               Placeholder="Add address tag"
-                               InputTestId="cda-address-directory-tag-input" />
-                </FormField>
+                        <FormField Text="Tags">
+                            <TagEditor Value="@entry.TagsOrEmpty"
+                                       ValueChanged="@((IReadOnlyList<string> value) => SaveTagsAsync(entry, value))"
+                                       Suggestions="@tagSuggestions"
+                                       Placeholder="Add address tag"
+                                       InputTestId="cda-address-directory-tag-input" />
+                        </FormField>
+                    </Stack>
 
-                <div class="cda-address-directory-card__actions">
+                    <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
                     @if (Mode == AddressDirectoryDialogMode.Select)
                     {
                         <PageHeaderActionButton Icon="check"
@@ -115,8 +121,9 @@
                                                 Disabled="@(entry.Kind == AddressDirectoryEntryKind.Own)"
                                                 Click="@(() => RemoveAsync(entry))" />
                     }
-                </div>
-            </article>
+                    </Cluster>
+                </Stack>
+            </SurfaceCard>
         }
     </Grid>
 </Stack>
@@ -192,7 +199,7 @@
                 Size = ModalSize.Compact,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-address-directory-add-modal",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-address-directory-add-dialog"
             });
 

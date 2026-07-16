@@ -1,0 +1,37 @@
+@namespace CanDoItAll.Economy.Components
+
+<div class="transaction-workflow-steps-scope w-full min-w-0">
+    <Steps Value="@Value"
+           ValueChanged="@ValueChanged"
+           CanSelect="@CanSelect"
+           Linear="@Linear"
+           ShowDescriptions="@ShowDescriptions"
+           class="cda-transaction-workflow-steps"
+           style="width:100%;gap:.75rem;border:0;border-radius:0;background:transparent;box-shadow:none;padding:0"
+           @attributes="AdditionalAttributes">
+        @ChildContent
+    </Steps>
+</div>
+
+@code {
+    [Parameter]
+    public int Value { get; set; }
+
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+
+    [Parameter]
+    public bool CanSelect { get; set; }
+
+    [Parameter]
+    public bool Linear { get; set; } = true;
+
+    [Parameter]
+    public bool ShowDescriptions { get; set; } = true;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

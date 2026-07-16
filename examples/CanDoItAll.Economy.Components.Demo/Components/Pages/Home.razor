@@ -123,9 +123,9 @@ else
             new DialogOptions
             {
                 Subtitle = $"{workspace.AccountName} - {workspace.Address.Value}",
-                Size = ModalSize.Wide,
+                Size = ModalSize.Full,
                 DenseChrome = true,
-                Class = "cda-ledger-dialog cda-ledger-dialog--send",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-send-transaction-dialog"
             });
     }
@@ -146,8 +146,8 @@ else
             new DialogOptions
             {
                 Subtitle = "Create a child account under the current SSR session.",
-                Size = ModalSize.Medium,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form",
+                Size = ModalSize.Compact,
+                Class = "cda-ledger-dialog max-w-lg",
                 ShowCloseButton = false,
                 TestId = "cda-subaccount-dialog"
             });
@@ -186,7 +186,7 @@ else
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-ledger-dialog--details cda-ledger-dialog--tx-detail",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-transaction-details-dialog"
             });
     }
@@ -210,8 +210,8 @@ else
             new DialogOptions
             {
                 Subtitle = item.ObjectId.Value,
-                Size = ModalSize.Medium,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form",
+                Size = ModalSize.Compact,
+                Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-bo-send-dialog"
             });
     }
@@ -235,8 +235,8 @@ else
             new DialogOptions
             {
                 Subtitle = item.ObjectId.Value,
-                Size = ModalSize.Medium,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form",
+                Size = ModalSize.Compact,
+                Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-bo-set-price-dialog"
             });
     }
@@ -263,8 +263,8 @@ else
             new DialogOptions
             {
                 Subtitle = profileObject?.ObjectId.Value ?? "New profile BusinessObject",
-                Size = ModalSize.Medium,
-                Class = "cda-ledger-dialog cda-ledger-dialog--form",
+                Size = ModalSize.Compact,
+                Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-profile-edit-dialog"
             });
     }
@@ -290,7 +290,7 @@ else
                 Size = ModalSize.Wide,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog cda-token-creation-modal",
+                Class = "cda-ledger-dialog",
                 TestId = "cda-token-create-dialog"
             });
     }

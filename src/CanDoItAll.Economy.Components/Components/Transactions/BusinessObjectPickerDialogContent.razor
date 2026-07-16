@@ -1,15 +1,17 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
 
-<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="cda-transaction-picker-dialog" data-testid="bo-picker-dialog-content">
-    <div class="cda-transaction-picker-dialog__summary">
-        <div>
-            <span>Available business objects</span>
-            <strong>@Items.Count</strong>
-            <small>@SelectionInstruction</small>
-        </div>
-        <Pill Text="@($"{selected.Count}/{MaximumSelections} selected")" Tone="PillTone.Label" />
-    </div>
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="h-full min-h-0 w-full" data-testid="bo-picker-dialog-content">
+    <SurfaceCard Soft="true">
+        <Split Breakpoint="LayoutBreakpoint.Md" Gap="LayoutGap.Medium" AlignItems="AlignItems.Center">
+            <Stack GapScale="LayoutGap.Tiny">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Available business objects" />
+                <TextBlock TextStyle="TextStyle.H3" Value="@Items.Count.ToString()" />
+                <TextBlock TextStyle="TextStyle.Muted" Value="@SelectionInstruction" />
+            </Stack>
+            <Pill Text="@($"{selected.Count}/{MaximumSelections} selected")" Tone="PillTone.Label" />
+        </Split>
+    </SurfaceCard>
 
     <BusinessObjectSelectionGrid Items="Items"
                                  Selected="selected"
@@ -17,18 +19,23 @@
                                  RequireCompatibleSelection="RequireCompatibleSelection"
                                  MaximumSelections="MaximumSelections" />
 
-    <div class="cda-transaction-picker-dialog__actions">
-        <Button Text="Cancel"
-                ButtonStyle="ButtonStyle.Secondary"
-                Variant="Variant.Outlined"
-                Click="CancelAsync"
-                data-testid="bo-picker-cancel" />
-        <Button Text="@ConfirmLabel"
-                Icon="check"
-                Disabled="@(selected.Count < MinimumSelections)"
-                Click="ConfirmAsync"
-                data-testid="bo-picker-confirm" />
-    </div>
+    <StickyActionFooter StatusLabel="Selection"
+                        StatusMessage="@($"{selected.Count} of {MaximumSelections} selected")">
+        <SecondaryActions>
+            <Button Text="Cancel"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Variant="Variant.Outlined"
+                    Click="CancelAsync"
+                    data-testid="bo-picker-cancel" />
+        </SecondaryActions>
+        <PrimaryActions>
+            <Button Text="@ConfirmLabel"
+                    Icon="check"
+                    Disabled="@(selected.Count < MinimumSelections)"
+                    Click="ConfirmAsync"
+                    data-testid="bo-picker-confirm" />
+        </PrimaryActions>
+    </StickyActionFooter>
 </Stack>
 
 @code {

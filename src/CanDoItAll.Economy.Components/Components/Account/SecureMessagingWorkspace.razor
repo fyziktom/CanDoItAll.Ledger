@@ -199,7 +199,8 @@
         </SectionCard>
 
         <SectionCard Title="Compose" Description="Encrypt a message and optional attachments for another ledger address.">
-                <Stack GapScale="LayoutGap.Small" Class="cda-secure-mail__panel-body" @key="composeRevision">
+            <div class="cda-secure-mail__panel-body" @key="composeRevision">
+                <Stack GapScale="LayoutGap.Small">
                     <FormField Text="To">
                         <TextBox Value="@receiver"
                                  ValueChanged="@(value => receiver = value ?? string.Empty)"
@@ -252,6 +253,7 @@
                         <Alert AlertStyle="@composeAlert">@composeStatus</Alert>
                     }
                 </Stack>
+            </div>
         </SectionCard>
     </Grid>
 </Stack>

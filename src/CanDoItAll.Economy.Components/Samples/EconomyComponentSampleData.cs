@@ -593,7 +593,7 @@ public static class EconomyComponentSampleData
                 viewedAt,
                 "Maintenance window",
                 "Shared post BO for a planned production pause.",
-                "A short operational post can still include image and text DataItems, making it render like a familiar NFT post while keeping enterprise naming.",
+                "A short operational post can still include image and text DataItems, providing a familiar shared-post layout while keeping enterprise naming.",
                 "Maintenance",
                 null,
                 maintenanceItems[0].Uri?.ToString(),
