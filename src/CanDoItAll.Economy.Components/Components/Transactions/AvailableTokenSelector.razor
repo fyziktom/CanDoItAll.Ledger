@@ -9,7 +9,7 @@
     }
 
     <div class="available-token-selector__cards" role="radiogroup" aria-label="@AriaLabel">
-        <Grid ColumnTemplate="repeat(auto-fit, minmax(8.5rem, 1fr))" Gap="LayoutGap.Small">
+        <Grid Columns="2" Gap="LayoutGap.Small">
             @foreach (EconomyTokenOption option in OrderedOptions)
             {
                 <Button Look="ButtonLook.SheetCardGhost"
@@ -19,15 +19,21 @@
                         aria-checked="@(option.Key == SelectedKey ? "true" : "false")"
                         Click="@(() => SelectAsync(option.Key))">
                     <Stack AlignItems="AlignItems.Stretch" GapScale="LayoutGap.Tiny" Class="w-full">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="@option.AssetLabel" />
+                        <Split Breakpoint="LayoutBreakpoint.None"
+                               Gap="LayoutGap.Tiny"
+                               AlignItems="AlignItems.Center"
+                               JustifyContent="JustifyContent.SpaceBetween"
+                               Wrap="FlexWrap.Wrap">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="@option.AssetLabel" />
+                            @if (option.CanCreateMore)
+                            {
+                                <StatusBadge Text="Mintable" Tone="info" NoWrap="true" />
+                            }
+                        </Split>
                         <TextBlock TextStyle="TextStyle.Subtitle2" Value="@option.AvailableAmount.ToString()" />
                         @if (!option.IsMain)
                         {
                             <TextBlock TextStyle="TextStyle.Note" Value="@TokenShape(option)" />
-                        }
-                        @if (option.CanCreateMore)
-                        {
-                            <Pill Tone="PillTone.Label" Text="permission namespace" />
                         }
                     </Stack>
                 </Button>

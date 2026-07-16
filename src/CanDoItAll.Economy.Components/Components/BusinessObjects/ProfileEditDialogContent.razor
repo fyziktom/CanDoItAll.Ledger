@@ -1,9 +1,9 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
 
-<SectionCard Title="@DialogTitle" Description="@ProfileDescription">
-    <Stack GapScale="LayoutGap.Medium">
-        <SurfaceCard Soft="true" data-testid="cda-profile-picture-preview">
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+        <Toolbar data-testid="cda-profile-picture-preview">
+            <ToolbarRow>
             <Cluster Gap="LayoutGap.Medium" Wrap="FlexWrap.NoWrap" Class="w-full">
                 <Avatar ImageUrl="@ProfileImageUri?.ToString()"
                         Alt="@displayName"
@@ -17,7 +17,8 @@
                                Value="@(ProfileImageUri is null ? "Paste an image link to load a profile picture preview." : "Loaded from the image link field.")" />
                 </Stack>
             </Cluster>
-        </SurfaceCard>
+            </ToolbarRow>
+        </Toolbar>
 
         <FormField Text="Display name">
             <TextBox Value="@displayName" ValueChanged="@(value => displayName = value ?? string.Empty)" Immediate="true" aria-label="Profile display name" />
@@ -64,7 +65,7 @@
             <TextArea Value="@bio" ValueChanged="@(value => bio = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Profile bio" />
         </FormField>
 
-        <Cluster Gap="LayoutGap.Small">
+        <Cluster Gap="LayoutGap.Small" JustifyContent="JustifyContent.End">
             <PageHeaderActionButton Icon="save"
                                     Label="@SaveButtonText"
                                     TooltipText="@SaveButtonText"
@@ -77,8 +78,7 @@
                                     ButtonStyle="ButtonStyle.Secondary"
                                     Click="CancelAsync" />
         </Cluster>
-    </Stack>
-</SectionCard>
+</Stack>
 
 @code {
     private string displayName = "Operations account";
@@ -106,10 +106,6 @@
     public EventCallback<ProfileEditRequest> SubmitRequested { get; set; }
 
     private bool IsNewProfile => ProfileObject is null;
-
-    private string DialogTitle => IsNewProfile ? "Create Profile" : "Edit Profile";
-
-    private string ProfileDescription => ProfileObject?.ObjectId.Value ?? "New profile BusinessObject";
 
     private string SaveButtonText => IsNewProfile ? "Create Profile" : "Save Profile";
 

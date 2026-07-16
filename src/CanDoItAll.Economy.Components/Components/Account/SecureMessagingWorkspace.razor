@@ -2,22 +2,13 @@
 @inject NotificationService Notifications
 
 <Stack Section="true" GapScale="LayoutGap.Medium" data-testid="secure-messaging-workspace">
-    <Split Breakpoint="LayoutBreakpoint.None"
-           Gap="LayoutGap.Medium"
-           AlignItems="AlignItems.Center"
-           JustifyContent="JustifyContent.SpaceBetween"
-           Wrap="FlexWrap.Wrap">
-        <Stack GapScale="LayoutGap.Tiny">
-            <TextBlock TextStyle="TextStyle.H2" Value="Messaging" />
-            <TextBlock TextStyle="TextStyle.Body2" Value="@($"{Messages.Count} encrypted conversation item(s)")" />
-        </Stack>
-        <StatusBadge Text="E2E" Tone="success" />
-    </Split>
-
     <Grid ColumnsLg="3" ColumnTemplateLg="minmax(18rem, 0.8fr) minmax(0, 1.25fr) minmax(20rem, 0.95fr)" Gap="LayoutGap.Medium">
         <SectionCard Title="Mailbox" Description="Encrypted messages visible in the current ledger snapshot.">
             <HeaderActions>
-                <StatusBadge Text="@Messages.Count.ToString()" Tone="info" />
+                <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                    <StatusBadge Text="@Messages.Count.ToString()" Tone="info" />
+                    <StatusBadge Text="E2E" Tone="success" />
+                </Cluster>
             </HeaderActions>
             <ChildContent>
               <div class="cda-secure-mail__panel-body cda-secure-mail__mailbox">

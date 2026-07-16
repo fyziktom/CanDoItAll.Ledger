@@ -6,17 +6,16 @@
 }
 else
 {
-    <div class="transaction-details-shell" data-testid="tx-details-layout">
-        <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="w-full min-w-0 max-w-full">
-            <SurfaceCard Soft="true">
-                <Grid ColumnTemplateLg="auto minmax(0, 1fr) minmax(15rem, .78fr)"
-                      Gap="LayoutGap.Medium"
-                      AlignItems="AlignItems.Center">
+    <div class="min-w-0" data-testid="tx-details-layout">
+        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch" Class="w-full min-w-0 max-w-full">
+            <Toolbar>
+                <ToolbarRow>
+                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap" Class="min-w-0">
                     <Icon Name="@StatusIcon" />
                     <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
                         <TextBlock TextStyle="TextStyle.Eyebrow">@Details.Status transaction</TextBlock>
-                        <TextBlock TextStyle="TextStyle.H3" Value="@Details.Kind.ToString()" />
-                        <Cluster Gap="LayoutGap.Medium" aria-label="Transaction identifiers">
+                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Details.Kind.ToString()" />
+                        <Cluster Gap="LayoutGap.Small" aria-label="Transaction identifiers">
                             <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap">
                                 <TextBlock TextStyle="TextStyle.Eyebrow" Value="Tx" />
                                 <CopyableMonoValue Value="@Details.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" />
@@ -35,18 +34,17 @@ else
                                           TestId="cda-tx-hash-qr-button" />
                         </Cluster>
                     </Stack>
-                    <Cluster Gap="LayoutGap.Tiny"
-                             JustifyContent="JustifyContent.End"
-                             aria-label="Transaction status metadata">
-                        <StatusBadge Text="@Details.Kind.ToString()" Tone="@KindTone" />
-                        <StatusBadge Text="@Details.SigningMode.ToString()" Tone="neutral" />
-                        <StatusBadge Text="@Details.Status.ToString()" Tone="@StatusTone" />
-                        <StatusBadge Text="@($"In {Details.Inputs.Count}")" Tone="info" />
-                        <StatusBadge Text="@($"Out {Details.Outputs.Count}")" Tone="success" />
-                        <StatusBadge Text="@($"{Details.Timestamp:MM.dd HH:mm}")" Tone="neutral" />
                     </Cluster>
-                </Grid>
-            </SurfaceCard>
+                    <CompactStatStrip Class="justify-end" aria-label="Transaction status metadata">
+                        <CompactStat Label="Kind" Value="@Details.Kind.ToString()" Tone="@KindTone" />
+                        <CompactStat Label="Signing" Value="@Details.SigningMode.ToString()" />
+                        <CompactStat Label="Status" Value="@Details.Status.ToString()" Tone="@StatusTone" />
+                        <CompactStat Label="In" Value="@Details.Inputs.Count.ToString()" Tone="info" />
+                        <CompactStat Label="Out" Value="@Details.Outputs.Count.ToString()" Tone="success" />
+                        <CompactStat Label="Created" Value="@($"{Details.Timestamp:MM.dd HH:mm}")" />
+                    </CompactStatStrip>
+                </ToolbarRow>
+            </Toolbar>
 
             <Tabs Variant="TabsVariant.ModalCompact"
                   BorderMode="TabsBorderMode.Soft"
@@ -128,7 +126,7 @@ else
                         <SectionCard Title="Inputs" Description="Transaction sources">
                             <HeaderActions><StatusBadge Text="@($"{Details.Inputs.Count} row(s)")" Tone="info" /></HeaderActions>
                             <ChildContent>
-                            <div class="transaction-scroll-list">
+                            <div class="min-w-0">
                                 @if (Details.Inputs.Count == 0)
                                 {
                                     <EmptyState Eyebrow="Inputs" Title="No inputs" Description="Only genesis-style mint transactions should have no inputs." />
@@ -152,7 +150,7 @@ else
                         <SectionCard Title="Outputs" Description="Transaction destinations">
                             <HeaderActions><StatusBadge Text="@($"{Details.Outputs.Count} row(s)")" Tone="success" /></HeaderActions>
                             <ChildContent>
-                            <div class="transaction-scroll-list">
+                            <div class="min-w-0">
                                 @if (Details.Outputs.Count == 0)
                                 {
                                     <EmptyState Eyebrow="Outputs" Title="No outputs" Description="No outputs are attached to this transaction." />
@@ -180,7 +178,7 @@ else
                     <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
                         <TxDataPayloadViewer Data="Details.Data" />
                         <SectionCard Title="Business object outputs" Description="Payload references">
-                            <div class="transaction-scroll-list transaction-scroll-list--compact">
+                            <div class="min-w-0">
                                 @if (BusinessObjectOutputs.Count == 0)
                                 {
                                     <EmptyState Eyebrow="Business objects" Title="No output references" Description="No BO output references are attached." />

@@ -1,17 +1,14 @@
 @namespace CanDoItAll.Economy.Components
 
-<div class="transaction-workflow-steps-scope w-full min-w-0">
-    <Steps Value="@Value"
-           ValueChanged="@ValueChanged"
-           CanSelect="@CanSelect"
-           Linear="@Linear"
-           ShowDescriptions="@ShowDescriptions"
-           class="cda-transaction-workflow-steps"
-           style="width:100%;gap:.75rem;border:0;border-radius:0;background:transparent;box-shadow:none;padding:0"
-           @attributes="AdditionalAttributes">
-        @ChildContent
-    </Steps>
-</div>
+<Steps Value="@Value"
+       ValueChanged="@ValueChanged"
+       CanSelect="@CanSelect"
+       Linear="@Linear"
+       ShowDescriptions="@ShowDescriptions"
+       class="w-full min-w-0 gap-1! rounded-none! border-0! bg-transparent! p-0! shadow-none!"
+       @attributes="AdditionalAttributes">
+    @ChildContent
+</Steps>
 
 @code {
     [Parameter]

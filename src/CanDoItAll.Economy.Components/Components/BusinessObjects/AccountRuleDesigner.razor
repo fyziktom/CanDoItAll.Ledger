@@ -1,8 +1,7 @@
 @namespace CanDoItAll.Economy.Components
 @using System.Globalization
 
-<SectionCard Title="Account Rule Designer" Description="Create a BO-backed rule token from a rule-creation permission.">
-    <Stack GapScale="LayoutGap.Medium">
+<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="cda-account-rule-designer">
         @if (RulePermissionSources.Count == 0)
         {
             <Alert AlertStyle="AlertStyle.Warning">
@@ -115,8 +114,7 @@
                     ButtonStyle="ButtonStyle.Secondary"
                     Click="@(() => ApplyTemplate(selectedTemplate))" />
         </Cluster>
-    </Stack>
-</SectionCard>
+</Stack>
 
 @code {
     private const string CashpoolTemplate = "cashpool";

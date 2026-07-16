@@ -1,5 +1,4 @@
 @namespace CanDoItAll.Economy.Components
-@inherits BusinessObjectDataItemAddressComponentBase
 
 @if (Media is null)
 {
@@ -69,43 +68,16 @@ else
             <Grid ColumnsMd="2" ColumnsXl="3" Gap="LayoutGap.Small" Class="cda-economy-media-items">
                 @foreach (BusinessObjectDataItem item in Media.DataItems)
                 {
-                    string? itemUri = ResolveDataItemUriString(item);
                     <SurfaceCard Soft="true">
                     <Stack GapScale="LayoutGap.Small">
                         <BusinessObjectDataItemPreview Item="item" />
                         <Grid ColumnsMd="2" Gap="LayoutGap.Small">
                             <SummaryTile Label="Type" Value="@ItemTypeLabel(item)" Compact="true" />
-                            <SummaryTile Label="Storage" Value="@item.Storage.ToString()" Compact="true" Tone="success" />
-                            <SummaryTile Label="CID" Value="@ShortHash(item.Hash)" Compact="true" />
+                            <SummaryTile Label="Storage" Value="@StorageLabel(item.Storage)" Compact="true" Tone="success" />
+                            <SummaryTile Label="@HashLabel(item.Storage)" Value="@ShortHash(item.Hash)" Compact="true" />
                             <SummaryTile Label="File" Value="@(item.FileName ?? item.Name)" Compact="true" />
                         </Grid>
-                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
-                            <CopyButton Text="Copy CID"
-                                        Value="@item.Hash"
-                                        Size="CopyButtonSize.Small"
-                                        ButtonStyle="ButtonStyle.Secondary" />
-                            <CopyButton Text="Copy Link"
-                                        Value="@itemUri"
-                                        Size="CopyButtonSize.Small"
-                                        ButtonStyle="ButtonStyle.Secondary"
-                                        Disabled="@(itemUri is null)" />
-                            <Button Text="Open"
-                                    Icon="open_in_new"
-                                    Size="ButtonSize.Small"
-                                    Variant="Variant.Outlined"
-                                    Href="@itemUri"
-                                    Target="_blank"
-                                    Rel="noopener noreferrer"
-                                    Disabled="@(itemUri is null)" />
-                            <Button Text="Download"
-                                    Icon="download"
-                                    Size="ButtonSize.Small"
-                                    Variant="Variant.Outlined"
-                                    Href="@itemUri"
-                                    Target="_blank"
-                                    Rel="noopener noreferrer"
-                                    Disabled="@(itemUri is null)" />
-                        </Cluster>
+                        <BusinessObjectDataItemActions Item="item" />
                     </Stack>
                     </SurfaceCard>
                 }
@@ -146,6 +118,17 @@ else
         => item.Type == BusinessObjectDataItemType.AVMedia
             ? item.ContentType?.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) == true ? "Audio" : "Video/Audio"
             : item.Type.ToString();
+
+    private static string StorageLabel(BusinessObjectDataItemStorage storage)
+        => storage switch
+        {
+            BusinessObjectDataItemStorage.Ipfs => "IPFS",
+            BusinessObjectDataItemStorage.Url => "URL",
+            _ => "Inline"
+        };
+
+    private static string HashLabel(BusinessObjectDataItemStorage storage)
+        => storage == BusinessObjectDataItemStorage.Ipfs ? "CID" : "Hash";
 
     private static string ShortHash(string hash)
         => hash.Length > 18 ? $"{hash[..18]}..." : hash;

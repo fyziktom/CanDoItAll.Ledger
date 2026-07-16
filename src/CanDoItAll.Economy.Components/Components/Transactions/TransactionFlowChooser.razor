@@ -1,18 +1,22 @@
 @namespace CanDoItAll.Economy.Components
 
-<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="w-full min-w-0" data-testid="transaction-type-step">
-    <Stack GapScale="LayoutGap.Tiny">
-        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Step 1" />
-        <TextBlock TextStyle="TextStyle.H2" Value="Choose a transaction type" />
-        <TextBlock TextStyle="TextStyle.Muted" Value="Select the ledger operation you want to prepare. Its required steps will be assembled next." />
-    </Stack>
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch" Class="w-full min-w-0" data-testid="transaction-type-step">
+    <Toolbar>
+        <ToolbarRow>
+            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Choose a transaction type" />
+                <TextBlock TextStyle="TextStyle.Muted" Value="Select the ledger operation to assemble its required steps." />
+            </Stack>
+            <StatusBadge Text="Step 1" Tone="info" />
+        </ToolbarRow>
+    </Toolbar>
 
     <SecondaryTabs Items="FamilyItems"
                    SelectedKey="@selectedFamilyKey"
                    SelectedKeyChanged="SelectFamilyAsync"
                    Dense="true" />
 
-    <Grid ColumnsLg="4" Gap="LayoutGap.Medium" data-testid="transaction-operation-chooser">
+    <Grid ColumnsLg="4" Gap="LayoutGap.Small" data-testid="transaction-operation-chooser">
         @foreach (TransactionFlowDefinition definition in VisibleDefinitions)
         {
             <SelectionListItem Title="@definition.Label"

@@ -2,16 +2,18 @@
 @inject DialogService DialogService
 
 <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="h-full min-h-0 w-full" data-testid="bo-picker-dialog-content">
-    <SurfaceCard Soft="true">
-        <Split Breakpoint="LayoutBreakpoint.Md" Gap="LayoutGap.Medium" AlignItems="AlignItems.Center">
+    <Toolbar>
+        <ToolbarRow>
             <Stack GapScale="LayoutGap.Tiny">
-                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Available business objects" />
-                <TextBlock TextStyle="TextStyle.H3" Value="@Items.Count.ToString()" />
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Available business objects" />
                 <TextBlock TextStyle="TextStyle.Muted" Value="@SelectionInstruction" />
             </Stack>
-            <Pill Text="@($"{selected.Count}/{MaximumSelections} selected")" Tone="PillTone.Label" />
-        </Split>
-    </SurfaceCard>
+            <CompactStatStrip Class="justify-end">
+                <CompactStat Label="Available" Value="@Items.Count.ToString()" />
+                <CompactStat Label="Selected" Value="@($"{selected.Count}/{MaximumSelections}")" Tone="info" />
+            </CompactStatStrip>
+        </ToolbarRow>
+    </Toolbar>
 
     <BusinessObjectSelectionGrid Items="Items"
                                  Selected="selected"

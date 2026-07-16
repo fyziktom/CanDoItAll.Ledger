@@ -81,23 +81,25 @@
                     else
                     {
                         <Stack GapScale="LayoutGap.Medium">
-                            <SurfaceCard Soft="true">
-                                <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap">
+                            <Toolbar>
+                                <ToolbarRow>
+                                <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap" Class="min-w-0">
                                     <Icon Name="event_available" />
                                     <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
                                         <TextBlock TextStyle="TextStyle.Subtitle2" Value="@DisplayName(selectedEvent)" />
                                         <CopyableMonoValue Value="@selectedEvent.ObjectId.Value" StartChars="10" EndChars="6" AriaLabel="Copy selected event id" />
                                     </Stack>
                                 </Cluster>
-                            </SurfaceCard>
-                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
-                                <SummaryTile Label="Owner" Value="@ShortAddress(selectedEvent.OwnerAddress.Value)" Compact="true" />
-                                <SummaryTile Label="Created" Value="@selectedEvent.CreatedAt.ToString("MM.dd HH:mm")" Compact="true" />
+                                </ToolbarRow>
+                            </Toolbar>
+                            <CompactStatStrip>
+                                <CompactStat Label="Owner" Value="@ShortAddress(selectedEvent.OwnerAddress.Value)" />
+                                <CompactStat Label="Created" Value="@selectedEvent.CreatedAt.ToString("MM.dd HH:mm")" />
                                 @foreach (BusinessObjectDisplayFact fact in DisplayFacts(selectedEvent).Take(6))
                                 {
-                                    <SummaryTile Label="@fact.Label" Value="@fact.Value" Compact="true" />
+                                    <CompactStat Label="@fact.Label" Value="@fact.Value" />
                                 }
-                            </SummaryTiles>
+                            </CompactStatStrip>
                         </Stack>
                     }
                 </SectionCard>

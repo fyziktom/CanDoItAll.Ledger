@@ -35,8 +35,6 @@
                                         TooltipText="Download"
                                         Variant="Variant.Outlined"
                                         Href="@PreviewUri"
-                                        Target="_blank"
-                                        Rel="noopener noreferrer"
                                         TestId="cda-bo-dataitem-download"
                                         download="@DownloadFileName" />
             </Cluster>
@@ -111,7 +109,7 @@
     }
 
     private string? PreviewUri
-        => ResolveDataItemUriString(Item);
+        => ResolveActionableDataItemUriString(Item);
 
     private string DownloadFileName
         => string.IsNullOrWhiteSpace(Item.FileName)

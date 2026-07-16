@@ -2,7 +2,7 @@
 @namespace CanDoItAll.Economy.Components
 
 <TransactionComposerFrame Dense="@Dense" Title="@ComposerTitle" Description="@ComposerDescription">
-    <Stack GapScale="LayoutGap.Medium"
+    <Stack GapScale="LayoutGap.Small"
            AlignItems="AlignItems.Stretch"
            Class="w-full">
         @if (selectingMode)
@@ -12,27 +12,37 @@
         }
         else
         {
-            <SurfaceCard Soft="true" data-testid="transaction-config-header">
-                <Grid ColumnTemplateLg="auto minmax(0, 1fr) auto"
-                      Gap="LayoutGap.Medium"
-                      AlignItems="AlignItems.Center">
-                    <Icon Name="@SelectedDefinition.Icon" />
-                    <Stack GapScale="LayoutGap.Tiny">
-                        <TextBlock TextStyle="TextStyle.Eyebrow">Selected @FamilyLabel transaction</TextBlock>
-                        <TextBlock TextStyle="TextStyle.H2" Value="@SelectedDefinition.Label" />
-                        <TextBlock TextStyle="TextStyle.Muted" Value="@SelectedDefinition.Description" />
-                    </Stack>
-                    <Button Text="Change transaction type"
-                            Icon="swap_horiz"
-                            ButtonStyle="ButtonStyle.Secondary"
-                            Variant="Variant.Outlined"
-                            Click="ChooseAnotherMode"
-                            data-testid="transaction-change-mode" />
-                </Grid>
-            </SurfaceCard>
+            <Toolbar Class="gap-2! rounded-xl! p-2! shadow-none!"
+                     data-testid="transaction-config-header">
+                <ToolbarRow Class="gap-2!">
+                    <Cluster Gap="LayoutGap.Small"
+                             Wrap="FlexWrap.Wrap"
+                             Class="min-w-0">
+                        <Icon Name="@SelectedDefinition.Icon" />
+                        <TextBlock TextStyle="TextStyle.Subtitle2"
+                                   Value="@SelectedDefinition.Label" />
+                        <Pill Text="@($"Selected {FamilyLabel} transaction")"
+                              Tone="PillTone.Info" />
+                        <TextBlock TextStyle="TextStyle.Muted"
+                                   Value="@SelectedDefinition.Description"
+                                   Class="min-w-0 flex-1 truncate"
+                                   title="@SelectedDefinition.Description" />
+                    </Cluster>
 
-            <Grid ColumnTemplateLg="minmax(0, 1fr) minmax(19rem, 22rem)"
-                  Gap="LayoutGap.Medium"
+                    <ToolbarActions Class="gap-1.5!">
+                        <Button Text="Change transaction type"
+                                Icon="swap_horiz"
+                                Size="ButtonSize.Small"
+                                ButtonStyle="ButtonStyle.Secondary"
+                                Variant="Variant.Outlined"
+                                Click="ChooseAnotherMode"
+                                data-testid="transaction-change-mode" />
+                    </ToolbarActions>
+                </ToolbarRow>
+            </Toolbar>
+
+            <Grid ColumnTemplateLg="minmax(0, 1fr) minmax(16rem, 19rem)"
+                  Gap="LayoutGap.Small"
                   AlignItems="AlignItems.Start"
                   data-testid="transaction-workbench">
                 <main class="min-w-0 w-full max-w-full overflow-hidden">

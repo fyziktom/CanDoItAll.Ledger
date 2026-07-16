@@ -37,7 +37,10 @@ ENV ASPNETCORE_URLS=http://+:8080 \
 EXPOSE 8080
 
 USER root
-RUN mkdir -p /var/lib/candoitall-economy/dpkeys \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /var/lib/candoitall-economy/dpkeys \
     && chown -R "$APP_UID:$APP_UID" /var/lib/candoitall-economy
 
 COPY --from=publish /app/publish .

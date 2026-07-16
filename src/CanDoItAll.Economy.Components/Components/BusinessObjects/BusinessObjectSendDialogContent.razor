@@ -2,8 +2,7 @@
 @inject DialogService DialogService
 @inject NotificationService Notifications
 
-<SectionCard Title="Send BusinessObject" Description="@Object?.ObjectId.Value">
-    <Stack GapScale="LayoutGap.Medium">
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
         <SecondaryTabs Items="ModeTabs"
                        SelectedKey="@selectedMode"
                        SelectedKeyChanged="@(key => selectedMode = key)"
@@ -45,17 +44,18 @@
                           aria-label="Bookmarked receiver address" />
             </FormField>
 
-            <SummaryTile Label="Mode"
-                         Value="@(IsClone ? "Send clone" : "Send original")"
-                         Compact="true" />
+            <CompactStatStrip Class="self-end justify-end">
+                <CompactStat Label="Mode"
+                             Value="@(IsClone ? "Send clone" : "Send original")"
+                             Tone="info" />
+            </CompactStatStrip>
         </Grid>
 
         <Cluster Gap="LayoutGap.Small">
             <Button Text="Send" Icon="send" Click="SubmitAsync" />
             <Button Text="Cancel" Icon="close" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="CancelAsync" />
         </Cluster>
-    </Stack>
-</SectionCard>
+</Stack>
 
 @code {
     private static readonly IReadOnlyList<SecondaryTabItem> ModeTabs =

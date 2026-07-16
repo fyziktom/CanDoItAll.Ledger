@@ -7,6 +7,8 @@
             data-testid="cda-economy-shell">
     <SideMenu @ref="navigationMenu"
               MenuId="@MenuId"
+              @bind-Expanded="navigationExpanded"
+              PersistenceKey="@MenuPersistenceKey"
               Title="Economy"
               Subtitle="@Workspace.AccountName"
               Icon="account_balance_wallet"
@@ -24,11 +26,17 @@
             <Header>
                 <PageHeader Eyebrow="@HeaderEyebrow"
                             Title="@PageTitle"
-                            Description="@HeaderDescription">
+                            Compact="true">
                     <Stats>
-                        @if (!string.IsNullOrWhiteSpace(HostModeLabel) || !string.IsNullOrWhiteSpace(SigningModeLabel))
+                        @if (!string.IsNullOrWhiteSpace(Workspace.ConnectionLabel)
+                            || !string.IsNullOrWhiteSpace(HostModeLabel)
+                            || !string.IsNullOrWhiteSpace(SigningModeLabel))
                         {
                             <Cluster Gap="LayoutGap.Small" data-testid="adapter-host-mode">
+                                @if (!string.IsNullOrWhiteSpace(Workspace.ConnectionLabel))
+                                {
+                                    <StatusBadge Text="@Workspace.ConnectionLabel" Tone="neutral" />
+                                }
                                 @if (!string.IsNullOrWhiteSpace(HostModeLabel))
                                 {
                                     <StatusBadge Text="@HostModeLabel" Tone="info" />
@@ -112,6 +120,7 @@
 
 @code {
     private const string MenuId = "economy-account-primary";
+    private const string MenuPersistenceKey = "cda.side-menu.economy-account-primary.expanded.v2";
 
     private static readonly IReadOnlyList<ISideMenuItem> NavigationItems = new[]
         {
@@ -143,6 +152,7 @@
     private string selectedView = "home";
     private string? appliedInitialView;
     private string? pendingMenuSelection = "home";
+    private bool navigationExpanded = false;
     private SideMenu? navigationMenu;
 
     [Parameter, EditorRequired]
@@ -248,12 +258,6 @@
 
     private string HeaderEyebrow
         => $"Economy / {Workspace.AccountAlias ?? Workspace.AccountName}";
-
-    private string HeaderDescription
-        => string.Join(
-            " / ",
-            new[] { Workspace.ConnectionLabel, HostModeLabel, SigningModeLabel }
-                .Where(value => !string.IsNullOrWhiteSpace(value)));
 
     private string PageTitle
         => selectedView == "gallery"

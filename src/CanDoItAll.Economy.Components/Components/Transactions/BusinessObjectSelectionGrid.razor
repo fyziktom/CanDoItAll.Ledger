@@ -1,7 +1,7 @@
 @namespace CanDoItAll.Economy.Components
 
-<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="w-full" data-testid="bo-selection-step">
-    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" AlignItems="AlignItems.End">
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch" Class="w-full" data-testid="bo-selection-step">
+    <Grid ColumnsLg="3" Gap="LayoutGap.Small" AlignItems="AlignItems.End">
         <FormField Text="Search">
             <TextBox Value="@filter"
                      ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => filter = value ?? string.Empty))"
@@ -22,10 +22,10 @@
                       data-testid="bo-selection-type" />
         </FormField>
 
-        <SummaryTile Label="Selection"
-                     Value="@($"{Selected.Count} of {MaximumSelections}")"
-                     HelperText="@($"{FilteredItems.Count} matching object(s)")"
-                     Compact="true" />
+        <CompactStatStrip Class="self-end justify-end">
+            <CompactStat Label="Selected" Value="@($"{Selected.Count}/{MaximumSelections}")" Tone="info" />
+            <CompactStat Label="Matching" Value="@FilteredItems.Count.ToString()" />
+        </CompactStatStrip>
     </Grid>
 
     @if (FeaturedTags.Count > 0)
@@ -70,7 +70,7 @@
               ColumnsXl="6"
               Gap="LayoutGap.Small"
               AlignItems="AlignItems.Stretch"
-              Style="max-height:min(58vh,39rem);overflow-y:auto;padding:.12rem .2rem .2rem .12rem"
+              Class="max-h-[min(58vh,39rem)] overflow-y-auto p-0.5"
               role="group"
               aria-label="Business objects available for selection"
               data-testid="bo-selection-results">

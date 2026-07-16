@@ -14,7 +14,7 @@
     <Header>
         <PageHeader Eyebrow="Buy BusinessObject"
                     Title="@DisplayTitle"
-                    Description="Review the listing, unlock a buyer vault, and submit the payment through the configured ledger node." />
+                    Compact="true" />
     </Header>
 
     <ChildContent>
@@ -31,8 +31,8 @@
 
     @if (isLoading)
     {
-        <SectionCard Title="Loading listing" Description="Reading the canonical BusinessObject and sale terms from the ledger." data-testid="buy-bo-loading">
-            <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+        <SectionCard Title="Loading listing" Description="Reading the canonical BusinessObject and sale terms from the ledger.">
+            <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined" data-testid="buy-bo-loading">
                 Loading the listing and canonical sale terms...
             </Alert>
         </SectionCard>
@@ -48,9 +48,8 @@
                 </section>
 
                 <SectionCard Title="@(Session.IsUnlocked ? "Buyer account" : "Unlock buyer account")"
-                             Description="Sale terms and the local browser vault used to authorize payment."
-                             data-testid="buy-bo-account">
-                    <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                             Description="Sale terms and the local browser vault used to authorize payment.">
+                    <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="buy-bo-account">
                         <SummaryTiles>
                             <SummaryTile Label="Mode" Value="@saleTerms.Mode.ToString()" Compact="true" />
                             <SummaryTile Label="Price" Value="@FormatPrice(saleTerms.PriceAmount, saleTerms.TokenId)" Tone="info" Compact="true" />
@@ -99,9 +98,8 @@
             @if (!Session.IsUnlocked)
             {
                 <SectionCard Title="Import encrypted backup"
-                             Description="Restore an existing account into a new encrypted browser vault."
-                             data-testid="buy-import-backup">
-                    <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                             Description="Restore an existing account into a new encrypted browser vault.">
+                    <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="buy-import-backup">
                         <FormField Text="Backup JSON">
                             <TextArea Rows="8"
                                       Immediate="true"
@@ -141,9 +139,8 @@
     @if (purchaseResult is not null)
     {
         <SectionCard Title="@(purchaseResult.Accepted ? "Payment submitted" : "Payment rejected")"
-                     Description="@purchaseResult.Message"
-                     data-testid="buy-bo-payment-result">
-            <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                     Description="@purchaseResult.Message">
+            <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="buy-bo-payment-result">
                 @if (purchaseResult.TxId is not null)
                 {
                     <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">

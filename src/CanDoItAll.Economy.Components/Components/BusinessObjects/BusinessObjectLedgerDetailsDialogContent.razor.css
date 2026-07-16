@@ -1,210 +1,27 @@
-.cda-bo-detail-shell {
-    width: 100%;
+.cda-bo-selected-preview {
+    height: clamp(18rem, 38vw, 34rem);
     min-width: 0;
-    max-height: calc(100vh - 8.25rem);
-    overflow: hidden;
 }
 
-.cda-bo-detail-shell ::deep .cda-bo-detail-tabs .cad-tabs__panel {
-    min-width: 0;
-    max-height: calc(100vh - 10rem);
-    overflow: auto;
-    scrollbar-width: thin;
-}
-
-.cda-bo-detail-shell ::deep .cda-bo-detail-tabs .cad-tabs__list {
-    min-height: 2.95rem;
-    align-items: flex-end;
-    overflow-y: visible;
-    padding-top: var(--cad-space-1, 0.25rem);
-}
-
-.cda-bo-overview-workspace {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(22rem, 27rem);
-    gap: var(--cad-space-4, 1rem);
-    width: 100%;
-    min-width: 0;
-    min-height: min(42rem, calc(100vh - 14rem));
-    height: calc(100vh - 14rem);
-}
-
-.cda-bo-selected-preview,
-.cda-bo-overview-aside {
-    min-width: 0;
-    min-height: 0;
-}
-
-.cda-bo-selected-preview,
 .cda-bo-selected-preview ::deep .cda-bo-preview-stage {
     height: 100%;
 }
 
-.cda-bo-overview-aside {
-    display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
-    gap: var(--cad-space-3, 0.75rem);
-}
-
-.cda-bo-detail-shell ::deep .cda-bo-long-description .cda-text-block--body2 {
+::deep .cda-bo-long-description-text {
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
 
-.cda-bo-gallery-rail {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    border: 1px solid var(--cad-color-border-soft);
-    border-radius: var(--cad-radius-panel, 0.5rem);
-    background: var(--cad-color-surface);
-}
-
-.cda-bo-gallery-rail__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--cad-space-2, 0.5rem);
-    min-width: 0;
-    border-bottom: 1px solid var(--cad-color-border-soft);
-    background: var(--cad-color-surface-soft);
-    padding: var(--cad-space-3, 0.75rem);
-}
-
-.cda-bo-gallery-list {
-    display: grid;
-    align-content: start;
-    gap: var(--cad-space-2, 0.5rem);
-    min-width: 0;
-    min-height: 0;
-    overflow-y: auto;
-    padding: var(--cad-space-3, 0.75rem);
-    scrollbar-width: thin;
-}
-
-.cda-bo-gallery-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--cad-space-1, 0.25rem);
-    align-items: center;
-    min-width: 0;
-    border: 1px solid var(--cad-color-border-soft);
-    border-radius: var(--cad-radius-control, 0.375rem);
-    background: var(--cad-color-surface);
-    color: var(--cad-color-text);
-    padding: var(--cad-space-2, 0.5rem);
-    text-align: left;
-}
-
-.cda-bo-gallery-item:hover,
-.cda-bo-gallery-item:focus-within,
-.cda-bo-gallery-item.is-selected {
-    border-color: var(--cad-tone-primary-solid-border);
-    background: var(--cad-tone-primary-soft-bg, #f0fdfa);
-    outline: 2px solid var(--cad-color-focus-ring, rgba(15, 118, 110, 0.12));
-    outline-offset: 1px;
-}
-
-.cda-bo-gallery-item__select {
-    display: grid;
-    grid-template-columns: 5.5rem minmax(0, 1fr);
-    gap: var(--cad-space-3, 0.75rem);
-    align-items: center;
-    min-width: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    padding: 0;
-    text-align: left;
-}
-
-.cda-bo-gallery-item__select:focus-visible {
-    outline: none;
-}
-
-.cda-bo-gallery-item__select ::deep .cda-bo-data-preview {
-    width: 5.5rem;
-    height: 4.25rem;
-    min-height: 4.25rem;
-}
-
-.cda-bo-gallery-item__select > span {
-    display: grid;
-    gap: var(--cad-space-0-5, 0.125rem);
-    min-width: 0;
-}
-
-.cda-bo-gallery-item strong,
-.cda-bo-gallery-item small,
-.cda-bo-gallery-item em {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.cda-bo-gallery-item strong {
-    color: var(--cad-color-text-strong);
-    font-size: 0.875rem;
-}
-
-.cda-bo-gallery-item small,
-.cda-bo-gallery-item em {
-    color: var(--cad-color-text-muted);
-    font-size: 0.75rem;
-    font-style: normal;
-}
-
-.cda-bo-data-action-list {
-    max-height: min(30rem, calc(100vh - 23rem));
-    min-width: 0;
-    overflow-y: auto;
-    padding-right: var(--cad-space-1, 0.25rem);
-    scrollbar-width: thin;
+@media (min-width: 64rem) {
+    .cda-bo-selected-preview {
+        align-self: start;
+        position: sticky;
+        top: 0;
+    }
 }
 
 @media (max-width: 64rem) {
-    .cda-bo-overview-workspace {
-        grid-template-columns: minmax(0, 1fr);
-        height: auto;
-        min-height: 0;
-    }
-
-    .cda-bo-selected-preview,
-    .cda-bo-selected-preview ::deep .cda-bo-preview-stage {
-        min-height: 28rem;
-    }
-
-    .cda-bo-gallery-list {
-        max-height: 24rem;
-    }
-}
-
-@media (max-width: 40rem) {
-    .cda-bo-detail-shell {
-        max-height: none;
-        overflow: visible;
-    }
-
-    .cda-bo-selected-preview,
-    .cda-bo-selected-preview ::deep .cda-bo-preview-stage {
-        min-height: 20rem;
-    }
-
-    .cda-bo-gallery-item {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .cda-bo-gallery-item__select {
-        grid-template-columns: 4.5rem minmax(0, 1fr);
-    }
-
-    .cda-bo-gallery-item__select ::deep .cda-bo-data-preview {
-        width: 4.5rem;
-        height: 3.5rem;
-        min-height: 3.5rem;
+    .cda-bo-selected-preview {
+        height: clamp(18rem, 55vw, 28rem);
     }
 }

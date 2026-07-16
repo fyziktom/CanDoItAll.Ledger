@@ -3,18 +3,20 @@ namespace CanDoItAll.Economy.Tests;
 public sealed class TransactionComposerLayoutContractTests
 {
     [Fact]
-    public void Context_rail_uses_BaseLib_composition_with_only_scroll_behavior_isolated()
+    public void Context_rail_uses_compact_BaseLib_composition_without_nested_scrolling()
     {
         string rail = ReadRepoFile(
             "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionContextRail.razor");
-        string isolatedCss = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionContextRail.razor.css");
 
-        Assert.Contains("<SurfaceCard Soft=\"true\">", rail, StringComparison.Ordinal);
-        Assert.Contains("<SummaryTiles ColumnsSm=\"2\" ColumnsXl=\"2\"", rail, StringComparison.Ordinal);
+        Assert.Contains("<Toolbar", rail, StringComparison.Ordinal);
+        Assert.Contains("<CompactStatStrip", rail, StringComparison.Ordinal);
+        Assert.Contains("<CompactStat", rail, StringComparison.Ordinal);
         Assert.Contains("<Stack GapScale=\"LayoutGap.Small\" AlignItems=\"AlignItems.Stretch\">", rail, StringComparison.Ordinal);
-        Assert.DoesNotContain("cda-transaction-context-rail", rail, StringComparison.Ordinal);
-        Assert.Matches(@"(?s)\.transaction-context-rail\s*\{[^}]*position:\s*sticky;[^}]*max-height:[^;}]+;[^}]*overflow-y:\s*auto;", isolatedCss);
+        Assert.DoesNotContain("<SurfaceCard", rail, StringComparison.Ordinal);
+        Assert.DoesNotContain("<SummaryTiles", rail, StringComparison.Ordinal);
+        Assert.DoesNotContain("overflow-y", rail, StringComparison.Ordinal);
+        Assert.False(RepoFileExists(
+            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionContextRail.razor.css"));
     }
 
     [Fact]
@@ -32,8 +34,12 @@ public sealed class TransactionComposerLayoutContractTests
             "wwwroot",
             "css",
             "economy-components.css");
-        string workflowCss = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionWorkflowSteps.razor.css");
+        string workflow = ReadRepoFile(
+            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionWorkflowSteps.razor");
+        string compactWorkflow = ReadRepoFile(
+            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "CompactWorkflowProgress.razor");
+        string reviewWizard = ReadRepoFile(
+            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionDetailsReviewWizard.razor");
         string split = ReadRepoFile(
             "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionUtxoSplitForm.razor");
         string splitCss = ReadRepoFile(
@@ -48,13 +54,21 @@ public sealed class TransactionComposerLayoutContractTests
             "EconomyAccountWorkspaceAdapterHost.razor");
 
         Assert.Contains("data-testid=\"transaction-workbench\"", shell, StringComparison.Ordinal);
-        Assert.Contains("ColumnTemplateLg=\"minmax(0, 1fr) minmax(19rem, 22rem)\"", shell, StringComparison.Ordinal);
+        Assert.Contains("ColumnTemplateLg=\"minmax(0, 1fr) minmax(16rem, 19rem)\"", shell, StringComparison.Ordinal);
         Assert.Contains("<main class=\"min-w-0 w-full max-w-full overflow-hidden\">", shell, StringComparison.Ordinal);
         Assert.Contains("<TransactionContextRail", shell, StringComparison.Ordinal);
         Assert.Contains("ReviewReadyChanged", shell, StringComparison.Ordinal);
-        Assert.Matches(@"(?s)\.cda-transaction-workflow-steps\s*>\s*ol\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0;[^}]*list-style:\s*none;", workflowCss);
-        Assert.DoesNotMatch(@"(?s)\.cda-transaction-workflow-steps\s*>\s*ol\s*\{[^}]*40rem", workflowCss);
-        Assert.Matches(@"(?s)\.cda-transaction-workflow-steps\s*>\s*div:last-child\s*>\s*\.rz-stack\s*>\s*div:first-child\s*\{[^}]*display:\s*none;", workflowCss);
+        Assert.Contains("class=\"w-full min-w-0 gap-1! rounded-none! border-0! bg-transparent! p-0! shadow-none!\"", workflow, StringComparison.Ordinal);
+        Assert.Contains("<CompactWorkflowProgress Value=\"currentStep\"", reviewWizard, StringComparison.Ordinal);
+        Assert.Contains("Steps=\"@ReviewSteps\"", reviewWizard, StringComparison.Ordinal);
+        Assert.DoesNotContain("<StepsItem", reviewWizard, StringComparison.Ordinal);
+        Assert.Contains("<Button", compactWorkflow, StringComparison.Ordinal);
+        Assert.Contains("<StatusBadge", compactWorkflow, StringComparison.Ordinal);
+        Assert.Contains("<ProgressBar", compactWorkflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Steps", compactWorkflow, StringComparison.Ordinal);
+        Assert.Contains("@if (currentStep == 0)", reviewWizard, StringComparison.Ordinal);
+        Assert.False(RepoFileExists(
+            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionWorkflowSteps.razor.css"));
         Assert.DoesNotContain("cda-transaction-workflow-steps", css, StringComparison.Ordinal);
         Assert.Contains("<StickyActionFooter StatusLabel=\"Selection\"", picker, StringComparison.Ordinal);
         Assert.Contains("<Grid ColumnsLg=\"2\" Gap=\"LayoutGap.Medium\">", split, StringComparison.Ordinal);
@@ -98,6 +112,9 @@ public sealed class TransactionComposerLayoutContractTests
 
     private static string ReadRepoFile(params string[] relativeParts)
         => File.ReadAllText(Path.Combine([FindRepositoryRoot(), .. relativeParts]));
+
+    private static bool RepoFileExists(params string[] relativeParts)
+        => File.Exists(Path.Combine([FindRepositoryRoot(), .. relativeParts]));
 
     private static string FindRepositoryRoot()
     {

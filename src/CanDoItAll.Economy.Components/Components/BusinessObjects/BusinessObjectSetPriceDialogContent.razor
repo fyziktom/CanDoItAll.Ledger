@@ -4,8 +4,7 @@
 @inject NavigationManager Navigation
 @inject NotificationService Notifications
 
-<SectionCard Title="Set Sale" Description="@Object?.ObjectId.Value">
-    <Stack GapScale="LayoutGap.Medium">
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
         @if (CurrentSale is not null)
         {
             <PriceBar Tone="PriceBarTone.Success" data-testid="bo-current-sale">
@@ -64,23 +63,24 @@
             }
         </Grid>
 
-        <SurfaceCard Soft="true" data-testid="bo-sale-share-link">
-            <Stack GapScale="LayoutGap.Small">
-                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Buy link" />
-                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+        <Toolbar data-testid="bo-sale-share-link">
+            <ToolbarRow>
+                <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Buy link" />
                     <CopyableMonoValue Value="@BuyLink" StartChars="48" EndChars="16" AriaLabel="Copy buy link" />
-                    <CopyButton Text="Copy" Value="@BuyLink" ButtonStyle="ButtonStyle.Secondary" />
                 </Cluster>
-            </Stack>
-        </SurfaceCard>
+                <ToolbarActions>
+                    <CopyButton Text="Copy" Value="@BuyLink" ButtonStyle="ButtonStyle.Secondary" />
+                </ToolbarActions>
+            </ToolbarRow>
+        </Toolbar>
 
         <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
             <Button Text="Set Sale" Icon="sell" Click="SubmitAsync" data-testid="bo-set-sale-submit" />
             <Button Text="Clear Sale" Icon="money_off" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Warning" Click="ClearAsync" data-testid="bo-clear-sale" />
             <Button Text="Cancel" Icon="close" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="CancelAsync" />
         </Cluster>
-    </Stack>
-</SectionCard>
+</Stack>
 
 @code {
     private string priceAmount = "100";

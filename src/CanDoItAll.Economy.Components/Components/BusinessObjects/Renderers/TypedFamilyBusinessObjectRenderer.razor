@@ -20,30 +20,46 @@ else if (Mode == BusinessObjectRenderMode.Summary)
 }
 else
 {
-    <Stack GapScale="LayoutGap.Medium">
-        <Grid ColumnsLg="2" Gap="LayoutGap.Small">
-            <SummaryTile Label="Renderer" Value="@Descriptor.DisplayName" />
-            <SummaryTile Label="Family" Value="@Typed.Definition.Family" Tone="info" />
-            <SummaryTile Label="Object type" Value="@Typed.ObjectType" />
-            <SummaryTile Label="Operation" Value="@Typed.Operation.ToString()" />
-            <SummaryTile Label="Name" Value="@Typed.Name" />
-            <SummaryTile Label="DataItems" Value="@Typed.DataItems.Count.ToString()" Tone="neutral" />
+    <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+        <Toolbar>
+            <ToolbarRow>
+                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                    <TextBlock TextStyle="TextStyle.Subtitle1" Value="@Typed.Name" />
+                    @if (!string.IsNullOrWhiteSpace(Typed.Description))
+                    {
+                        <TextBlock TextStyle="TextStyle.Body2" Value="@Typed.Description" />
+                    }
+                </Stack>
+                <ToolbarActions>
+                    <CompactStatStrip>
+                        <CompactStat Label="renderer" Value="@Descriptor.DisplayName" />
+                        <CompactStat Label="family" Value="@Typed.Definition.Family" Tone="info" />
+                        <CompactStat Label="type" Value="@Typed.ObjectType" />
+                        <CompactStat Label="operation" Value="@Typed.Operation.ToString()" />
+                    </CompactStatStrip>
+                </ToolbarActions>
+            </ToolbarRow>
+        </Toolbar>
+
+        @if (Typed.Facts.Count > 0)
+        {
+            <CompactStatStrip>
             @foreach (BusinessObjectDisplayFact fact in Typed.Facts)
             {
-                <SummaryTile Label="@fact.Label" Value="@fact.Value" />
+                    <CompactStat Label="@fact.Label" Value="@fact.Value" />
             }
-        </Grid>
-
-        @if (!string.IsNullOrWhiteSpace(Typed.Description))
-        {
-            <SummaryTile Label="Description" Value="@Typed.Description" />
+            </CompactStatStrip>
         }
 
         @if (!string.IsNullOrWhiteSpace(Typed.Text)
             && !Typed.Text.Equals(Typed.Description, StringComparison.Ordinal))
         {
-            <SummaryTile Label="Text" Value="@Typed.Text" />
+            <SurfaceCard Soft="true">
+                <TextBlock TextStyle="TextStyle.Body2" Value="@Typed.Text" />
+            </SurfaceCard>
         }
+
+        <BusinessObjectRendererMediaDetails Media="@Typed" />
     </Stack>
 }
 

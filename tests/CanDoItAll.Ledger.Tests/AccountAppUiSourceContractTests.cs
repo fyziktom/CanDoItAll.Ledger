@@ -62,7 +62,9 @@ public sealed class AccountAppUiSourceContractTests
         Assert.Contains("<StepsItem Text=\"Finish\"", home, StringComparison.Ordinal);
         Assert.Contains("data-testid=\"import-account-steps\"", home, StringComparison.Ordinal);
         Assert.Contains("data-testid=\"account-entry\"", home, StringComparison.Ordinal);
-        Assert.Contains("<main class=\"account-entry\"", home, StringComparison.Ordinal);
+        Assert.Contains("<main class=\"account-entry ", home, StringComparison.Ordinal);
+        Assert.Contains("<Grid ColumnsLg=\"2\"", home, StringComparison.Ordinal);
+        Assert.Contains("Compact=\"true\"", home, StringComparison.Ordinal);
         Assert.Contains("data-testid=\"first-run-account-flow\"", home, StringComparison.Ordinal);
         Assert.Contains("data-testid=\"stored-vault-login\"", home, StringComparison.Ordinal);
         Assert.Contains("@if (Session.HasStoredVault)", home, StringComparison.Ordinal);
@@ -110,7 +112,8 @@ public sealed class AccountAppUiSourceContractTests
         Assert.Contains("<FormField", home, StringComparison.Ordinal);
         Assert.Contains("<TextBox", home, StringComparison.Ordinal);
         Assert.Contains("<TextArea", home, StringComparison.Ordinal);
-        Assert.Contains("<SummaryTiles data-testid=\"import-review\">", home, StringComparison.Ordinal);
+        Assert.Contains("<div data-testid=\"import-review\">", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("<SummaryTiles data-testid=", home, StringComparison.Ordinal);
         Assert.Contains("<Dialog IsOpen=\"true\"", home, StringComparison.Ordinal);
         Assert.DoesNotContain("max-w-[1120px]", home, StringComparison.Ordinal);
         Assert.DoesNotContain("account-button", home, StringComparison.Ordinal);
@@ -127,6 +130,7 @@ public sealed class AccountAppUiSourceContractTests
         Assert.Contains("purchaseResult.ResultBusinessObjectId", buyBo, StringComparison.Ordinal);
         Assert.Contains("$\"bo-commerce://payment/request/{paymentRequestId}\"", buyBo, StringComparison.Ordinal);
         Assert.Contains("<SummaryTiles>", buyBo, StringComparison.Ordinal);
+        Assert.DoesNotMatch(@"(?s)<SectionCard\b[^>]*data-testid=", buyBo);
         Assert.Contains("<main class=\"buy-bo-page\"", buyBo, StringComparison.Ordinal);
         Assert.DoesNotContain("max-w-[1440px]", buyBo, StringComparison.Ordinal);
         Assert.DoesNotContain("buy-bo-facts", buyBo, StringComparison.Ordinal);
@@ -143,12 +147,14 @@ public sealed class AccountAppUiSourceContractTests
         string home = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor");
         string buyBo = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "BuyBo.razor");
         string notFound = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "NotFound.razor");
-        string homeStyles = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor.css");
 
-        Assert.Contains("<main class=\"account-entry\"", home, StringComparison.Ordinal);
+        Assert.Contains("<main class=\"account-entry ", home, StringComparison.Ordinal);
         Assert.Contains("<main class=\"buy-bo-page\"", buyBo, StringComparison.Ordinal);
         Assert.Contains("<Body Class=\"p-3 sm:p-4\">", notFound, StringComparison.Ordinal);
-        Assert.Contains("grid-row: 1 / span 3;", homeStyles, StringComparison.Ordinal);
+        Assert.Contains("<Grid ColumnsSm=\"2\" Gap=\"LayoutGap.Small\" role=\"radiogroup\"", home, StringComparison.Ordinal);
+        Assert.Contains("class=\"import-mode-option__control\"", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("sm:grid-cols-2", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("account-entry__mode-option", home, StringComparison.Ordinal);
     }
 
     private static string ReadRepoFile(params string[] segments)

@@ -7,9 +7,7 @@ public sealed class SettingsBusinessObjectRendererProvider : IBusinessObjectRend
     public int Priority => 100;
 
     public bool CanRender(IBusinessObjectView businessObject)
-        => businessObject is AccountSettingsBusinessObjectView
-            || string.Equals(businessObject.ObjectType, "settings", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(businessObject.ObjectType, "account-settings", StringComparison.OrdinalIgnoreCase);
+        => businessObject is AccountSettingsBusinessObjectView;
 
     public BusinessObjectRendererDescriptor CreateDescriptor(IBusinessObjectView businessObject)
         => new(

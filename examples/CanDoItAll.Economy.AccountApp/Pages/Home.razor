@@ -5,17 +5,18 @@
 
 <PageTitle>CanDoItAll AccountApp</PageTitle>
 
-<div class="account-app @(Session.IsUnlocked ? "account-app--unlocked" : "account-app--locked")" data-testid="account-app-root">
+<div class="min-h-screen min-w-0 @(Session.IsUnlocked ? null : "bg-[var(--cad-color-page-bg)]")" data-testid="account-app-root">
     @if (!Session.IsUnlocked)
     {
-        <main class="account-entry" data-testid="account-entry">
+        <main class="account-entry box-border mx-auto min-h-screen w-full max-w-6xl p-3 lg:px-6 lg:py-6" data-testid="account-entry">
             <PageScaffold>
             @if (Session.HasStoredVault)
             {
-                <div class="account-entry__center-shell account-entry__center-shell--login" data-testid="stored-vault-login">
+                <div class="mx-auto my-[clamp(1rem,5vh,3rem)] grid w-full min-w-0 max-w-2xl gap-3 max-[720px]:my-0" data-testid="stored-vault-login">
                     <PageHeader Eyebrow="AccountApp WASM PWA"
                                 Title="Unlock account"
-                                Description="@Session.StatusMessage" />
+                                Description="@Session.StatusMessage"
+                                Compact="true" />
 
                     @if (Session.ErrorMessage is not null)
                     {
@@ -82,14 +83,14 @@
                                     Ledger history and node data are not deleted.
                                 </Alert>
 
-                                <section class="account-entry__countdown" data-testid="reset-recovery-countdown">
+                                <section class="grid gap-1 rounded-[var(--cad-radius-control)] border border-[var(--cad-color-border-soft)] bg-[var(--cad-color-surface-soft)] p-3" data-testid="reset-recovery-countdown">
                                     <strong>@(resetCountdownRemaining > 0 ? resetCountdownRemaining.ToString() : "Ready")</strong>
-                                    <span>@(resetCountdownRemaining > 0 ? "Wait before the next confirmation." : "You can continue this recovery step.")</span>
+                                    <span class="text-xs text-[var(--cad-color-text-muted)]">@(resetCountdownRemaining > 0 ? "Wait before the next confirmation." : "You can continue this recovery step.")</span>
                                 </section>
 
                                 @if (resetRecoveryStep == 1)
                                 {
-                                    <label class="account-entry__reset-check">
+                                    <label class="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 leading-relaxed text-[var(--cad-color-text)]">
                                         <CheckBox TValue="bool"
                                                   @bind-Value="Session.ResetAcknowledged"
                                                   Disabled="@ResetCountdownActive"
@@ -119,7 +120,7 @@
                                                  autocomplete="off"
                                                  data-testid="reset-confirmation" />
                                     </FormField>
-                                    <label class="account-entry__reset-check">
+                                    <label class="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 leading-relaxed text-[var(--cad-color-text)]">
                                         <CheckBox TValue="bool"
                                                   @bind-Value="resetFinalAcknowledged"
                                                   Disabled="@ResetCountdownActive"
@@ -147,10 +148,11 @@
             }
             else
             {
-                <div class="account-entry__center-shell account-entry__center-shell--first-run" data-testid="first-run-account-flow">
+                <div class="grid w-full min-w-0 gap-3" data-testid="first-run-account-flow">
                     <PageHeader Eyebrow="AccountApp WASM PWA"
                                 Title="Browser account workspace"
-                                Description="@Session.StatusMessage" />
+                                Description="@Session.StatusMessage"
+                                Compact="true" />
 
                     @if (Session.ErrorMessage is not null)
                     {
@@ -159,6 +161,7 @@
                         </Alert>
                     }
 
+                    <Grid ColumnsLg="2" Gap="LayoutGap.Small" AlignItems="AlignItems.Start">
                     <FormSection Title="Create account"
                                  Icon="person_add"
                                  Description="Create a new encrypted browser vault for this device. There is no third-party password recovery.">
@@ -192,10 +195,6 @@
                         </Stack>
                     </FormSection>
 
-                    <div class="account-entry__divider">
-                        <span>Or import an existing account</span>
-                    </div>
-
                     <FormSection Title="Import account"
                                  Icon="upload_file"
                                  Description="Bring an existing AccountApp backup or pasted key pair into a new encrypted browser vault.">
@@ -210,28 +209,34 @@
                                data-testid="import-account-steps">
                             <StepsItem Text="Import" Icon="upload_file" Description="Choose the source material and paste it into the browser.">
                                 <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch">
-                                    <div class="account-entry__mode-grid" role="radiogroup" aria-label="Import source">
-                                        <label class="account-entry__mode-option @(importMode == AccountImportMode.Backup ? "account-entry__mode-option--selected" : null)">
+                                    <Grid ColumnsSm="2" Gap="LayoutGap.Small" role="radiogroup" aria-label="Import source">
+                                        <label class="@ImportModeClass(AccountImportMode.Backup)">
                                             <input data-testid="import-mode-backup"
                                                    type="radio"
                                                    name="account-import-mode"
                                                    checked="@(importMode == AccountImportMode.Backup)"
+                                                   class="import-mode-option__control"
                                                    @onchange="@(() => SelectImportMode(AccountImportMode.Backup))" />
-                                            <span class="material-icons" aria-hidden="true">inventory_2</span>
-                                            <strong>Encrypted backup</strong>
-                                            <small>Paste a JSON backup exported from AccountApp.</small>
+                                            <Cluster Gap="LayoutGap.XSmall" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                                                <Icon Name="inventory_2" />
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Encrypted backup" />
+                                            </Cluster>
+                                            <TextBlock TextStyle="TextStyle.Note" Value="Paste a JSON backup exported from AccountApp." />
                                         </label>
-                                        <label class="account-entry__mode-option @(importMode == AccountImportMode.KeyPair ? "account-entry__mode-option--selected" : null)">
+                                        <label class="@ImportModeClass(AccountImportMode.KeyPair)">
                                             <input data-testid="import-mode-keypair"
                                                    type="radio"
                                                    name="account-import-mode"
                                                    checked="@(importMode == AccountImportMode.KeyPair)"
+                                                   class="import-mode-option__control"
                                                    @onchange="@(() => SelectImportMode(AccountImportMode.KeyPair))" />
-                                            <span class="material-icons" aria-hidden="true">key</span>
-                                            <strong>Pasted key pair</strong>
-                                            <small>Paste public and private key material directly.</small>
+                                            <Cluster Gap="LayoutGap.XSmall" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                                                <Icon Name="key" />
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Pasted key pair" />
+                                            </Cluster>
+                                            <TextBlock TextStyle="TextStyle.Note" Value="Paste public and private key material directly." />
                                         </label>
-                                    </div>
+                                    </Grid>
 
                                     @if (importMode == AccountImportMode.Backup)
                                     {
@@ -321,17 +326,19 @@
 
                             <StepsItem Text="Finish" Icon="check_circle" Description="Review the selected source and import it into the encrypted browser vault.">
                                 <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch">
-                                    <SummaryTiles data-testid="import-review">
-                                        <SummaryTile Label="Import source" Value="@ImportModeLabel" Compact="true" />
-                                        <SummaryTile Label="Material status"
-                                                     Value="@(HasImportMaterial ? "Ready" : "Missing")"
-                                                     Tone="@(HasImportMaterial ? "success" : "warning")"
-                                                     Compact="true" />
-                                        <SummaryTile Label="Password status"
-                                                     Value="@(HasImportPasswordStep ? "Ready" : "Needs attention")"
-                                                     Tone="@(HasImportPasswordStep ? "success" : "warning")"
-                                                     Compact="true" />
-                                    </SummaryTiles>
+                                    <div data-testid="import-review">
+                                        <SummaryTiles>
+                                            <SummaryTile Label="Import source" Value="@ImportModeLabel" Compact="true" />
+                                            <SummaryTile Label="Material status"
+                                                         Value="@(HasImportMaterial ? "Ready" : "Missing")"
+                                                         Tone="@(HasImportMaterial ? "success" : "warning")"
+                                                         Compact="true" />
+                                            <SummaryTile Label="Password status"
+                                                         Value="@(HasImportPasswordStep ? "Ready" : "Needs attention")"
+                                                         Tone="@(HasImportPasswordStep ? "success" : "warning")"
+                                                         Compact="true" />
+                                        </SummaryTiles>
+                                    </div>
                                     <Button Text="@ImportButtonText"
                                             Icon="restore"
                                             Disabled="@(!CanSubmitImport)"
@@ -341,6 +348,7 @@
                             </StepsItem>
                         </Steps>
                     </FormSection>
+                    </Grid>
                 </div>
             }
             </PageScaffold>
@@ -481,6 +489,11 @@
         => HasImportPasswordStep
             ? "Password fields are ready for import."
             : "Complete the required password fields before finishing import.";
+
+    private string ImportModeClass(AccountImportMode mode)
+        => importMode == mode
+            ? "import-mode-option import-mode-option--selected"
+            : "import-mode-option";
 
     private static string ResetConfirmationPrompt
         => $"Type {AccountAppSession.ResetConfirmationPhrase} to enable reset";

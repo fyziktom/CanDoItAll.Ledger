@@ -1,18 +1,26 @@
 @namespace CanDoItAll.Economy.Components
 
-<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="tx-history-dialog">
-    <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
-        <MetricCard Label="Total" Value="@Transactions.Count.ToString()" />
-        <MetricCard Label="Visible" Value="@FilteredTransactions.Count.ToString()" />
-        <MetricCard Label="Account">
-            <ValueContent>
-                <CopyableMonoValue Value="@(AccountAddress?.Value)" EmptyText="current" StartChars="12" EndChars="8" AriaLabel="Copy account address" />
-            </ValueContent>
-        </MetricCard>
-        <MetricCard Label="Newest" Value="@NewestLabel" />
-    </Grid>
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch" data-testid="tx-history-dialog">
+    <Toolbar>
+        <ToolbarRow>
+            <CompactStatStrip>
+                <CompactStat Label="Total" Value="@Transactions.Count.ToString()" />
+                <CompactStat Label="Visible" Value="@FilteredTransactions.Count.ToString()" Tone="info" />
+                <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap">
+                    <CompactStat Text="@AccountLabel" TooltipText="@(AccountAddress?.Value ?? "Current account")" />
+                    @if (AccountAddress is not null)
+                    {
+                        <CopyButton Value="@AccountAddress.Value.Value"
+                                    DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                    Size="CopyButtonSize.Small"
+                                    AriaLabel="Copy account address" />
+                    }
+                </Cluster>
+                <CompactStat Label="Newest" Value="@NewestLabel" />
+            </CompactStatStrip>
+        </ToolbarRow>
 
-    <Grid ColumnsLg="3" Gap="LayoutGap.Medium" AlignItems="AlignItems.End">
+    <Grid ColumnsLg="3" Gap="LayoutGap.Small" AlignItems="AlignItems.End">
         <FormField Text="Search">
             <TextBox @bind-Value="search" Immediate="true" Placeholder="Search tx id, address, kind..." aria-label="Search transactions" />
         </FormField>
@@ -39,6 +47,7 @@
                       aria-label="Filter transaction status" />
         </FormField>
     </Grid>
+    </Toolbar>
 
     @if (FilteredTransactions.Count == 0)
     {
@@ -130,6 +139,11 @@
             ? "none"
             : newest.Timestamp.ToString("MM.dd.yyyy HH:mm");
 
+    private string AccountLabel
+        => AccountAddress is null
+            ? "Account current"
+            : $"Account {ShortAddress(AccountAddress.Value.Value)}";
+
     private Task OpenDetailsAsync(LedgerTransactionSummary transaction)
         => TransactionDetailsRequested.InvokeAsync(transaction);
 
@@ -191,6 +205,9 @@
             TransactionStatus.Rejected or TransactionStatus.Reverted => "danger",
             _ => "neutral"
         };
+
+    private static string ShortAddress(string value)
+        => value.Length <= 18 ? value : $"{value[..10]}...{value[^6..]}";
 
     private sealed record FilterOption(string Value, string Text);
 }

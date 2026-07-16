@@ -2,70 +2,71 @@
 @inject DialogService DialogService
 
 <Stack Section="true" GapScale="LayoutGap.Medium" data-testid="economy-account-home">
-    <SurfaceCard>
-        <Stack GapScale="LayoutGap.Medium">
-            <Grid ColumnsLg="2"
-                  ColumnTemplateLg="minmax(17rem, 0.72fr) minmax(0, 2.28fr)"
-                  Gap="LayoutGap.Medium"
-                  AlignItems="AlignItems.Center">
-                <Cluster Gap="LayoutGap.Medium" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap" Class="min-w-0">
-                    <Avatar ImageUrl="@ProfileImageLink"
-                            Alt="@Workspace.AccountName"
-                            FallbackText="@ProfileInitials"
-                            UseDefaultImageWhenMissing="false"
-                            Size="AvatarSize.Large"
-                            Shape="AvatarShape.Rounded" />
-                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                        <StatusBadge Text="@(Workspace.Context.ScenarioId?.Value ?? "live")" Tone="info" />
-                        <TextBlock TextStyle="TextStyle.H4" Value="@Workspace.AccountName" />
-                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
-                            <CopyableMonoValue Value="@Workspace.Address.Value" StartChars="10" EndChars="5" AriaLabel="Copy account address" />
-                            <QrCodeButton Payload="@AccountAddressQrPayload"
-                                          Label="Show account address QR"
-                                          TooltipText="Show account address as QR code"
-                                          TestId="cda-account-address-qr-button" />
-                            <PageHeaderActionButton Icon="badge"
-                                                    Label="Profile"
-                                                    TooltipText="Open account profile"
-                                                    Variant="Variant.Outlined"
-                                                    Click="ValidateRequested"
-                                                    TestId="cda-account-profile-button" />
-                        </Cluster>
-                    </Stack>
+    <Toolbar>
+        <ToolbarRow>
+            <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                <Avatar ImageUrl="@ProfileImageLink"
+                        Alt="@Workspace.AccountName"
+                        FallbackText="@ProfileInitials"
+                        UseDefaultImageWhenMissing="false"
+                        Size="AvatarSize.Medium"
+                        Shape="AvatarShape.Rounded" />
+                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                    <TextBlock TextStyle="TextStyle.H4" Value="@Workspace.AccountName" />
+                    <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
+                        <CopyableMonoValue Value="@Workspace.Address.Value" StartChars="10" EndChars="5" AriaLabel="Copy account address" />
+                        <QrCodeButton Payload="@AccountAddressQrPayload"
+                                      Label="Show account address QR"
+                                      TooltipText="Show account address as QR code"
+                                      TestId="cda-account-address-qr-button" />
+                        <PageHeaderActionButton Icon="badge"
+                                                Label="Profile"
+                                                TooltipText="Open account profile"
+                                                Variant="Variant.Outlined"
+                                                Click="ValidateRequested"
+                                                TestId="cda-account-profile-button" />
+                    </Cluster>
+                </Stack>
+            </Cluster>
+
+            <CompactStatStrip Class="max-w-3xl justify-end">
+                <CompactStat Label="main" Value="@FormatAmount(Workspace.Balance.MainBalance)" Tone="info" />
+                <CompactStat Label="token types" Value="@Workspace.TokenTypesOrEmpty.Count.ToString()" />
+                <CompactStat Label="BOs" Value="@Workspace.BusinessObjects.Count.ToString()" />
+                <CompactStat Label="UTXOs" Value="@Workspace.Balance.UtxoCount.ToString()" />
+                <CompactStat Label="txs" Value="@Workspace.Transactions.Count.ToString()" />
+                <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap">
+                    <CompactStat Text="@($"Ledger {Workspace.Context.LedgerId.Value}")"
+                                 TooltipText="@($"Ledger: {Workspace.Context.LedgerId.Value}")" />
+                    <CopyButton Value="@Workspace.Context.LedgerId.Value"
+                                DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                Size="CopyButtonSize.Small"
+                                AriaLabel="Copy ledger id" />
                 </Cluster>
+                <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap">
+                    <CompactStat Text="@($"Scenario {ScenarioLabel}")"
+                                 TooltipText="@($"Scenario: {ScenarioLabel}")" />
+                    <CopyButton Value="@ScenarioLabel"
+                                DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                Size="CopyButtonSize.Small"
+                                AriaLabel="Copy scenario id" />
+                </Cluster>
+                <CompactStat Text="@(Workspace.NodeBaseUri is null ? "Node local" : "Node connected")"
+                             TooltipText="@($"Node: {NodeLabel}")" />
+            </CompactStatStrip>
+        </ToolbarRow>
 
-                <Grid ColumnsSm="2" ColumnsMd="4" Gap="LayoutGap.Small">
-                    <MetricCard Label="Main" Value="@FormatAmount(Workspace.Balance.MainBalance)" />
-                    <MetricCard Label="Token types" Value="@Workspace.TokenTypesOrEmpty.Count.ToString()" />
-                    <MetricCard Label="BOs" Value="@Workspace.BusinessObjects.Count.ToString()" />
-                    <MetricCard Label="UTXOs" Value="@Workspace.Balance.UtxoCount.ToString()" />
-                    <MetricCard Label="Txs" Value="@Workspace.Transactions.Count.ToString()" />
-                    <MetricCard Label="Ledger">
-                        <ValueContent>
-                            <CopyableMonoValue Value="@Workspace.Context.LedgerId.Value" StartChars="8" EndChars="4" AriaLabel="Copy ledger id" />
-                        </ValueContent>
-                    </MetricCard>
-                    <MetricCard Label="Scenario">
-                        <ValueContent>
-                            <CopyableMonoValue Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" Truncate="false" AriaLabel="Copy scenario id" />
-                        </ValueContent>
-                    </MetricCard>
-                    <MetricCard Label="Node" Value="@(Workspace.NodeBaseUri?.ToString() ?? "local")" />
-                </Grid>
-            </Grid>
-
-            <Grid ColumnsSm="2" ColumnsMd="4" ColumnsXl="8" Gap="LayoutGap.Small">
-                <Button Class="w-full" Icon="send" Text="Send" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="AddTransactionRequested" title="Send transaction" aria-label="Send transaction" data-testid="cda-action-send" />
-                <Button Class="w-full" Icon="add_circle" Text="Token" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateTokenRequested" title="Create token" aria-label="Create token" data-testid="cda-action-token" />
-                <Button Class="w-full" Icon="contacts" Text="Addresses" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenAddressDirectoryAsync" title="Manage address directory" aria-label="Manage address directory" data-testid="cda-action-address-directory" />
-                <Button Class="w-full" Icon="security" Text="Security" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenMessageSecurityDialogAsync" title="Open message security" aria-label="Open message security" data-testid="cda-action-security" />
-                <Button Class="w-full" Icon="tune" Text="Settings" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsDialogAsync" title="Open account settings" aria-label="Open account settings" data-testid="cda-action-settings" />
-                <Button Class="w-full" Icon="archive" Text="Backup" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsBackupDialogAsync" title="Import or export browser-local settings" aria-label="Import or export browser-local settings" data-testid="cda-action-settings-backup" />
-                <Button Class="w-full" Icon="refresh" Text="Refresh" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="RefreshRequested" title="Refresh workspace" aria-label="Refresh workspace" data-testid="cda-action-refresh" />
-                <Button Class="w-full" Icon="add" Text="Subaccount" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateSubAccountRequested" title="Create subaccount" aria-label="Create subaccount" data-testid="cda-action-subaccount" />
-            </Grid>
-        </Stack>
-    </SurfaceCard>
+        <Grid ColumnsSm="2" ColumnsMd="4" ColumnsXl="8" Gap="LayoutGap.Small">
+            <Button Class="w-full" Icon="send" Text="Send" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="AddTransactionRequested" title="Send transaction" aria-label="Send transaction" data-testid="cda-action-send" />
+            <Button Class="w-full" Icon="add_circle" Text="Token" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateTokenRequested" title="Create token" aria-label="Create token" data-testid="cda-action-token" />
+            <Button Class="w-full" Icon="contacts" Text="Addresses" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenAddressDirectoryAsync" title="Manage address directory" aria-label="Manage address directory" data-testid="cda-action-address-directory" />
+            <Button Class="w-full" Icon="security" Text="Security" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenMessageSecurityDialogAsync" title="Open message security" aria-label="Open message security" data-testid="cda-action-security" />
+            <Button Class="w-full" Icon="tune" Text="Settings" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsDialogAsync" title="Open account settings" aria-label="Open account settings" data-testid="cda-action-settings" />
+            <Button Class="w-full" Icon="archive" Text="Backup" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="OpenSettingsBackupDialogAsync" title="Import or export browser-local settings" aria-label="Import or export browser-local settings" data-testid="cda-action-settings-backup" />
+            <Button Class="w-full" Icon="refresh" Text="Refresh" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="RefreshRequested" title="Refresh workspace" aria-label="Refresh workspace" data-testid="cda-action-refresh" />
+            <Button Class="w-full" Icon="add" Text="Subaccount" Variant="Variant.Outlined" Size="ButtonSize.Small" Click="CreateSubAccountRequested" title="Create subaccount" aria-label="Create subaccount" data-testid="cda-action-subaccount" />
+        </Grid>
+    </Toolbar>
 
     <Tabs Variant="TabsVariant.WorkspaceSecondary"
           BorderMode="TabsBorderMode.Soft"
@@ -311,6 +312,12 @@
             .Count(item => item.Commerce.Payment is not null
                 || item.Commerce.Purchase is not null
                 || item.Commerce.Receipt is not null);
+
+    private string ScenarioLabel
+        => Workspace.Context.ScenarioId?.Value ?? "live";
+
+    private string NodeLabel
+        => Workspace.NodeBaseUri?.ToString() ?? "local";
 
     private IReadOnlyList<LedgerTransactionSummary> RecentTransactions
         => LedgerTransactionOrdering

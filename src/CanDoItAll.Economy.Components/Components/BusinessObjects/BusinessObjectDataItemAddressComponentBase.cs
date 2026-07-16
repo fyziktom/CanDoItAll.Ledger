@@ -19,4 +19,16 @@ public abstract class BusinessObjectDataItemAddressComponentBase : ComponentBase
 
     protected string? ResolveDataItemUriString(BusinessObjectDataItem item)
         => ResolveDataItemUri(item)?.ToString();
+
+    protected string? ResolveActionableDataItemUriString(BusinessObjectDataItem item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (item.Storage is not (BusinessObjectDataItemStorage.Ipfs or BusinessObjectDataItemStorage.Url))
+        {
+            return null;
+        }
+
+        string? resolvedUri = ResolveDataItemUriString(item);
+        return string.IsNullOrWhiteSpace(resolvedUri) ? null : resolvedUri;
+    }
 }

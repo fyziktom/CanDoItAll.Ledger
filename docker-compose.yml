@@ -11,6 +11,7 @@ x-dotnet-build: &dotnet-build
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: candoitall_economy
       POSTGRES_USER: candoitall
@@ -24,7 +25,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-      start_period: 30s
+      # Crash recovery on the Windows bind mount can take several minutes.
+      # Successful checks still mark the service healthy immediately.
+      start_period: 10m
 
   economy-node:
     image: candoitall-ledger-economy-node:dev

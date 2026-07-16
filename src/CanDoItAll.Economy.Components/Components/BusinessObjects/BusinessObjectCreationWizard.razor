@@ -5,31 +5,23 @@
 @inject IServiceProvider Services
 @inject ITagOccurrenceService TagOccurrences
 
-<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="bo-create-wizard">
-    <SurfaceCard Soft="true">
-        <Split Breakpoint="LayoutBreakpoint.Lg"
-               Gap="LayoutGap.Medium"
-               AlignItems="AlignItems.Center"
-               JustifyContent="JustifyContent.SpaceBetween"
-               Wrap="FlexWrap.Wrap">
-        <TransactionWorkflowSteps Value="@(currentStep - 1)"
-                                  ValueChanged="SetStepIndex"
-                                  CanSelect="true"
-                                  Linear="false"
-                                  ShowDescriptions="false"
-                                  aria-label="Create BusinessObject steps">
-            <StepsItem Text="Upload" Icon="upload_file" />
-            <StepsItem Text="Data Info" Icon="edit_note" />
-            <StepsItem Text="Finish" Icon="flag" />
-        </TransactionWorkflowSteps>
+<Stack Section="true" GapScale="LayoutGap.Small" data-testid="bo-create-wizard">
+    <Toolbar Class="gap-2! rounded-xl! p-2! shadow-none!">
+        <ToolbarRow Class="gap-2!">
+            <CompactWorkflowProgress Value="@(currentStep - 1)"
+                                     ValueChanged="SetStepIndex"
+                                     CanSelect="true"
+                                     Steps="@CreateSteps"
+                                     aria-label="Create BusinessObject steps" />
 
-        <Cluster Gap="LayoutGap.Small">
-            <Button Text="Load Template" Icon="folder_open" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" />
-            <Button Text="Back" Icon="arrow_back" Size="ButtonSize.Small" Variant="Variant.Outlined" Disabled="@(currentStep == 1)" Click="@PreviousStep" />
-            <Button Text="@NextButtonText" Icon="@NextButtonIcon" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@NextStepAsync" />
-        </Cluster>
-        </Split>
-    </SurfaceCard>
+            <ToolbarActions Class="gap-1.5!">
+                <StatusBadge Text="@WizardModeLabel" Tone="info" />
+                <Button Text="Load Template" Icon="folder_open" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" />
+                <Button Text="Back" Icon="arrow_back" Size="ButtonSize.Small" Variant="Variant.Outlined" Disabled="@(currentStep == 1)" Click="@PreviousStep" />
+                <Button Text="@NextButtonText" Icon="@NextButtonIcon" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@NextStepAsync" />
+            </ToolbarActions>
+        </ToolbarRow>
+    </Toolbar>
 
     @if (currentStep == 1)
     {
@@ -426,6 +418,8 @@
 </Stack>
 
 @code {
+    private static readonly IReadOnlyList<string> CreateSteps = ["Upload", "Data Info", "Finish"];
+
     [Parameter, EditorRequired]
     public BusinessObjectCreationWizardModel Model { get; set; } = default!;
 
@@ -649,6 +643,9 @@
 
     private string NextButtonText
         => currentStep == 3 ? (IsEditMode ? "Stage update" : "Stage BO") : "Next";
+
+    private string WizardModeLabel
+        => IsEditMode ? $"Update {SelectedDefinition.DisplayName}" : SelectedDefinition.DisplayName;
 
     private string NextButtonIcon
         => currentStep == 3 ? "receipt_long" : "arrow_forward";
@@ -977,8 +974,8 @@
             },
             new DialogOptions
             {
-                Subtitle = "Gallery preview before staging",
                 Size = ModalSize.Medium,
+                DenseChrome = true,
                 Class = "cda-ledger-dialog",
                 TestId = "cda-bo-finish-preview-details-dialog"
             });

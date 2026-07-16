@@ -1,23 +1,32 @@
 @namespace CanDoItAll.Economy.Components
 
-<Stack GapScale="LayoutGap.Medium"
+<Stack GapScale="LayoutGap.Small"
        AlignItems="AlignItems.Stretch"
        Class="w-full"
        data-testid="transaction-details-review-wizard">
-    <TransactionWorkflowSteps Value="currentStep">
-        <StepsItem Text="Details" Icon="tune" Description="Configure the transaction">
+    <CompactWorkflowProgress Value="currentStep"
+                             Steps="@ReviewSteps"
+                             aria-label="Transaction details and review steps" />
+
+    <div class="min-w-0 w-full">
+        @if (currentStep == 0)
+        {
             @ChildContent
-        </StepsItem>
-        <StepsItem Text="Review" Icon="fact_check" Description="Verify effects before submission">
+        }
+        else
+        {
             <TransactionReviewPanel Draft="Draft" />
-        </StepsItem>
-    </TransactionWorkflowSteps>
+        }
+    </div>
 
     <Split Breakpoint="LayoutBreakpoint.None"
            Gap="LayoutGap.Small"
-           Class="w-full items-center justify-between border-t border-slate-200 pt-3">
+           AlignItems="AlignItems.Center"
+           JustifyContent="JustifyContent.SpaceBetween"
+           Class="w-full border-t border-slate-200 pt-2">
         <Button Text="Back"
                 Icon="arrow_back"
+                Size="ButtonSize.Small"
                 Disabled="@(currentStep == 0)"
                 ButtonStyle="ButtonStyle.Secondary"
                 Variant="Variant.Outlined"
@@ -27,6 +36,7 @@
         {
             <Button Text="Review transaction"
                     Icon="arrow_forward"
+                    Size="ButtonSize.Small"
                     Disabled="@(!Validation.IsValid)"
                     Click="NextStep"
                     data-testid="transaction-details-next" />
@@ -35,6 +45,8 @@
 </Stack>
 
 @code {
+    private static readonly IReadOnlyList<string> ReviewSteps = ["Details", "Review"];
+
     private int currentStep;
     private BusinessObjectTransactionMode? observedMode;
 

@@ -262,7 +262,6 @@ else
             },
             new DialogOptions
             {
-                Subtitle = $"{workspace.AccountName} - {workspace.Address.Value}",
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
@@ -291,6 +290,7 @@ else
             {
                 Subtitle = "Create a child account under the current browser vault.",
                 Size = ModalSize.Compact,
+                DenseChrome = true,
                 Class = "cda-ledger-dialog max-w-lg",
                 ShowCloseButton = false,
                 TestId = "cda-subaccount-dialog"
@@ -354,6 +354,7 @@ else
             {
                 Subtitle = item.ObjectId.Value,
                 Size = ModalSize.Compact,
+                DenseChrome = true,
                 Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-bo-send-dialog"
             });
@@ -379,6 +380,7 @@ else
             {
                 Subtitle = item.ObjectId.Value,
                 Size = ModalSize.Compact,
+                DenseChrome = true,
                 Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-bo-set-price-dialog"
             });
@@ -407,6 +409,7 @@ else
             {
                 Subtitle = profileObject?.ObjectId.Value ?? "New profile BusinessObject",
                 Size = ModalSize.Compact,
+                DenseChrome = true,
                 Class = "cda-ledger-dialog max-w-lg",
                 TestId = "cda-profile-edit-dialog"
             });

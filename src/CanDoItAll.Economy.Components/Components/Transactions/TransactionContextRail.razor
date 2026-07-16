@@ -1,27 +1,25 @@
 @namespace CanDoItAll.Economy.Components
 
-<aside class="transaction-context-rail" data-testid="transaction-context-rail">
-    <SurfaceCard Soft="true">
-        <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
-            <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" AlignItems="AlignItems.Start">
-                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Transaction summary" />
-                    <TextBlock TextStyle="TextStyle.H3" Value="@ModeLabel" />
-                </Stack>
+<aside class="min-w-0 w-full" data-testid="transaction-context-rail">
+    <Toolbar Class="gap-2! rounded-xl! p-3! shadow-none!">
+        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Transaction summary" />
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@ModeLabel" />
                 <Pill Text="@StatusText"
                       Tone="@(SubmissionEnabled ? PillTone.Ok : PillTone.Label)" />
-            </Split>
+            </Cluster>
 
             @if (!Delegated)
             {
-                <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
-                    <SummaryTile Label="Receiver"
-                                 Value="@Receiver"
-                                 HelperText="@Receiver"
-                                 ShowHelperTextAsTooltip="true"
-                                 Compact="true" />
-                    <SummaryTile Label="Amount" Value="@Amount" Compact="true" />
-                </SummaryTiles>
+                <CompactStatStrip Class="w-full">
+                    <CompactStat Text="@($"Receiver · {ReceiverDisplay}")"
+                                 HelperText="@($"Receiver: {ReceiverValue}")"
+                                 Tone="info" />
+                    <CompactStat Text="@($"Amount · {AmountDisplay}")"
+                                 HelperText="@($"Amount: {AmountDisplay}")"
+                                 Tone="neutral" />
+                </CompactStatStrip>
             }
 
             @if (Delegated)
@@ -41,28 +39,31 @@
                 <TransactionValidationSummary Validation="Validation" />
             }
 
-            <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
                 @if (!Delegated)
                 {
                     <Button Text="Submit transaction"
                             Icon="send"
+                            Size="ButtonSize.Small"
                             Click="SubmitRequested"
                             Disabled="@(!SubmissionEnabled)"
                             data-testid="transaction-submit" />
                     <Button Text="Assemble draft"
                             Icon="build"
+                            Size="ButtonSize.Small"
                             ButtonStyle="ButtonStyle.Secondary"
                             Variant="Variant.Outlined"
                             Click="AssembleRequested" />
                 }
                 <Button Text="Refresh account"
                         Icon="refresh"
+                        Size="ButtonSize.Small"
                         ButtonStyle="ButtonStyle.Secondary"
                         Variant="Variant.Text"
                         Click="BroadcastRequested" />
-            </Stack>
+            </Cluster>
         </Stack>
-    </SurfaceCard>
+    </Toolbar>
 </aside>
 
 @code {
@@ -110,4 +111,15 @@
             .Select(issue => issue.Message)
             .Distinct(StringComparer.Ordinal)
             .Count();
+
+    private string ReceiverValue
+        => string.IsNullOrWhiteSpace(Receiver) ? "Not set" : Receiver;
+
+    private string ReceiverDisplay
+        => ReceiverValue.Length > 20
+            ? $"{ReceiverValue[..10]}…{ReceiverValue[^6..]}"
+            : ReceiverValue;
+
+    private string AmountDisplay
+        => string.IsNullOrWhiteSpace(Amount) ? "Not set" : Amount;
 }

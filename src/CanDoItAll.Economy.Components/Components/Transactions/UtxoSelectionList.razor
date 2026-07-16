@@ -1,20 +1,17 @@
 @namespace CanDoItAll.Economy.Components
 
-<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="@TestId">
-    <Split Breakpoint="LayoutBreakpoint.Sm"
-           AlignItems="AlignItems.Center"
-           Wrap="FlexWrap.Wrap"
-           Gap="LayoutGap.Medium">
-        <Stack GapScale="LayoutGap.Tiny">
-            <TextBlock TextStyle="TextStyle.Eyebrow" Value="@Label" />
-            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@($"{SelectedCount} selected")" />
-            <SmallText Text="@($"{EligibleOutputs.Count} matching of {AllEligibleOutputs.Count} eligible plain UTXO(s)")" />
-        </Stack>
-        <Cluster Gap="LayoutGap.XSmall">
-            <StatusBadge Text="@($"{SelectedTotal} selected")" Tone="info" />
-            <StatusBadge Text="@($"{AllEligibleTotal} available")" Tone="neutral" />
-        </Cluster>
-    </Split>
+<Stack Section="true" GapScale="LayoutGap.Small" data-testid="@TestId">
+    <Toolbar>
+        <ToolbarRow>
+            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Label" />
+            <CompactStatStrip Class="justify-end">
+                <CompactStat Text="@($"{SelectedCount} selected")" Tone="info" />
+                <CompactStat Text="@($"{EligibleOutputs.Count}/{AllEligibleOutputs.Count} eligible")" />
+                <CompactStat Label="Selected total" Value="@SelectedTotal.ToString()" Tone="info" />
+                <CompactStat Label="Available" Value="@AllEligibleTotal.ToString()" />
+            </CompactStatStrip>
+        </ToolbarRow>
+    </Toolbar>
 
     <FormField Text="Search UTXOs">
         <TextBox Value="@filter"

@@ -34,18 +34,19 @@
                         </FormField>
                     </FormSection>
 
-                    <SurfaceCard Soft="true">
-                        <Stack GapScale="LayoutGap.Small">
-                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="What this controls" />
-                            <TextBlock TextStyle="TextStyle.H3" Value="Authority is checked before minting" />
-                            <TextBlock TextStyle="TextStyle.Body2"
-                                       Value="The ledger verifies the selected namespace and the account's current permission before it accepts the token definition." />
-                            <Grid Columns="2" Gap="LayoutGap.Small">
-                                <SummaryTile Label="Available namespaces" Value="@Authorities.Count.ToString()" Compact="true" />
-                                <SummaryTile Label="Selected" Value="@(SelectedAuthority?.Namespace ?? "None")" Compact="true" />
-                            </Grid>
-                        </Stack>
-                    </SurfaceCard>
+                    <Toolbar>
+                        <ToolbarRow>
+                            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Authority checked before minting" />
+                                <TextBlock TextStyle="TextStyle.Muted"
+                                           Value="The ledger verifies the selected namespace and current permission." />
+                            </Stack>
+                            <CompactStatStrip Class="justify-end">
+                                <CompactStat Label="Namespaces" Value="@Authorities.Count.ToString()" />
+                                <CompactStat Label="Selected" Value="@(SelectedAuthority?.Namespace ?? "None")" Tone="info" />
+                            </CompactStatStrip>
+                        </ToolbarRow>
+                    </Toolbar>
                 </Grid>
             }
         </StepsItem>
@@ -83,10 +84,12 @@
                     </Grid>
                 </FormSection>
 
-                <SurfaceCard Soft="true">
+                <Toolbar>
                     <Stack GapScale="LayoutGap.Small">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Identifier preview" />
-                        <TextBlock TextStyle="TextStyle.H3" Value="@TokenIdentifierPreview" />
+                        <ToolbarRow>
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@TokenIdentifierPreview" />
+                            <StatusBadge Text="Identifier preview" Tone="info" />
+                        </ToolbarRow>
                         <TextBlock TextStyle="TextStyle.Body2"
                                    Value="The namespace and token name form the identifier shown to users in balances and transfer screens." />
                         @if (!DefinitionIsValid)
@@ -96,7 +99,7 @@
                             </Alert>
                         }
                     </Stack>
-                </SurfaceCard>
+                </Toolbar>
             </Grid>
         </StepsItem>
 
@@ -105,24 +108,27 @@
                   Gap="LayoutGap.Medium"
                   AlignItems="AlignItems.Stretch">
                 <FormSection Title="Token to be created" Description="Confirm the values that will be sent to the ledger.">
-                    <Grid Columns="2" Gap="LayoutGap.Small">
-                        <SummaryTile Label="Namespace" Value="@(SelectedAuthority?.Namespace ?? "None")" Compact="true" />
-                        <SummaryTile Label="Permission UTXO" Value="@SelectedAuthorityLabel" Compact="true" />
-                        <SummaryTile Label="Token" Value="@TokenIdentifierPreview" Compact="true" />
-                        <SummaryTile Label="Initial supply" Value="@tokenAmount" Compact="true" />
-                        <SummaryTile Label="Description" Value="@description" Compact="true" />
-                    </Grid>
+                    <Stack GapScale="LayoutGap.Small">
+                        <CompactStatStrip>
+                            <CompactStat Label="Namespace" Value="@(SelectedAuthority?.Namespace ?? "None")" />
+                            <CompactStat Text="@SelectedAuthorityLabel" TooltipText="@SelectedAuthorityLabel" />
+                            <CompactStat Label="Token" Value="@TokenIdentifierPreview" Tone="info" />
+                            <CompactStat Label="Supply" Value="@tokenAmount" />
+                        </CompactStatStrip>
+                        <TextBlock TextStyle="TextStyle.Muted" Value="@description" />
+                    </Stack>
                 </FormSection>
 
-                <SurfaceCard Soft="true">
-                    <Stack GapScale="LayoutGap.Small">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Ready to create" />
-                        <TextBlock TextStyle="TextStyle.H3" Value="Authority and definition are complete" />
-                        <TextBlock TextStyle="TextStyle.Body2"
-                                   Value="Creating the token submits a mint request. Review the namespace and supply once more before continuing." />
+                <Toolbar>
+                    <ToolbarRow>
+                        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="Authority and definition complete" />
+                            <TextBlock TextStyle="TextStyle.Muted"
+                                       Value="Review the namespace and supply once more before creating the token." />
+                        </Stack>
                         <StatusBadge Text="Ready" Tone="success" />
-                    </Stack>
-                </SurfaceCard>
+                    </ToolbarRow>
+                </Toolbar>
             </Grid>
         </StepsItem>
     </TransactionWorkflowSteps>
