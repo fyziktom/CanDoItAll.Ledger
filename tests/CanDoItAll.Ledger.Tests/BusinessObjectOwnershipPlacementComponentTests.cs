@@ -92,6 +92,47 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     }
 
     [Fact]
+    public async Task HomeBalances_UsesResponsiveFullWidthLanesWhenSourcesExist()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        IRenderedComponent<EconomyAccountWorkspace> home =
+            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+                .Add(x => x.Workspace, workspace));
+
+        await ClickTabAsync(home, "Balances");
+
+        var layout = home.Find("[data-testid='cda-balance-layout']");
+        var summary = home.Find("[data-testid='cda-balance-summary-lane']");
+        var sources = home.Find("[data-testid='cda-balance-sources-lane']");
+
+        Assert.Contains("--cda-grid-columns-lg:repeat(2,minmax(0,1fr))", layout.GetAttribute("style"), StringComparison.Ordinal);
+        Assert.Contains("w-full", summary.ClassList);
+        Assert.Contains("min-w-0", summary.ClassList);
+        Assert.Contains("w-full", sources.ClassList);
+        Assert.Equal(2, layout.QuerySelectorAll("table").Length);
+        Assert.Empty(home.FindComponents<FormSection>());
+    }
+
+    [Fact]
+    public async Task HomeBalances_UsesOneLaneWhenNoTokenSourcesExist()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace() with
+        {
+            SpendableOutputs = []
+        };
+        IRenderedComponent<EconomyAccountWorkspace> home =
+            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+                .Add(x => x.Workspace, workspace));
+
+        await ClickTabAsync(home, "Balances");
+
+        var layout = home.Find("[data-testid='cda-balance-layout']");
+        Assert.Contains("--cda-grid-columns-lg:repeat(1,minmax(0,1fr))", layout.GetAttribute("style"), StringComparison.Ordinal);
+        Assert.Single(layout.QuerySelectorAll("table"));
+        Assert.Empty(home.FindAll("[data-testid='cda-balance-sources-lane']"));
+    }
+
+    [Fact]
     public async Task HomeWorkspace_RendersRequestedTabOrderAndPanels()
     {
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();

@@ -1,42 +1,137 @@
 @namespace CanDoItAll.Economy.Components
 
-<div data-testid="cda-tx-data-payload-viewer">
-<SectionCard Title="@(Data?.ItemType.ToString() ?? "No data item")" Description="Payload">
-    <HeaderActions>
-        <StatusBadge Text="@(Data?.ContentType ?? "none")" Tone="neutral" />
-    </HeaderActions>
-    <ChildContent>
-        @if (Data is null)
-        {
-            <EmptyState Eyebrow="Payload" Title="No data item" Description="No transaction payload is attached." />
-        }
-        else
-        {
-            <Grid ColumnsLg="2" Gap="LayoutGap.Small">
-                <SurfaceCard Soft="true">
-                    <Stack GapScale="LayoutGap.Tiny">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="External ref" />
-                        <CopyableMonoValue Value="@Data.ExternalRef" EmptyText="none" StartChars="18" EndChars="10" AriaLabel="Copy external reference" />
-                    </Stack>
-                </SurfaceCard>
-                <SurfaceCard Soft="true">
-                    <Stack GapScale="LayoutGap.Tiny">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Hash" />
-                        <HashDisplay Value="@(Data.DataHash?.Value)" EmptyText="none" />
-                    </Stack>
-                </SurfaceCard>
-            </Grid>
-            @if (!string.IsNullOrWhiteSpace(Data.InlineJson))
+<div class="min-w-0" data-testid="cda-tx-data-payload-viewer">
+    <SurfaceCard Soft="true">
+        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+            <ListPanelHeader Title="Payload"
+                             Description="@PayloadDescription"
+                             Dense="true" />
+
+            @if (Data is null)
             {
-                <LedgerCodeBlock Text="@TransactionRawJsonFormatter.FormatInlineJson(Data.InlineJson)"
-                                 data-testid="tx-payload-inline-json" />
+                <Cluster Gap="LayoutGap.XSmall" AlignItems="AlignItems.Center">
+                    <Icon Name="data_object" />
+                    <TextBlock TextStyle="TextStyle.Muted" Value="No transaction data item is attached." />
+                </Cluster>
             }
-        }
-    </ChildContent>
-</SectionCard>
+            else
+            {
+                <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                    @if (!string.IsNullOrWhiteSpace(Data.ExternalRef))
+                    {
+                        <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Reference" />
+                            <CopyableMonoValue Value="@Data.ExternalRef"
+                                               StartChars="18"
+                                               EndChars="10"
+                                               AriaLabel="Copy external reference" />
+                        </Cluster>
+                    }
+                    @if (Data.DataHash is not null)
+                    {
+                        <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Hash" />
+                            <HashDisplay Value="@Data.DataHash?.Value" />
+                        </Cluster>
+                    }
+                </Cluster>
+
+                @if (!string.IsNullOrWhiteSpace(Data.InlineJson))
+                {
+                    <LedgerCodeBlock Text="@TransactionRawJsonFormatter.FormatInlineJson(Data.InlineJson)"
+                                     data-testid="tx-payload-inline-json" />
+                }
+            }
+
+            @if (businessObjectOutputs.Count > 0)
+            {
+                <Stack GapScale="LayoutGap.XSmall"
+                       AlignItems="AlignItems.Stretch"
+                       data-testid="cda-tx-payload-bo-outputs">
+                    <ListPanelHeader Title="Business object outputs"
+                                     Description="@BusinessObjectOutputDescription"
+                                     Count="@($"{businessObjectOutputs.Count} output(s)")"
+                                     Dense="true" />
+                    <DataGrid TItem="EconomyTransactionOutputDetails"
+                              Data="@businessObjectOutputs"
+                              AllowPaging="false"
+                              data-testid="cda-tx-payload-bo-grid">
+                        <Columns>
+                            <DataGridColumn TItem="EconomyTransactionOutputDetails" Title="Output">
+                                <Template Context="output">
+                                    <div data-testid="cda-tx-payload-bo-output">
+                                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                                            <StatusBadge Text="@($"#{output.OutputIndex}")" Tone="info" />
+                                            <TextBlock TextStyle="TextStyle.Caption"
+                                                       Value="@($"{output.BusinessObject!.Operation} / v{output.BusinessObject.Version}")" />
+                                        </Cluster>
+                                    </div>
+                                </Template>
+                            </DataGridColumn>
+                            <DataGridColumn TItem="EconomyTransactionOutputDetails" Title="UTXO reference">
+                                <Template Context="output">
+                                    @if (ResolveBusinessObjectId(output) is { } objectId)
+                                    {
+                                        <div data-testid="cda-tx-payload-bo-copy-id">
+                                            <CopyableMonoValue Value="@objectId"
+                                                               StartChars="16"
+                                                               EndChars="8"
+                                                               AriaLabel="@($"Copy business object output #{output.OutputIndex} id")" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <TextBlock TextStyle="TextStyle.Muted" Value="Assigned after confirmation" />
+                                    }
+                                </Template>
+                            </DataGridColumn>
+                            <DataGridColumn TItem="EconomyTransactionOutputDetails" Title="Data hash">
+                                <Template Context="output">
+                                    <HashDisplay Value="@output.BusinessObject!.DataHash.Value"
+                                                 StartChars="12"
+                                                 EndChars="8"
+                                                 AriaLabel="@($"Copy business object output #{output.OutputIndex} data hash")" />
+                                </Template>
+                            </DataGridColumn>
+                        </Columns>
+                    </DataGrid>
+                </Stack>
+            }
+        </Stack>
+    </SurfaceCard>
 </div>
 
 @code {
+    private IReadOnlyList<EconomyTransactionOutputDetails> businessObjectOutputs = [];
+
     [Parameter]
     public TransactionData? Data { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<EconomyTransactionOutputDetails>? Outputs { get; set; }
+
+    [Parameter]
+    public TxId? TransactionId { get; set; }
+
+    private string PayloadDescription
+        => Data is null
+            ? "No transaction data item"
+            : $"{Data.ItemType} / {Data.ContentType ?? "content type unavailable"}";
+
+    private string BusinessObjectOutputDescription
+        => TransactionId is null
+            ? "Output references pending confirmation"
+            : "Confirmed output references";
+
+    protected override void OnParametersSet()
+    {
+        businessObjectOutputs = Outputs?
+            .Where(output => output.BusinessObject is not null)
+            .ToArray() ?? [];
+    }
+
+    private string? ResolveBusinessObjectId(EconomyTransactionOutputDetails output)
+        => TransactionId is { } transactionId
+            ? BusinessObjectId.FromOutPoint(transactionId, output.OutputIndex).Value
+            : null;
 }

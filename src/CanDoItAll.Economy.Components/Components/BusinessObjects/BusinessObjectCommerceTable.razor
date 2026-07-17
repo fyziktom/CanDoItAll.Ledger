@@ -1,0 +1,222 @@
+@namespace CanDoItAll.Economy.Components
+@using System.Globalization
+
+<div class="grid w-full min-w-0 gap-2" data-testid="cda-commerce-record-table">
+    <ListPanelHeader Title="@Title"
+                     Count="@($"{Rows.Count} record(s)")"
+                     Dense="true" />
+
+    <DataGrid TItem="BusinessObjectCommerceRow"
+              Data="@Rows"
+              Caption="@Title"
+              EmptyText="@EmptyText"
+              AllowPaging="@(Rows.Count > PageSize)"
+              PageSize="@PageSize"
+              RowSelect="OpenRecordAsync"
+              data-testid="cda-commerce-record-grid">
+        <Columns>
+            <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Date &amp; time">
+                <Template Context="row">
+                    <time class="whitespace-nowrap text-xs font-medium text-slate-700"
+                          datetime="@row.ActivityAt.ToString("O", CultureInfo.InvariantCulture)"
+                          title="@row.ActivityAt.ToString("O", CultureInfo.InvariantCulture)">
+                        @TransactionUiPresentation.FormatLocalTimestampWithSeconds(row.ActivityAt)
+                    </time>
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Kind">
+                <Template Context="row">
+                    <span data-testid="cda-commerce-record"
+                          data-commerce-kind="@row.Kind"
+                          data-record-id="@row.Source.ObjectId.Value">
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                            <Icon Name="@row.Icon" />
+                            <StatusBadge Text="@row.KindLabel" Tone="neutral" NoWrap="true" />
+                        </Cluster>
+                    </span>
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Status">
+                <Template Context="row">
+                    <StatusBadge Text="@row.Status.ToString()" Tone="@row.StatusTone" NoWrap="true" />
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Amount">
+                <Template Context="row">
+                    <StatusBadge Text="@FormatAmount(row)" Tone="info" NoWrap="true" />
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Counterparty">
+                <Template Context="row">
+                    @if (Fields == BusinessObjectCommerceFields.Compact)
+                    {
+                        <span class="block max-w-48 truncate font-medium text-slate-800"
+                              title="@($"{row.CounterpartyName} — {row.CounterpartyAddress}")">
+                            @row.CounterpartyName
+                        </span>
+                    }
+                    else
+                    {
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Caption" Value="@row.CounterpartyName" />
+                            <CopyableMonoValue Value="@row.CounterpartyAddress" StartChars="10" EndChars="6" AriaLabel="Copy counterparty address" />
+                        </Stack>
+                    }
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Business object">
+                <Template Context="row">
+                    <div class="flex min-w-0 items-center gap-1" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                        <span class="block max-w-56 truncate font-medium text-slate-800" title="@row.TargetObjectId">
+                            @row.TargetName
+                        </span>
+                        <CopyButton Value="@row.TargetObjectId"
+                                    DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                    Size="CopyButtonSize.ExtraSmall"
+                                    AriaLabel="Copy target business object id"
+                                    title="Copy target business object id" />
+                    </div>
+                </Template>
+            </DataGridColumn>
+
+            @if (Fields.HasFlag(BusinessObjectCommerceFields.SaleMode))
+            {
+                <DataGridColumn TItem="BusinessObjectCommerceRow" Property="SaleMode" Title="Sale mode" />
+            }
+
+            @if (Fields.HasFlag(BusinessObjectCommerceFields.DeliveredObject))
+            {
+                <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Delivered object">
+                    <Template Context="row">
+                        @if (string.IsNullOrWhiteSpace(row.DeliveredObjectId))
+                        {
+                            <TextBlock TextStyle="TextStyle.Muted" Value="Not delivered" />
+                        }
+                        else
+                        {
+                            <div class="flex min-w-0 items-center gap-1" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                                <span class="block max-w-56 truncate" title="@row.DeliveredObjectId">@row.DeliveredName</span>
+                                <CopyButton Value="@row.DeliveredObjectId"
+                                            DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                            Size="CopyButtonSize.ExtraSmall"
+                                            AriaLabel="Copy delivered business object id"
+                                            title="Copy delivered business object id" />
+                            </div>
+                        }
+                    </Template>
+                </DataGridColumn>
+            }
+
+            @if (Fields.HasFlag(BusinessObjectCommerceFields.TransactionIds))
+            {
+                <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Transactions">
+                    <Template Context="row">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Record" />
+                                <CopyableMonoValue Value="@row.CurrentTransactionId" StartChars="8" EndChars="6" AriaLabel="Copy current record transaction id" />
+                            </Cluster>
+                            @if (!string.IsNullOrWhiteSpace(row.PaymentTransactionId))
+                            {
+                                <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Payment" />
+                                    <CopyableMonoValue Value="@row.PaymentTransactionId" StartChars="8" EndChars="6" AriaLabel="Copy payment transaction id" />
+                                </Cluster>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(row.DispatchTransactionId))
+                            {
+                                <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Dispatch" />
+                                    <CopyableMonoValue Value="@row.DispatchTransactionId" StartChars="8" EndChars="6" AriaLabel="Copy dispatch transaction id" />
+                                </Cluster>
+                            }
+                        </Stack>
+                    </Template>
+                </DataGridColumn>
+            }
+
+            @if (Fields.HasFlag(BusinessObjectCommerceFields.RejectionReason))
+            {
+                <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Rejection">
+                    <Template Context="row">
+                        <span class="block max-w-56 truncate" title="@row.RejectionReason">
+                            @(string.IsNullOrWhiteSpace(row.RejectionReason) ? "—" : row.RejectionReason)
+                        </span>
+                    </Template>
+                </DataGridColumn>
+            }
+
+            <DataGridColumn TItem="BusinessObjectCommerceRow" Title="Actions">
+                <Template Context="row">
+                    <div @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                            <PageHeaderActionButton Icon="info"
+                                                    Label="Open commerce record"
+                                                    TooltipText="@($"Open {row.RecordTitle}")"
+                                                    Variant="Variant.Text"
+                                                    Click="@(() => OpenRecordAsync(row))"
+                                                    TestId="cda-commerce-record-details" />
+                            <PageHeaderActionButton Icon="inventory_2"
+                                                    Label="Open related business object"
+                                                    TooltipText="@RelatedTooltip(row)"
+                                                    Variant="Variant.Text"
+                                                    Disabled="@(row.RelatedObject is null)"
+                                                    Click="@(() => OpenRelatedAsync(row))"
+                                                    TestId="cda-commerce-related-details" />
+                        </Cluster>
+                    </div>
+                </Template>
+            </DataGridColumn>
+        </Columns>
+    </DataGrid>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Commerce activity";
+
+    [Parameter]
+    public string EmptyText { get; set; } = "No payment, purchase, or receipt records are visible in this account.";
+
+    [Parameter]
+    public IReadOnlyList<BusinessObjectCommerceRow> Rows { get; set; } = [];
+
+    [Parameter]
+    public BusinessObjectCommerceFields Fields { get; set; } = BusinessObjectCommerceFields.Compact;
+
+    [Parameter]
+    public int PageSize { get; set; } = 10;
+
+    [Parameter]
+    public EventCallback<BusinessObjectCommerceRow> RecordRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectCommerceRow> RelatedObjectRequested { get; set; }
+
+    private Task OpenRecordAsync(BusinessObjectCommerceRow row)
+        => RecordRequested.InvokeAsync(row);
+
+    private Task OpenRelatedAsync(BusinessObjectCommerceRow row)
+        => row.RelatedObject is null
+            ? Task.CompletedTask
+            : RelatedObjectRequested.InvokeAsync(row);
+
+    private static string FormatAmount(BusinessObjectCommerceRow row)
+        => $"{row.Amount.ToString("0.#############################", CultureInfo.InvariantCulture)} {row.Asset}";
+
+    private static string RelatedTooltip(BusinessObjectCommerceRow row)
+        => row.RelatedObject is null
+            ? "Related business object is not visible in this account"
+            : $"Open {RelatedName(row)}";
+
+    private static string RelatedName(BusinessObjectCommerceRow row)
+        => !string.IsNullOrWhiteSpace(row.DeliveredObjectId)
+            && string.Equals(row.RelatedObject?.ObjectId.Value, row.DeliveredObjectId, StringComparison.Ordinal)
+                ? row.DeliveredName ?? row.TargetName
+                : row.TargetName;
+}

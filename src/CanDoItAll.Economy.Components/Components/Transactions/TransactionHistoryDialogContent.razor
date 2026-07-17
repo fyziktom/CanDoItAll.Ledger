@@ -74,14 +74,25 @@
                 <DataGridColumn TItem="LedgerTransactionSummary" Title="Route">
                     <Template Context="transaction">
                         <div @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
-                            <CopyableMonoValue Value="@FormatRoute(transaction)" StartChars="18" EndChars="10" AriaLabel="Copy transaction route" />
+                            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                                <span class="block max-w-sm truncate"
+                                      title="@FormatRawRoute(transaction)">
+                                    @FormatDisplayRoute(transaction)
+                                </span>
+                                <CopyButton Value="@FormatRawRoute(transaction)"
+                                            DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                            Size="CopyButtonSize.ExtraSmall"
+                                            AriaLabel="Copy transaction route" />
+                            </Cluster>
                         </div>
                     </Template>
                 </DataGridColumn>
-                <DataGridColumn TItem="LedgerTransactionSummary" Property="Kind" Title="Kind" />
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Kind">
+                    <Template Context="transaction">@TransactionUiPresentation.KindLabel(transaction.Kind)</Template>
+                </DataGridColumn>
                 <DataGridColumn TItem="LedgerTransactionSummary" Title="Status">
                     <Template Context="transaction">
-                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@StatusTone(transaction.Status)" NoWrap="true" />
+                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@TransactionUiPresentation.StatusTone(transaction.Status)" NoWrap="true" />
                     </Template>
                 </DataGridColumn>
                 <DataGridColumn TItem="LedgerTransactionSummary" Title="Inputs">
@@ -91,10 +102,15 @@
                     <Template Context="transaction">@transaction.Outputs.Count</Template>
                 </DataGridColumn>
                 <DataGridColumn TItem="LedgerTransactionSummary" Title="Data">
-                    <Template Context="transaction">@(transaction.Data is null ? "none" : transaction.Data.ItemType)</Template>
+                    <Template Context="transaction">@(transaction.Data is null ? "None" : TransactionUiPresentation.DataTypeLabel(transaction.Data.ItemType))</Template>
                 </DataGridColumn>
                 <DataGridColumn TItem="LedgerTransactionSummary" Title="Created">
-                    <Template Context="transaction">@transaction.Timestamp.ToString("MM.dd.yyyy HH:mm:ss")</Template>
+                    <Template Context="transaction">
+                        <time datetime="@transaction.Timestamp.ToString("O")"
+                              title="@transaction.Timestamp.ToString("O")">
+                            @TransactionUiPresentation.FormatLocalTimestampWithSeconds(transaction.Timestamp)
+                        </time>
+                    </Template>
                 </DataGridColumn>
                 <DataGridColumn TItem="LedgerTransactionSummary" Title="Actions">
                     <Template Context="transaction">
@@ -121,10 +137,25 @@
     public Address? AccountAddress { get; set; }
 
     [Parameter]
+    public string AccountName { get; set; } = "Current account";
+
+    [Parameter]
+    public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+
+    [Parameter]
     public EventCallback<LedgerTransactionSummary> TransactionDetailsRequested { get; set; }
 
     private IReadOnlyList<FilterOption> KindOptions
-        => FilterOptions(Transactions.Select(transaction => transaction.Kind.ToString()));
+        => new[] { new FilterOption(AllFilter, "All") }
+            .Concat(Transactions
+                .Select(transaction => transaction.Kind)
+                .Distinct()
+                .OrderBy(kind => kind.ToString(), StringComparer.OrdinalIgnoreCase)
+                .Select(kind => new FilterOption(kind.ToString(), TransactionUiPresentation.KindLabel(kind))))
+            .ToArray();
 
     private IReadOnlyList<FilterOption> StatusOptions
         => FilterOptions(Transactions.Select(transaction => transaction.Status.ToString()));
@@ -137,12 +168,25 @@
     private string NewestLabel
         => LedgerTransactionOrdering.Newest(Transactions) is not { } newest
             ? "none"
-            : newest.Timestamp.ToString("MM.dd.yyyy HH:mm");
+            : TransactionUiPresentation.FormatLocalTimestamp(newest.Timestamp);
 
     private string AccountLabel
         => AccountAddress is null
             ? "Account current"
-            : $"Account {ShortAddress(AccountAddress.Value.Value)}";
+            : $"Account {AccountName}";
+
+    private IReadOnlyDictionary<string, string> AddressNames
+        => DirectoryEntries
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.DisplayName))
+            .Select(entry => new KeyValuePair<string, string>(entry.Address, entry.DisplayName))
+            .Concat(Bookmarks
+                .Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.Name))
+                .Select(bookmark => new KeyValuePair<string, string>(bookmark.Address.Value, bookmark.Name)))
+            .GroupBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Value.Trim(),
+                StringComparer.OrdinalIgnoreCase);
 
     private Task OpenDetailsAsync(LedgerTransactionSummary transaction)
         => TransactionDetailsRequested.InvokeAsync(transaction);
@@ -168,11 +212,15 @@
             ' ',
             transaction.TxId.Value,
             transaction.Kind,
+            TransactionUiPresentation.KindLabel(transaction.Kind),
             transaction.Status,
-            FormatRoute(transaction),
+            FormatDisplayRoute(transaction),
+            FormatRawRoute(transaction),
             transaction.Inputs.Count,
             transaction.Outputs.Count,
-            transaction.Data?.ItemType.ToString() ?? "none");
+            transaction.Data is null
+                ? "none"
+                : TransactionUiPresentation.DataTypeLabel(transaction.Data.ItemType));
 
         return probe.Contains(search, StringComparison.OrdinalIgnoreCase);
     }
@@ -185,7 +233,19 @@
                 .Select(value => new FilterOption(value, value)))
             .ToArray();
 
-    private static string FormatRoute(LedgerTransactionSummary transaction)
+    private string FormatDisplayRoute(LedgerTransactionSummary transaction)
+    {
+        string inputs = transaction.InputAddresses.Count == 0
+            ? "genesis/mint"
+            : string.Join(", ", transaction.InputAddresses.Select(DisplayAddress));
+        string outputs = transaction.OutputAddresses.Count == 0
+            ? "none"
+            : string.Join(", ", transaction.OutputAddresses.Select(DisplayAddress));
+
+        return $"{inputs} \u2192 {outputs}";
+    }
+
+    private static string FormatRawRoute(LedgerTransactionSummary transaction)
     {
         string inputs = transaction.InputAddresses.Count == 0
             ? "genesis/mint"
@@ -197,14 +257,19 @@
         return $"{inputs} \u2192 {outputs}";
     }
 
-    private static string StatusTone(TransactionStatus status)
-        => status switch
+    private string DisplayAddress(Address address)
+    {
+        string shortened = ShortAddress(address.Value);
+        if (AccountAddress is not null
+            && address.Value.Equals(AccountAddress.Value.Value, StringComparison.OrdinalIgnoreCase))
         {
-            TransactionStatus.Confirmed => "success",
-            TransactionStatus.Pending => "warning",
-            TransactionStatus.Rejected or TransactionStatus.Reverted => "danger",
-            _ => "neutral"
-        };
+            return $"{AccountName} ({shortened})";
+        }
+
+        return AddressNames.TryGetValue(address.Value, out string? name)
+            ? $"{name} ({shortened})"
+            : shortened;
+    }
 
     private static string ShortAddress(string value)
         => value.Length <= 18 ? value : $"{value[..10]}...{value[^6..]}";

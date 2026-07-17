@@ -18,3 +18,7 @@
 .cda-ledger-dialog .cda-copyable-mono-value .cda-copy-button-icon {
   flex: 0 0 auto;
 }
+
+.cda-ledger-dialog--compact > header {
+  padding-block: 0.375rem;
+}

@@ -1,0 +1,226 @@
+@namespace CanDoItAll.Economy.Components
+@using System.Globalization
+
+<div class="grid min-w-0 gap-2" data-testid="cda-commerce-record-summary">
+    <Toolbar Class="gap-2" Style="padding:0.5rem;box-shadow:none">
+        <ToolbarRow Class="gap-2!">
+            <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap" Class="min-w-0">
+                <Icon Name="@RecordIcon" />
+                <StatusBadge Text="@RecordKind" Tone="neutral" NoWrap="true" />
+                <StatusBadge Text="@StatusText" Tone="@StatusTone" NoWrap="true" />
+                <StatusBadge Text="@AmountText" Tone="info" NoWrap="true" />
+                <StatusBadge Text="@SaleModeText" Tone="neutral" NoWrap="true" />
+            </Cluster>
+            <Cluster Gap="LayoutGap.XSmall" JustifyContent="JustifyContent.End" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Record" />
+                <CopyableMonoValue Value="@Object.ObjectId.Value" StartChars="12" EndChars="8" AriaLabel="Copy commerce record business object id" />
+            </Cluster>
+        </ToolbarRow>
+    </Toolbar>
+
+    @if (!string.IsNullOrWhiteSpace(Object.Description))
+    {
+        <TextBlock TextStyle="TextStyle.Muted" Value="@Object.Description" />
+    }
+
+    <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2"
+         data-testid="cda-commerce-party-flow">
+        <div class="grid min-w-0 gap-1">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Buyer" />
+            <CopyableMonoValue Value="@BuyerAddress" StartChars="10" EndChars="6" AriaLabel="Copy buyer address" />
+        </div>
+        <Icon Name="east" />
+        <div class="grid min-w-0 gap-1">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Seller" />
+            <CopyableMonoValue Value="@SellerAddress" StartChars="10" EndChars="6" AriaLabel="Copy seller address" />
+        </div>
+    </div>
+
+    <DataGrid TItem="CommerceReference"
+              Data="@References"
+              Caption="Commerce record references"
+              EmptyText="No linked references are recorded."
+              data-testid="cda-commerce-reference-grid">
+        <Columns>
+            <DataGridColumn TItem="CommerceReference" Property="Label" Title="Reference" />
+            <DataGridColumn TItem="CommerceReference" Title="Value">
+                <Template Context="reference">
+                    @if (reference.Timestamp is { } timestamp)
+                    {
+                        <time class="whitespace-nowrap text-xs font-medium text-slate-700"
+                              datetime="@timestamp.ToString("O", CultureInfo.InvariantCulture)"
+                              title="@timestamp.ToString("O", CultureInfo.InvariantCulture)">
+                            @TransactionUiPresentation.FormatLocalTimestampWithSeconds(timestamp)
+                        </time>
+                    }
+                    else if (reference.Copyable)
+                    {
+                        <CopyableMonoValue Value="@reference.Value" StartChars="16" EndChars="8" AriaLabel="@($"Copy {reference.Label.ToLowerInvariant()}")" />
+                    }
+                    else
+                    {
+                        <span class="block max-w-3xl truncate" title="@reference.Value">@reference.Value</span>
+                    }
+                </Template>
+            </DataGridColumn>
+        </Columns>
+    </DataGrid>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ICommerceBusinessObjectView Object { get; set; } = default!;
+
+    private string RecordKind
+        => Object.Commerce switch
+        {
+            { Payment: not null } => "Payment",
+            { Purchase: not null } => "Purchase",
+            { Receipt: not null } => "Receipt",
+            _ => "Commerce"
+        };
+
+    private string RecordIcon
+        => Object.Commerce switch
+        {
+            { Payment: not null } => "payments",
+            { Purchase: not null } => "shopping_cart",
+            { Receipt: not null } => "receipt_long",
+            _ => "sell"
+        };
+
+    private BusinessObjectCommerceRecordStatus? Status
+        => Object.Commerce switch
+        {
+            { Payment: { } payment } => payment.Status,
+            { Purchase: { } purchase } => purchase.Status,
+            { Receipt: { } receipt } => receipt.Status,
+            _ => null
+        };
+
+    private string StatusText => Status?.ToString() ?? "Unknown";
+
+    private string StatusTone
+        => Status switch
+        {
+            BusinessObjectCommerceRecordStatus.Dispatched => "success",
+            BusinessObjectCommerceRecordStatus.Pending => "warning",
+            BusinessObjectCommerceRecordStatus.Rejected => "danger",
+            BusinessObjectCommerceRecordStatus.Cancelled => "warning",
+            _ => "neutral"
+        };
+
+    private decimal Amount
+        => Object.Commerce switch
+        {
+            { Payment: { } payment } => payment.PriceAmount,
+            { Purchase: { } purchase } => purchase.PriceAmount,
+            { Receipt: { } receipt } => receipt.PriceAmount,
+            _ => 0m
+        };
+
+    private string? Asset
+        => Object.Commerce switch
+        {
+            { Payment: { } payment } => payment.TokenId,
+            { Purchase: { } purchase } => purchase.TokenId,
+            { Receipt: { } receipt } => receipt.TokenId,
+            _ => null
+        };
+
+    private string AmountText
+        => $"{Amount.ToString("0.#############################", CultureInfo.InvariantCulture)} {(string.IsNullOrWhiteSpace(Asset) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : Asset)}";
+
+    private BusinessObjectSaleMode? SaleMode
+        => Object.Commerce switch
+        {
+            { Payment: { } payment } => payment.SaleMode,
+            { Purchase: { } purchase } => purchase.SaleMode,
+            { Receipt: { } receipt } => receipt.SaleMode,
+            _ => null
+        };
+
+    private string SaleModeText => SaleMode?.ToString() ?? "Sale mode unknown";
+
+    private string BuyerAddress
+        => Object.Commerce switch
+        {
+            { Payment: { } payment } => payment.BuyerAddress,
+            { Purchase: { } purchase } => purchase.BuyerAddress,
+            { Receipt: { } receipt } => receipt.BuyerAddress,
+            _ => "unknown"
+        };
+
+    private string SellerAddress
+        => Object.Commerce switch
+        {
+            { Payment: { } payment } => payment.SellerAddress,
+            { Purchase: { } purchase } => purchase.SellerAddress,
+            { Receipt: { } receipt } => receipt.SellerAddress,
+            _ => "unknown"
+        };
+
+    private IReadOnlyList<CommerceReference> References => BuildReferences();
+
+    private IReadOnlyList<CommerceReference> BuildReferences()
+    {
+        var rows = new List<CommerceReference>();
+        switch (Object.Commerce)
+        {
+            case { Payment: { } payment }:
+                Add(rows, "Target object", payment.TargetObjectId);
+                Add(rows, "Target outpoint", payment.TargetOutPoint);
+                Add(rows, "Delivered object", payment.DeliveredObjectId);
+                Add(rows, "Payment transaction", payment.PaymentTxId);
+                Add(rows, "Dispatch transaction", payment.DispatchTxId);
+                Add(rows, "Receipt object", payment.ReceiptObjectId);
+                Add(rows, "Purchase object", payment.PurchaseObjectId);
+                rows.Add(new("Created", string.Empty, false, payment.CreatedAtUtc));
+                if (payment.UpdatedAtUtc is { } paymentUpdated)
+                {
+                    rows.Add(new("Updated", string.Empty, false, paymentUpdated));
+                }
+                Add(rows, "Rejection reason", payment.RejectionReason, copyable: false);
+                break;
+
+            case { Purchase: { } purchase }:
+                Add(rows, "Target object", purchase.TargetObjectId);
+                Add(rows, "Delivered object", purchase.DeliveredObjectId);
+                Add(rows, "Payment object", purchase.PaymentObjectId);
+                Add(rows, "Receipt object", purchase.ReceiptObjectId);
+                Add(rows, "Payment transaction", purchase.PaymentTxId);
+                Add(rows, "Dispatch transaction", purchase.DispatchTxId);
+                rows.Add(new("Created", string.Empty, false, purchase.CreatedAtUtc));
+                if (purchase.UpdatedAtUtc is { } purchaseUpdated)
+                {
+                    rows.Add(new("Updated", string.Empty, false, purchaseUpdated));
+                }
+                break;
+
+            case { Receipt: { } receipt }:
+                Add(rows, "Target object", receipt.TargetObjectId);
+                Add(rows, "Delivered object", receipt.DeliveredObjectId);
+                Add(rows, "Payment object", receipt.PaymentObjectId);
+                Add(rows, "Payment transaction", receipt.PaymentTxId);
+                Add(rows, "Dispatch transaction", receipt.DispatchTxId);
+                rows.Add(new("Issued", string.Empty, false, receipt.IssuedAtUtc));
+                break;
+        }
+
+        return rows;
+    }
+
+    private static void Add(List<CommerceReference> rows, string label, string? value, bool copyable = true)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            rows.Add(new(label, value, copyable));
+        }
+    }
+
+    private sealed record CommerceReference(
+        string Label,
+        string Value,
+        bool Copyable = true,
+        DateTimeOffset? Timestamp = null);
+}

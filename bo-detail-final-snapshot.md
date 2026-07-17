@@ -1,0 +1,19 @@
+- generic [ref=f8e3] [box=0,0,1908,906]:
+  - generic [ref=f8e8] [box=0,0,1908,906]:
+    - complementary "Economy account app" [ref=f8e9] [box=0,0,76,906]:
+      - generic [ref=f8e10] [box=1,1,74,905]:
+        - generic [ref=f8e11] [box=11,11,54,89]
+        - navigation "Economy account app" [ref=f8e19] [box=11,108,54,696]
+        - button "Account" [ref=f8e75] [cursor=pointer] [box=14,848,48,48]
+    - main [ref=f8e78] [box=76,0,1832,906]:
+      - generic [ref=f8e79] [box=96,20,1792,866]:
+        - generic [ref=f8e82] [box=96,20,817,55]
+        - generic [ref=f8e315] [box=96,87,1777,698]
+  - dialog "Test image post - Details" [ref=f8e428] [box=0,0,1908,906]:
+    - generic [ref=f8e431] [box=58,27,1792,852]:
+      - generic [ref=f8e433] [box=75,42,1758,72]:
+        - heading "Test image post - Details" [level=2] [ref=f8e436] [box=75,62,253,32]
+        - button "Close" [active] [ref=f8e438] [box=1745,42,88,38]
+      - generic [ref=f8e444] [box=75,145,1758,624]:
+        - tablist "Business object detail sections" [ref=f8e445] [box=75,145,1758,42]
+        - tabpanel "Overview 1 item(s)" [ref=f8e464] [box=75,186,1758,583]

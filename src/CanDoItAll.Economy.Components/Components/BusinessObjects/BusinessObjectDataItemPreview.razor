@@ -6,11 +6,11 @@
     {
         <img src="@PreviewUri" alt="@Item.Name" />
     }
-    else if (IsVideo && PreviewUri is not null)
+    else if (!Thumbnail && IsVideo && PreviewUri is not null)
     {
         <video src="@PreviewUri" controls preload="metadata"></video>
     }
-    else if (IsAudio && PreviewUri is not null)
+    else if (!Thumbnail && IsAudio && PreviewUri is not null)
     {
         <div class="cda-bo-file-preview cda-bo-file-preview--audio">
             <Icon Name="graphic_eq" />
@@ -37,10 +37,14 @@
     [Parameter]
     public bool Flush { get; set; }
 
+    [Parameter]
+    public bool Thumbnail { get; set; }
+
     private string PreviewClass
         => CssClassBuilder.Join(
             "cda-bo-data-preview w-full",
             Large ? "cda-bo-data-preview--large" : null,
+            Thumbnail ? "cda-bo-data-preview--thumbnail" : null,
             Flush ? "cda-bo-data-preview--flush" : null);
 
     private string? PreviewUri

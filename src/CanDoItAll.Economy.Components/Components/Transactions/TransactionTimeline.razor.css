@@ -1,0 +1,21 @@
+.transaction-event-timeline__item:not(:last-child)::after {
+  position: absolute;
+  top: 1.75rem;
+  bottom: -0.2rem;
+  left: 0.86rem;
+  width: 1px;
+  background: var(--cad-color-border-soft, #dbe4ee);
+  content: "";
+}
+
+.transaction-event-timeline__item[data-tone="info"] .transaction-event-timeline__marker {
+  border-color: var(--cad-color-info-border, #7dd3fc);
+  background: var(--cad-color-info-soft, #e0f2fe);
+  color: var(--cad-color-info-strong, #0369a1);
+}
+
+.transaction-event-timeline__item[data-tone="success"] .transaction-event-timeline__marker {
+  border-color: var(--cad-color-success-border, #86efac);
+  background: var(--cad-color-success-soft, #dcfce7);
+  color: var(--cad-color-success-strong, #15803d);
+}

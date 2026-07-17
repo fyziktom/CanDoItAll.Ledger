@@ -1,10 +1,12 @@
 using Bunit;
 using AngleSharp.Dom;
+using System.Globalization;
 using CanDoItAll.Components.BaseLib;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
 using CanDoItAll.Economy.Components.Samples;
+using CanDoItAll.Economy.Components.Services;
 using CanDoItAll.Economy.Core;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -73,6 +75,58 @@ public sealed class TransactionUiComponentTests : TestContext
             .Single(button => button.TextContent.Contains("Details", StringComparison.Ordinal));
         await detailsButton.ClickAsync(new MouseEventArgs());
         Assert.Equal([transaction], requested);
+    }
+
+    [Fact]
+    public void HistoryDialog_prefers_saved_directory_names_and_keeps_short_addresses_visible()
+    {
+        LedgerTransactionSummary transaction = CreateSummary(
+            "tx-address-labels",
+            DateTimeOffset.Parse("2026-07-03T12:00:00Z"),
+            8);
+        IRenderedComponent<TransactionHistoryDialogContent> component = RenderComponent<TransactionHistoryDialogContent>(parameters => parameters
+            .Add(x => x.Transactions, [transaction])
+            .Add(x => x.AccountAddress, Alice)
+            .Add(x => x.AccountName, "Alice account")
+            .Add(x => x.Bookmarks, [new EconomyAddressBookmark("Bob seed", Bob)])
+            .Add(x => x.DirectoryEntries,
+            [
+                new AddressDirectoryEntry(
+                    Bob.Value,
+                    "Bob saved contact",
+                    AddressDirectoryEntryKind.External,
+                    Favorite: true)
+            ]));
+
+        string route = component.FindAll("[data-testid='tx-history-grid'] tbody td")[1].TextContent;
+
+        Assert.Contains("Alice account (cdia1alice)", route, StringComparison.Ordinal);
+        Assert.Contains("Bob saved contact (cdia1bob)", route, StringComparison.Ordinal);
+        Assert.DoesNotContain("Bob seed", route, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HistoryDialog_humanizes_labels_and_formats_offsets_in_local_time()
+    {
+        DateTimeOffset timestamp = DateTimeOffset.Parse("2026-07-16T00:30:45+05:45");
+        LedgerTransactionSummary transaction = CreateSummary(
+            "tx-local-time",
+            timestamp,
+            9,
+            CreateMessageData());
+        IRenderedComponent<TransactionHistoryDialogContent> component = RenderComponent<TransactionHistoryDialogContent>(parameters => parameters
+            .Add(x => x.Transactions, [transaction]));
+
+        IReadOnlyList<IElement> cells = component.FindAll("[data-testid='tx-history-grid'] tbody td");
+        IElement? time = cells[7].QuerySelector("time");
+
+        Assert.Equal("Business object", cells[2].TextContent.Trim());
+        Assert.Equal("Business object", cells[6].TextContent.Trim());
+        Assert.NotNull(time);
+        Assert.Equal(timestamp.ToString("O"), time.GetAttribute("datetime"));
+        Assert.Equal(
+            timestamp.ToLocalTime().ToString("dd MMM yyyy · HH:mm:ss", CultureInfo.InvariantCulture),
+            time.TextContent.Trim());
     }
 
     [Fact]

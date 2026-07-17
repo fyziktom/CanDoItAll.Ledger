@@ -1,5 +1,6 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
+@inject IAddressDirectoryService AddressDirectory
 
 <Stack Section="true" GapScale="LayoutGap.Medium" data-testid="economy-account-home">
     <Toolbar>
@@ -85,7 +86,9 @@
         </TabsItem>
 
         <TabsItem Text="Balances" Icon="account_balance_wallet">
-            <Stack GapScale="LayoutGap.Medium">
+            <Stack GapScale="LayoutGap.Medium"
+                   AlignItems="AlignItems.Stretch"
+                   Class="w-full min-w-0">
                 <SectionCard Title="Balances" Description="Native, token, and source outputs available to this account.">
                     <HeaderActions>
                         <QrCodeButton Payload="@AccountAddressQrPayload"
@@ -94,119 +97,132 @@
                                       TestId="cda-balance-address-qr-button" />
                     </HeaderActions>
                     <ChildContent>
-                        <Stack GapScale="LayoutGap.Medium">
-                            <DataGrid TItem="AccountBalanceRow"
-                                      Data="@BalanceRows"
-                                      Caption="Account balances"
-                                      EmptyText="No balances are available for this account.">
-                                <Columns>
-                                    <DataGridColumn TItem="AccountBalanceRow" Property="Asset" Title="Asset" />
-                                    <DataGridColumn TItem="AccountBalanceRow" Property="Amount" Title="Amount" />
-                                    <DataGridColumn TItem="AccountBalanceRow" Property="Shape" Title="Shape" />
-                                </Columns>
-                            </DataGrid>
-
-                            @if (SourceRows.Count > 0)
-                            {
-                                <FormSection Title="Source UTXOs" Description="Spendable token outputs available as transaction sources.">
+                        <Grid ColumnsLg="@(SourceRows.Count > 0 ? 2 : 1)"
+                              Gap="LayoutGap.Small"
+                              AlignItems="AlignItems.Start"
+                              Class="w-full min-w-0"
+                              data-testid="cda-balance-layout">
+                            <SurfaceCard Soft="true"
+                                         Class="w-full min-w-0"
+                                         Style="padding:0.75rem"
+                                         data-testid="cda-balance-summary-lane">
+                                <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch" Class="w-full min-w-0">
+                                    <SectionHead>
+                                        <Stack GapScale="LayoutGap.Tiny">
+                                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="Asset balances" />
+                                            <SmallText Text="Available native and token amounts." />
+                                        </Stack>
+                                        <Pill Text="@($"{BalanceRows.Count} asset(s)")" Tone="PillTone.Info" />
+                                    </SectionHead>
                                     <DataGrid TItem="AccountBalanceRow"
-                                              Data="@SourceRows"
-                                              Caption="Source UTXOs">
+                                              Data="@BalanceRows"
+                                              Caption="Account balances"
+                                              EmptyText="No balances are available for this account.">
                                         <Columns>
-                                            <DataGridColumn TItem="AccountBalanceRow" Title="Asset">
-                                                <Template Context="row">
-                                                    <Stack GapScale="LayoutGap.Tiny">
-                                                        <strong>@row.Asset</strong>
-                                                        <CopyableMonoValue Value="@row.OutPoint" StartChars="8" EndChars="6" AriaLabel="Copy token source outpoint" />
-                                                    </Stack>
-                                                </Template>
-                                            </DataGridColumn>
+                                            <DataGridColumn TItem="AccountBalanceRow" Property="Asset" Title="Asset" />
                                             <DataGridColumn TItem="AccountBalanceRow" Property="Amount" Title="Amount" />
-                                            <DataGridColumn TItem="AccountBalanceRow" Title="Shape">
-                                                <Template Context="row">
-                                                    <StatusBadge Text="Source" Tone="info" />
-                                                </Template>
-                                            </DataGridColumn>
+                                            <DataGridColumn TItem="AccountBalanceRow" Property="Shape" Title="Shape" />
                                         </Columns>
                                     </DataGrid>
-                                </FormSection>
+                                </Stack>
+                            </SurfaceCard>
+                            @if (SourceRows.Count > 0)
+                            {
+                                <SurfaceCard Soft="true"
+                                             Class="w-full min-w-0"
+                                             Style="padding:0.75rem"
+                                             data-testid="cda-balance-sources-lane">
+                                    <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch" Class="w-full min-w-0">
+                                        <SectionHead>
+                                            <Stack GapScale="LayoutGap.Tiny">
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Source UTXOs" />
+                                                <SmallText Text="Spendable token outputs available for new transactions." />
+                                            </Stack>
+                                            <Pill Text="@($"{SourceRows.Count} source(s)")" Tone="PillTone.Ok" />
+                                        </SectionHead>
+                                        <DataGrid TItem="AccountBalanceRow"
+                                                  Data="@SourceRows"
+                                                  Caption="Source UTXOs">
+                                            <Columns>
+                                                <DataGridColumn TItem="AccountBalanceRow" Title="Asset">
+                                                    <Template Context="row">
+                                                        <Stack GapScale="LayoutGap.Tiny">
+                                                            <strong>@row.Asset</strong>
+                                                            <CopyableMonoValue Value="@row.OutPoint" StartChars="8" EndChars="6" AriaLabel="Copy token source outpoint" />
+                                                        </Stack>
+                                                    </Template>
+                                                </DataGridColumn>
+                                                <DataGridColumn TItem="AccountBalanceRow" Property="Amount" Title="Amount" />
+                                                <DataGridColumn TItem="AccountBalanceRow" Title="Shape">
+                                                    <Template Context="row">
+                                                        <StatusBadge Text="Source" Tone="info" />
+                                                    </Template>
+                                                </DataGridColumn>
+                                            </Columns>
+                                        </DataGrid>
+                                    </Stack>
+                                </SurfaceCard>
                             }
-                        </Stack>
+                        </Grid>
                     </ChildContent>
                 </SectionCard>
             </Stack>
         </TabsItem>
 
         <TabsItem Text="Commerce" Icon="payments" BadgeText="@CommerceRecordCount.ToString()">
-            <Stack GapScale="LayoutGap.Medium" data-testid="cda-commerce-tab-panel">
+            <Stack GapScale="LayoutGap.Medium"
+                   AlignItems="AlignItems.Stretch"
+                   Class="w-full min-w-0"
+                   data-testid="cda-commerce-tab-panel">
                 <BusinessObjectCommerceDashboard Workspace="Workspace"
+                                                 DirectoryEntries="@addressDirectoryEntries"
                                                  EditRequested="TransactionSubmitRequested"
                                                  TransactionDetailsRequested="BusinessObjectTransactionDetailsRequested" />
             </Stack>
         </TabsItem>
 
         <TabsItem Text="Transactions history" Icon="receipt_long" BadgeText="@Workspace.Transactions.Count.ToString()">
-            <Stack GapScale="LayoutGap.Medium" data-testid="cda-recent-transactions">
-                <SectionCard Title="Transactions history"
-                             Description="The five most recent account-visible ledger transactions.">
-                    <HeaderActions>
-                        <PageHeaderActionButton Icon="open_in_full"
-                                                Label="Show all transactions"
-                                                TooltipText="Show all transactions"
-                                                Variant="Variant.Outlined"
-                                                Click="OpenAllTransactionsAsync"
-                                                TestId="cda-show-all-transactions" />
-                    </HeaderActions>
-                    <ChildContent>
-                        @if (Workspace.Transactions.Count == 0)
-                        {
-                            <EmptyState Title="No transactions yet"
-                                        Description="No account-visible transactions have been loaded for this workspace." />
-                        }
-                        else
-                        {
-                            <Stack GapScale="LayoutGap.Small">
-                                @foreach (LedgerTransactionSummary transaction in RecentTransactions)
-                                {
-                                     <SelectionListItem Title="@transaction.TxId.Value"
-                                                        Eyebrow="@transaction.Kind.ToString()"
-                                                        Meta="@($"{transaction.Status} / {transaction.Timestamp:HH:mm}")"
-                                                        Summary="@FormatRoute(transaction)"
-                                                        Dense="true"
-                                                        OnSelect="@(() => TransactionDetailsRequested.InvokeAsync(transaction))">
-                                        <Status>
-                                            <Icon Name="@HistoryIcon(transaction)" />
-                                        </Status>
-                                        <Actions>
-                                             <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
-                                                 <CopyButton Value="@FormatRoute(transaction)"
-                                                             DisplayMode="CopyButtonDisplayMode.IconOnly"
-                                                             Size="CopyButtonSize.Small"
-                                                             AriaLabel="Copy transaction route" />
-                                                 <CopyButton Value="@transaction.TxId.Value"
-                                                             DisplayMode="CopyButtonDisplayMode.IconOnly"
-                                                             Size="CopyButtonSize.Small"
-                                                            AriaLabel="Copy transaction id" />
-                                                <PageHeaderActionButton Icon="info"
-                                                                        Label="Transaction details"
-                                                                        TooltipText="Open transaction details"
-                                                                        Variant="Variant.Outlined"
-                                                                        Click="@(() => TransactionDetailsRequested.InvokeAsync(transaction))"
-                                                                        TestId="cda-transaction-details-button" />
-                                            </Cluster>
-                                        </Actions>
-                                    </SelectionListItem>
-                                }
-                            </Stack>
-                        }
-                    </ChildContent>
-                </SectionCard>
+            <Stack GapScale="LayoutGap.Small"
+                   AlignItems="AlignItems.Stretch"
+                   Class="w-full min-w-0"
+                   data-testid="cda-recent-transactions">
+                <SectionHead>
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.H4" Value="Transactions history" />
+                        <SmallText Text="The 10 most recent account-visible ledger transactions. Open the full history for older activity." />
+                    </Stack>
+                    <PageHeaderActionButton Icon="open_in_full"
+                                            Label="Show all transactions"
+                                            TooltipText="Show all transactions"
+                                            Variant="Variant.Outlined"
+                                            Click="OpenAllTransactionsAsync"
+                                            TestId="cda-show-all-transactions" />
+                </SectionHead>
+
+                @if (Workspace.Transactions.Count == 0)
+                {
+                    <EmptyState Title="No transactions yet"
+                                Description="No account-visible transactions have been loaded for this workspace." />
+                }
+                else
+                {
+                    <TransactionHistoryList Items="@Workspace.Transactions"
+                                            AccountAddress="@Workspace.Address"
+                                            AccountName="@Workspace.AccountName"
+                                            Bookmarks="@Workspace.AddressBookmarks"
+                                            DirectoryEntries="@addressDirectoryEntries"
+                                            MaxItems="10"
+                                            TransactionDetailsRequested="@TransactionDetailsRequested" />
+                }
             </Stack>
         </TabsItem>
     </Tabs>
 </Stack>
 
 @code {
+    private IReadOnlyList<AddressDirectoryEntry> addressDirectoryEntries = [];
+    private BusinessObjectWorkspaceModel? addressDirectoryWorkspace;
+
     [Parameter, EditorRequired]
     public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
 
@@ -257,6 +273,17 @@
 
     [Parameter]
     public Func<MessageSecurityDecryptRequest, Task<MessageSecurityActionResult>>? MessageDecryptRequested { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ReferenceEquals(addressDirectoryWorkspace, Workspace))
+        {
+            return;
+        }
+
+        addressDirectoryWorkspace = Workspace;
+        await ReloadAddressDirectoryAsync();
+    }
 
     private IEnumerable<KeyValuePair<TokenId, Amount>> OrderedTokenBalances
         => Workspace.Balance.TokenBalances.OrderBy(token => token.Key.Value, StringComparer.Ordinal);
@@ -318,12 +345,6 @@
 
     private string NodeLabel
         => Workspace.NodeBaseUri?.ToString() ?? "local";
-
-    private IReadOnlyList<LedgerTransactionSummary> RecentTransactions
-        => LedgerTransactionOrdering
-            .NewestFirst(Workspace.Transactions)
-            .Take(5)
-            .ToArray();
 
     private QrCodePayload AccountAddressQrPayload
         => new(
@@ -391,8 +412,9 @@
                 TestId = "cda-settings-backup-dialog"
             });
 
-    private Task OpenAddressDirectoryAsync()
-        => DialogService.OpenAsync<AddressDirectoryDialogContent>(
+    private async Task OpenAddressDirectoryAsync()
+    {
+        await DialogService.OpenAsync<AddressDirectoryDialogContent>(
             "Address Directory",
             new Dictionary<string, object?>
             {
@@ -407,6 +429,23 @@
                 Class = "cda-ledger-dialog",
                 TestId = "cda-address-directory-dialog"
             });
+
+        await ReloadAddressDirectoryAsync();
+    }
+
+    private async Task ReloadAddressDirectoryAsync()
+    {
+        AddressDirectorySeed seed = AddressDirectorySeed.FromWorkspace(Workspace);
+        try
+        {
+            addressDirectoryEntries = await AddressDirectory.GetEntriesAsync(seed);
+        }
+        catch (Exception)
+        {
+            // The transaction surface remains usable when browser-local directory storage is unavailable.
+            addressDirectoryEntries = seed.Entries;
+        }
+    }
 
     private Task OpenMessageSecurityDialogAsync()
         => DialogService.OpenAsync<MessageSecurityPanel>(
@@ -441,34 +480,21 @@
             {
                 [nameof(TransactionHistoryDialogContent.Transactions)] = Workspace.Transactions,
                 [nameof(TransactionHistoryDialogContent.AccountAddress)] = Workspace.Address,
+                [nameof(TransactionHistoryDialogContent.AccountName)] = Workspace.AccountName,
+                [nameof(TransactionHistoryDialogContent.Bookmarks)] = Workspace.AddressBookmarks,
+                [nameof(TransactionHistoryDialogContent.DirectoryEntries)] = addressDirectoryEntries,
                 [nameof(TransactionHistoryDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested
             },
             new DialogOptions
             {
-                Subtitle = $"{Workspace.AccountName} - {Workspace.Transactions.Count} account-visible transactions",
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog",
+                Class = "cda-ledger-dialog cda-ledger-dialog--compact",
                 TestId = "cda-transaction-history-dialog"
             });
 
     private static string FormatAmount(Amount amount) => amount.ToString();
-
-    private static string FormatRoute(LedgerTransactionSummary transaction)
-    {
-        string inputs = transaction.InputAddresses.Count == 0
-            ? "mint"
-            : string.Join(", ", transaction.InputAddresses.Select(address => address.Value));
-        string outputs = transaction.OutputAddresses.Count == 0
-            ? "none"
-            : string.Join(", ", transaction.OutputAddresses.Select(address => address.Value));
-
-        return $"{inputs} \u2192 {outputs}";
-    }
-
-    private static string HistoryIcon(LedgerTransactionSummary transaction)
-        => transaction.Kind == TransactionKind.Mint ? "south" : "north";
 
     private static bool IsTokenSourceOutput(LedgerSpendableOutput output)
         => output.BusinessObject is null

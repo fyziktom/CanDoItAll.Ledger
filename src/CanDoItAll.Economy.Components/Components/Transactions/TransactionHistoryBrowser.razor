@@ -32,11 +32,11 @@
                                                                EndChars="6"
                                                                AriaLabel="Copy transaction id" />
                                             <TextBlock TextStyle="TextStyle.Body2"
-                                                       Value="@($"{item.Kind} - {item.Status} - {item.Timestamp:MM.dd HH:mm}")" />
+                                                       Value="@($"{TransactionUiPresentation.KindLabel(item.Kind)} · {item.Status} · {TransactionUiPresentation.FormatLocalTimestamp(item.Timestamp)}")" />
                                             <SmallText Text="@($"{item.Inputs.Count} input(s), {item.Outputs.Count} output(s)")" />
                                         </Stack>
                                     </Cluster>
-                                    <StatusBadge Text="@item.Status.ToString()" Tone="@StatusTone(item.Status)" />
+                                    <StatusBadge Text="@item.Status.ToString()" Tone="@TransactionUiPresentation.StatusTone(item.Status)" />
                                 </Split>
                             </ListItem>
                         }
@@ -60,11 +60,4 @@
             _ => "receipt_long"
         };
 
-    private static string StatusTone(TransactionStatus status)
-        => status switch
-        {
-            TransactionStatus.Confirmed => "success",
-            TransactionStatus.Rejected => "danger",
-            _ => "warning"
-        };
 }

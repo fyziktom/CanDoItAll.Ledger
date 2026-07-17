@@ -7,42 +7,38 @@
 else
 {
     <div class="min-w-0" data-testid="tx-details-layout">
-        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch" Class="w-full min-w-0 max-w-full">
-            <Toolbar>
-                <ToolbarRow>
-                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap" Class="min-w-0">
-                    <Icon Name="@StatusIcon" />
-                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                        <TextBlock TextStyle="TextStyle.Eyebrow">@Details.Status transaction</TextBlock>
-                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Details.Kind.ToString()" />
-                        <Cluster Gap="LayoutGap.Small" aria-label="Transaction identifiers">
-                            <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap">
-                                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Tx" />
-                                <CopyableMonoValue Value="@Details.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" />
-                            </Cluster>
-                            @if (Details.TxHash is not null)
-                            {
-                                <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap">
-                                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Hash" />
-                                    <HashDisplay Value="@Details.TxHash.Value.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction hash" />
-                                </Cluster>
-                            }
-                            <QrCodeButton Payload="@TransactionQrPayload"
-                                          Label="Show transaction QR"
-                                          TooltipText="Show transaction hash as QR"
-                                          Variant="Variant.Outlined"
-                                          TestId="cda-tx-hash-qr-button" />
-                        </Cluster>
-                    </Stack>
+        <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.Stretch" Class="w-full min-w-0 max-w-full">
+            <Toolbar Class="gap-2"
+                     Style="padding:0.5rem;box-shadow:none"
+                     data-testid="cda-transaction-identity-strip">
+                <ToolbarRow Class="gap-2!">
+                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap" Class="min-w-0">
+                        <Icon Name="@StatusIcon" />
+                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@TransactionKindLabel" />
+                        <StatusBadge Text="@Details.Status.ToString()" Tone="@StatusTone" NoWrap="true" />
+                        <StatusBadge Text="@SigningLabel" Tone="neutral" NoWrap="true" />
+                        <StatusBadge Text="@($"{Details.Inputs.Count} in · {Details.Outputs.Count} out")" Tone="info" NoWrap="true" />
+                        <StatusBadge Text="@($"{TotalSignatures} signature(s)")" Tone="neutral" NoWrap="true" />
+                        <StatusBadge Text="@CreatedLabel" Tone="neutral" NoWrap="true" />
                     </Cluster>
-                    <CompactStatStrip Class="justify-end" aria-label="Transaction status metadata">
-                        <CompactStat Label="Kind" Value="@Details.Kind.ToString()" Tone="@KindTone" />
-                        <CompactStat Label="Signing" Value="@Details.SigningMode.ToString()" />
-                        <CompactStat Label="Status" Value="@Details.Status.ToString()" Tone="@StatusTone" />
-                        <CompactStat Label="In" Value="@Details.Inputs.Count.ToString()" Tone="info" />
-                        <CompactStat Label="Out" Value="@Details.Outputs.Count.ToString()" Tone="success" />
-                        <CompactStat Label="Created" Value="@($"{Details.Timestamp:MM.dd HH:mm}")" />
-                    </CompactStatStrip>
+                    <Cluster Gap="LayoutGap.Small"
+                             JustifyContent="JustifyContent.End"
+                             Wrap="FlexWrap.Wrap"
+                             Class="min-w-0"
+                             aria-label="Transaction identifiers">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Tx" />
+                        <CopyableMonoValue Value="@Details.TxId.Value" StartChars="12" EndChars="8" AriaLabel="Copy transaction id" />
+                        @if (HasDistinctTransactionHash)
+                        {
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Hash" />
+                            <HashDisplay Value="@Details.TxHash!.Value.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction hash" />
+                        }
+                        <QrCodeButton Payload="@TransactionQrPayload"
+                                      Label="Show transaction QR"
+                                      TooltipText="Show transaction identifier as QR"
+                                      Variant="Variant.Outlined"
+                                      TestId="cda-tx-hash-qr-button" />
+                    </Cluster>
                 </ToolbarRow>
             </Toolbar>
 
@@ -52,182 +48,40 @@ else
                   PanelOverflowMode="TabsPanelOverflowMode.Visible"
                   AriaLabel="Transaction detail sections">
                 <TabsItem Text="Overview" Icon="hub">
-                    <Grid Gap="LayoutGap.Medium" ColumnTemplateLg="@OverviewColumnTemplate">
-                        <TxFlowGraph Inputs="Details.Inputs" Outputs="Details.Outputs" />
-                        @if (IsMintTransaction)
-                        {
-                            <div data-testid="cda-mint-structure-overview">
-                                <SectionCard Title="Mint structure" Description="Permission-backed mint flow">
-                                    <HeaderActions>
-                                        <StatusBadge Text="permission-backed" Tone="info" />
-                                    </HeaderActions>
-                                    <ChildContent>
-                                    <Stack GapScale="LayoutGap.Small">
-                                        @if (MintPermissionInput is not null)
-                                        {
-                                            <SurfaceCard Soft="true">
-                                                <Cluster Gap="LayoutGap.Medium" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
-                                                    <Icon Name="vpn_key" />
-                                                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="Permission BO input" />
-                                                        <TextBlock TextStyle="TextStyle.Muted" Value="@PermissionObjectSummary(MintPermissionInput.BusinessObject)" />
-                                                        <Cluster Gap="LayoutGap.Tiny">
-                                                            <TextBlock TextStyle="TextStyle.Caption" Value="Spent from" />
-                                                            <CopyableMonoValue Value="@MintPermissionInput.PreviousOutPoint.ToString()" StartChars="10" EndChars="6" AriaLabel="Copy permission outpoint" />
-                                                        </Cluster>
-                                                    </Stack>
-                                                </Cluster>
-                                            </SurfaceCard>
-                                        }
-                                        @if (MintedTokenOutput is not null)
-                                        {
-                                            <SurfaceCard Soft="true">
-                                                <Cluster Gap="LayoutGap.Medium" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
-                                                    <Icon Name="add_circle" />
-                                                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="Minted token output" />
-                                                        <TextBlock TextStyle="TextStyle.Muted" Value="@FormatToken(MintedTokenOutput.Token)" />
-                                                        <Cluster Gap="LayoutGap.Tiny">
-                                                            <TextBlock TextStyle="TextStyle.Caption" Value="Sent to" />
-                                                            <CopyableMonoValue Value="@MintedTokenOutput.Address.Value" StartChars="10" EndChars="6" AriaLabel="Copy minted token receiver" />
-                                                        </Cluster>
-                                                    </Stack>
-                                                </Cluster>
-                                            </SurfaceCard>
-                                        }
-                                        @if (MintPermissionReturnOutput is not null)
-                                        {
-                                            <SurfaceCard Soft="true">
-                                                <Cluster Gap="LayoutGap.Medium" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
-                                                    <Icon Name="replay" />
-                                                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="Permission returned" />
-                                                        <TextBlock TextStyle="TextStyle.Muted" Value="@PermissionObjectSummary(MintPermissionReturnOutput.BusinessObject)" />
-                                                        <Cluster Gap="LayoutGap.Tiny">
-                                                            <TextBlock TextStyle="TextStyle.Caption" Value="Returned to" />
-                                                            <CopyableMonoValue Value="@MintPermissionReturnOutput.Address.Value" StartChars="10" EndChars="6" AriaLabel="Copy returned permission address" />
-                                                            <TextBlock TextStyle="TextStyle.Caption" Value="for future minting" />
-                                                        </Cluster>
-                                                    </Stack>
-                                                </Cluster>
-                                            </SurfaceCard>
-                                        }
-                                    </Stack>
-                                    </ChildContent>
-                                </SectionCard>
-                            </div>
-                        }
+                    <Grid Gap="LayoutGap.Small" ColumnTemplateLg="@OverviewColumnTemplate" AlignItems="AlignItems.Start">
+                        <TransactionInputOutputFlow Inputs="Details.Inputs"
+                                                    Outputs="Details.Outputs"
+                                                    TransactionId="Details.TxId"
+                                                    DirectoryEntries="DirectoryEntries"
+                                                    InputPresentationSelector="InputPresentation"
+                                                    OutputPresentationSelector="OutputPresentation" />
                         <TransactionTimeline Details="Details" />
                     </Grid>
                 </TabsItem>
 
                 <TabsItem Text="Inputs & outputs" Icon="account_tree" BadgeText="@($"{Details.Inputs.Count}/{Details.Outputs.Count}")">
-                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-                        <SectionCard Title="Inputs" Description="Transaction sources">
-                            <HeaderActions><StatusBadge Text="@($"{Details.Inputs.Count} row(s)")" Tone="info" /></HeaderActions>
-                            <ChildContent>
-                            <div class="min-w-0">
-                                @if (Details.Inputs.Count == 0)
-                                {
-                                    <EmptyState Eyebrow="Inputs" Title="No inputs" Description="Only genesis-style mint transactions should have no inputs." />
-                                }
-                                else
-                                {
-                                    <Stack GapScale="LayoutGap.Small">
-                                        @foreach (EconomyTransactionInputDetails input in Details.Inputs)
-                                        {
-                                            <TxInputCard Input="input"
-                                                         RoleLabel="@InputRoleLabel(input)"
-                                                         RoleTone="@InputRoleTone(input)"
-                                                         SupportingText="@InputSupportingText(input)" />
-                                        }
-                                    </Stack>
-                                }
-                            </div>
-                            </ChildContent>
-                        </SectionCard>
-
-                        <SectionCard Title="Outputs" Description="Transaction destinations">
-                            <HeaderActions><StatusBadge Text="@($"{Details.Outputs.Count} row(s)")" Tone="success" /></HeaderActions>
-                            <ChildContent>
-                            <div class="min-w-0">
-                                @if (Details.Outputs.Count == 0)
-                                {
-                                    <EmptyState Eyebrow="Outputs" Title="No outputs" Description="No outputs are attached to this transaction." />
-                                }
-                                else
-                                {
-                                    <Stack GapScale="LayoutGap.Small">
-                                        @foreach (EconomyTransactionOutputDetails output in Details.Outputs)
-                                        {
-                                            <TxOutputCard Output="output"
-                                                          TransactionId="Details.TxId"
-                                                          RoleLabel="@OutputRoleLabel(output)"
-                                                          RoleTone="@OutputRoleTone(output)"
-                                                          SupportingText="@OutputSupportingText(output)" />
-                                        }
-                                    </Stack>
-                                }
-                            </div>
-                            </ChildContent>
-                        </SectionCard>
-                    </Grid>
+                    <TransactionInputOutputFlow Inputs="Details.Inputs"
+                                                Outputs="Details.Outputs"
+                                                TransactionId="Details.TxId"
+                                                DirectoryEntries="DirectoryEntries"
+                                                DetailLevel="TransactionFlowDetailLevel.Detailed"
+                                                InputPresentationSelector="InputPresentation"
+                                                OutputPresentationSelector="OutputPresentation" />
                 </TabsItem>
 
                 <TabsItem Text="Payload" Icon="data_object">
-                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-                        <TxDataPayloadViewer Data="Details.Data" />
-                        <SectionCard Title="Business object outputs" Description="Payload references">
-                            <div class="min-w-0">
-                                @if (BusinessObjectOutputs.Count == 0)
-                                {
-                                    <EmptyState Eyebrow="Business objects" Title="No output references" Description="No BO output references are attached." />
-                                }
-                                else
-                                {
-                                    <Stack GapScale="LayoutGap.Small">
-                                        @foreach (EconomyTransactionOutputDetails output in BusinessObjectOutputs)
-                                        {
-                                            <SurfaceCard Soft="true">
-                                                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                                                    <TextBlock TextStyle="TextStyle.Subtitle2">Output #@output.OutputIndex</TextBlock>
-                                                    <CopyableMonoValue Value="@BusinessObjectId.FromOutPoint(Details.TxId, output.OutputIndex).Value" Truncate="false" AriaLabel="Copy business object UTXO id" />
-                                                    <TextBlock TextStyle="TextStyle.Caption">@output.BusinessObject!.Operation v@output.BusinessObject.Version</TextBlock>
-                                                    <HashDisplay Value="@output.BusinessObject!.DataHash.Value" />
-                                                </Stack>
-                                            </SurfaceCard>
-                                        }
-                                    </Stack>
-                                }
-                            </div>
-                        </SectionCard>
-                    </Grid>
+                    <TxDataPayloadViewer Data="Details.Data"
+                                         Outputs="Details.Outputs"
+                                         TransactionId="Details.TxId" />
                 </TabsItem>
 
                 <TabsItem Text="Signatures" Icon="key" BadgeText="@TotalSignatures.ToString()">
-                    @if (Details.Inputs.Count == 0)
-                    {
-                        <EmptyState Eyebrow="Signatures" Title="No input signatures" Description="This transaction has no spend inputs to sign." />
-                    }
-                    else
-                    {
-                        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
-                            @foreach (EconomyTransactionInputDetails input in Details.Inputs)
-                            {
-                                <TxSignatureCard Input="input" />
-                            }
-                        </Grid>
-                    }
+                    <TransactionSignatureList Inputs="Details.Inputs" />
                 </TabsItem>
 
                 <TabsItem Text="Raw tx" Icon="code" BadgeText="JSON">
-                    <div data-testid="tx-raw-json-panel">
-                        <SectionCard Title="Structured raw transaction" Description="Raw payload">
-                            <HeaderActions><StatusBadge Text="JSON" Tone="neutral" /></HeaderActions>
-                            <ChildContent>
-                                <LedgerCodeBlock Text="@RawTransactionJson" data-testid="tx-raw-json" />
-                            </ChildContent>
-                        </SectionCard>
+                    <div class="min-w-0" data-testid="tx-raw-json-panel">
+                        <LedgerCodeBlock Text="@RawTransactionJson" data-testid="tx-raw-json" />
                     </div>
                 </TabsItem>
             </Tabs>
@@ -239,40 +93,35 @@ else
     [Parameter]
     public EconomyTransactionDetailsModel? Details { get; set; }
 
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+
     private string StatusIcon
-        => Details?.Status == TransactionStatus.Confirmed ? "verified" : "pending";
+        => Details is null ? "receipt_long" : TransactionUiPresentation.StatusIcon(Details.Status);
 
     private string StatusTone
-        => Details?.Status == TransactionStatus.Confirmed ? "success" : "warning";
+        => Details is null ? "neutral" : TransactionUiPresentation.StatusTone(Details.Status);
 
-    private string KindTone
-        => Details?.Kind == TransactionKind.Mint ? "info" : "neutral";
+    private string TransactionKindLabel
+        => Details is null ? "Transaction" : TransactionUiPresentation.KindLabel(Details.Kind);
+
+    private string SigningLabel
+        => Details is null ? "Signing unknown" : $"{Details.SigningMode} signing";
+
+    private string CreatedLabel
+        => Details is null
+            ? "Date unavailable"
+            : TransactionUiPresentation.FormatLocalTimestamp(Details.Timestamp);
+
+    private bool HasDistinctTransactionHash
+        => Details?.TxHash is { } hash
+            && !string.Equals(hash.Value, Details.TxId.Value, StringComparison.OrdinalIgnoreCase);
 
     private string OverviewColumnTemplate
-        => IsMintTransaction
-            ? "minmax(0,0.95fr) minmax(0,0.68fr) minmax(0,0.72fr)"
-            : "minmax(0,1.05fr) minmax(0,0.72fr)";
+        => "minmax(0,1.25fr) minmax(18rem,0.62fr)";
 
     private bool IsMintTransaction
         => Details?.Kind == TransactionKind.Mint;
-
-    private EconomyTransactionInputDetails? MintPermissionInput
-        => IsMintTransaction
-            ? Details?.Inputs.FirstOrDefault(IsPermissionInput)
-            : null;
-
-    private EconomyTransactionOutputDetails? MintedTokenOutput
-        => IsMintTransaction
-            ? Details?.Outputs.FirstOrDefault(IsMintedTokenOutput)
-            : null;
-
-    private EconomyTransactionOutputDetails? MintPermissionReturnOutput
-        => IsMintTransaction
-            ? Details?.Outputs.FirstOrDefault(IsPermissionReturnOutput)
-            : null;
-
-    private IReadOnlyList<EconomyTransactionOutputDetails> BusinessObjectOutputs
-        => Details?.Outputs.Where(output => output.BusinessObject is not null).ToArray() ?? [];
 
     private int TotalSignatures
         => Details?.Inputs.Sum(input => input.SignatureCount) ?? 0;
@@ -306,49 +155,21 @@ else
             && PermissionTokenAuthority.IsPermissionToken(output.Token)
             && IsPermissionBusinessObject(output.BusinessObject);
 
-    private string? InputRoleLabel(EconomyTransactionInputDetails input)
-        => IsPermissionInput(input) ? "Permission BO" : null;
-
-    private string InputRoleTone(EconomyTransactionInputDetails input)
-        => IsPermissionInput(input) ? "warning" : "info";
-
-    private string? InputSupportingText(EconomyTransactionInputDetails input)
+    private TransactionFlowItemPresentation? InputPresentation(EconomyTransactionInputDetails input)
         => IsPermissionInput(input)
-            ? $"Mint authority input: {PermissionObjectSummary(input.BusinessObject)}."
+            ? new("Permission authority", "warning", "Spent mint permission; the returned permission output remains reusable.")
             : null;
 
-    private string? OutputRoleLabel(EconomyTransactionOutputDetails output)
+    private TransactionFlowItemPresentation? OutputPresentation(EconomyTransactionOutputDetails output)
     {
         if (IsMintedTokenOutput(output))
         {
-            return "Minted token";
+            return new("Minted token", "success");
         }
 
         if (IsPermissionReturnOutput(output))
         {
-            return "Permission returned";
-        }
-
-        return null;
-    }
-
-    private string OutputRoleTone(EconomyTransactionOutputDetails output)
-        => IsMintedTokenOutput(output)
-            ? "success"
-            : IsPermissionReturnOutput(output)
-                ? "warning"
-                : "neutral";
-
-    private string? OutputSupportingText(EconomyTransactionOutputDetails output)
-    {
-        if (IsMintedTokenOutput(output))
-        {
-            return $"Minted {FormatToken(output.Token)} to the output address.";
-        }
-
-        if (IsPermissionReturnOutput(output))
-        {
-            return $"Repeatable permission BO returned for future minting: {PermissionObjectSummary(output.BusinessObject)}.";
+            return new("Permission returned", "warning", "Reusable authority for a future mint transaction.");
         }
 
         return null;
@@ -357,16 +178,4 @@ else
     private static bool IsPermissionBusinessObject(EconomyTransactionBusinessObjectDetails? businessObject)
         => businessObject is not null;
 
-    private static string FormatToken(TokenTransfer? token)
-        => token is null ? "none" : $"{token.Amount} {token.TokenId.Value}";
-
-    private static string PermissionObjectSummary(EconomyTransactionBusinessObjectDetails? businessObject)
-    {
-        if (businessObject is null)
-        {
-            return "Permission BO not attached";
-        }
-
-        return $"Permission authority / v{businessObject.Version}";
-    }
 }

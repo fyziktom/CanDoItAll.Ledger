@@ -84,10 +84,86 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
 
         Assert.Empty(component.FindAll("[data-testid='cda-bo-overview-no-data']"));
         Assert.Single(component.FindAll(".cda-bo-selected-preview"));
+        Assert.Single(component.FindAll("[data-testid='cda-bo-overview-data-item-selector']"));
         component.Find("[data-testid='cda-bo-data-items-tab-button']").Click();
         Assert.Single(component.FindAll("[data-testid='cda-bo-data-items-tab']"));
         Assert.Single(component.FindAll("[data-testid='cda-bo-data-items-tab-list']"));
         Assert.Contains("Main photo", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DetailsDialog_OverviewSelectorAndFullListShareSelectedDataItem()
+    {
+        var mainPhoto = new BusinessObjectDataItem(
+            "Main photo",
+            BusinessObjectDataItemType.Image,
+            BusinessObjectDataItemStorage.Url,
+            "main-photo-hash",
+            new Uri("https://example.test/main-photo.png"),
+            "image/png",
+            "main-photo.png",
+            128,
+            IsMain: true);
+        var report = new BusinessObjectDataItem(
+            "Audit report",
+            BusinessObjectDataItemType.Pdf,
+            BusinessObjectDataItemStorage.Url,
+            "audit-report-hash",
+            new Uri("https://example.test/audit-report.pdf"),
+            "application/pdf",
+            "audit-report.pdf",
+            4096);
+        ITypedBusinessObjectView mediaObject = CreateTypedObject(
+            "post",
+            "Multi-item post",
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            [mainPhoto, report]);
+
+        IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
+            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+                .Add(x => x.Object, mediaObject));
+
+        IReadOnlyList<AngleSharp.Dom.IElement> options = component.FindAll("[data-testid='cda-bo-overview-data-item-option']");
+        Assert.Equal(2, options.Count);
+        Assert.Equal("true", options[0].GetAttribute("aria-selected"));
+        Assert.Equal("false", options[1].GetAttribute("aria-selected"));
+
+        options[1].Click();
+
+        AngleSharp.Dom.IElement preview = component.Find("[data-testid='cda-bo-selected-preview']");
+        Assert.Equal(report.Hash, preview.GetAttribute("data-item-hash"));
+        Assert.Equal("false", component.FindAll("[data-testid='cda-bo-overview-data-item-option']")[0].GetAttribute("aria-selected"));
+        Assert.Equal("true", component.FindAll("[data-testid='cda-bo-overview-data-item-option']")[1].GetAttribute("aria-selected"));
+
+        component.Find("[data-testid='cda-bo-data-items-tab-button']").Click();
+        SelectionListItem selected = Assert.Single(
+            component.FindComponents<SelectionListItem>(),
+            item => item.Instance.Title == report.Name).Instance;
+        Assert.True(selected.IsSelected);
+    }
+
+    [Fact]
+    public void DataItemPreviewSelector_UsesIconsInsteadOfNestedMediaControls()
+    {
+        var video = new BusinessObjectDataItem(
+            "Demo video",
+            BusinessObjectDataItemType.AVMedia,
+            BusinessObjectDataItemStorage.Url,
+            "demo-video-hash",
+            new Uri("https://example.test/demo.mp4"),
+            "video/mp4",
+            "demo.mp4",
+            2048,
+            IsMain: true);
+
+        IRenderedComponent<BusinessObjectDataItemPreviewSelector> component =
+            RenderComponent<BusinessObjectDataItemPreviewSelector>(parameters => parameters
+                .Add(x => x.Items, [video])
+                .Add(x => x.SelectedItem, video));
+
+        Assert.Empty(component.FindAll("video"));
+        Assert.Empty(component.FindAll("audio"));
+        Assert.Single(component.FindAll("[role='option'][aria-selected='true']"));
     }
 
     [Fact]

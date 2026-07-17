@@ -382,16 +382,16 @@
         @if (ShowTransactionDetailsDialog)
         {
             <Dialog IsOpen="true"
-                    Eyebrow="Confirmed ledger transaction"
                     Title="Transaction detail"
-                    Subtitle="Review the confirmed ledger outputs."
                     Size="ModalSize.Full"
                     DenseChrome="true"
                     CloseOnBackdrop="false"
+                    Class="cda-ledger-dialog cda-ledger-dialog--compact"
                     OnClose="DismissTransactionDetailsDialog"
                     TestId="transaction-detail">
                 <ChildContent>
-                    <TransactionDetailsDialogContent Details="Session.SelectedTransactionDetails" />
+                    <TransactionDetailsDialogContent Details="Session.SelectedTransactionDetails"
+                                                     DirectoryEntries="@(Session.Workspace is null ? Array.Empty<AddressDirectoryEntry>() : AddressDirectorySeed.FromWorkspace(Session.Workspace).Entries)" />
                 </ChildContent>
             </Dialog>
         }

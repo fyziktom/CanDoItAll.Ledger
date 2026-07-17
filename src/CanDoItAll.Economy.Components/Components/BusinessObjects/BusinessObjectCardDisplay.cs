@@ -21,6 +21,9 @@ internal static class BusinessObjectCardDisplay
     }
 
     public static string Description(IBusinessObjectView item)
+        => TrimForCard(FullDescription(item));
+
+    public static string FullDescription(IBusinessObjectView item)
     {
         if (item is IMediaBusinessObjectView media)
         {
@@ -29,7 +32,7 @@ internal static class BusinessObjectCardDisplay
                 : media.Text;
             if (!string.IsNullOrWhiteSpace(mediaDescription))
             {
-                return TrimForCard(mediaDescription);
+                return mediaDescription;
             }
         }
 
@@ -40,13 +43,21 @@ internal static class BusinessObjectCardDisplay
                 ? payload.Text
                 : StateText(item);
 
-        return TrimForCard(state);
+        return state;
     }
 
     public static string StateText(IBusinessObjectView item)
         => item.StateJson ?? string.Empty;
 
     public static IReadOnlyList<string> TagsFor(IBusinessObjectView item)
+        => ExplicitTagsFor(item)
+            .Concat(item.ObjectType.Split(['-', ':', '.'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .Concat([item.Operation.ToString(), $"v{item.Version}"])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(12)
+            .ToArray();
+
+    public static IReadOnlyList<string> ExplicitTagsFor(IBusinessObjectView item)
     {
         IEnumerable<string> mediaTags = item is IMediaBusinessObjectView media
             ? media.Tags
@@ -60,12 +71,21 @@ internal static class BusinessObjectCardDisplay
 
         return mediaTags
             .Concat(payloadTags)
-            .Concat(item.ObjectType.Split(['-', ':', '.'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            .Concat([item.Operation.ToString(), $"v{item.Version}"])
+            .Select(tag => tag.Trim().TrimStart('#'))
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(8)
             .ToArray();
     }
+
+    public static string OperationIcon(BusinessObjectOperation operation)
+        => operation switch
+        {
+            BusinessObjectOperation.Create => "add_circle",
+            BusinessObjectOperation.Update => "edit",
+            BusinessObjectOperation.Transfer => "swap_horiz",
+            BusinessObjectOperation.Close => "archive",
+            _ => "change_circle"
+        };
 
     public static BusinessObjectDataItem? ImageFor(IBusinessObjectView item)
     {

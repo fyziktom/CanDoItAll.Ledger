@@ -1,48 +1,303 @@
 @namespace CanDoItAll.Economy.Components
+@using System.Globalization
 
-<SectionCard Title="Transaction history" Description="Recent account-visible ledger activity">
-    <Stack GapScale="LayoutGap.Small">
-        @foreach (LedgerTransactionSummary transaction in Items)
-        {
-            <SurfaceCard Soft="true">
-                <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Start" Gap="LayoutGap.Small">
-                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                        <strong><CopyableMonoValue Value="@transaction.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" /></strong>
-                        <CopyableMonoValue Value="@FormatRoute(transaction)" StartChars="18" EndChars="10" AriaLabel="Copy transaction route" />
-                    </Stack>
-                    <Cluster Gap="LayoutGap.Small">
-                        <Pill Text="@transaction.Kind.ToString()" Tone="PillTone.Info" />
-                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@ResolveStatusTone(transaction.Status)" />
-                        <Pill Text="@transaction.Timestamp.ToString("g")" Tone="PillTone.Neutral" />
-                    </Cluster>
-                </Split>
-            </SurfaceCard>
-        }
-    </Stack>
-</SectionCard>
+<div class="min-w-0"
+     data-testid="cda-recent-transaction-table">
+    <DataGrid TItem="TransactionHistoryRow"
+              Data="@Rows"
+              Caption="Latest account transactions"
+              EmptyText="No account-visible transactions are available."
+              RowSelect="OpenDetailsAsync"
+              data-testid="cda-recent-transaction-grid">
+        <Columns>
+            <DataGridColumn TItem="TransactionHistoryRow" Title="#">
+                <Template Context="row">
+                    <span class="whitespace-nowrap text-xs text-slate-500"
+                          title="@(row.Transaction.LedgerSequence is null ? "Ledger sequence unavailable" : $"Ledger sequence {row.Transaction.LedgerSequence}")">
+                        @(row.Transaction.LedgerSequence?.ToString(CultureInfo.InvariantCulture) ?? "—")
+                    </span>
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="TransactionHistoryRow" Title="Date &amp; time">
+                <Template Context="row">
+                    <time class="whitespace-nowrap text-xs font-medium text-slate-700"
+                          datetime="@row.Transaction.Timestamp.ToString("O", CultureInfo.InvariantCulture)"
+                          title="@row.Transaction.Timestamp.ToString("O", CultureInfo.InvariantCulture)">
+                        @TransactionUiPresentation.FormatLocalTimestampWithSeconds(row.Transaction.Timestamp)
+                    </time>
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="TransactionHistoryRow" Title="Type">
+                <Template Context="row">
+                    <StatusBadge Text="@TransactionUiPresentation.KindLabel(row.Transaction.Kind)" Tone="neutral" NoWrap="true" />
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="TransactionHistoryRow" Title="Status">
+                <Template Context="row">
+                    <StatusBadge Text="@row.Transaction.Status.ToString()"
+                                 Tone="@TransactionUiPresentation.StatusTone(row.Transaction.Status)"
+                                 NoWrap="true" />
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="TransactionHistoryRow" Title="Direction">
+                <Template Context="row">
+                    <StatusBadge Text="@DirectionLabel(row.Direction)"
+                                 Tone="@DirectionTone(row.Direction)"
+                                 NoWrap="true" />
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="TransactionHistoryRow" Title="Flow">
+                <Template Context="row">
+                    <StatusBadge Text="@($"{row.Transaction.Inputs.Count} → {row.Transaction.Outputs.Count}")"
+                                 Tone="info"
+                                 NoWrap="true" />
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="TransactionHistoryRow" Title="Counterparty">
+                <Template Context="row">
+                    <span class="block max-w-xs truncate font-medium text-slate-800"
+                          title="@row.CounterpartyTooltip">
+                        @row.CounterpartyLabel
+                    </span>
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="TransactionHistoryRow" Title="Transaction">
+                <Template Context="row">
+                    <div data-testid="cda-recent-transaction-row"
+                         @onclick:stopPropagation="true"
+                         @onkeydown:stopPropagation="true">
+                        <CopyableMonoValue Value="@row.Transaction.TxId.Value"
+                                           StartChars="8"
+                                           EndChars="6"
+                                           AriaLabel="Copy transaction id" />
+                    </div>
+                </Template>
+            </DataGridColumn>
+
+            <DataGridColumn TItem="TransactionHistoryRow" Title="Actions">
+                <Template Context="row">
+                    <div @onclick:stopPropagation="true"
+                         @onkeydown:stopPropagation="true">
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                            <CopyButton Value="@row.Route"
+                                        DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                        Size="CopyButtonSize.ExtraSmall"
+                                        AriaLabel="Copy transaction route"
+                                        title="Copy transaction route" />
+                            <Button Text="Details"
+                                    Icon="open_in_new"
+                                    Size="ButtonSize.Small"
+                                    Variant="Variant.Text"
+                                    Click="@(() => OpenDetailsAsync(row))"
+                                    title="Open transaction details"
+                                    aria-label="Open transaction details" />
+                        </Cluster>
+                    </div>
+                </Template>
+            </DataGridColumn>
+        </Columns>
+    </DataGrid>
+</div>
 
 @code {
     [Parameter]
     public IReadOnlyList<LedgerTransactionSummary> Items { get; set; } = [];
 
+    [Parameter]
+    public Address? AccountAddress { get; set; }
+
+    [Parameter]
+    public string AccountName { get; set; } = "Current account";
+
+    [Parameter]
+    public IReadOnlyList<EconomyAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+
+    [Parameter]
+    public int MaxItems { get; set; } = 10;
+
+    [Parameter]
+    public EventCallback<LedgerTransactionSummary> TransactionDetailsRequested { get; set; }
+
+    private IReadOnlyList<TransactionHistoryRow> Rows
+        => LedgerTransactionOrdering
+            .NewestFirst(Items)
+            .Take(Math.Max(1, MaxItems))
+            .Select(CreateRow)
+            .ToArray();
+
+    private IReadOnlyDictionary<string, string> BookmarkNames
+        => DirectoryEntries
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.DisplayName))
+            .Select(entry => new KeyValuePair<string, string>(entry.Address, entry.DisplayName))
+            .Concat(Bookmarks
+                .Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.Name))
+                .Select(bookmark => new KeyValuePair<string, string>(bookmark.Address.Value, bookmark.Name)))
+            .GroupBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Value.Trim(),
+                StringComparer.OrdinalIgnoreCase);
+
+    private Task OpenDetailsAsync(TransactionHistoryRow row)
+        => TransactionDetailsRequested.InvokeAsync(row.Transaction);
+
+    private TransactionHistoryRow CreateRow(LedgerTransactionSummary transaction)
+    {
+        TransactionDirection direction = ResolveDirection(transaction);
+        Address[] counterparties = ResolveCounterparties(transaction, direction);
+
+        string label = counterparties.Length == 0
+            ? direction switch
+            {
+                TransactionDirection.Self => AccountName,
+                TransactionDirection.Mint => "Ledger issuance",
+                _ => "No counterparty"
+            }
+            : string.Join(", ", counterparties.Select(DisplayAddress));
+
+        string tooltip = counterparties.Length == 0
+            ? FormatRoute(transaction)
+            : string.Join(
+                Environment.NewLine,
+                counterparties.Select(address => $"{DisplayAddress(address)} — {address.Value}"));
+
+        return new TransactionHistoryRow(
+            transaction,
+            direction,
+            label,
+            tooltip,
+            FormatRoute(transaction));
+    }
+
+    private TransactionDirection ResolveDirection(LedgerTransactionSummary transaction)
+    {
+        if (AccountAddress is null)
+        {
+            return transaction.Kind is TransactionKind.Genesis or TransactionKind.Mint
+                ? TransactionDirection.Mint
+                : TransactionDirection.Related;
+        }
+
+        string account = AccountAddress.Value.Value;
+        bool isInput = transaction.InputAddresses.Any(address => SameAddress(address.Value, account));
+        bool isOutput = transaction.OutputAddresses.Any(address => SameAddress(address.Value, account));
+        bool hasExternalInput = transaction.InputAddresses.Any(address => !SameAddress(address.Value, account));
+        bool hasExternalOutput = transaction.OutputAddresses.Any(address => !SameAddress(address.Value, account));
+
+        if (!isInput && isOutput && transaction.InputAddresses.Count == 0)
+        {
+            return TransactionDirection.Mint;
+        }
+
+        if (isInput && isOutput)
+        {
+            if (hasExternalOutput)
+            {
+                return TransactionDirection.Outgoing;
+            }
+
+            return hasExternalInput
+                ? TransactionDirection.Incoming
+                : TransactionDirection.Self;
+        }
+
+        if (isInput)
+        {
+            return TransactionDirection.Outgoing;
+        }
+
+        if (isOutput)
+        {
+            return TransactionDirection.Incoming;
+        }
+
+        return TransactionDirection.Related;
+    }
+
+    private Address[] ResolveCounterparties(
+        LedgerTransactionSummary transaction,
+        TransactionDirection direction)
+    {
+        IEnumerable<Address> candidates = direction switch
+        {
+            TransactionDirection.Outgoing => transaction.OutputAddresses,
+            TransactionDirection.Incoming => transaction.InputAddresses,
+            TransactionDirection.Related => transaction.InputAddresses.Concat(transaction.OutputAddresses),
+            _ => []
+        };
+
+        string? account = AccountAddress?.Value;
+        return candidates
+            .Where(address => account is null || !SameAddress(address.Value, account))
+            .DistinctBy(address => address.Value, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private string DisplayAddress(Address address)
+        => BookmarkNames.TryGetValue(address.Value, out string? name)
+            ? name
+            : ShortAddress(address.Value);
+
     private static string FormatRoute(LedgerTransactionSummary transaction)
     {
         string inputs = transaction.InputAddresses.Count == 0
-            ? "mint"
+            ? "genesis/mint"
             : string.Join(", ", transaction.InputAddresses.Select(address => address.Value));
         string outputs = transaction.OutputAddresses.Count == 0
             ? "none"
             : string.Join(", ", transaction.OutputAddresses.Select(address => address.Value));
 
-        return $"{inputs} \u2192 {outputs}";
+        return $"{inputs} → {outputs}";
     }
 
-    private static string ResolveStatusTone(TransactionStatus status)
-        => status switch
+    private static string DirectionLabel(TransactionDirection direction)
+        => direction switch
         {
-            TransactionStatus.Confirmed => "success",
-            TransactionStatus.Pending => "warning",
-            TransactionStatus.Rejected or TransactionStatus.Reverted => "danger",
+            TransactionDirection.Incoming => "Incoming",
+            TransactionDirection.Outgoing => "Outgoing",
+            TransactionDirection.Self => "Self",
+            TransactionDirection.Mint => "Minted",
+            _ => "Related"
+        };
+
+    private static string DirectionTone(TransactionDirection direction)
+        => direction switch
+        {
+            TransactionDirection.Incoming => "success",
+            TransactionDirection.Outgoing => "warning",
+            TransactionDirection.Self or TransactionDirection.Mint => "info",
             _ => "neutral"
         };
+
+    private static string ShortAddress(string value)
+        => value.Length <= 18 ? value : $"{value[..10]}…{value[^6..]}";
+
+    private static bool SameAddress(string left, string right)
+        => left.Equals(right, StringComparison.OrdinalIgnoreCase);
+
+    private sealed record TransactionHistoryRow(
+        LedgerTransactionSummary Transaction,
+        TransactionDirection Direction,
+        string CounterpartyLabel,
+        string CounterpartyTooltip,
+        string Route);
+
+    private enum TransactionDirection
+    {
+        Related,
+        Incoming,
+        Outgoing,
+        Self,
+        Mint
+    }
 }

@@ -3,6 +3,7 @@
 @implements IAsyncDisposable
 @inject DialogService DialogService
 @inject NotificationService Notifications
+@inject IAddressDirectoryService AddressDirectory
 
 @if (loadError is not null)
 {
@@ -317,19 +318,25 @@ else
             return;
         }
 
+        IReadOnlyList<AddressDirectoryEntry> directoryEntries = workspace is null
+            ? []
+            : await AddressDirectory
+                .GetEntriesAsync(AddressDirectorySeed.FromWorkspace(workspace))
+                .ConfigureAwait(false);
+
         await DialogService.OpenAsync<TransactionDetailsDialogContent>(
             "Transaction Details",
             new Dictionary<string, object?>
             {
-                [nameof(TransactionDetailsDialogContent.Details)] = details
+                [nameof(TransactionDetailsDialogContent.Details)] = details,
+                [nameof(TransactionDetailsDialogContent.DirectoryEntries)] = directoryEntries
             },
             new DialogOptions
             {
-                Subtitle = $"{details.Kind} - {details.Status}",
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog",
+                Class = "cda-ledger-dialog cda-ledger-dialog--compact",
                 TestId = "cda-transaction-details-dialog"
             }).ConfigureAwait(false);
     }

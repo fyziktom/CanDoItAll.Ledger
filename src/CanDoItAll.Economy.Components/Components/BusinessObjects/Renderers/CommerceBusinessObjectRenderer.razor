@@ -11,8 +11,7 @@ else if (Mode == BusinessObjectRenderMode.Summary)
 {
     <Stack GapScale="LayoutGap.Tiny">
         <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Commerce.Name" />
-        <TextBlock TextStyle="TextStyle.Caption">@RecordKind / @Commerce.ObjectType</TextBlock>
-        <Cluster Gap="LayoutGap.Small">
+        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
             <StatusBadge Tone="info" Text="@RecordKind" />
             <StatusBadge Tone="@StatusTone" Text="@StatusText" />
         </Cluster>
@@ -21,43 +20,7 @@ else if (Mode == BusinessObjectRenderMode.Summary)
 else
 {
     <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
-        <Toolbar>
-            <ToolbarRow>
-                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
-                    <TextBlock TextStyle="TextStyle.Subtitle1" Value="@Commerce.Name" />
-                    @if (!string.IsNullOrWhiteSpace(Commerce.Description))
-                    {
-                        <TextBlock TextStyle="TextStyle.Body2" Value="@Commerce.Description" />
-                    }
-                </Stack>
-                <ToolbarActions>
-                    <CompactStatStrip>
-                        <CompactStat Label="record" Value="@RecordKind" Tone="info" />
-                        <CompactStat Label="status" Value="@StatusText" Tone="@StatusTone" />
-                        <CompactStat Label="type" Value="@Commerce.ObjectType" />
-                        <CompactStat Label="operation" Value="@Commerce.Operation.ToString()" />
-                    </CompactStatStrip>
-                </ToolbarActions>
-            </ToolbarRow>
-        </Toolbar>
-
-        @if (AllFacts.Count > 0)
-        {
-            <CompactStatStrip>
-            @foreach (BusinessObjectDisplayFact fact in AllFacts)
-            {
-                <CompactStat Label="@fact.Label" Value="@fact.Value" />
-            }
-            </CompactStatStrip>
-        }
-
-        @if (!string.IsNullOrWhiteSpace(Commerce.Text))
-        {
-            <SurfaceCard Soft="true">
-                <TextBlock TextStyle="TextStyle.Body2" Value="@Commerce.Text" />
-            </SurfaceCard>
-        }
-
+        <BusinessObjectCommerceSummary Object="Commerce" />
         <BusinessObjectRendererMediaDetails Media="@Commerce" />
     </Stack>
 }
@@ -111,53 +74,4 @@ else
             _ => "neutral"
         };
 
-    private IReadOnlyList<BusinessObjectDisplayFact> AllFacts
-        => Commerce is null
-            ? []
-            : Commerce.Facts
-                .Concat(AdditionalFacts)
-                .Where(fact => !string.IsNullOrWhiteSpace(fact.Value))
-                .GroupBy(fact => fact.Label, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .ToArray();
-
-    private IReadOnlyList<BusinessObjectDisplayFact> AdditionalFacts
-        => Commerce?.Commerce switch
-        {
-            { Payment: { } payment } => PaymentFacts(payment),
-            { Purchase: { } purchase } => PurchaseFacts(purchase),
-            { Receipt: { } receipt } => ReceiptFacts(receipt),
-            _ => []
-        };
-
-    private static IReadOnlyList<BusinessObjectDisplayFact> PaymentFacts(BusinessObjectPaymentRecord payment)
-        => CompactFacts(
-            ("Target version", payment.TargetVersion.ToString()),
-            ("Target outpoint", payment.TargetOutPoint),
-            ("Receipt BO", payment.ReceiptObjectId),
-            ("Purchase BO", payment.PurchaseObjectId),
-            ("Created", payment.CreatedAtUtc.ToString("g")),
-            ("Updated", payment.UpdatedAtUtc?.ToString("g")),
-            ("Rejection reason", payment.RejectionReason),
-            ("Max clones", payment.SaleMaxClones?.ToString()));
-
-    private static IReadOnlyList<BusinessObjectDisplayFact> PurchaseFacts(BusinessObjectPurchaseRecord purchase)
-        => CompactFacts(
-            ("Payment tx", purchase.PaymentTxId),
-            ("Dispatch tx", purchase.DispatchTxId),
-            ("Receipt BO", purchase.ReceiptObjectId),
-            ("Created", purchase.CreatedAtUtc.ToString("g")),
-            ("Updated", purchase.UpdatedAtUtc?.ToString("g")));
-
-    private static IReadOnlyList<BusinessObjectDisplayFact> ReceiptFacts(BusinessObjectReceiptRecord receipt)
-        => CompactFacts(
-            ("Payment tx", receipt.PaymentTxId),
-            ("Issued", receipt.IssuedAtUtc.ToString("g")));
-
-    private static IReadOnlyList<BusinessObjectDisplayFact> CompactFacts(
-        params (string Label, string? Value)[] values)
-        => values
-            .Where(value => !string.IsNullOrWhiteSpace(value.Value))
-            .Select(value => new BusinessObjectDisplayFact(value.Label, value.Value!))
-            .ToArray();
 }

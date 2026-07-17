@@ -1,54 +1,9 @@
 @namespace CanDoItAll.Economy.Components
 
 <div data-testid="cda-tx-flow-graph">
-<SectionCard Title="Inputs to outputs" Description="Flow">
-    <HeaderActions>
-        <StatusBadge Text="@($"{Inputs.Count} \u2192 {Outputs.Count}")" Tone="info" />
-    </HeaderActions>
-    <ChildContent>
-      <Grid ColumnTemplateLg="minmax(0, 1fr) auto minmax(0, 1fr)" Gap="LayoutGap.Medium" AlignItems="AlignItems.Center">
-        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
-            @foreach (EconomyTransactionInputDetails input in Inputs)
-            {
-                <SurfaceCard Soft="true">
-                    <Stack GapScale="LayoutGap.Small">
-                        <TextBlock TextStyle="TextStyle.Subtitle2">Input #@input.InputIndex</TextBlock>
-                        <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
-                            <SummaryTile Label="Main" Value="@FormatMain(input.MainAmount)" Compact="true" />
-                        @if (input.Token is not null)
-                        {
-                                <SummaryTile Label="Token" Value="@FormatToken(input.Token)" Compact="true" />
-                        }
-                        </SummaryTiles>
-                        <CopyableMonoValue Value="@input.Address.Value" StartChars="8" EndChars="5" AriaLabel="Copy input address" />
-                    </Stack>
-                </SurfaceCard>
-            }
-        </Stack>
-        <Stack AlignItems="AlignItems.Center">
-            <Icon Name="east" />
-        </Stack>
-        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
-            @foreach (EconomyTransactionOutputDetails output in Outputs)
-            {
-                <SurfaceCard Soft="true">
-                    <Stack GapScale="LayoutGap.Small">
-                        <TextBlock TextStyle="TextStyle.Subtitle2">Output #@output.OutputIndex</TextBlock>
-                        <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
-                            <SummaryTile Label="Main" Value="@output.MainAmount.ToString()" Compact="true" />
-                        @if (output.Token is not null)
-                        {
-                                <SummaryTile Label="Token" Value="@FormatToken(output.Token)" Compact="true" />
-                        }
-                        </SummaryTiles>
-                        <CopyableMonoValue Value="@output.Address.Value" StartChars="8" EndChars="5" AriaLabel="Copy output address" />
-                    </Stack>
-                </SurfaceCard>
-            }
-        </Stack>
-      </Grid>
-    </ChildContent>
-</SectionCard>
+    <TransactionInputOutputFlow Inputs="Inputs"
+                                Outputs="Outputs"
+                                DirectoryEntries="DirectoryEntries" />
 </div>
 
 @code {
@@ -58,9 +13,6 @@
     [Parameter]
     public IReadOnlyList<EconomyTransactionOutputDetails> Outputs { get; set; } = [];
 
-    private static string FormatMain(Amount? amount)
-        => amount?.ToString() ?? "unknown";
-
-    private static string FormatToken(TokenTransfer token)
-        => $"{token.Amount} {token.TokenId.Value}";
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
 }

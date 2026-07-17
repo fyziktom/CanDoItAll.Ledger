@@ -1,38 +1,68 @@
 @namespace CanDoItAll.Economy.Components
 
-<SurfaceCard Class="@CardClass"
-             Style="padding:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto"
-             role="article"
-             data-testid="@TestId">
-    @if (PreviewImage is not null)
-    {
-        <button type="button"
-                class="grid w-full min-w-0 cursor-pointer overflow-hidden border-0 border-b border-slate-200 bg-slate-100"
-                style="padding:0"
-                aria-label="@InfoLabel"
-                @onclick="OpenAsync">
+<article class="@CardClass"
+         data-bo-id="@Item.ObjectId.Value"
+         data-bo-type="@Item.ObjectType"
+         data-bo-operation="@Item.Operation.ToString()"
+         data-testid="@TestId">
+  <SurfaceCard Class="cda-bo-gallery-surface">
+    <button type="button"
+            class="cda-bo-gallery-preview"
+            data-testid="cda-bo-card-action"
+            aria-label="@InfoLabel"
+            @onclick="OpenAsync">
+        @if (PreviewImage is not null)
+        {
             <BusinessObjectDataItemPreview Item="PreviewImage" Flush="true" />
-        </button>
-    }
-    else
-    {
-        <div class="p-3">
-            <Button Icon="@BusinessObjectCardDisplay.PreviewIcon(Item)"
-                    Variant="Variant.Outlined"
-                    Size="ButtonSize.Small"
-                    Click="OpenAsync"
-                    aria-label="@InfoLabel" />
-        </div>
-    }
+        }
+        else
+        {
+            <span class="cda-bo-gallery-fallback" data-testid="cda-bo-card-fallback">
+                <span class="cda-bo-gallery-fallback__icon">
+                    <Icon Name="@BusinessObjectCardDisplay.PreviewIcon(Item)" />
+                </span>
+                <SmallText Text="@Item.ObjectType" />
+            </span>
+        }
+    </button>
+
     <Stack GapScale="LayoutGap.Small"
            AlignItems="AlignItems.Stretch"
-           Class="p-3 min-w-0">
-        <h3 class="cda-text-block cda-text-block--subtitle2 min-w-0 break-words">@DisplayName</h3>
-        <p class="cda-text-block cda-text-block--body2 cda-bo-gallery-description break-words">@Description</p>
-        <Cluster Gap="LayoutGap.Tiny">
-            <Pill Text="@Item.Operation.ToString()" Tone="PillTone.Info" />
-            <Pill Text="BO" Tone="PillTone.Neutral" />
-            <Pill Text="@Item.ObjectType" Tone="PillTone.Neutral" />
+           FillHeight="true"
+           Class="cda-bo-gallery-body min-w-0">
+        <Grid ColumnTemplate="minmax(0,1fr) auto" Gap="LayoutGap.Small" AlignItems="AlignItems.Center">
+            <h3 class="cda-text-block cda-text-block--subtitle2 cda-bo-gallery-title min-w-0 break-words">@DisplayName</h3>
+            <TooltipTarget Text="@OperationLabel"
+                           TabIndex="0"
+                           TriggerClass="shrink-0 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                           TestId="cda-bo-card-operation-tooltip">
+                <span class="cda-bo-gallery-operation @OperationToneClass"
+                      role="img"
+                      aria-label="@OperationLabel"
+                      data-testid="cda-bo-card-operation">
+                    <Icon Name="@BusinessObjectCardDisplay.OperationIcon(Item.Operation)" />
+                </span>
+            </TooltipTarget>
+        </Grid>
+        @if (DescriptionIsTruncated)
+        {
+            <TooltipTarget Text="@FullDescription"
+                           Position="TooltipPosition.Bottom"
+                           Duration="@((TimeSpan?)null)"
+                           TabIndex="0"
+                           TriggerClass="w-full min-w-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                           TestId="cda-bo-card-description-tooltip">
+                <span class="cda-text-block cda-text-block--body2 cda-bo-gallery-description w-full break-words"
+                      data-testid="cda-bo-card-description">@Description</span>
+            </TooltipTarget>
+        }
+        else
+        {
+            <p class="cda-text-block cda-text-block--body2 cda-bo-gallery-description break-words"
+               data-testid="cda-bo-card-description">@Description</p>
+        }
+        <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.Wrap">
+            <Pill Text="@Item.ObjectType" Tone="PillTone.Neutral" Class="cda-bo-gallery-type" />
             @if (SaleTerms is { Status: BusinessObjectSaleStatus.Listed } sale)
             {
                 <Pill Text="@($"{sale.Mode} / {BusinessObjectCardDisplay.FormatPrice(sale.PriceAmount, sale.TokenId)}")"
@@ -40,16 +70,6 @@
                       data-testid="cda-bo-sale-badge" />
             }
         </Cluster>
-        <Grid ColumnTemplate="minmax(0,1fr) auto" Gap="LayoutGap.Small">
-            <TextBlock TextStyle="TextStyle.Caption"
-                       Value="@BusinessObjectCardDisplay.ShortObjectId(Item.ObjectId)"
-                       Class="min-w-0 overflow-hidden"
-                       Style="white-space:nowrap;text-overflow:ellipsis" />
-            <TextBlock TextStyle="TextStyle.Caption"
-                       Value="@SortTimestamp.ToString("MM.dd.yyyy HH:mm")"
-                       Class="min-w-0 overflow-hidden"
-                       Style="white-space:nowrap;text-overflow:ellipsis" />
-        </Grid>
         @if (Facts.Count > 0)
         {
             <Grid ColumnTemplate="repeat(2,minmax(0,1fr))" Gap="LayoutGap.Small">
@@ -63,22 +83,55 @@
                 }
             </Grid>
         }
-        <Cluster Gap="LayoutGap.Tiny">
-            @foreach (string tag in Tags)
+        @if (Tags.Count > 0)
+        {
+            <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.Wrap" Class="cda-bo-gallery-tags">
+                @foreach (string tag in Tags.Take(VisibleTagCount))
+                {
+                    <Pill Text="@tag"
+                          Tone="@ToneForTag(tag)"
+                          Class="cda-bo-gallery-tag"
+                          data-testid="cda-bo-card-tag" />
+                }
+                @if (Tags.Count > VisibleTagCount)
+                {
+                    <TooltipTarget Text="@OverflowTagsTooltip"
+                                   Position="TooltipPosition.Bottom"
+                                   Duration="@((TimeSpan?)null)"
+                                   TabIndex="0"
+                                   TriggerClass="shrink-0 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                                   TestId="cda-bo-card-tags-overflow-tooltip">
+                        <Pill Text="..."
+                              Tone="PillTone.Plain"
+                              Class="cda-bo-gallery-tag cda-bo-gallery-tag--overflow"
+                              aria-label="@($"{OverflowTags.Count} more tags")"
+                              data-testid="cda-bo-card-tags-overflow" />
+                    </TooltipTarget>
+                }
+            </Cluster>
+        }
+        <div class="cda-bo-gallery-footer" data-testid="cda-bo-card-footer">
+            <CopyableMonoValue Value="@TransactionId"
+                               StartChars="8"
+                               EndChars="6"
+                               AriaLabel="Copy transaction ID"
+                               class="cda-bo-gallery-txid"
+                               data-testid="cda-bo-card-txid" />
+            <time class="cda-bo-gallery-time"
+                  datetime="@SortTimestamp.ToString("O")">@SortTimestamp.ToString("MM.dd.yyyy HH:mm")</time>
+            @if (ShowInfoButton)
             {
-                <Pill Text="@($"#{tag}")" Tone="PillTone.Neutral" />
+                <Button Icon="info"
+                        Variant="Variant.Text"
+                        Size="ButtonSize.Small"
+                        Class="cda-bo-gallery-info"
+                        Click="OpenAsync"
+                        aria-label="@InfoLabel" />
             }
-        </Cluster>
+        </div>
     </Stack>
-    @if (ShowInfoButton)
-    {
-        <Button Icon="info"
-                Variant="Variant.Filled"
-                Class="w-full"
-                Click="OpenAsync"
-                aria-label="@InfoLabel" />
-    }
-</SurfaceCard>
+  </SurfaceCard>
+</article>
 
 @code {
     [Parameter, EditorRequired]
@@ -97,15 +150,25 @@
     public int MaxFacts { get; set; } = 2;
 
     [Parameter]
+    public int MaxTags { get; set; } = 5;
+
+    [Parameter]
+    public int DescriptionCharacterLimit { get; set; } = 96;
+
+    [Parameter]
+    public bool Compact { get; set; }
+
+    [Parameter]
     public string? Class { get; set; }
 
     [Parameter]
     public string TestId { get; set; } = "cda-bo-gallery-card";
 
     private string CardClass
-        => string.IsNullOrWhiteSpace(Class)
-            ? "overflow-hidden"
-            : $"overflow-hidden {Class}";
+        => CssClassBuilder.Join(
+            "cda-bo-gallery-card overflow-hidden",
+            Compact ? "cda-bo-gallery-card--compact" : null,
+            Class);
 
     private BusinessObjectDataItem? PreviewImage
         => BusinessObjectCardDisplay.ImageFor(Item);
@@ -113,14 +176,33 @@
     private string DisplayName
         => BusinessObjectCardDisplay.DisplayName(Item);
 
+    private string FullDescription
+        => BusinessObjectCardDisplay.FullDescription(Item);
+
+    private int EffectiveDescriptionLimit
+        => Math.Clamp(DescriptionCharacterLimit, 24, 400);
+
+    private bool DescriptionIsTruncated
+        => FullDescription.Length > EffectiveDescriptionLimit;
+
     private string Description
-        => BusinessObjectCardDisplay.Description(Item);
+        => DescriptionIsTruncated
+            ? $"{FullDescription[..EffectiveDescriptionLimit].TrimEnd()}..."
+            : FullDescription;
 
     private IReadOnlyList<BusinessObjectDisplayFact> Facts
         => BusinessObjectCardDisplay.FactsFor(Item);
 
     private IReadOnlyList<string> Tags
-        => BusinessObjectCardDisplay.TagsFor(Item);
+        => BusinessObjectCardDisplay.ExplicitTagsFor(Item);
+
+    private int VisibleTagCount => Math.Clamp(MaxTags, 0, 5);
+
+    private IReadOnlyList<string> OverflowTags
+        => Tags.Skip(VisibleTagCount).ToArray();
+
+    private string OverflowTagsTooltip
+        => $"More tags: {string.Join(", ", OverflowTags)}";
 
     private BusinessObjectSaleTerms? SaleTerms
         => BusinessObjectCardDisplay.SaleTermsFor(Item);
@@ -130,6 +212,41 @@
 
     private string InfoLabel
         => $"Open BO details for {DisplayName}";
+
+    private string OperationLabel
+        => Item.Operation switch
+        {
+            BusinessObjectOperation.Create => "Created BO",
+            BusinessObjectOperation.Update => "Updated BO",
+            BusinessObjectOperation.Transfer => "Transferred BO",
+            BusinessObjectOperation.Close => "Closed BO",
+            _ => "Changed BO"
+        };
+
+    private string TransactionId
+        => Item.CurrentOutPoint.TxId.Value;
+
+    private string OperationToneClass
+        => Item.Operation switch
+        {
+            BusinessObjectOperation.Create => "cda-bo-gallery-operation--create",
+            BusinessObjectOperation.Update => "cda-bo-gallery-operation--update",
+            BusinessObjectOperation.Transfer => "cda-bo-gallery-operation--transfer",
+            BusinessObjectOperation.Close => "cda-bo-gallery-operation--close",
+            _ => string.Empty
+        };
+
+    private static PillTone ToneForTag(string tag)
+    {
+        int bucket = tag.Aggregate(0, static (value, character) => value + char.ToUpperInvariant(character)) % 4;
+        return bucket switch
+        {
+            0 => PillTone.Info,
+            1 => PillTone.Ok,
+            2 => PillTone.Warn,
+            _ => PillTone.Neutral
+        };
+    }
 
     private Task OpenAsync()
         => OpenRequested.HasDelegate

@@ -13,6 +13,24 @@
     aspect-ratio: 16 / 10;
 }
 
+.cda-bo-data-preview--thumbnail {
+    height: 3.25rem;
+    aspect-ratio: 16 / 10;
+}
+
+.cda-bo-data-preview--thumbnail .cda-bo-file-preview {
+    gap: 0;
+    padding: 0.25rem;
+}
+
+.cda-bo-data-preview--thumbnail .cda-bo-file-preview ::deep .cda-material-icon {
+    font-size: 1.25rem;
+}
+
+.cda-bo-data-preview--thumbnail .cda-bo-file-preview ::deep .cda-text-block {
+    display: none;
+}
+
 .cda-bo-data-preview--flush {
     border: 0;
     border-radius: 0;

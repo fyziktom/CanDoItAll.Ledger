@@ -2,7 +2,11 @@
 @using System.Globalization
 @inherits BusinessObjectDataItemAddressComponentBase
 
-<section class="cda-bo-preview-stage" data-testid="cda-bo-selected-preview">
+<section class="cda-bo-preview-stage"
+         data-item-name="@Item.Name"
+         data-item-hash="@Item.Hash"
+         data-item-type="@Item.Type.ToString()"
+         data-testid="cda-bo-selected-preview">
     <div class="cda-bo-preview-stage__toolbar">
         <div>
             <strong>@Item.Name</strong>

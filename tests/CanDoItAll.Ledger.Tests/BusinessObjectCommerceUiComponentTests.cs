@@ -9,6 +9,8 @@ using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
 using CanDoItAll.Economy.Ledger;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
@@ -42,7 +44,9 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         Assert.Contains("For sale", panel.TextContent, StringComparison.Ordinal);
         Assert.Contains("Copy / 12.5 MAIN", panel.TextContent, StringComparison.Ordinal);
         Assert.Contains("0 / 3", panel.TextContent, StringComparison.Ordinal);
-        Assert.Contains("/buy-bo/tx/", panel.InnerHtml, StringComparison.Ordinal);
+        Assert.Contains(
+            component.FindComponents<CopyableMonoValue>(),
+            value => value.Instance.Value.Contains("/buy-bo/tx/", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -57,6 +61,155 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         IElement badge = component.Find("[data-testid='cda-bo-sale-badge']");
 
         Assert.Equal("Copy / 12.5 MAIN", badge.TextContent.Trim());
+    }
+
+    [Fact]
+    public void GalleryCard_UsesBoundedFallbackAndExplicitCompactTags()
+    {
+        ITypedBusinessObjectView post = CreatePost(
+            new BusinessObjectId("bo:post:compact-card"),
+            "Compact gallery card",
+            ListedAtUtc);
+
+        IRenderedComponent<BusinessObjectLedgerGallery> component =
+            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+                .Add(x => x.Workspace, CreateWorkspace(post)));
+
+        IElement card = component.Find("[data-testid='cda-bo-gallery-card']");
+        IElement operation = component.Find("[data-testid='cda-bo-card-operation']");
+        IElement tag = Assert.Single(component.FindAll("[data-testid='cda-bo-card-tag']"));
+
+        Assert.Contains("cda-bo-gallery-card", card.ClassList);
+        Assert.Single(card.QuerySelectorAll("[data-testid='cda-bo-card-fallback']"));
+        Assert.Equal("Created BO", operation.GetAttribute("aria-label"));
+        Assert.Equal("commerce", tag.TextContent.Trim(), ignoreCase: true);
+        Assert.DoesNotContain("BO", card.TextContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("#Create", card.TextContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("#v1", card.TextContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void GalleryCard_AnchorsTransactionFooterAndUsesTinyCopyActionWithoutTags()
+    {
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            "No-tag card",
+            "A short description.",
+            "A short description.",
+            string.Empty,
+            []);
+        ITypedBusinessObjectView post = CreateTypedView(
+            new BusinessObjectId("bo:post:no-tag-card"),
+            "post",
+            BusinessObjectPayloadBuilder.Serialize(payload));
+
+        IRenderedComponent<BusinessObjectGalleryCard> component =
+            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+                .Add(x => x.Item, post)
+                .Add(x => x.Workspace, CreateWorkspace(post)));
+
+        IElement footer = component.Find("[data-testid='cda-bo-card-footer']");
+        IElement body = component.Find(".cda-bo-gallery-body");
+        CopyableMonoValue transactionId = Assert.Single(component.FindComponents<CopyableMonoValue>()).Instance;
+        CopyButton copy = Assert.Single(
+            component.FindComponents<CopyButton>(),
+            candidate => candidate.Instance.AriaLabel == "Copy transaction ID").Instance;
+        string fullTransactionId = post.CurrentOutPoint.TxId.Value;
+        string expectedTransactionId = fullTransactionId.Length > 17
+            ? $"{fullTransactionId[..8]}...{fullTransactionId[^6..]}"
+            : fullTransactionId;
+
+        Assert.Empty(component.FindAll("[data-testid='cda-bo-card-tag']"));
+        Assert.Equal("cda-bo-card-footer", body.LastElementChild?.GetAttribute("data-testid"));
+        Assert.Contains("cda-bo-gallery-footer", footer.ClassList);
+        Assert.Equal(fullTransactionId, transactionId.Value);
+        Assert.Equal(expectedTransactionId, component.Find(".cda-bo-gallery-txid .cda-text-block--mono").TextContent.Trim());
+        Assert.Equal(fullTransactionId, copy.Value);
+        Assert.Equal(CopyButtonDisplayMode.IconOnly, copy.DisplayMode);
+        Assert.Equal(CopyButtonSize.ExtraSmall, copy.Size);
+        Assert.Equal(ListedAtUtc.ToString("O"), footer.QuerySelector("time")?.GetAttribute("datetime"));
+        Assert.DoesNotContain(
+            component.FindComponents<TooltipTarget>(),
+            candidate => candidate.Instance.TestId == "cda-bo-card-description-tooltip");
+    }
+
+    [Fact]
+    public void GalleryCard_LimitsTagsAndShowsTheRemainderThroughTooltipService()
+    {
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            "Tagged card",
+            "A short description.",
+            "A short description.",
+            "#alpha #beta #gamma #delta #epsilon #zeta #eta #theta #iota",
+            []);
+        ITypedBusinessObjectView post = CreateTypedView(
+            new BusinessObjectId("bo:post:tagged-card"),
+            "post",
+            BusinessObjectPayloadBuilder.Serialize(payload));
+
+        IRenderedComponent<BusinessObjectGalleryCard> component =
+            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+                .Add(x => x.Item, post));
+
+        IReadOnlyList<IElement> tags = component.FindAll("[data-testid='cda-bo-card-tag']");
+        IElement overflow = component.Find("[data-testid='cda-bo-card-tags-overflow']");
+        IRenderedComponent<TooltipTarget> tooltip = Assert.Single(
+            component.FindComponents<TooltipTarget>(),
+            candidate => candidate.Instance.TestId == "cda-bo-card-tags-overflow-tooltip");
+
+        Assert.Equal(5, tags.Count);
+        Assert.Equal(["alpha", "beta", "gamma", "delta", "epsilon"], tags.Select(tag => tag.TextContent.Trim()).ToArray());
+        Assert.All(tags, tag => Assert.DoesNotContain('#', tag.TextContent));
+        Assert.Equal("...", overflow.TextContent.Trim());
+        Assert.Equal("More tags: zeta, eta, theta, iota", tooltip.Instance.Text);
+
+        tooltip.Find("span").TriggerEvent("onmouseenter", new MouseEventArgs { ClientX = 1, ClientY = 1 });
+        Assert.Equal("More tags: zeta, eta, theta, iota", Services.GetRequiredService<TooltipService>().Current?.Text);
+    }
+
+    [Fact]
+    public void GalleryCard_TruncatesLongDescriptionsAndUsesPastTenseOperationTooltip()
+    {
+        const string description = "This intentionally long business object description contains enough detail to exceed the compact gallery card limit while preserving the complete content for the tooltip service.";
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            "Updated card",
+            description,
+            description,
+            "#alpha",
+            []);
+        ITypedBusinessObjectView post = CreateTypedView(
+            new BusinessObjectId("bo:post:updated-card"),
+            "post",
+            BusinessObjectPayloadBuilder.Serialize(payload),
+            operation: BusinessObjectOperation.Update);
+
+        IRenderedComponent<BusinessObjectGalleryCard> component =
+            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+                .Add(x => x.Item, post));
+
+        IElement renderedDescription = component.Find("[data-testid='cda-bo-card-description']");
+        IElement operation = component.Find("[data-testid='cda-bo-card-operation']");
+        IReadOnlyList<IRenderedComponent<TooltipTarget>> tooltips = component.FindComponents<TooltipTarget>();
+        IRenderedComponent<TooltipTarget> descriptionTooltip = Assert.Single(
+            tooltips,
+            candidate => candidate.Instance.TestId == "cda-bo-card-description-tooltip");
+        TooltipTarget operationTooltip = Assert.Single(
+            tooltips,
+            candidate => candidate.Instance.TestId == "cda-bo-card-operation-tooltip").Instance;
+
+        Assert.Equal($"{description[..96].TrimEnd()}...", renderedDescription.TextContent);
+        Assert.Equal(description, descriptionTooltip.Instance.Text);
+        Assert.Equal("Updated BO", operationTooltip.Text);
+        Assert.Equal("Updated BO", operation.GetAttribute("aria-label"));
+        Assert.Null(operation.GetAttribute("title"));
+
+        descriptionTooltip.Find("span").TriggerEvent("onmouseenter", new MouseEventArgs { ClientX = 1, ClientY = 1 });
+        Assert.Equal(description, Services.GetRequiredService<TooltipService>().Current?.Text);
     }
 
     [Fact]
@@ -272,23 +425,40 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     }
 
     [Fact]
-    public async Task CommerceDashboard_RendersPaymentRecordsWithTargetContext()
+    public async Task CommerceDashboard_RendersStructuredPaymentRowWithTargetContext()
     {
         ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
+        DateTimeOffset activityAt = ListedAtUtc.AddMinutes(7);
 
         IRenderedComponent<BusinessObjectCommerceDashboard> component =
             RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
-                .Add(x => x.Workspace, CreateWorkspace(payment)));
+                .Add(
+                    x => x.Workspace,
+                    CreateWorkspace(
+                        [payment],
+                        [CreateObjectTransaction(payment, activityAt)])));
 
-        IElement row = component.Find("[data-testid='cda-commerce-record']");
+        IElement row = FindCommerceRow(component, "payment");
+        IElement kind = row.QuerySelector("[data-testid='cda-commerce-record']")!;
+        IElement[] cells = row.QuerySelectorAll("td").ToArray();
+        IElement timestamp = Assert.IsAssignableFrom<IElement>(cells[0].QuerySelector("time"));
 
-        Assert.Contains("Payment", row.TextContent, StringComparison.Ordinal);
-        Assert.Contains("Pending / 25 MAIN", row.TextContent, StringComparison.Ordinal);
-        Assert.Contains(ListedObjectId.Value, row.TextContent, StringComparison.Ordinal);
+        Assert.Equal(activityAt.ToString("O"), timestamp.GetAttribute("datetime"));
+        Assert.Equal("payment", kind.GetAttribute("data-commerce-kind"));
+        Assert.Equal(payment.ObjectId.Value, kind.GetAttribute("data-record-id"));
+        Assert.Contains("Payment", cells[1].TextContent, StringComparison.Ordinal);
+        Assert.Contains("Pending", cells[2].TextContent, StringComparison.Ordinal);
+        Assert.NotNull(cells[2].QuerySelector(".cda-status-badge--tone-warning"));
+        Assert.Contains("25 MAIN", cells[3].TextContent, StringComparison.Ordinal);
+        Assert.NotNull(cells[3].QuerySelector(".cda-status-badge--tone-info"));
+        Assert.Contains(
+            cells[5].QuerySelectorAll("[title]"),
+            element => string.Equals(element.GetAttribute("title"), ListedObjectId.Value, StringComparison.Ordinal));
+        Assert.NotNull(cells[5].QuerySelector("[aria-label='Copy target business object id']"));
     }
 
     [Fact]
-    public async Task CommerceDashboard_SplitsPaymentsFromReceiptRecords()
+    public async Task CommerceDashboard_UnifiesPaymentAndReceiptRecordsWithKindMarkers()
     {
         ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
         ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync();
@@ -297,13 +467,13 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(payment, receipt)));
 
-        IElement payments = component.Find("[data-testid='cda-commerce-payments']");
-        IElement receipts = component.Find("[data-testid='cda-commerce-receipts']");
+        IElement grid = component.Find("[data-testid='cda-commerce-record-grid']");
 
-        Assert.Single(payments.QuerySelectorAll("[data-commerce-kind='payment']"));
-        Assert.Empty(payments.QuerySelectorAll("[data-commerce-kind='receipt']"));
-        Assert.Single(receipts.QuerySelectorAll("[data-commerce-kind='receipt']"));
-        Assert.Contains("Receipts", receipts.TextContent, StringComparison.Ordinal);
+        Assert.Equal(2, grid.QuerySelectorAll("tbody > tr").Count());
+        Assert.Single(grid.QuerySelectorAll("[data-commerce-kind='payment']"));
+        Assert.Single(grid.QuerySelectorAll("[data-commerce-kind='receipt']"));
+        Assert.Empty(component.FindAll("[data-testid='cda-commerce-payments']"));
+        Assert.Empty(component.FindAll("[data-testid='cda-commerce-receipts']"));
     }
 
     [Fact]
@@ -343,19 +513,19 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
                             CreateObjectTransaction(newerReceipt, ListedAtUtc.AddMinutes(4))
                         ])));
 
-        string[] payments = component.Find("[data-testid='cda-commerce-payments']")
-            .QuerySelectorAll("[data-commerce-kind='payment']")
-            .Select(row => row.TextContent)
-            .ToArray();
-        string[] receipts = component.Find("[data-testid='cda-commerce-receipts']")
-            .QuerySelectorAll("[data-commerce-kind='receipt']")
-            .Select(row => row.TextContent)
+        string[] recordIds = component.Find("[data-testid='cda-commerce-record-grid']")
+            .QuerySelectorAll("[data-testid='cda-commerce-record']")
+            .Select(marker => marker.GetAttribute("data-record-id") ?? string.Empty)
             .ToArray();
 
-        Assert.Contains(newerPaymentTargetId.Value, payments[0], StringComparison.Ordinal);
-        Assert.Contains(olderPaymentTargetId.Value, payments[1], StringComparison.Ordinal);
-        Assert.Contains(newerReceiptTargetId.Value, receipts[0], StringComparison.Ordinal);
-        Assert.Contains(olderReceiptTargetId.Value, receipts[1], StringComparison.Ordinal);
+        Assert.Equal(
+            [
+                newerReceipt.ObjectId.Value,
+                newerPayment.ObjectId.Value,
+                olderReceipt.ObjectId.Value,
+                olderPayment.ObjectId.Value
+            ],
+            recordIds);
     }
 
     [Fact]
@@ -374,10 +544,122 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         Assert.Equal(2, relatedButtons.Count);
         Assert.All(relatedButtons, button =>
         {
-            Assert.Contains("Sold BO", button.TextContent, StringComparison.Ordinal);
             Assert.False(button.HasAttribute("disabled"));
-            Assert.Contains("Listed Commerce Post", button.GetAttribute("title") ?? string.Empty, StringComparison.Ordinal);
+            Assert.Equal("Open related business object", button.GetAttribute("aria-label"));
+            Assert.Contains("Open Listed Commerce Post", button.GetAttribute("title") ?? string.Empty, StringComparison.Ordinal);
         });
+    }
+
+    [Fact]
+    public async Task CommerceDashboard_UsesSavedDirectoryNameForCounterparty()
+    {
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
+        var directoryEntry = new AddressDirectoryEntry(
+            Bob.Value,
+            "Bob commerce partner",
+            AddressDirectoryEntryKind.External,
+            Favorite: true);
+
+        IRenderedComponent<BusinessObjectCommerceDashboard> component =
+            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+                .Add(x => x.Workspace, CreateWorkspace(payment))
+                .Add(x => x.DirectoryEntries, [directoryEntry]));
+
+        IElement row = FindCommerceRow(component, "payment");
+        IElement counterpartyCell = row.QuerySelectorAll("td")[4];
+        IElement counterparty = Assert.IsAssignableFrom<IElement>(counterpartyCell.QuerySelector("[title]"));
+
+        Assert.Contains("Bob commerce partner", counterpartyCell.TextContent, StringComparison.Ordinal);
+        Assert.Contains(Bob.Value, counterparty.GetAttribute("title") ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CommerceDashboard_CompactAndDetailedFieldsExposeDifferentInformationDensity()
+    {
+        ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync();
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(receipt);
+
+        IRenderedComponent<BusinessObjectCommerceDashboard> compact =
+            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+                .Add(x => x.Workspace, workspace));
+        IRenderedComponent<BusinessObjectCommerceDashboard> detailed =
+            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+                .Add(x => x.Workspace, workspace)
+                .Add(x => x.Fields, BusinessObjectCommerceFields.Detailed));
+
+        string[] compactHeaders = CommerceHeaders(compact);
+        string[] detailedHeaders = CommerceHeaders(detailed);
+
+        Assert.DoesNotContain("Sale mode", compactHeaders);
+        Assert.DoesNotContain("Delivered object", compactHeaders);
+        Assert.DoesNotContain("Transactions", compactHeaders);
+        Assert.DoesNotContain("Rejection", compactHeaders);
+        Assert.Contains("Sale mode", detailedHeaders);
+        Assert.Contains("Delivered object", detailedHeaders);
+        Assert.Contains("Transactions", detailedHeaders);
+        Assert.Contains("Rejection", detailedHeaders);
+        Assert.Empty(compact.FindAll("[aria-label='Copy current record transaction id']"));
+        Assert.Empty(compact.FindAll("[aria-label='Copy payment transaction id']"));
+        Assert.Empty(compact.FindAll("[aria-label='Copy dispatch transaction id']"));
+        Assert.Single(detailed.FindAll("[aria-label='Copy current record transaction id']"));
+        Assert.Single(detailed.FindAll("[aria-label='Copy payment transaction id']"));
+        Assert.Single(detailed.FindAll("[aria-label='Copy dispatch transaction id']"));
+
+        IElement transactionCell = Assert.Single(
+            detailed.Find("[data-testid='cda-commerce-record-grid']")
+                .QuerySelectorAll("tbody > tr td"),
+            cell => cell.TextContent.Contains("Record", StringComparison.Ordinal)
+                && cell.TextContent.Contains("Payment", StringComparison.Ordinal)
+                && cell.TextContent.Contains("Dispatch", StringComparison.Ordinal));
+
+        Assert.Contains("payment-tx", transactionCell.TextContent, StringComparison.Ordinal);
+        Assert.Contains("dispatch-tx", transactionCell.TextContent, StringComparison.Ordinal);
+        Assert.Contains(receipt.CurrentOutPoint.TxId.Value[..8], transactionCell.TextContent, StringComparison.Ordinal);
+        Assert.NotEqual("payment-tx", receipt.CurrentOutPoint.TxId.Value);
+        Assert.NotEqual("dispatch-tx", receipt.CurrentOutPoint.TxId.Value);
+    }
+
+    [Fact]
+    public async Task CommerceSummary_RendersPaymentAsOneCompactPartyFlowAndReferenceTable()
+    {
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
+
+        IRenderedComponent<BusinessObjectCommerceSummary> component =
+            RenderComponent<BusinessObjectCommerceSummary>(parameters => parameters
+                .Add(x => x.Object, payment));
+
+        Assert.Single(component.FindAll("[data-testid='cda-commerce-record-summary']"));
+        Assert.Single(component.FindAll("[data-testid='cda-commerce-party-flow']"));
+        Assert.Single(component.FindAll("[data-testid='cda-commerce-reference-grid']"));
+        Assert.Contains("Target object", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Created", component.Markup, StringComparison.Ordinal);
+        Assert.Single(component.FindComponents<StatusBadge>(), badge => badge.Instance.Text == "Pending");
+        string[] copyValues = component.FindComponents<CopyableMonoValue>()
+            .Select(value => value.Instance.Value)
+            .ToArray();
+        Assert.Contains(Alice.Value, copyValues);
+        Assert.Contains(Bob.Value, copyValues);
+        Assert.Contains(ListedObjectId.Value, copyValues);
+        Assert.Empty(component.FindComponents<CompactStat>());
+        Assert.Empty(component.FindComponents<MetricCard>());
+    }
+
+    [Fact]
+    public async Task CommerceSummary_RendersReceiptDeliveryAndDispatchWithoutFactCardMosaic()
+    {
+        ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync();
+
+        IRenderedComponent<BusinessObjectCommerceSummary> component =
+            RenderComponent<BusinessObjectCommerceSummary>(parameters => parameters
+                .Add(x => x.Object, receipt));
+
+        Assert.Single(component.FindComponents<StatusBadge>(), badge => badge.Instance.Text == "Receipt");
+        Assert.Single(component.FindComponents<StatusBadge>(), badge => badge.Instance.Text == "Dispatched");
+        Assert.Contains("Delivered object", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Dispatch transaction", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Issued", component.Markup, StringComparison.Ordinal);
+        Assert.Empty(component.FindComponents<CompactStat>());
+        Assert.Empty(component.FindComponents<MetricCard>());
     }
 
     private static ITypedBusinessObjectView CreateListedPost(
@@ -500,7 +782,8 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         BusinessObjectId objectId,
         string objectType,
         string stateJson,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        BusinessObjectOperation operation = BusinessObjectOperation.Create)
     {
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault(objectType);
         BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(stateJson, objectId.Value);
@@ -513,7 +796,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             "1.0",
             1,
             Alice,
-            BusinessObjectOperation.Create,
+            operation,
             new HashHex(new string('1', 64)),
             OutPointFor(objectType, objectId),
             stateJson,
@@ -639,6 +922,21 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
 
     private static string BuyPathFor(OutPoint outPoint)
         => $"/buy-bo/tx/{Uri.EscapeDataString(outPoint.TxId.Value)}/{outPoint.OutputIndex}";
+
+    private static IElement FindCommerceRow(IRenderedFragment component, string kind)
+    {
+        IElement marker = Assert.Single(
+            component.FindAll("[data-testid='cda-commerce-record']"),
+            element => string.Equals(element.GetAttribute("data-commerce-kind"), kind, StringComparison.Ordinal));
+        IElement cell = Assert.IsAssignableFrom<IElement>(marker.ParentElement);
+        return Assert.IsAssignableFrom<IElement>(cell.ParentElement);
+    }
+
+    private static string[] CommerceHeaders(IRenderedFragment component)
+        => component.Find("[data-testid='cda-commerce-record-grid']")
+            .QuerySelectorAll("thead th")
+            .Select(header => header.TextContent.Trim())
+            .ToArray();
 
     private static void SelectOptionByText(IRenderedFragment component, string selector, string text)
     {

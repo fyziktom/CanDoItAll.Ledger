@@ -1,27 +1,12 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
 
-<div data-testid="cda-commerce-dashboard">
-    <SectionCard Title="Commerce records">
-        <HeaderActions>
-            <StatusBadge Text="@($"{CommerceItemCount} item(s)")" Tone="info" />
-        </HeaderActions>
-        <ChildContent>
-            @if (CommerceItemCount == 0)
-            {
-                <EmptyState Eyebrow="Commerce"
-                            Title="No commerce records"
-                            Description="No payment, purchase, or receipt records are visible in this account." />
-            }
-            else
-            {
-                <Stack GapScale="LayoutGap.Medium">
-                    @CommerceGroup("Payments", "payment", PaymentItems, "No payment records are visible in this account.")
-                    @CommerceGroup("Receipts", "receipt", ReceiptItems, "No receipt or purchase records are visible in this account.")
-                </Stack>
-            }
-        </ChildContent>
-    </SectionCard>
+<div class="w-full min-w-0" data-testid="cda-commerce-dashboard">
+    <BusinessObjectCommerceTable Rows="CommerceRows"
+                                 Fields="Fields"
+                                 PageSize="PageSize"
+                                 RecordRequested="OpenDetailsAsync"
+                                 RelatedObjectRequested="OpenRelatedDetailsAsync" />
 </div>
 
 @code {
@@ -29,104 +14,39 @@
     public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
 
     [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+
+    [Parameter]
+    public BusinessObjectCommerceFields Fields { get; set; } = BusinessObjectCommerceFields.Compact;
+
+    [Parameter]
+    public int PageSize { get; set; } = 10;
+
+    [Parameter]
     public EventCallback<BusinessObjectTransactionDraft> EditRequested { get; set; }
 
     [Parameter]
     public EventCallback<TxId> TransactionDetailsRequested { get; set; }
 
-    private int CommerceItemCount => PaymentItems.Count + ReceiptItems.Count;
-
-    private RenderFragment CommerceGroup(
-        string title,
-        string kind,
-        IReadOnlyList<ICommerceBusinessObjectView> items,
-        string emptyDescription)
-        => @<SurfaceCard Soft="true"
-                         data-testid="@($"cda-commerce-{(kind == "payment" ? "payments" : "receipts")}")">
-            <Stack GapScale="LayoutGap.Medium">
-                <Split Breakpoint="LayoutBreakpoint.None"
-                       Gap="LayoutGap.Medium"
-                       AlignItems="AlignItems.Center"
-                       JustifyContent="JustifyContent.SpaceBetween"
-                       Wrap="FlexWrap.Wrap">
-                    <TextBlock TextStyle="TextStyle.H3" Value="@title" />
-                    <StatusBadge Text="@($"{items.Count} item(s)")" Tone="info" />
-                </Split>
-
-                @if (items.Count == 0)
-                {
-                    <TextBlock TextStyle="TextStyle.Body2" Value="@emptyDescription" />
-                }
-                else
-                {
-                    <Stack GapScale="LayoutGap.Small">
-                        @foreach (ICommerceBusinessObjectView item in items)
-                        {
-                            IBusinessObjectView? relatedObject = ResolveRelatedBusinessObject(item);
-                            <SelectionListItem Title="@DisplayName(item)"
-                                               Summary="@SummaryFor(item)"
-                                               Meta="@item.ObjectType"
-                                               Dense="true"
-                                               OnSelect="@(() => OpenDetailsAsync(item))"
-                                               data-testid="cda-commerce-record"
-                                               data-commerce-kind="@kind">
-                                <Status>
-                                    <Icon Name="@IconFor(item)" />
-                                </Status>
-                                <Actions>
-                                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
-                                        <Button Text="Record"
-                                                Icon="info"
-                                                Size="ButtonSize.Small"
-                                                Variant="Variant.Outlined"
-                                                Click="@(() => OpenDetailsAsync(item))"
-                                                data-testid="cda-commerce-record-details" />
-                                        <Button Text="@RelatedButtonText(item)"
-                                                Icon="inventory_2"
-                                                Size="ButtonSize.Small"
-                                                ButtonStyle="ButtonStyle.Secondary"
-                                                Disabled="@(relatedObject is null)"
-                                                Click="@(() => OpenRelatedDetailsAsync(relatedObject))"
-                                                title="@RelatedButtonTitle(relatedObject)"
-                                                data-testid="cda-commerce-related-details" />
-                                    </Cluster>
-                                </Actions>
-                            </SelectionListItem>
-                        }
-                    </Stack>
-                }
-            </Stack>
-        </SurfaceCard>;
-
-    private IReadOnlyList<ICommerceBusinessObjectView> PaymentItems
+    private IReadOnlyList<BusinessObjectCommerceRow> CommerceRows
         => Workspace.BusinessObjects
             .OfType<ICommerceBusinessObjectView>()
-            .Where(item => item.Commerce.Payment is not null)
-            .OrderByDescending(SortTimestampFor)
-            .ThenBy(TransactionOrderFor)
-            .ThenByDescending(item => item.Version)
-            .ThenByDescending(item => item.CurrentOutPoint.TxId.Value, StringComparer.Ordinal)
-            .ThenByDescending(item => item.CurrentOutPoint.OutputIndex)
+            .Where(HasCommerceRecord)
+            .Select(CreateRow)
+            .OrderByDescending(row => row.ActivityAt)
+            .ThenBy(row => TransactionOrderFor(row.Source))
+            .ThenByDescending(row => row.Source.Version)
+            .ThenByDescending(row => row.Source.CurrentOutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenByDescending(row => row.Source.CurrentOutPoint.OutputIndex)
             .ToArray();
 
-    private IReadOnlyList<ICommerceBusinessObjectView> ReceiptItems
-        => Workspace.BusinessObjects
-            .OfType<ICommerceBusinessObjectView>()
-            .Where(item => item.Commerce.Purchase is not null || item.Commerce.Receipt is not null)
-            .OrderByDescending(SortTimestampFor)
-            .ThenBy(TransactionOrderFor)
-            .ThenByDescending(item => item.Version)
-            .ThenByDescending(item => item.CurrentOutPoint.TxId.Value, StringComparer.Ordinal)
-            .ThenByDescending(item => item.CurrentOutPoint.OutputIndex)
-            .ToArray();
+    private Task OpenDetailsAsync(BusinessObjectCommerceRow row)
+        => OpenDetailsDialogAsync(row.Source, $"{row.RecordTitle} - Details");
 
-    private Task OpenDetailsAsync(ICommerceBusinessObjectView item)
-        => OpenDetailsDialogAsync(item, $"{DisplayName(item)} - Details");
-
-    private Task OpenRelatedDetailsAsync(IBusinessObjectView? item)
-        => item is null
+    private Task OpenRelatedDetailsAsync(BusinessObjectCommerceRow row)
+        => row.RelatedObject is null
             ? Task.CompletedTask
-            : OpenDetailsDialogAsync(item, $"{DisplayName(item)} - BO Details");
+            : OpenDetailsDialogAsync(row.RelatedObject, $"{DisplayName(row.RelatedObject)} - BO Details");
 
     private Task OpenDetailsDialogAsync(IBusinessObjectView item, string title)
         => DialogService.OpenAsync<BusinessObjectLedgerDetailsDialogContent>(
@@ -148,82 +68,121 @@
                 TestId = "cda-commerce-details-dialog"
             });
 
-    private IBusinessObjectView? ResolveRelatedBusinessObject(ICommerceBusinessObjectView item)
+    private BusinessObjectCommerceRow CreateRow(ICommerceBusinessObjectView item)
     {
-        foreach (string objectId in CandidateRelatedObjectIds(item).Distinct(StringComparer.Ordinal))
-        {
-            IBusinessObjectView? relatedObject = Workspace.BusinessObjects.FirstOrDefault(candidate =>
-                candidate.ObjectId != item.ObjectId
-                && string.Equals(candidate.ObjectId.Value, objectId, StringComparison.Ordinal));
-            if (relatedObject is not null)
-            {
-                return relatedObject;
-            }
-        }
-
-        return null;
-    }
-
-    private static IEnumerable<string> CandidateRelatedObjectIds(ICommerceBusinessObjectView item)
-    {
-        if (item.Commerce.Purchase is { } purchase)
-        {
-            if (!string.IsNullOrWhiteSpace(purchase.DeliveredObjectId))
-            {
-                yield return purchase.DeliveredObjectId;
-            }
-
-            yield return purchase.TargetObjectId;
-        }
-
-        if (item.Commerce.Receipt is { } receipt)
-        {
-            yield return receipt.DeliveredObjectId;
-            yield return receipt.TargetObjectId;
-        }
+        string kind;
+        string kindLabel;
+        string icon;
+        BusinessObjectCommerceRecordStatus status;
+        decimal amount;
+        string? tokenId;
+        string buyerAddress;
+        string sellerAddress;
+        string targetObjectId;
+        string? deliveredObjectId;
+        BusinessObjectSaleMode saleMode;
+        string? recordTransactionId;
+        string? dispatchTransactionId;
+        string? rejectionReason;
 
         if (item.Commerce.Payment is { } payment)
         {
-            if (!string.IsNullOrWhiteSpace(payment.DeliveredObjectId))
-            {
-                yield return payment.DeliveredObjectId;
-            }
-
-            yield return payment.TargetObjectId;
+            kind = "payment";
+            kindLabel = "Payment";
+            icon = "payments";
+            status = payment.Status;
+            amount = payment.PriceAmount;
+            tokenId = payment.TokenId;
+            buyerAddress = payment.BuyerAddress;
+            sellerAddress = payment.SellerAddress;
+            targetObjectId = payment.TargetObjectId;
+            deliveredObjectId = payment.DeliveredObjectId;
+            saleMode = payment.SaleMode;
+            recordTransactionId = payment.PaymentTxId;
+            dispatchTransactionId = payment.DispatchTxId;
+            rejectionReason = payment.RejectionReason;
         }
+        else if (item.Commerce.Purchase is { } purchase)
+        {
+            kind = "purchase";
+            kindLabel = "Purchase";
+            icon = "shopping_cart";
+            status = purchase.Status;
+            amount = purchase.PriceAmount;
+            tokenId = purchase.TokenId;
+            buyerAddress = purchase.BuyerAddress;
+            sellerAddress = purchase.SellerAddress;
+            targetObjectId = purchase.TargetObjectId;
+            deliveredObjectId = purchase.DeliveredObjectId;
+            saleMode = purchase.SaleMode;
+            recordTransactionId = purchase.PaymentTxId;
+            dispatchTransactionId = purchase.DispatchTxId;
+            rejectionReason = null;
+        }
+        else
+        {
+            BusinessObjectReceiptRecord receipt = item.Commerce.Receipt!;
+            kind = "receipt";
+            kindLabel = "Receipt";
+            icon = "receipt_long";
+            status = receipt.Status;
+            amount = receipt.PriceAmount;
+            tokenId = receipt.TokenId;
+            buyerAddress = receipt.BuyerAddress;
+            sellerAddress = receipt.SellerAddress;
+            targetObjectId = receipt.TargetObjectId;
+            deliveredObjectId = receipt.DeliveredObjectId;
+            saleMode = receipt.SaleMode;
+            recordTransactionId = receipt.PaymentTxId;
+            dispatchTransactionId = receipt.DispatchTxId;
+            rejectionReason = null;
+        }
+
+        IBusinessObjectView? targetObject = ResolveObject(targetObjectId, item);
+        IBusinessObjectView? deliveredObject = ResolveObject(deliveredObjectId, item);
+        IBusinessObjectView? relatedObject = deliveredObject ?? targetObject;
+        string counterpartyAddress = ResolveCounterparty(buyerAddress, sellerAddress);
+
+        return new BusinessObjectCommerceRow(
+            item,
+            relatedObject,
+            ActivityTimestampFor(item),
+            kind,
+            kindLabel,
+            icon,
+            status,
+            StatusTone(status),
+            amount,
+            string.IsNullOrWhiteSpace(tokenId) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : tokenId,
+            DisplayAddress(counterpartyAddress),
+            counterpartyAddress,
+            targetObject is null ? ShortIdentifier(targetObjectId) : DisplayName(targetObject),
+            targetObjectId,
+            string.IsNullOrWhiteSpace(deliveredObjectId)
+                ? null
+                : deliveredObject is null ? ShortIdentifier(deliveredObjectId) : DisplayName(deliveredObject),
+            deliveredObjectId,
+            saleMode,
+            item.CurrentOutPoint.TxId.Value,
+            recordTransactionId,
+            dispatchTransactionId,
+            rejectionReason,
+            DisplayName(item));
     }
 
-    private static string DisplayName(IBusinessObjectView item)
-    {
-        if (item is ICommerceBusinessObjectView commerce && !string.IsNullOrWhiteSpace(commerce.Name))
-        {
-            return commerce.Name;
-        }
+    private static bool HasCommerceRecord(ICommerceBusinessObjectView item)
+        => item.Commerce.Payment is not null
+            || item.Commerce.Purchase is not null
+            || item.Commerce.Receipt is not null;
 
-        if (item is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name))
-        {
-            return media.Name;
-        }
+    private IBusinessObjectView? ResolveObject(string? objectId, IBusinessObjectView source)
+        => string.IsNullOrWhiteSpace(objectId)
+            ? null
+            : Workspace.BusinessObjects.FirstOrDefault(candidate =>
+                candidate.ObjectId != source.ObjectId
+                && string.Equals(candidate.ObjectId.Value, objectId, StringComparison.Ordinal));
 
-        return BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload)
-            && !string.IsNullOrWhiteSpace(payload?.Name)
-                ? payload.Name
-                : item.ObjectId.Value;
-    }
-
-    private static string RelatedButtonText(ICommerceBusinessObjectView item)
-        => item.Commerce.Purchase is not null
-            ? "Bought BO"
-            : item.Commerce.Payment is not null || item.Commerce.Receipt is not null
-                ? "Sold BO"
-                : "BO details";
-
-    private static string RelatedButtonTitle(IBusinessObjectView? item)
-        => item is null
-            ? "Related BO is not visible in this account workspace"
-            : $"Open details for {DisplayName(item)}";
-
-    private DateTimeOffset SortTimestampFor(IBusinessObjectView item)
+    private DateTimeOffset ActivityTimestampFor(IBusinessObjectView item)
         => Workspace.Transactions
             .FirstOrDefault(transaction => transaction.TxId == item.CurrentOutPoint.TxId)
             ?.Timestamp
@@ -242,32 +201,71 @@
         return int.MaxValue;
     }
 
-    private static string IconFor(ICommerceBusinessObjectView item)
-        => item.ObjectType switch
+    private string ResolveCounterparty(string buyerAddress, string sellerAddress)
+    {
+        string account = Workspace.Address.Value;
+        if (string.Equals(buyerAddress, account, StringComparison.OrdinalIgnoreCase))
         {
-            "payment" => "payments",
-            "purchase" => "shopping_cart",
-            "receipt" => "receipt_long",
-            _ => "sell"
+            return sellerAddress;
+        }
+
+        if (string.Equals(sellerAddress, account, StringComparison.OrdinalIgnoreCase))
+        {
+            return buyerAddress;
+        }
+
+        return buyerAddress;
+    }
+
+    private string DisplayAddress(string address)
+    {
+        if (string.Equals(address, Workspace.Address.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            return Workspace.AccountName;
+        }
+
+        AddressDirectoryEntry? directory = DirectoryEntries.FirstOrDefault(entry =>
+            string.Equals(entry.Address, address, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(directory?.DisplayName))
+        {
+            return directory.DisplayName;
+        }
+
+        EconomyAddressBookmark? bookmark = Workspace.AddressBookmarks.FirstOrDefault(entry =>
+            string.Equals(entry.Address.Value, address, StringComparison.OrdinalIgnoreCase));
+        return !string.IsNullOrWhiteSpace(bookmark?.Name)
+            ? bookmark.Name
+            : ShortIdentifier(address);
+    }
+
+    private static string DisplayName(IBusinessObjectView item)
+    {
+        if (item is ICommerceBusinessObjectView commerce && !string.IsNullOrWhiteSpace(commerce.Name))
+        {
+            return commerce.Name;
+        }
+
+        if (item is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name))
+        {
+            return media.Name;
+        }
+
+        return BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload)
+            && !string.IsNullOrWhiteSpace(payload?.Name)
+                ? payload.Name
+                : ShortIdentifier(item.ObjectId.Value);
+    }
+
+    private static string StatusTone(BusinessObjectCommerceRecordStatus status)
+        => status switch
+        {
+            BusinessObjectCommerceRecordStatus.Dispatched => "success",
+            BusinessObjectCommerceRecordStatus.Pending => "warning",
+            BusinessObjectCommerceRecordStatus.Rejected => "danger",
+            BusinessObjectCommerceRecordStatus.Cancelled => "warning",
+            _ => "neutral"
         };
 
-    private static string SummaryFor(ICommerceBusinessObjectView item)
-    {
-        if (item.Commerce.Payment is { } payment)
-        {
-            return $"{payment.Status} / {payment.PriceAmount:0.#############################} {(payment.TokenId ?? BusinessObjectCommercePayloadBuilder.MainCurrencyCode)} / {payment.TargetObjectId}";
-        }
-
-        if (item.Commerce.Purchase is { } purchase)
-        {
-            return $"{purchase.Status} / {purchase.PriceAmount:0.#############################} {(purchase.TokenId ?? BusinessObjectCommercePayloadBuilder.MainCurrencyCode)} / {purchase.TargetObjectId}";
-        }
-
-        if (item.Commerce.Receipt is { } receipt)
-        {
-            return $"{receipt.Status} / {receipt.PriceAmount:0.#############################} {(receipt.TokenId ?? BusinessObjectCommercePayloadBuilder.MainCurrencyCode)} / {receipt.DeliveredObjectId}";
-        }
-
-        return item.ObjectId.Value;
-    }
+    private static string ShortIdentifier(string value)
+        => value.Length <= 22 ? value : $"{value[..12]}…{value[^7..]}";
 }

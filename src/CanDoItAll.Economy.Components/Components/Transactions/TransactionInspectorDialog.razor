@@ -12,24 +12,16 @@
     }
     else
     {
-        <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
-            <TxFlowGraph Inputs="Details.Inputs" Outputs="Details.Outputs" />
-            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
-                @foreach (EconomyTransactionInputDetails input in Details.Inputs)
-                {
-                    <TxInputCard Input="input" />
-                }
-                @foreach (EconomyTransactionOutputDetails output in Details.Outputs)
-                {
-                    <TxOutputCard Output="output" TransactionId="Details.TxId" />
-                }
-            </Grid>
-            <TxDataPayloadViewer Data="Details.Data" />
+        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+            <TransactionInputOutputFlow Inputs="Details.Inputs"
+                                        Outputs="Details.Outputs"
+                                        TransactionId="Details.TxId"
+                                        DetailLevel="TransactionFlowDetailLevel.Detailed" />
+            <TxDataPayloadViewer Data="Details.Data"
+                                 Outputs="Details.Outputs"
+                                 TransactionId="Details.TxId" />
             <TransactionTimeline Details="Details" />
-            @foreach (EconomyTransactionInputDetails input in Details.Inputs)
-            {
-                <TxSignatureCard Input="input" />
-            }
+            <TransactionSignatureList Inputs="Details.Inputs" />
         </Stack>
     }
 </InspectorDialogLayout>

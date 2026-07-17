@@ -4,6 +4,8 @@ using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Components;
 using CanDoItAll.Economy.Components.Models;
 using CanDoItAll.Economy.Components.Samples;
+using CanDoItAll.Economy.Components.Services;
+using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.Tests;
 
@@ -54,16 +56,77 @@ public sealed class EconomyListPrimitiveComponentTests : TestContext
     }
 
     [Fact]
-    public void TransactionHistoryList_uses_passive_surface_cards_and_semantic_status_badges()
+    public void TransactionHistoryList_uses_dense_latest_ten_grid_with_directory_names_and_scan_fields()
+    {
+        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        LedgerTransactionSummary template = workspace.Transactions
+            .Single(transaction => transaction.Kind == TransactionKind.Transfer);
+        IReadOnlyList<LedgerTransactionSummary> transactions = Enumerable.Range(1, 12)
+            .Select(index => template with
+            {
+                TxId = new TxId($"tx-history-{index:00}"),
+                Timestamp = template.Timestamp.AddMinutes(index),
+                LedgerSequence = index
+            })
+            .ToArray();
+        EconomyAddressBookmark warehouseBookmark = workspace.AddressBookmarks
+            .Single(bookmark => bookmark.Name == "Warehouse north");
+        var savedDirectoryEntry = new AddressDirectoryEntry(
+            warehouseBookmark.Address.Value,
+            "North warehouse desk",
+            AddressDirectoryEntryKind.External,
+            Favorite: true);
+
+        IRenderedComponent<TransactionHistoryList> component = RenderComponent<TransactionHistoryList>(parameters => parameters
+            .Add(value => value.Items, transactions)
+            .Add(value => value.AccountAddress, workspace.Address)
+            .Add(value => value.AccountName, workspace.AccountName)
+            .Add(value => value.Bookmarks, workspace.AddressBookmarks)
+            .Add(value => value.DirectoryEntries, [savedDirectoryEntry]));
+
+        string[] headers = component.FindAll("[data-testid='cda-recent-transaction-grid'] th")
+            .Select(header => header.TextContent.Trim())
+            .ToArray();
+        IReadOnlyList<AngleSharp.Dom.IElement> rows = component.FindAll("[data-testid='cda-recent-transaction-row']");
+        IReadOnlyList<AngleSharp.Dom.IElement> tableRows = component.FindAll("[data-testid='cda-recent-transaction-grid'] tbody tr");
+
+        Assert.Equal(
+            ["#", "Date & time", "Type", "Status", "Direction", "Flow", "Counterparty", "Transaction", "Actions"],
+            headers);
+        Assert.Equal(10, rows.Count);
+        Assert.Contains("North warehouse desk", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain(">Warehouse north<", component.Markup, StringComparison.Ordinal);
+        Assert.Contains(warehouseBookmark.Address.Value, component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Outgoing", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("1 → 1", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("2026-", component.Markup, StringComparison.Ordinal);
+        Assert.Equal("12", tableRows[0].QuerySelector("td")?.TextContent.Trim());
+        Assert.Equal("3", tableRows[^1].QuerySelector("td")?.TextContent.Trim());
+        Assert.DoesNotContain("cda-surface-card", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("cda-selection-list-item", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TransactionHistoryList_preserves_keyboard_and_details_activation()
     {
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
         LedgerTransactionSummary transaction = workspace.Transactions[0];
+        var requested = new List<LedgerTransactionSummary>();
         IRenderedComponent<TransactionHistoryList> component = RenderComponent<TransactionHistoryList>(parameters => parameters
-            .Add(value => value.Items, [transaction]));
+            .Add(value => value.Items, [transaction])
+            .Add(value => value.AccountAddress, workspace.Address)
+            .Add(value => value.AccountName, workspace.AccountName)
+            .Add(value => value.Bookmarks, workspace.AddressBookmarks)
+            .Add(value => value.TransactionDetailsRequested, item => requested.Add(item)));
 
-        Assert.Single(component.FindAll(".cda-surface-card--soft"));
-        Assert.Contains(transaction.Kind.ToString(), component.Markup, StringComparison.Ordinal);
-        Assert.Contains(transaction.Status.ToString(), component.Find(".cda-status-badge").TextContent, StringComparison.Ordinal);
-        Assert.DoesNotContain("cda-selection-list-item", component.Markup, StringComparison.Ordinal);
+        await component.Find("[data-testid='cda-recent-transaction-grid'] tbody tr")
+            .KeyDownAsync(new Microsoft.AspNetCore.Components.Web.KeyboardEventArgs { Key = "Enter" });
+        Assert.Equal([transaction], requested);
+
+        requested.Clear();
+        await component.FindAll("button")
+            .Single(button => button.TextContent.Contains("Details", StringComparison.Ordinal))
+            .ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
+        Assert.Equal([transaction], requested);
     }
 }

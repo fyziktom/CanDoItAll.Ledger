@@ -29,9 +29,17 @@ else
                           Gap="LayoutGap.Small"
                           AlignItems="AlignItems.Start"
                           Class="cda-bo-overview-workspace">
-                        <div class="cda-bo-selected-preview min-w-0">
-                            <BusinessObjectDataItemInteractivePreview Item="SelectedItem!" />
-                        </div>
+                        <Stack GapScale="LayoutGap.Small"
+                               AlignItems="AlignItems.Stretch"
+                               Class="cda-bo-overview-media min-w-0">
+                            <div id="cda-bo-selected-preview" class="cda-bo-selected-preview min-w-0">
+                                <BusinessObjectDataItemInteractivePreview Item="SelectedItem!" />
+                            </div>
+                            <BusinessObjectDataItemPreviewSelector Items="@DataItems"
+                                                                   SelectedItem="@SelectedItem"
+                                                                   SelectedItemChanged="@SelectItem"
+                                                                   AriaControls="cda-bo-selected-preview" />
+                        </Stack>
 
                         <Stack GapScale="LayoutGap.Small"
                                AlignItems="AlignItems.Stretch"
@@ -73,7 +81,7 @@ else
                                 <Toolbar data-testid="cda-bo-sale-panel">
                                   <ToolbarRow>
                                     <CompactStatStrip Class="min-w-0">
-                                        <CompactStat Label="for sale"
+                                        <CompactStat Label="For sale"
                                                      Value="@($"{sale.Mode} / {FormatPrice(sale.PriceAmount, sale.TokenId)}")"
                                                      Tone="success" />
                                     @if (sale.MaxClones is not null)
@@ -140,7 +148,7 @@ else
                                         <Toolbar data-testid="cda-bo-sale-panel">
                                           <ToolbarRow>
                                             <CompactStatStrip Class="min-w-0">
-                                                <CompactStat Label="for sale"
+                                                <CompactStat Label="For sale"
                                                              Value="@($"{sale.Mode} / {FormatPrice(sale.PriceAmount, sale.TokenId)}")"
                                                              Tone="success" />
                                             @if (sale.MaxClones is not null)
@@ -188,6 +196,7 @@ else
                                                 <BusinessObjectGalleryCard Item="related"
                                                                            Workspace="Workspace"
                                                                            OpenRequested="OpenRelatedDetailsAsync"
+                                                                           Compact="true"
                                                                            TestId="cda-bo-related-card" />
                                             }
                                         </Grid>
@@ -434,6 +443,7 @@ else
 
 @code {
     private BusinessObjectDataItem? selectedItem;
+    private string? selectedObjectRevisionKey;
     private BusinessObjectTicketVerificationResult? ticketVerification;
     private bool ticketVerificationBusy;
     private bool ticketUseBusy;
@@ -474,10 +484,17 @@ else
 
     protected override void OnParametersSet()
     {
-        if (selectedItem is null || !DataItems.Any(item => IsSameItem(item, selectedItem)))
+        string? revisionKey = ObjectRevisionKey;
+        if (!string.Equals(selectedObjectRevisionKey, revisionKey, StringComparison.Ordinal))
         {
+            selectedObjectRevisionKey = revisionKey;
             selectedItem = PrimaryItem;
+            return;
         }
+
+        selectedItem = selectedItem is null
+            ? PrimaryItem
+            : DataItems.FirstOrDefault(item => IsSameItem(item, selectedItem)) ?? PrimaryItem;
     }
 
     private BusinessObjectMediaPayload? Payload
@@ -540,6 +557,11 @@ else
             .FirstOrDefault();
 
     private BusinessObjectDataItem? SelectedItem => selectedItem ?? PrimaryItem;
+
+    private string? ObjectRevisionKey
+        => Object is null
+            ? null
+            : $"{Object.ObjectId.Value}|{Object.Version}|{Object.CurrentOutPoint}";
 
     private string DisplayName
         => Object is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name)
@@ -818,7 +840,9 @@ else
 
     private static bool IsSameItem(BusinessObjectDataItem left, BusinessObjectDataItem right)
         => left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase)
-            && left.Hash.Equals(right.Hash, StringComparison.Ordinal);
+            && left.Hash.Equals(right.Hash, StringComparison.Ordinal)
+            && left.Type == right.Type
+            && left.Storage == right.Storage;
 
     private static BusinessObjectMediaPayload? PayloadFor(IBusinessObjectView item)
         => BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload)

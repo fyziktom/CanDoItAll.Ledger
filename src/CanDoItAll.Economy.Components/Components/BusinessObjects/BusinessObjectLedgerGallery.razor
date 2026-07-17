@@ -1,7 +1,11 @@
 @namespace CanDoItAll.Economy.Components
 @inject DialogService DialogService
 
-<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="ssr-bo-gallery">
+<Stack Section="true"
+       GapScale="LayoutGap.Medium"
+       AlignItems="AlignItems.Stretch"
+       Class="w-full min-w-0"
+       data-testid="ssr-bo-gallery">
     <Cluster AlignItems="AlignItems.Start"
              JustifyContent="JustifyContent.SpaceBetween"
              Gap="LayoutGap.Large">
@@ -56,8 +60,10 @@
         </Cluster>
     }
 
-    <Grid ColumnTemplate="repeat(auto-fill,minmax(min(100%,12.75rem),1fr))"
-          Gap="LayoutGap.Large">
+    <Grid ColumnTemplate="repeat(auto-fill,minmax(min(100%,16.5rem),1fr))"
+          Gap="LayoutGap.Medium"
+          AlignItems="AlignItems.Start"
+          data-testid="cda-bo-gallery-grid">
         @foreach (IBusinessObjectView item in FilteredItems)
         {
             <BusinessObjectGalleryCard Item="item"
@@ -119,7 +125,7 @@
 
     private IReadOnlyList<string> FeaturedTags
         => GalleryItems
-            .SelectMany(BusinessObjectCardDisplay.TagsFor)
+            .SelectMany(BusinessObjectCardDisplay.ExplicitTagsFor)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(6)
             .ToArray();

@@ -160,7 +160,7 @@
                             <Actions>
                                 <Stack GapScale="LayoutGap.XSmall" AlignItems="AlignItems.End">
                                     <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap" JustifyContent="JustifyContent.End">
-                                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@TransactionStatusTone(transaction.Status)" />
+                                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@TransactionUiPresentation.StatusTone(transaction.Status)" />
                                         <Pill Tone="PillTone.Label" Text="@($"{transaction.Inputs} input(s)")" />
                                         <Pill Tone="PillTone.Label" Text="@($"{transaction.Outputs} output(s)")" />
                                         <Pill Tone="PillTone.Label" Text="@transaction.Data" />
@@ -352,11 +352,10 @@
             },
             new DialogOptions
             {
-                Subtitle = transaction.Route,
                 Size = ModalSize.Full,
                 DenseChrome = true,
                 CloseOnBackdrop = false,
-                Class = "cda-ledger-dialog",
+                Class = "cda-ledger-dialog cda-ledger-dialog--compact",
                 TestId = "cda-node-transaction-details-dialog"
             }).ConfigureAwait(false);
     }
@@ -416,15 +415,6 @@
             TransactionKind.Mint => "south",
             TransactionKind.BusinessObject => "widgets",
             _ => "swap_horiz"
-        };
-
-    private static string TransactionStatusTone(TransactionStatus status)
-        => status switch
-        {
-            TransactionStatus.Confirmed => "success",
-            TransactionStatus.Pending => "warning",
-            TransactionStatus.Rejected or TransactionStatus.Reverted => "danger",
-            _ => "neutral"
         };
 
     private async Task<EconomyTransactionDetailsModel?> ResolveTransactionDetailsAsync(NodeAdminTransactionSummary transaction)

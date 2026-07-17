@@ -1,0 +1,98 @@
+@namespace CanDoItAll.Economy.Components
+
+@if (Items.Count > 0)
+{
+    <div class="cda-bo-preview-selector min-w-0"
+         role="listbox"
+         aria-label="@AriaLabel"
+         data-testid="@TestId">
+      <SurfaceCard Soft="true" Class="cda-bo-preview-selector__surface min-w-0">
+        <div class="cda-bo-preview-selector__layout">
+            <div class="cda-bo-preview-selector__label">
+                <Cluster Gap="LayoutGap.Tiny" AlignItems="AlignItems.Center">
+                    <Eyebrow Text="Items" />
+                    <Pill Text="@Items.Count.ToString()" Tone="PillTone.Info" />
+                </Cluster>
+            </div>
+
+            <div class="cda-bo-preview-selector__rail">
+                @foreach (BusinessObjectDataItem item in Items)
+                {
+                    bool selected = IsSelected(item);
+                    <Button @key="item"
+                            Look="ButtonLook.SheetCardGhost"
+                            Size="ButtonSize.Small"
+                            Class="@OptionClass(selected)"
+                            Click="@(() => SelectAsync(item))"
+                            role="option"
+                            aria-selected="@(selected ? "true" : "false")"
+                            aria-controls="@AriaControls"
+                            aria-label="@($"Show {item.Name} in the main preview")"
+                            data-item-hash="@item.Hash"
+                            data-item-type="@item.Type.ToString()"
+                            data-testid="cda-bo-overview-data-item-option">
+                        <span class="cda-bo-preview-selector__thumbnail">
+                            <BusinessObjectDataItemPreview Item="item" Thumbnail="true" Flush="true" />
+                        </span>
+                        <span class="cda-bo-preview-selector__copy">
+                            <strong title="@item.Name">@item.Name</strong>
+                            <span>@item.Type / @item.Storage</span>
+                        </span>
+                        @if (selected)
+                        {
+                            <span class="cda-bo-preview-selector__selected" title="Selected">
+                                <Icon Name="check_circle" />
+                                <span class="sr-only">Selected</span>
+                            </span>
+                        }
+                    </Button>
+                }
+            </div>
+
+            <span class="sr-only" aria-live="polite">@SelectionAnnouncement</span>
+        </div>
+      </SurfaceCard>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<BusinessObjectDataItem> Items { get; set; } = [];
+
+    [Parameter]
+    public BusinessObjectDataItem? SelectedItem { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectDataItem> SelectedItemChanged { get; set; }
+
+    [Parameter]
+    public string AriaControls { get; set; } = "cda-bo-selected-preview";
+
+    [Parameter]
+    public string AriaLabel { get; set; } = "Choose preview data item";
+
+    [Parameter]
+    public string TestId { get; set; } = "cda-bo-overview-data-item-selector";
+
+    private string SelectionAnnouncement
+        => SelectedItem is null ? string.Empty : $"Showing {SelectedItem.Name}";
+
+    private static string OptionClass(bool selected)
+        => CssClassBuilder.Join(
+            "cda-bo-preview-selector__option",
+            selected ? "cda-bo-preview-selector__option--selected" : null);
+
+    private bool IsSelected(BusinessObjectDataItem item)
+        => SelectedItem is not null && HasSameIdentity(item, SelectedItem);
+
+    private Task SelectAsync(BusinessObjectDataItem item)
+        => SelectedItemChanged.HasDelegate
+            ? SelectedItemChanged.InvokeAsync(item)
+            : Task.CompletedTask;
+
+    private static bool HasSameIdentity(BusinessObjectDataItem left, BusinessObjectDataItem right)
+        => left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase)
+            && left.Hash.Equals(right.Hash, StringComparison.Ordinal)
+            && left.Type == right.Type
+            && left.Storage == right.Storage;
+}
