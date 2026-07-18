@@ -15,7 +15,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectDataItemMintingComponentTests : TestContext
+public sealed class BusinessObjectDataItemMintingComponentTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("data-item-mint-test"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-data-item-mint-public"));
@@ -45,7 +45,7 @@ public sealed class BusinessObjectDataItemMintingComponentTests : TestContext
             null);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, CreateWorkspace())
                 .Add(
@@ -151,7 +151,7 @@ public sealed class BusinessObjectDataItemMintingComponentTests : TestContext
             first);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, CreateWorkspace()));
 

@@ -13,7 +13,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class SecureMessagingWorkspaceComponentTests : TestContext
+public sealed class SecureMessagingWorkspaceComponentTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("secure-mail-ledger"));
 
@@ -67,7 +67,7 @@ public sealed class SecureMessagingWorkspaceComponentTests : TestContext
         };
         var openCalls = 0;
 
-        IRenderedComponent<SecureMessagingWorkspace> component = RenderComponent<SecureMessagingWorkspace>(parameters => parameters
+        IRenderedComponent<SecureMessagingWorkspace> component = Render<SecureMessagingWorkspace>(parameters => parameters
             .Add(x => x.Workspace, workspace)
             .Add(x => x.OpenRequested, (Func<SecureMessageOpenRequest, Task<SecureMessageOpenResult>>)(request =>
             {
@@ -146,7 +146,7 @@ public sealed class SecureMessagingWorkspaceComponentTests : TestContext
             ]
         };
 
-        IRenderedComponent<SecureMessagingWorkspace> component = RenderComponent<SecureMessagingWorkspace>(parameters => parameters
+        IRenderedComponent<SecureMessagingWorkspace> component = Render<SecureMessagingWorkspace>(parameters => parameters
             .Add(x => x.Workspace, workspace)
             .Add(x => x.OpenRequested, (Func<SecureMessageOpenRequest, Task<SecureMessageOpenResult>>)(_ =>
                 Task.FromResult(SecureMessageOpenResult.Ok("Opened", built.PlainContent))))

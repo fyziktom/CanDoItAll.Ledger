@@ -1,3 +1,4 @@
+using System.Globalization;
 using CanDoItAll.Economy.BusinessObjects;
 using CanDoItAll.Economy.Core;
 using CanDoItAll.Economy.Cryptography;
@@ -70,6 +71,37 @@ public sealed class AccountRuleExpressionTests
         Assert.Equal(250m, sweepAmount.Value);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void RuleExpression_ReturnsFailureForEmptyExpression(string expressionText)
+    {
+        var evaluator = new NCalcAccountRuleExpressionEvaluator();
+
+        AccountRuleBooleanEvaluation result = evaluator.EvaluateBoolean(
+            expressionText,
+            new Dictionary<string, object?>(StringComparer.Ordinal));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("empty", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RuleExpression_ReturnsFailureForMalformedExpression()
+    {
+        var evaluator = new NCalcAccountRuleExpressionEvaluator();
+
+        AccountRuleBooleanEvaluation result = evaluator.EvaluateBoolean(
+            "account_main > (",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["account_main"] = 1250m
+            });
+
+        Assert.False(result.Succeeded);
+        Assert.False(string.IsNullOrWhiteSpace(result.Error));
+    }
+
     [Fact]
     public void RuleExpression_ReturnsFailureForMissingVariable()
     {
@@ -84,6 +116,107 @@ public sealed class AccountRuleExpressionTests
 
         Assert.False(result.Succeeded);
         Assert.Contains("limit", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RuleExpression_ReturnsFailureForUnknownFunction()
+    {
+        var evaluator = new NCalcAccountRuleExpressionEvaluator();
+
+        AccountRuleNumberEvaluation result = evaluator.EvaluateNumber(
+            "unknown_rule_function(account_main)",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["account_main"] = 1250m
+            });
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("unknown_rule_function", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RuleExpression_EvaluatesMixedNumbersBooleanOrAndNumericStrings()
+    {
+        var evaluator = new NCalcAccountRuleExpressionEvaluator();
+        var variables = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["now_unix"] = 200L,
+            ["bo_last_sweep_unix"] = 100m,
+            ["sweep_cadence_seconds"] = "100",
+            ["bo_waste_rate"] = 0.10m,
+            ["waste_threshold"] = 0.20m,
+            ["bo_capacity_gap"] = 1m,
+            ["text_amount"] = "40.5"
+        };
+
+        AccountRuleBooleanEvaluation cadence = evaluator.EvaluateBoolean(
+            "now_unix - bo_last_sweep_unix >= sweep_cadence_seconds",
+            variables);
+        AccountRuleBooleanEvaluation alternative = evaluator.EvaluateBoolean(
+            "bo_waste_rate > waste_threshold or bo_capacity_gap > 0",
+            variables);
+        AccountRuleNumberEvaluation numericText = evaluator.EvaluateNumber("text_amount + 2", variables);
+
+        Assert.True(cadence.Succeeded);
+        Assert.True(cadence.Value);
+        Assert.True(alternative.Succeeded);
+        Assert.True(alternative.Value);
+        Assert.True(numericText.Succeeded);
+        Assert.Equal(42.5m, numericText.Value);
+    }
+
+    [Fact]
+    public void RuleExpression_PreservesSupportedResultTypeConversions()
+    {
+        var evaluator = new NCalcAccountRuleExpressionEvaluator();
+        var variables = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+        AccountRuleBooleanEvaluation numericBoolean = evaluator.EvaluateBoolean("1", variables);
+        AccountRuleBooleanEvaluation stringBoolean = evaluator.EvaluateBoolean("'false'", variables);
+        AccountRuleNumberEvaluation stringNumber = evaluator.EvaluateNumber("'42.5'", variables);
+        AccountRuleNumberEvaluation booleanNumber = evaluator.EvaluateNumber("true", variables);
+        AccountRuleBooleanEvaluation invalidBoolean = evaluator.EvaluateBoolean("'not-a-boolean'", variables);
+        AccountRuleNumberEvaluation invalidNumber = evaluator.EvaluateNumber("'not-a-number'", variables);
+
+        Assert.True(numericBoolean.Succeeded);
+        Assert.True(numericBoolean.Value);
+        Assert.True(stringBoolean.Succeeded);
+        Assert.False(stringBoolean.Value);
+        Assert.True(stringNumber.Succeeded);
+        Assert.Equal(42.5m, stringNumber.Value);
+        Assert.True(booleanNumber.Succeeded);
+        Assert.Equal(1m, booleanNumber.Value);
+        Assert.False(invalidBoolean.Succeeded);
+        Assert.False(invalidNumber.Succeeded);
+    }
+
+    [Fact]
+    public void RuleExpression_UsesInvariantCultureForParametersAndLiterals()
+    {
+        var evaluator = new NCalcAccountRuleExpressionEvaluator();
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
+
+            AccountRuleNumberEvaluation result = evaluator.EvaluateNumber(
+                "amount + 0.25",
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["amount"] = "1.50"
+                });
+
+            Assert.True(result.Succeeded, result.Error);
+            Assert.Equal(1.75m, result.Value);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
     }
 
     [Fact]

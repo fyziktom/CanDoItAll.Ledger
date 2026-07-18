@@ -15,7 +15,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectCommerceUiComponentTests : TestContext
+public sealed class BusinessObjectCommerceUiComponentTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("test-ledger"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
@@ -36,7 +36,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ITypedBusinessObjectView listedPost = CreateListedPost();
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, listedPost));
 
         IElement panel = component.Find("[data-testid='cda-bo-sale-panel']");
@@ -55,7 +55,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ITypedBusinessObjectView listedPost = CreateListedPost();
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
-            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+            Render<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(listedPost)));
 
         IElement badge = component.Find("[data-testid='cda-bo-sale-badge']");
@@ -72,7 +72,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             ListedAtUtc);
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
-            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+            Render<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(post)));
 
         IElement card = component.Find("[data-testid='cda-bo-gallery-card']");
@@ -105,7 +105,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             BusinessObjectPayloadBuilder.Serialize(payload));
 
         IRenderedComponent<BusinessObjectGalleryCard> component =
-            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+            Render<BusinessObjectGalleryCard>(parameters => parameters
                 .Add(x => x.Item, post)
                 .Add(x => x.Workspace, CreateWorkspace(post)));
 
@@ -168,7 +168,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             BusinessObjectPayloadBuilder.Serialize(payload));
 
         IRenderedComponent<BusinessObjectGalleryCard> component =
-            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+            Render<BusinessObjectGalleryCard>(parameters => parameters
                 .Add(x => x.Item, imageObject));
 
         IElement image = component.Find(".cda-bo-gallery-preview img");
@@ -209,7 +209,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             BusinessObjectPayloadBuilder.Serialize(payload));
 
         IRenderedComponent<BusinessObjectGalleryCard> component =
-            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+            Render<BusinessObjectGalleryCard>(parameters => parameters
                 .Add(x => x.Item, imageObject));
 
         BusinessObjectDataItemPreview preview = component
@@ -256,7 +256,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         };
 
         IRenderedComponent<BusinessObjectGalleryCard> component =
-            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+            Render<BusinessObjectGalleryCard>(parameters => parameters
                 .Add(x => x.Item, imageObject));
 
         BusinessObjectDataItemPreview preview = component
@@ -285,7 +285,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             BusinessObjectPayloadBuilder.Serialize(payload));
 
         IRenderedComponent<BusinessObjectGalleryCard> component =
-            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+            Render<BusinessObjectGalleryCard>(parameters => parameters
                 .Add(x => x.Item, post));
 
         IReadOnlyList<IElement> tags = component.FindAll("[data-testid='cda-bo-card-tag']");
@@ -323,7 +323,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             operation: BusinessObjectOperation.Update);
 
         IRenderedComponent<BusinessObjectGalleryCard> component =
-            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+            Render<BusinessObjectGalleryCard>(parameters => parameters
                 .Add(x => x.Item, post));
 
         IElement renderedDescription = component.Find("[data-testid='cda-bo-card-description']");
@@ -363,7 +363,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             ListedAtUtc);
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
-            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+            Render<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(older, newest, middle)));
 
         string[] headings = component.FindAll("[data-testid='cda-bo-gallery-card'] h3")
@@ -390,7 +390,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             ListedAtUtc);
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
-            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+            Render<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(
                     x => x.Workspace,
                     CreateWorkspace(
@@ -426,7 +426,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             ListedAtUtc);
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
-            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+            Render<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(
                     x => x.Workspace,
                     CreateWorkspace(
@@ -454,7 +454,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
-            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+            Render<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(
                     x => x.Workspace,
                     CreateWorkspace(
@@ -490,7 +490,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             $$"""{"format":"{{SecureLedgerMessages.Format}}"}""");
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
-            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+            Render<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(
                     x => x.Workspace,
                     CreateWorkspace(
@@ -515,7 +515,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ITypedBusinessObjectView originalSalePost = CreateListedPost(BusinessObjectSaleMode.Original);
 
         IRenderedComponent<BusinessObjectSetPriceDialogContent> component =
-            RenderComponent<BusinessObjectSetPriceDialogContent>(parameters => parameters
+            Render<BusinessObjectSetPriceDialogContent>(parameters => parameters
                 .Add(x => x.Object, originalSalePost)
                 .Add(x => x.TokenOptions, CreateTokenOptions()));
 
@@ -533,7 +533,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ITypedBusinessObjectView listedPost = CreateListedPost();
 
         IRenderedComponent<BusinessObjectSetPriceDialogContent> component =
-            RenderComponent<BusinessObjectSetPriceDialogContent>(parameters => parameters
+            Render<BusinessObjectSetPriceDialogContent>(parameters => parameters
                 .Add(x => x.Object, listedPost)
                 .Add(x => x.TokenOptions, CreateTokenOptions())
                 .Add(
@@ -565,7 +565,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         DateTimeOffset activityAt = ListedAtUtc.AddMinutes(7);
 
         IRenderedComponent<BusinessObjectCommerceDashboard> component =
-            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+            Render<BusinessObjectCommerceDashboard>(parameters => parameters
                 .Add(
                     x => x.Workspace,
                     CreateWorkspace(
@@ -598,7 +598,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync();
 
         IRenderedComponent<BusinessObjectCommerceDashboard> component =
-            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+            Render<BusinessObjectCommerceDashboard>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(payment, receipt)));
 
         IElement grid = component.Find("[data-testid='cda-commerce-record-grid']");
@@ -635,7 +635,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             newerReceiptTargetId);
 
         IRenderedComponent<BusinessObjectCommerceDashboard> component =
-            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+            Render<BusinessObjectCommerceDashboard>(parameters => parameters
                 .Add(
                     x => x.Workspace,
                     CreateWorkspace(
@@ -670,10 +670,10 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync();
 
         IRenderedComponent<BusinessObjectCommerceDashboard> component =
-            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+            Render<BusinessObjectCommerceDashboard>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(listedPost, payment, receipt)));
 
-        IRefreshableElementCollection<IElement> relatedButtons = component.FindAll("[data-testid='cda-commerce-related-details']");
+        IReadOnlyList<IElement> relatedButtons = component.FindAll("[data-testid='cda-commerce-related-details']");
 
         Assert.Equal(2, relatedButtons.Count);
         Assert.All(relatedButtons, button =>
@@ -695,7 +695,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
             Favorite: true);
 
         IRenderedComponent<BusinessObjectCommerceDashboard> component =
-            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+            Render<BusinessObjectCommerceDashboard>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(payment))
                 .Add(x => x.DirectoryEntries, [directoryEntry]));
 
@@ -714,10 +714,10 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         BusinessObjectWorkspaceModel workspace = CreateWorkspace(receipt);
 
         IRenderedComponent<BusinessObjectCommerceDashboard> compact =
-            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+            Render<BusinessObjectCommerceDashboard>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
         IRenderedComponent<BusinessObjectCommerceDashboard> detailed =
-            RenderComponent<BusinessObjectCommerceDashboard>(parameters => parameters
+            Render<BusinessObjectCommerceDashboard>(parameters => parameters
                 .Add(x => x.Workspace, workspace)
                 .Add(x => x.Fields, BusinessObjectCommerceFields.Detailed));
 
@@ -759,7 +759,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ICommerceBusinessObjectView payment = await CreatePaymentViewAsync();
 
         IRenderedComponent<BusinessObjectCommerceSummary> component =
-            RenderComponent<BusinessObjectCommerceSummary>(parameters => parameters
+            Render<BusinessObjectCommerceSummary>(parameters => parameters
                 .Add(x => x.Object, payment));
 
         Assert.Single(component.FindAll("[data-testid='cda-commerce-record-summary']"));
@@ -784,7 +784,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync();
 
         IRenderedComponent<BusinessObjectCommerceSummary> component =
-            RenderComponent<BusinessObjectCommerceSummary>(parameters => parameters
+            Render<BusinessObjectCommerceSummary>(parameters => parameters
                 .Add(x => x.Object, receipt));
 
         Assert.Single(component.FindComponents<StatusBadge>(), badge => badge.Instance.Text == "Receipt");
@@ -1057,7 +1057,7 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     private static string BuyPathFor(OutPoint outPoint)
         => $"/buy-bo/tx/{Uri.EscapeDataString(outPoint.TxId.Value)}/{outPoint.OutputIndex}";
 
-    private static IElement FindCommerceRow(IRenderedFragment component, string kind)
+    private static IElement FindCommerceRow(IRenderedComponent<IComponent> component, string kind)
     {
         IElement marker = Assert.Single(
             component.FindAll("[data-testid='cda-commerce-record']"),
@@ -1066,13 +1066,13 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
         return Assert.IsAssignableFrom<IElement>(cell.ParentElement);
     }
 
-    private static string[] CommerceHeaders(IRenderedFragment component)
+    private static string[] CommerceHeaders(IRenderedComponent<IComponent> component)
         => component.Find("[data-testid='cda-commerce-record-grid']")
             .QuerySelectorAll("thead th")
             .Select(header => header.TextContent.Trim())
             .ToArray();
 
-    private static void SelectOptionByText(IRenderedFragment component, string selector, string text)
+    private static void SelectOptionByText(IRenderedComponent<IComponent> component, string selector, string text)
     {
         IElement select = component.Find(selector);
         IElement option = Assert.Single(

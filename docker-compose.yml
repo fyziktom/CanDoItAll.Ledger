@@ -6,12 +6,13 @@ x-dotnet-build: &dotnet-build
     candoitall-components: ../CanDoItAll.Components
     candoitall-external-packages: ../CanDoItAll/ExternalPackages
   args:
-    CDA_COMPONENTS_PACKAGE_VERSION: "0.1.2"
+    CDA_COMPONENTS_PACKAGE_VERSION: "0.1.4"
 
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    stop_grace_period: 2m
     environment:
       POSTGRES_DB: candoitall_economy
       POSTGRES_USER: candoitall
@@ -21,9 +22,9 @@ services:
     volumes:
       - ./docker/data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U candoitall -d candoitall_economy && psql -U candoitall -d candoitall_economy -c 'select 1' >/dev/null"]
-      interval: 5s
-      timeout: 5s
+      test: ["CMD-SHELL", "pg_isready -U candoitall -d candoitall_economy -t 15 && psql -U candoitall -d candoitall_economy -c 'select 1' >/dev/null"]
+      interval: 15s
+      timeout: 30s
       retries: 20
       # Crash recovery on the Windows bind mount can take several minutes.
       # Successful checks still mark the service healthy immediately.

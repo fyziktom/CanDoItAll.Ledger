@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class AccountSetupComponentTests : TestContext
+public sealed class AccountSetupComponentTests : BunitContext
 {
     [Fact]
     public async Task AccountBackupPanel_ExposesHostNeutralAccountFlowActions()
@@ -19,7 +19,7 @@ public sealed class AccountSetupComponentTests : TestContext
         var importKeyRequests = 0;
         var subAccountRequests = 0;
 
-        IRenderedComponent<AccountBackupPanel> component = RenderComponent<AccountBackupPanel>(parameters => parameters
+        IRenderedComponent<AccountBackupPanel> component = Render<AccountBackupPanel>(parameters => parameters
             .Add(x => x.Model, EconomyComponentSampleData.CreateAccountBackup())
             .Add(x => x.CreateAccountRequested, EventCallback.Factory.Create(this, () => createRequests++))
             .Add(x => x.UnlockAccountRequested, EventCallback.Factory.Create(this, () => unlockRequests++))

@@ -22,7 +22,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class AccountWorkspaceAdapterTests : TestContext
+public sealed class AccountWorkspaceAdapterTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("account-app-ledger"), new ScenarioId("browser-demo"));
     private static readonly Address Receiver = Address.FromPublicKey(Encoding.UTF8.GetBytes("adapter-receiver"));
@@ -39,7 +39,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
     {
         foreach (string hostMode in new[] { "SSR", "WASM" })
         {
-            IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+            IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
                 parameters => parameters.Add(x => x.Adapter, new SampleWorkspaceAdapter(hostMode)));
 
             Assert.Contains(hostMode, component.Markup, StringComparison.Ordinal);
@@ -56,7 +56,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
     [Fact]
     public void AdapterHost_FullShellStartsOnInitialGalleryView()
     {
-        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
             parameters => parameters
                 .Add(x => x.Adapter, new SampleWorkspaceAdapter("WASM"))
                 .Add(x => x.UseFullAppShell, true)
@@ -76,7 +76,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
     public async Task AdapterHost_FullShellSubmitsTicketMultimintBatchWithSingleFinalRefresh()
     {
         var adapter = new CapturingBatchWorkspaceAdapter();
-        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
             parameters => parameters
                 .Add(x => x.Adapter, adapter)
                 .Add(x => x.UseFullAppShell, true)
@@ -304,7 +304,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             initialTransactionId: "tx-refresh-stable",
             probeTransactionId: "tx-refresh-stable");
 
-        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
             parameters => parameters
                 .Add(x => x.Adapter, adapter)
                 .Add(x => x.AutoRefreshInterval, TimeSpan.FromMilliseconds(20))
@@ -324,7 +324,7 @@ public sealed class AccountWorkspaceAdapterTests : TestContext
             initialTransactionId: "tx-refresh-before",
             probeTransactionId: "tx-refresh-after");
 
-        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = RenderComponent<EconomyAccountWorkspaceAdapterHost>(
+        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
             parameters => parameters
                 .Add(x => x.Adapter, adapter)
                 .Add(x => x.AutoRefreshInterval, TimeSpan.FromMilliseconds(20))

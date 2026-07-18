@@ -9,7 +9,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class TransactionPayloadSignaturePrimitiveTests : TestContext
+public sealed class TransactionPayloadSignaturePrimitiveTests : BunitContext
 {
     public TransactionPayloadSignaturePrimitiveTests()
     {
@@ -22,7 +22,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : TestContext
     {
         EconomyTransactionDetailsModel details = EconomyComponentSampleData.CreateTransactionDetails();
 
-        IRenderedComponent<TxDataPayloadViewer> component = RenderComponent<TxDataPayloadViewer>(parameters => parameters
+        IRenderedComponent<TxDataPayloadViewer> component = Render<TxDataPayloadViewer>(parameters => parameters
             .Add(x => x.Data, details.Data)
             .Add(x => x.Outputs, details.Outputs)
             .Add(x => x.TransactionId, details.TxId));
@@ -44,7 +44,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : TestContext
     {
         EconomyTransactionDetailsModel details = EconomyComponentSampleData.CreateTransactionDetails();
 
-        IRenderedComponent<TxDataPayloadViewer> component = RenderComponent<TxDataPayloadViewer>(parameters => parameters
+        IRenderedComponent<TxDataPayloadViewer> component = Render<TxDataPayloadViewer>(parameters => parameters
             .Add(x => x.Outputs, details.Outputs));
 
         Assert.Contains("No transaction data item is attached.", component.Markup, StringComparison.Ordinal);
@@ -64,7 +64,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : TestContext
             SignatureBundle = new SignatureBundle([secondSignature])
         };
 
-        IRenderedComponent<TransactionSignatureList> component = RenderComponent<TransactionSignatureList>(parameters => parameters
+        IRenderedComponent<TransactionSignatureList> component = Render<TransactionSignatureList>(parameters => parameters
             .Add(x => x.Inputs, [details.Inputs[0], secondInput]));
 
         Assert.Equal(2, component.FindAll("[data-testid='cda-tx-signature-row']").Count);
@@ -93,7 +93,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : TestContext
             SignatureBundle = SignatureBundle.Empty
         };
 
-        IRenderedComponent<TransactionSignatureList> component = RenderComponent<TransactionSignatureList>(parameters => parameters
+        IRenderedComponent<TransactionSignatureList> component = Render<TransactionSignatureList>(parameters => parameters
             .Add(x => x.Inputs, [unsignedInput]));
 
         Assert.Contains("No input signatures were recorded.", component.Markup, StringComparison.Ordinal);
@@ -106,7 +106,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : TestContext
     {
         EconomyTransactionInputDetails input = EconomyComponentSampleData.CreateTransactionDetails().Inputs[0];
 
-        IRenderedComponent<TxSignatureCard> component = RenderComponent<TxSignatureCard>(parameters => parameters
+        IRenderedComponent<TxSignatureCard> component = Render<TxSignatureCard>(parameters => parameters
             .Add(x => x.Input, input));
 
         Assert.Single(component.FindAll("[data-testid='cda-tx-signature-card']"));
@@ -119,7 +119,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : TestContext
     {
         EconomyTransactionDetailsModel details = EconomyComponentSampleData.CreateTransactionDetails();
 
-        IRenderedComponent<TransactionInspectorDialog> component = RenderComponent<TransactionInspectorDialog>(parameters => parameters
+        IRenderedComponent<TransactionInspectorDialog> component = Render<TransactionInspectorDialog>(parameters => parameters
             .Add(x => x.Details, details));
 
         IRenderedComponent<TxDataPayloadViewer> payload = Assert.Single(component.FindComponents<TxDataPayloadViewer>());

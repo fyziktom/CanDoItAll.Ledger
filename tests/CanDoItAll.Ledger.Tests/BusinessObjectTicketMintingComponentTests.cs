@@ -13,7 +13,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectTicketMintingComponentTests : TestContext
+public sealed class BusinessObjectTicketMintingComponentTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("ticket-test"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-ticket-public"));
@@ -56,7 +56,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             new Dictionary<string, string>(StringComparer.Ordinal));
 
         IRenderedComponent<BusinessObjectEventPickerDialogContent> component =
-            RenderComponent<BusinessObjectEventPickerDialogContent>(parameters => parameters
+            Render<BusinessObjectEventPickerDialogContent>(parameters => parameters
                 .Add(x => x.Events, [eventObject, postObject]));
 
         Assert.Single(component.FindAll("[data-testid='cda-event-picker-event']"));
@@ -81,7 +81,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             null);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace));
 
@@ -105,7 +105,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             null);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -143,7 +143,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
         BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -193,7 +193,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
         BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -243,7 +243,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
         BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(

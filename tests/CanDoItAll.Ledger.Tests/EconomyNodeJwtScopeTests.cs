@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CanDoItAll.Economy.Tests;
@@ -61,6 +62,7 @@ public sealed class EconomyNodeJwtScopeTests
                 options.EnableRateLimiting = false;
                 options.AllowLedgerReset = true;
             });
+        builder.Logging.ClearProviders();
         await using WebApplication app = EconomyNodeHost.Build(builder);
         await EconomyNodeHost.InitializeAsync(app.Services);
         await app.StartAsync();

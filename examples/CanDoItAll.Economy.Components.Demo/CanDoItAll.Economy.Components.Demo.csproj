@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CanDoItAll.Components.BaseLib" Version="$(CanDoItAllComponentsPackageVersion)" />
-    <PackageReference Include="CanDoItAll.Components.Charts" Version="$(CanDoItAllComponentsPackageVersion)" />
-    <PackageReference Include="CanDoItAll.Components.Mermaid" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Include="CanDoItAll.Components.BaseLib" />
+    <PackageReference Include="CanDoItAll.Components.Charts" />
+    <PackageReference Include="CanDoItAll.Components.Mermaid" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=true" />
     <ProjectReference Include="..\..\src\CanDoItAll.Economy.Components\CanDoItAll.Economy.Components.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=true" />
   </ItemGroup>

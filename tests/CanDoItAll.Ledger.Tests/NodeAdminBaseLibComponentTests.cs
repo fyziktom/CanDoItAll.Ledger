@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class NodeAdminBaseLibComponentTests : TestContext
+public sealed class NodeAdminBaseLibComponentTests : BunitContext
 {
     public NodeAdminBaseLibComponentTests()
     {
@@ -18,7 +18,7 @@ public sealed class NodeAdminBaseLibComponentTests : TestContext
     [Fact]
     public async Task Dashboard_uses_BaseLib_cards_summaries_and_actionable_transaction_rows()
     {
-        IRenderedComponent<NodeAdminDashboard> component = RenderComponent<NodeAdminDashboard>();
+        IRenderedComponent<NodeAdminDashboard> component = Render<NodeAdminDashboard>();
 
         Assert.Single(component.FindAll("[data-testid='cda-node-admin-dashboard']"));
         Assert.NotEmpty(component.FindComponents<SummaryTiles>());
@@ -63,7 +63,7 @@ public sealed class NodeAdminBaseLibComponentTests : TestContext
             address.LastSeenUtc);
         NodeAdminTransactionSummary? selected = null;
 
-        IRenderedComponent<NodeAddressDetailsDialogContent> component = RenderComponent<NodeAddressDetailsDialogContent>(parameters => parameters
+        IRenderedComponent<NodeAddressDetailsDialogContent> component = Render<NodeAddressDetailsDialogContent>(parameters => parameters
             .Add(value => value.Address, address)
             .Add(value => value.Transactions, [transaction])
             .Add(value => value.TransactionSelected, value => selected = value));

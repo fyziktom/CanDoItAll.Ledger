@@ -11,7 +11,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectLongDescriptionComponentTests : TestContext
+public sealed class BusinessObjectLongDescriptionComponentTests : BunitContext
 {
     private const string ShortDescription = "Short summary shown in cards.";
     private const string LongDescription = "RN-01-SB01 long body: this text must be visible separately from the short summary.";
@@ -27,7 +27,7 @@ public sealed class BusinessObjectLongDescriptionComponentTests : TestContext
     public void DetailsDialog_RendersLongDescriptionWhenShortDescriptionExists()
     {
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, CreatePost()));
 
         IElement body = component.Find("[data-testid='cda-bo-long-description']");

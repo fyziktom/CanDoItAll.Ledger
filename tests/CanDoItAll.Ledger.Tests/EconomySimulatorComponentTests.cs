@@ -11,13 +11,13 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class EconomySimulatorComponentTests : TestContext
+public sealed class EconomySimulatorComponentTests : BunitContext
 {
     [Fact]
     public void EconomySimulatorShell_RendersProjectManagementSurfaces()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
-        IRenderedComponent<EconomySimulatorShell> component = RenderComponent<EconomySimulatorShell>(parameters => parameters
+        IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
             .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement()));
         string markup = component.Markup;
 
@@ -46,7 +46,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         SimulationProjectRunRequest? captured = null;
-        IRenderedComponent<EconomySimulatorShell> component = RenderComponent<EconomySimulatorShell>(parameters => parameters
+        IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
             .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement())
             .Add(x => x.RunRequested, EventCallback.Factory.Create<SimulationProjectRunRequest>(this, request => captured = request)));
 
@@ -74,7 +74,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
             .CreateScenarioProjects(DateTimeOffset.Parse("2026-05-15T12:00:00Z"))
             .Single(project => project.Summary.ProjectId == "vef-financial-plan");
 
-        IRenderedComponent<PlannedFinancialSchedulePanel> component = RenderComponent<PlannedFinancialSchedulePanel>(parameters => parameters
+        IRenderedComponent<PlannedFinancialSchedulePanel> component = Render<PlannedFinancialSchedulePanel>(parameters => parameters
             .Add(x => x.Project, project));
         string markup = component.Markup;
 
@@ -102,7 +102,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
             .CreateScenarioProjects(DateTimeOffset.Parse("2026-05-15T12:00:00Z"))
             .Single(project => project.Summary.ProjectId == "vef-financial-plan");
 
-        IRenderedComponent<SimulationBoRuleDesigner> component = RenderComponent<SimulationBoRuleDesigner>(parameters => parameters
+        IRenderedComponent<SimulationBoRuleDesigner> component = Render<SimulationBoRuleDesigner>(parameters => parameters
             .Add(x => x.Project, project));
         string markup = component.Markup;
 
@@ -131,7 +131,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
         var nextCount = 0;
         var previousCount = 0;
         var selectedStep = 0;
-        IRenderedComponent<TimelineStepper> component = RenderComponent<TimelineStepper>(parameters => parameters
+        IRenderedComponent<TimelineStepper> component = Render<TimelineStepper>(parameters => parameters
             .Add(x => x.CurrentStep, 2)
             .Add(x => x.TotalSteps, 8)
             .Add(x => x.AvailableStep, 3)
@@ -164,7 +164,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
         Services.AddCanDoItAllBaseLib();
         Services.AddSingleton<IJSRuntime>(new SideMenuTestJsRuntime());
 
-        IRenderedComponent<EconomySimulatorAppShell> component = RenderComponent<EconomySimulatorAppShell>(parameters => parameters
+        IRenderedComponent<EconomySimulatorAppShell> component = Render<EconomySimulatorAppShell>(parameters => parameters
             .Add(x => x.ActivePage, "runs")
             .AddChildContent("<span>Runs content</span>"));
 
@@ -183,7 +183,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
     public void BusinessUnitTree_SelectsAccountBindingDetail()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
-        IRenderedComponent<BusinessUnitTree> component = RenderComponent<BusinessUnitTree>(parameters => parameters
+        IRenderedComponent<BusinessUnitTree> component = Render<BusinessUnitTree>(parameters => parameters
             .Add(x => x.Project, EconomySimulatorSampleData.CreateProjectState()));
 
         component.Find("[data-testid='simulation-binding-node-Revenue']").Click();
@@ -197,7 +197,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
     public void SimulationRunObservationPage_RendersObservationTabsAndEvidence()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
-        IRenderedComponent<SimulationRunObservationPage> component = RenderComponent<SimulationRunObservationPage>(parameters => parameters
+        IRenderedComponent<SimulationRunObservationPage> component = Render<SimulationRunObservationPage>(parameters => parameters
             .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateRunObservation()));
         string markup = component.Markup;
 
@@ -230,7 +230,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
     public async Task SimulationPeriodSummaryPanel_TogglesQuarterAndYearViews()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
-        IRenderedComponent<SimulationPeriodSummaryPanel> component = RenderComponent<SimulationPeriodSummaryPanel>(parameters => parameters
+        IRenderedComponent<SimulationPeriodSummaryPanel> component = Render<SimulationPeriodSummaryPanel>(parameters => parameters
             .Add(x => x.Run, EconomySimulatorSampleData.CreateRunConsole().SelectedRun));
 
         Assert.Contains("Quarterly view", component.Markup, StringComparison.Ordinal);
@@ -248,7 +248,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         SimulationRunStepRequest? captured = null;
-        IRenderedComponent<SimulationRunObservationPage> component = RenderComponent<SimulationRunObservationPage>(parameters => parameters
+        IRenderedComponent<SimulationRunObservationPage> component = Render<SimulationRunObservationPage>(parameters => parameters
             .Add(x => x.ConsoleViewModel, EconomySimulatorSampleData.CreateRunConsole())
             .Add(x => x.StepRequested, EventCallback.Factory.Create<SimulationRunStepRequest>(this, request => captured = request)));
 
@@ -275,7 +275,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
         };
         console = console with { Runs = [manualRun], SelectedRun = manualRun };
         SimulationRunInterventionRequest? captured = null;
-        IRenderedComponent<SimulationRunObservationPage> component = RenderComponent<SimulationRunObservationPage>(parameters => parameters
+        IRenderedComponent<SimulationRunObservationPage> component = Render<SimulationRunObservationPage>(parameters => parameters
             .Add(x => x.ConsoleViewModel, console)
             .Add(x => x.InterventionRequested, EventCallback.Factory.Create<SimulationRunInterventionRequest>(this, request => captured = request)));
 
@@ -304,7 +304,7 @@ public sealed class EconomySimulatorComponentTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         var model = EconomySimulatorSampleData.Create();
-        IRenderedComponent<EconomyScenarioGraphPanel> component = RenderComponent<EconomyScenarioGraphPanel>(parameters => parameters
+        IRenderedComponent<EconomyScenarioGraphPanel> component = Render<EconomyScenarioGraphPanel>(parameters => parameters
             .Add(x => x.Graphs, model.Graphs)
             .Add(x => x.BusinessUnits, model.BusinessUnits)
             .Add(x => x.AddressBindings, model.AddressBindings));

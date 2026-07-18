@@ -9,6 +9,6 @@
     <ProjectReference Include="..\CanDoItAll.Economy.Core\CanDoItAll.Economy.Core.csproj" />
     <ProjectReference Include="..\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
     <ProjectReference Include="..\CanDoItAll.Economy.Rules.NCalc\CanDoItAll.Economy.Rules.NCalc.csproj" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 </Project>

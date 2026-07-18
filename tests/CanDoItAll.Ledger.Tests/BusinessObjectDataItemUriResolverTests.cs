@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectDataItemUriResolverTests : TestContext
+public sealed class BusinessObjectDataItemUriResolverTests : BunitContext
 {
     [Fact]
     public void ContentEndpointResolver_UsesCidAndOriginalFileNameForIpfsItems()
@@ -85,7 +85,7 @@ public sealed class BusinessObjectDataItemUriResolverTests : TestContext
             fileName);
 
         IRenderedComponent<BusinessObjectDataItemInteractivePreview> component =
-            RenderComponent<BusinessObjectDataItemInteractivePreview>(parameters => parameters
+            Render<BusinessObjectDataItemInteractivePreview>(parameters => parameters
                 .Add(x => x.Item, item));
 
         Assert.Equal(source.ToString(), component.Find("iframe").GetAttribute("src"));
@@ -140,7 +140,7 @@ public sealed class BusinessObjectDataItemUriResolverTests : TestContext
             new Uri("http://localhost:5081/ipfs-api/cat?arg=QmPortable", UriKind.Absolute));
 
         IRenderedComponent<CascadingValue<IBusinessObjectDataItemUriResolver>> component =
-            RenderComponent<CascadingValue<IBusinessObjectDataItemUriResolver>>(parameters => parameters
+            Render<CascadingValue<IBusinessObjectDataItemUriResolver>>(parameters => parameters
                 .Add(x => x.Value, resolver)
                 .AddChildContent<BusinessObjectDataItemPreview>(child => child
                     .Add(x => x.Item, item)));

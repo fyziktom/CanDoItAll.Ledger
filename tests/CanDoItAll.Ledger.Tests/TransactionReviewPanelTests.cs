@@ -7,7 +7,7 @@ using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class TransactionReviewPanelTests : TestContext
+public sealed class TransactionReviewPanelTests : BunitContext
 {
     public TransactionReviewPanelTests()
     {
@@ -20,7 +20,7 @@ public sealed class TransactionReviewPanelTests : TestContext
     {
         BusinessObjectTransactionDraft draft = CreateTokenTransferDraft();
 
-        IRenderedComponent<TransactionReviewPanel> component = RenderComponent<TransactionReviewPanel>(parameters => parameters
+        IRenderedComponent<TransactionReviewPanel> component = Render<TransactionReviewPanel>(parameters => parameters
             .Add(item => item.Draft, draft));
 
         Assert.Contains("Attached main amount", component.Markup, StringComparison.Ordinal);
@@ -30,7 +30,7 @@ public sealed class TransactionReviewPanelTests : TestContext
     [Fact]
     public void Token_transfer_context_summary_discloses_nonzero_attached_main_currency()
     {
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, CreateTokenTransferDraft()));
 
         component.Find("[data-testid='transaction-mode-TokenTransfer']").Click();
@@ -52,7 +52,7 @@ public sealed class TransactionReviewPanelTests : TestContext
             SecondObjectId = new BusinessObjectId("second-transaction:0")
         };
 
-        IRenderedComponent<TransactionReviewPanel> component = RenderComponent<TransactionReviewPanel>(parameters => parameters
+        IRenderedComponent<TransactionReviewPanel> component = Render<TransactionReviewPanel>(parameters => parameters
             .Add(item => item.Draft, draft));
 
         Assert.Contains("Assigned after confirmation", component.Markup, StringComparison.Ordinal);
@@ -70,7 +70,7 @@ public sealed class TransactionReviewPanelTests : TestContext
             ExternalRef = string.Empty
         };
 
-        IRenderedComponent<TransactionReviewPanel> component = RenderComponent<TransactionReviewPanel>(parameters => parameters
+        IRenderedComponent<TransactionReviewPanel> component = Render<TransactionReviewPanel>(parameters => parameters
             .Add(item => item.Draft, draft));
 
         Assert.Contains("Clone-source reference", component.Markup, StringComparison.Ordinal);

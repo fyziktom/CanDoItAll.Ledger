@@ -152,6 +152,7 @@ function Test-IsLedgerBoSimulatorCompatibilityPath {
         $normalized.StartsWith("src\CanDoItAll.Ledger.Simulator.Components\", [StringComparison]::OrdinalIgnoreCase) -or
         $normalized.StartsWith("src\CanDoItAll.Ledger.Simulator.Persistence.EFCore\", [StringComparison]::OrdinalIgnoreCase) -or
         $normalized.StartsWith("examples\CanDoItAll.Ledger.Simulator.App\", [StringComparison]::OrdinalIgnoreCase) -or
+        $normalized -eq "tests\CanDoItAll.Ledger.Tests\AccountAppUiSourceContractTests.cs" -or
         $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorTests.cs" -or
         $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorComponentTests.cs" -or
         $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorRuleAutomationTests.cs" -or

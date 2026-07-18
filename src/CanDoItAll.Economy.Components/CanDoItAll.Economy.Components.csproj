@@ -3,12 +3,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CanDoItAll.Economy.Components</AssemblyName>
     <RootNamespace>CanDoItAll.Economy.Components</RootNamespace>
-    <ComponentsQrCodePackageVersion Condition="'$(ComponentsQrCodePackageVersion)' == ''">$(CanDoItAllComponentsPackageVersion)</ComponentsQrCodePackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.4" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,9 +16,9 @@
     <ProjectReference Include="..\CanDoItAll.Economy.Ledger\CanDoItAll.Economy.Ledger.csproj" />
     <ProjectReference Include="..\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" />
     <ProjectReference Include="..\CanDoItAll.Economy.Storage.InMemory\CanDoItAll.Economy.Storage.InMemory.csproj" />
-    <PackageReference Include="CanDoItAll.Components.BaseLib" Version="$(CanDoItAllComponentsPackageVersion)" />
-    <PackageReference Include="CanDoItAll.Components.Charts" Version="$(CanDoItAllComponentsPackageVersion)" />
-    <PackageReference Include="CanDoItAll.Components.Mermaid" Version="$(CanDoItAllComponentsPackageVersion)" />
-    <PackageReference Include="CanDoItAll.Components.QRCode" Version="$(ComponentsQrCodePackageVersion)" />
+    <PackageReference Include="CanDoItAll.Components.BaseLib" />
+    <PackageReference Include="CanDoItAll.Components.Charts" />
+    <PackageReference Include="CanDoItAll.Components.Mermaid" />
+    <PackageReference Include="CanDoItAll.Components.QRCode" />
   </ItemGroup>
 </Project>

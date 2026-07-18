@@ -9,7 +9,7 @@ using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class EconomyListPrimitiveComponentTests : TestContext
+public sealed class EconomyListPrimitiveComponentTests : BunitContext
 {
     public EconomyListPrimitiveComponentTests()
     {
@@ -23,7 +23,7 @@ public sealed class EconomyListPrimitiveComponentTests : TestContext
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
         IBusinessObjectView item = workspace.BusinessObjects[0];
         IBusinessObjectView? selected = null;
-        IRenderedComponent<BusinessObjectList> component = RenderComponent<BusinessObjectList>(parameters => parameters
+        IRenderedComponent<BusinessObjectList> component = Render<BusinessObjectList>(parameters => parameters
             .Add(value => value.Items, [item])
             .Add(value => value.SelectedObjectId, item.ObjectId)
             .Add(value => value.SelectedObjectChanged, value => selected = value));
@@ -40,7 +40,7 @@ public sealed class EconomyListPrimitiveComponentTests : TestContext
     {
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
         bool createRequested = false;
-        IRenderedComponent<SubAccountList> component = RenderComponent<SubAccountList>(parameters => parameters
+        IRenderedComponent<SubAccountList> component = Render<SubAccountList>(parameters => parameters
             .Add(value => value.Items, workspace.SubAccounts)
             .Add(value => value.CreateRequested, () => createRequested = true));
 
@@ -77,7 +77,7 @@ public sealed class EconomyListPrimitiveComponentTests : TestContext
             AddressDirectoryEntryKind.External,
             Favorite: true);
 
-        IRenderedComponent<TransactionHistoryList> component = RenderComponent<TransactionHistoryList>(parameters => parameters
+        IRenderedComponent<TransactionHistoryList> component = Render<TransactionHistoryList>(parameters => parameters
             .Add(value => value.Items, transactions)
             .Add(value => value.AccountAddress, workspace.Address)
             .Add(value => value.AccountName, workspace.AccountName)
@@ -112,7 +112,7 @@ public sealed class EconomyListPrimitiveComponentTests : TestContext
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
         LedgerTransactionSummary transaction = workspace.Transactions[0];
         var requested = new List<LedgerTransactionSummary>();
-        IRenderedComponent<TransactionHistoryList> component = RenderComponent<TransactionHistoryList>(parameters => parameters
+        IRenderedComponent<TransactionHistoryList> component = Render<TransactionHistoryList>(parameters => parameters
             .Add(value => value.Items, [transaction])
             .Add(value => value.AccountAddress, workspace.Address)
             .Add(value => value.AccountName, workspace.AccountName)

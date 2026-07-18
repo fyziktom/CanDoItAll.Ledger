@@ -14,7 +14,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectDialogActionSafetyTests : TestContext
+public sealed class BusinessObjectDialogActionSafetyTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("bo-dialog-action-safety"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("bo-dialog-action-safety-alice"));
@@ -34,7 +34,7 @@ public sealed class BusinessObjectDialogActionSafetyTests : TestContext
             .First(item => item is IMediaBusinessObjectView);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject)
                 .Add(x => x.Workspace, workspace));
 
@@ -55,7 +55,7 @@ public sealed class BusinessObjectDialogActionSafetyTests : TestContext
         var saleObjects = new List<IBusinessObjectView>();
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -87,7 +87,7 @@ public sealed class BusinessObjectDialogActionSafetyTests : TestContext
         int requestCount = 0;
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, ticket)
                 .Add(
                     x => x.TicketUseRequested,
@@ -127,7 +127,7 @@ public sealed class BusinessObjectDialogActionSafetyTests : TestContext
     public void TicketActions_DisableWhenNoHandlerIsBound()
     {
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, CreateTicket(used: false)));
 
         ClickTab(component, "Ticket");

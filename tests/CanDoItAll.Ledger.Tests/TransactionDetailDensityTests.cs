@@ -8,7 +8,7 @@ using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class TransactionDetailDensityTests : TestContext
+public sealed class TransactionDetailDensityTests : BunitContext
 {
     private static readonly Address Alice = new("cdia1alice");
     private static readonly Address Bob = new("cdia1bob");
@@ -26,7 +26,7 @@ public sealed class TransactionDetailDensityTests : TestContext
         EconomyTransactionDetailsModel details = CreateDetails();
         IReadOnlyList<AddressDirectoryEntry> directory = CreateDirectory();
 
-        IRenderedComponent<TransactionInputOutputFlow> component = RenderComponent<TransactionInputOutputFlow>(parameters => parameters
+        IRenderedComponent<TransactionInputOutputFlow> component = Render<TransactionInputOutputFlow>(parameters => parameters
             .Add(item => item.Inputs, details.Inputs)
             .Add(item => item.Outputs, details.Outputs)
             .Add(item => item.DirectoryEntries, directory));
@@ -60,7 +60,7 @@ public sealed class TransactionDetailDensityTests : TestContext
         };
         EconomyTransactionOutputDetails output = baseline.Outputs[1] with { MetadataHash = metadataHash };
 
-        IRenderedComponent<TransactionInputOutputFlow> component = RenderComponent<TransactionInputOutputFlow>(parameters => parameters
+        IRenderedComponent<TransactionInputOutputFlow> component = Render<TransactionInputOutputFlow>(parameters => parameters
             .Add(item => item.Inputs, [input])
             .Add(item => item.Outputs, [output])
             .Add(item => item.TransactionId, baseline.TxId)
@@ -95,7 +95,7 @@ public sealed class TransactionDetailDensityTests : TestContext
     [Fact]
     public void Timeline_uses_one_authoritative_time_and_omits_unsigned_event()
     {
-        IRenderedComponent<TransactionTimeline> component = RenderComponent<TransactionTimeline>(parameters => parameters
+        IRenderedComponent<TransactionTimeline> component = Render<TransactionTimeline>(parameters => parameters
             .Add(item => item.Details, CreateDetails()));
 
         IReadOnlyList<IElement> events = component.FindAll("[data-testid='cda-transaction-timeline-event']");
@@ -113,7 +113,7 @@ public sealed class TransactionDetailDensityTests : TestContext
     [Fact]
     public void Timeline_shows_signed_event_with_actual_signature_count()
     {
-        IRenderedComponent<TransactionTimeline> component = RenderComponent<TransactionTimeline>(parameters => parameters
+        IRenderedComponent<TransactionTimeline> component = Render<TransactionTimeline>(parameters => parameters
             .Add(item => item.Details, CreateDetails(signatures: CreateSignatureBundle())));
 
         Assert.Equal(3, component.FindAll("[data-testid='cda-transaction-timeline-event']").Count);
@@ -133,7 +133,7 @@ public sealed class TransactionDetailDensityTests : TestContext
         string expectedTone,
         string expectedIcon)
     {
-        IRenderedComponent<TransactionDetailsDialogContent> component = RenderComponent<TransactionDetailsDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionDetailsDialogContent> component = Render<TransactionDetailsDialogContent>(parameters => parameters
             .Add(item => item.Details, CreateDetails(status)));
 
         IReadOnlyList<IRenderedComponent<StatusBadge>> statusBadges = component
@@ -149,7 +149,7 @@ public sealed class TransactionDetailDensityTests : TestContext
     [Fact]
     public void Detail_identity_strip_states_kind_and_status_once_and_keeps_full_date()
     {
-        IRenderedComponent<TransactionDetailsDialogContent> component = RenderComponent<TransactionDetailsDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionDetailsDialogContent> component = Render<TransactionDetailsDialogContent>(parameters => parameters
             .Add(item => item.Details, CreateDetails())
             .Add(item => item.DirectoryEntries, CreateDirectory()));
 

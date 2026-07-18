@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CanDoItAll.Components.BaseLib" Version="$(CanDoItAllComponentsPackageVersion)" />
-    <PackageReference Include="CanDoItAll.Components.Charts" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageReference Include="CanDoItAll.Components.BaseLib" />
+    <PackageReference Include="CanDoItAll.Components.Charts" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator.Components\CanDoItAll.Ledger.Simulator.Components.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator.Persistence.EFCore\CanDoItAll.Ledger.Simulator.Persistence.EFCore.csproj" />
   </ItemGroup>

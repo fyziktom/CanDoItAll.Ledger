@@ -1,3 +1,4 @@
+using CanDoItAll.Economy.Rules.NCalc;
 using CanDoItAll.Economy.Simulator;
 using Xunit;
 
@@ -106,6 +107,44 @@ public sealed class EconomySimulatorRuleAutomationTests
     }
 
     [Fact]
+    public void ScenarioRulePackExpressions_AreAcceptedByNCalcDriver()
+    {
+        var evaluator = new NCalcAccountRuleExpressionEvaluator();
+        var catalog = new EconomyScenarioTemplateCatalog();
+        int evaluatedExpressionCount = 0;
+
+        foreach (ScenarioBusinessModelState model in catalog.GetScenarios())
+        {
+            EconomySimulatorScenarioRulePack pack = EconomySimulatorScenarioRulePackCatalog.CreateRulePack(model);
+            foreach (AccountRuleDefinition rule in pack.Rules)
+            {
+                Dictionary<string, object?> variables = CreateRepresentativeRuleVariables(rule);
+                foreach (string condition in rule.Conditions)
+                {
+                    var result = evaluator.EvaluateBoolean(condition, variables);
+
+                    Assert.True(
+                        result.Succeeded,
+                        $"Scenario '{model.ScenarioCode}', rule '{rule.RuleId}', condition '{condition}' failed NCalc evaluation: {result.Error}");
+                    evaluatedExpressionCount++;
+                }
+
+                foreach (AccountRuleAction action in rule.Actions.Where(action => !string.IsNullOrWhiteSpace(action.AmountExpression)))
+                {
+                    var result = evaluator.EvaluateNumber(action.AmountExpression!, variables);
+
+                    Assert.True(
+                        result.Succeeded,
+                        $"Scenario '{model.ScenarioCode}', rule '{rule.RuleId}', amount expression '{action.AmountExpression}' failed NCalc evaluation: {result.Error}");
+                    evaluatedExpressionCount++;
+                }
+            }
+        }
+
+        Assert.True(evaluatedExpressionCount > 0);
+    }
+
+    [Fact]
     public void ScenarioRulePacks_DoNotChangeDeterministicScenarioCompilation()
     {
         var serializer = new EconomySimulatorJsonSerializer();
@@ -127,5 +166,73 @@ public sealed class EconomySimulatorRuleAutomationTests
             Assert.True(compiled.ExpectedTotals["revenue"] > 0m);
             Assert.NotEmpty(compiled.ScheduleHash);
         }
+    }
+
+    private static Dictionary<string, object?> CreateRepresentativeRuleVariables(AccountRuleDefinition rule)
+    {
+        var variables = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["account_address"] = "simulator-account",
+            ["account_main"] = 1_000_000m,
+            ["utxo_count"] = 3,
+            ["business_object_count"] = 12,
+            ["transaction_count"] = 24,
+            ["now_unix"] = 2_000_000L,
+            ["rule_id"] = rule.RuleId,
+            ["rule_namespace"] = rule.RuleNamespace,
+            ["rule_execution_id"] = $"{rule.RuleId}:test-execution",
+            ["token_test"] = 500m,
+            ["trigger_object_id"] = "bo:test",
+            ["trigger_object_type"] = rule.Trigger?.ObjectType ?? "economy-simulator.test",
+            ["trigger_owner_address"] = "simulator-owner",
+            ["trigger_version"] = 1,
+            ["trigger_created_unix"] = 1_000_000L,
+            ["trigger_age_seconds"] = 1_000_000d,
+            ["bo_object_id"] = "bo:test",
+            ["bo_object_type"] = rule.Trigger?.ObjectType ?? "economy-simulator.test",
+            ["bo_owner_address"] = "simulator-owner",
+            ["bo_last_sweep_unix"] = 1_000_000m,
+            ["bo_amount"] = 100m,
+            ["bo_supplier_address"] = "supplier-address",
+            ["bo_receiver_address"] = "receiver-address",
+            ["bo_processed"] = false,
+            ["bo_approved"] = true,
+            ["bo_due_unix"] = 1_000_000m,
+            ["bo_paid"] = false,
+            ["bo_settled"] = false,
+            ["bo_ready"] = true,
+            ["bo_business_case_score"] = 1m,
+            ["bo_days_cover"] = 1m,
+            ["bo_lead_time_days"] = 30m,
+            ["bo_waste_rate"] = 1m,
+            ["bo_capacity_gap"] = 1m,
+            ["bo_stage_complete"] = true,
+            ["bo_quality_hold"] = false,
+            ["bo_passed"] = true,
+            ["bo_failed"] = false,
+            ["bo_undrawn_facility"] = 1_000_000m,
+            ["bo_covenant_clear"] = true,
+            ["trigger_tx_id"] = "tx:test",
+            ["trigger_tx_kind"] = "Transfer",
+            ["trigger_tx_status"] = "Confirmed",
+            ["tx_id"] = "tx:test",
+            ["tx_kind"] = "Transfer",
+            ["tx_status"] = "Confirmed",
+            ["tx_unix"] = 2_000_000L,
+            ["tx_input_count"] = 1,
+            ["tx_output_count"] = 2,
+            ["tx_output_main"] = 200m,
+            ["tx_account_output_main"] = 100m,
+            ["tx_account_input_count"] = 1,
+            ["tx_has_data"] = true,
+            ["txdata_amount"] = 100m
+        };
+
+        foreach ((string key, string value) in rule.Variables)
+        {
+            variables[key] = value;
+        }
+
+        return variables;
     }
 }

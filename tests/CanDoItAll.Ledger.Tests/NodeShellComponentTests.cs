@@ -7,7 +7,7 @@ using Microsoft.JSInterop;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class NodeShellComponentTests : TestContext
+public sealed class NodeShellComponentTests : BunitContext
 {
     private const string MenuId = "economy-node-primary";
 
@@ -29,7 +29,7 @@ public sealed class NodeShellComponentTests : TestContext
         RenderFragment menuFooter = builder =>
             builder.AddMarkupContent(0, "<button data-testid='node-footer-action'>Sign out</button>");
 
-        IRenderedComponent<NodeShell> component = RenderComponent<NodeShell>(parameters => parameters
+        IRenderedComponent<NodeShell> component = Render<NodeShell>(parameters => parameters
             .Add(x => x.StatusText, "Healthy")
             .Add(x => x.StatusDescription, "All checks passed.")
             .Add(x => x.HeaderActions, headerActions)
@@ -84,7 +84,7 @@ public sealed class NodeShellComponentTests : TestContext
         SideMenuService sideMenus = Services.GetRequiredService<SideMenuService>();
         navigation.NavigateTo("/");
 
-        IRenderedComponent<NodeShell> component = RenderComponent<NodeShell>();
+        IRenderedComponent<NodeShell> component = Render<NodeShell>();
 
         component.WaitForAssertion(() =>
             Assert.Equal("accounts", sideMenus.GetSnapshot(MenuId).SelectedItemId));

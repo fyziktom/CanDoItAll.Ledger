@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class TransactionUiComponentTests : TestContext
+public sealed class TransactionUiComponentTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("ui-ledger"));
     private static readonly Address Alice = new("cdia1alice");
@@ -28,7 +28,7 @@ public sealed class TransactionUiComponentTests : TestContext
     public void HistoryDialog_orders_transactions_by_ledger_sequence_newest_first()
     {
         DateTimeOffset sameTimestamp = DateTimeOffset.Parse("2026-07-03T12:00:00Z");
-        IRenderedComponent<TransactionHistoryDialogContent> component = RenderComponent<TransactionHistoryDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionHistoryDialogContent> component = Render<TransactionHistoryDialogContent>(parameters => parameters
             .Add(x => x.AccountAddress, Bob)
             .Add(x => x.Transactions,
             [
@@ -60,7 +60,7 @@ public sealed class TransactionUiComponentTests : TestContext
             DateTimeOffset.Parse("2026-07-03T12:00:00Z"),
             4);
         var requested = new List<LedgerTransactionSummary>();
-        IRenderedComponent<TransactionHistoryDialogContent> component = RenderComponent<TransactionHistoryDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionHistoryDialogContent> component = Render<TransactionHistoryDialogContent>(parameters => parameters
             .Add(x => x.Transactions, [transaction])
             .Add(x => x.TransactionDetailsRequested, item => requested.Add(item)));
 
@@ -84,7 +84,7 @@ public sealed class TransactionUiComponentTests : TestContext
             "tx-address-labels",
             DateTimeOffset.Parse("2026-07-03T12:00:00Z"),
             8);
-        IRenderedComponent<TransactionHistoryDialogContent> component = RenderComponent<TransactionHistoryDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionHistoryDialogContent> component = Render<TransactionHistoryDialogContent>(parameters => parameters
             .Add(x => x.Transactions, [transaction])
             .Add(x => x.AccountAddress, Alice)
             .Add(x => x.AccountName, "Alice account")
@@ -114,7 +114,7 @@ public sealed class TransactionUiComponentTests : TestContext
             timestamp,
             9,
             CreateMessageData());
-        IRenderedComponent<TransactionHistoryDialogContent> component = RenderComponent<TransactionHistoryDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionHistoryDialogContent> component = Render<TransactionHistoryDialogContent>(parameters => parameters
             .Add(x => x.Transactions, [transaction]));
 
         IReadOnlyList<IElement> cells = component.FindAll("[data-testid='tx-history-grid'] tbody td");
@@ -173,7 +173,7 @@ public sealed class TransactionUiComponentTests : TestContext
             ],
             LedgerSequence: 12,
             LedgerEntryHash: new HashHex("7777777777777777777777777777777777777777777777777777777777777777"));
-        IRenderedComponent<TransactionDetailsDialogContent> component = RenderComponent<TransactionDetailsDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionDetailsDialogContent> component = Render<TransactionDetailsDialogContent>(parameters => parameters
             .Add(x => x.Details, details));
 
         AngleSharp.Dom.IElement rawTab = component.FindAll("button")
@@ -201,7 +201,7 @@ public sealed class TransactionUiComponentTests : TestContext
     [Fact]
     public void PayloadViewer_formats_inline_json_without_escaped_nested_strings()
     {
-        IRenderedComponent<TxDataPayloadViewer> component = RenderComponent<TxDataPayloadViewer>(parameters => parameters
+        IRenderedComponent<TxDataPayloadViewer> component = Render<TxDataPayloadViewer>(parameters => parameters
             .Add(x => x.Data, CreateMessageData()));
 
         string payloadJson = component.Find("[data-testid='tx-payload-inline-json']").TextContent;
@@ -229,7 +229,7 @@ public sealed class TransactionUiComponentTests : TestContext
             ]
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(x => x.Draft, draft)
             .Add(x => x.TokenOptions, workspace.TokenOptions)
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
@@ -252,7 +252,7 @@ public sealed class TransactionUiComponentTests : TestContext
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
         BusinessObjectTransactionDraft? captured = null;
 
-        IRenderedComponent<TransactionUtxoSplitForm> component = RenderComponent<TransactionUtxoSplitForm>(parameters => parameters
+        IRenderedComponent<TransactionUtxoSplitForm> component = Render<TransactionUtxoSplitForm>(parameters => parameters
             .Add(x => x.Draft, workspace.TransactionDraft with { SelectedMode = BusinessObjectTransactionMode.UtxoSplit })
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
             .Add(x => x.SpendableOutputs, workspace.SpendableOutputsOrEmpty)
@@ -282,7 +282,7 @@ public sealed class TransactionUiComponentTests : TestContext
             SelectedMode = BusinessObjectTransactionMode.MainPayment
         };
 
-        IRenderedComponent<TransactionSendForm> component = RenderComponent<TransactionSendForm>(parameters => parameters
+        IRenderedComponent<TransactionSendForm> component = Render<TransactionSendForm>(parameters => parameters
             .Add(x => x.Draft, current)
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
             .Add(x => x.DraftChanged, draft => current = draft));
@@ -290,7 +290,7 @@ public sealed class TransactionUiComponentTests : TestContext
         component.Find("[data-testid='cda-send-payment-amount']").Input("12.25");
         Assert.Equal("12.25", current.PaymentAmount.ToString());
 
-        component.SetParametersAndRender(parameters => parameters
+        component.Render(parameters => parameters
             .Add(x => x.Draft, current)
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
             .Add(x => x.DraftChanged, draft => current = draft));

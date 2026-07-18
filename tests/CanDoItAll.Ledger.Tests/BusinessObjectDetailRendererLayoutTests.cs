@@ -14,7 +14,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
+public sealed class BusinessObjectDetailRendererLayoutTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("bo-detail-layout"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-detail-layout"));
@@ -44,7 +44,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             });
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, eventObject));
 
         Assert.Single(component.FindAll("[data-testid='cda-bo-overview-no-data']"));
@@ -79,7 +79,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             ]);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, mediaObject));
 
         Assert.Empty(component.FindAll("[data-testid='cda-bo-overview-no-data']"));
@@ -120,7 +120,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             [mainPhoto, report]);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, mediaObject));
 
         IReadOnlyList<AngleSharp.Dom.IElement> options = component.FindAll("[data-testid='cda-bo-overview-data-item-option']");
@@ -157,7 +157,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             IsMain: true);
 
         IRenderedComponent<BusinessObjectDataItemPreviewSelector> component =
-            RenderComponent<BusinessObjectDataItemPreviewSelector>(parameters => parameters
+            Render<BusinessObjectDataItemPreviewSelector>(parameters => parameters
                 .Add(x => x.Items, [video])
                 .Add(x => x.SelectedItem, video));
 
@@ -190,7 +190,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             new Uri("https://gateway.example/", UriKind.Absolute));
 
         IRenderedComponent<CascadingValue<IBusinessObjectDataItemUriResolver>> component =
-            RenderComponent<CascadingValue<IBusinessObjectDataItemUriResolver>>(parameters => parameters
+            Render<CascadingValue<IBusinessObjectDataItemUriResolver>>(parameters => parameters
                 .Add(x => x.Value, resolver)
                 .AddChildContent<BusinessObjectLedgerDetailsDialogContent>(child => child
                     .Add(x => x.Object, mediaObject)));
@@ -237,7 +237,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             4096);
 
         IRenderedComponent<BusinessObjectDataItemList> component =
-            RenderComponent<BusinessObjectDataItemList>(parameters => parameters
+            Render<BusinessObjectDataItemList>(parameters => parameters
                 .Add(x => x.Items, [item]));
 
         Assert.Empty(component.FindAll("[data-testid='cda-bo-data-item-copy-cid']"));
@@ -277,7 +277,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             64);
 
         IRenderedComponent<BusinessObjectDataItemList> component =
-            RenderComponent<BusinessObjectDataItemList>(parameters => parameters
+            Render<BusinessObjectDataItemList>(parameters => parameters
                 .Add(x => x.Items, [item]));
 
         Assert.Single(component.FindAll("[data-testid='cda-bo-data-item-copy-hash']"));
@@ -311,7 +311,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             new MediaBusinessObjectRendererProvider().CreateDescriptor(mediaObject);
 
         IRenderedComponent<MediaBusinessObjectRenderer> component =
-            RenderComponent<MediaBusinessObjectRenderer>(parameters => parameters
+            Render<MediaBusinessObjectRenderer>(parameters => parameters
                 .Add(x => x.Object, mediaObject)
                 .Add(x => x.Descriptor, descriptor));
 
@@ -333,7 +333,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             });
 
         IRenderedComponent<BusinessObjectLedgerGallery> component =
-            RenderComponent<BusinessObjectLedgerGallery>(parameters => parameters
+            Render<BusinessObjectLedgerGallery>(parameters => parameters
                 .Add(x => x.Workspace, CreateWorkspace(eventObject)));
 
         Assert.Single(component.FindAll("[data-testid='cda-bo-gallery-card']"));
@@ -368,7 +368,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             });
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, ticketObject)
                 .Add(x => x.Workspace, CreateWorkspace(eventObject, ticketObject)));
 
@@ -396,7 +396,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             });
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, ticketObject)
                 .Add(x => x.Workspace, CreateWorkspace(ticketObject)));
 
@@ -420,7 +420,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
         ICommerceBusinessObjectView paymentObject = await CreatePaymentObjectAsync(targetObject);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, paymentObject)
                 .Add(x => x.Workspace, CreateWorkspace(targetObject, paymentObject)));
 
@@ -476,7 +476,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             new Dictionary<string, string>(StringComparer.Ordinal));
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject));
 
         Assert.Single(component.FindAll("[data-testid='cda-bo-details-layout']"));
@@ -570,7 +570,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
         foreach ((IBusinessObjectView businessObject, string rendererKey) in cases)
         {
             using IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-                RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+                Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                     .Add(x => x.Object, businessObject));
 
             component.Find("[data-testid='cda-bo-type-details-tab']").Click();
@@ -607,7 +607,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : TestContext
             dataItems);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject));
 
         IRenderedComponent<TabsItem> tab = Assert.Single(component.FindComponents<TabsItem>()

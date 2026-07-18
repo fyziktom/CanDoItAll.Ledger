@@ -7,7 +7,7 @@ using CanDoItAll.Economy.Core;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectSelectionGridTests : TestContext
+public sealed class BusinessObjectSelectionGridTests : BunitContext
 {
     private static readonly Address Owner = Address.FromPublicKey([1, 2, 3, 4]);
 
@@ -23,7 +23,7 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
         IBusinessObjectView first = CreateBusinessObject("bo:order:1");
         IBusinessObjectView second = CreateBusinessObject("bo:order:2");
         IBusinessObjectView third = CreateBusinessObject("bo:order:3");
-        IRenderedComponent<BusinessObjectSelectionGrid> component = RenderComponent<BusinessObjectSelectionGrid>(parameters => parameters
+        IRenderedComponent<BusinessObjectSelectionGrid> component = Render<BusinessObjectSelectionGrid>(parameters => parameters
             .Add(value => value.Items, new[] { first, second, third })
             .Add(value => value.Selected, new[] { first, second })
             .Add(value => value.MaximumSelections, 2)
@@ -48,7 +48,7 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
     {
         IBusinessObjectView selected = CreateBusinessObject("bo:order:1");
         IBusinessObjectView available = CreateBusinessObject("bo:order:2");
-        IRenderedComponent<BusinessObjectSelectionGrid> component = RenderComponent<BusinessObjectSelectionGrid>(parameters => parameters
+        IRenderedComponent<BusinessObjectSelectionGrid> component = Render<BusinessObjectSelectionGrid>(parameters => parameters
             .Add(value => value.Items, new[] { selected, available })
             .Add(value => value.Selected, new[] { selected })
             .Add(value => value.MaximumSelections, 2));
@@ -68,7 +68,7 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
     [Fact]
     public void Tag_filters_expose_their_active_state_as_toggle_buttons()
     {
-        IRenderedComponent<BusinessObjectSelectionGrid> component = RenderComponent<BusinessObjectSelectionGrid>(parameters => parameters
+        IRenderedComponent<BusinessObjectSelectionGrid> component = Render<BusinessObjectSelectionGrid>(parameters => parameters
             .Add(value => value.Items, new[] { CreateBusinessObject("bo:order:1") }));
 
         IElement allTags = component.Find("[data-testid='bo-tag-all']");
@@ -92,7 +92,7 @@ public sealed class BusinessObjectSelectionGridTests : TestContext
         IBusinessObjectView earlier = CreateBusinessObject("bo:order:shared", "tx-order-earlier");
         IBusinessObjectView current = CreateBusinessObject("bo:order:shared", "tx-order-current");
         IReadOnlyList<IBusinessObjectView>? captured = null;
-        IRenderedComponent<BusinessObjectSelectionGrid> component = RenderComponent<BusinessObjectSelectionGrid>(parameters => parameters
+        IRenderedComponent<BusinessObjectSelectionGrid> component = Render<BusinessObjectSelectionGrid>(parameters => parameters
             .Add(value => value.Items, new[] { earlier, current })
             .Add(value => value.Selected, new[] { earlier })
             .Add(value => value.MaximumSelections, 2)

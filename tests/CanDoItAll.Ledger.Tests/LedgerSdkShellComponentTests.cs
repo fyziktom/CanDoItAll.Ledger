@@ -7,7 +7,7 @@ using Microsoft.JSInterop;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class LedgerSdkShellComponentTests : TestContext
+public sealed class LedgerSdkShellComponentTests : BunitContext
 {
     private const string MenuId = "economy-sdk-demo";
 
@@ -24,7 +24,7 @@ public sealed class LedgerSdkShellComponentTests : TestContext
         SideMenuService sideMenus = Services.GetRequiredService<SideMenuService>();
         navigation.NavigateTo("/sdk-components?view=full");
 
-        IRenderedComponent<LedgerSdkShell> component = RenderComponent<LedgerSdkShell>();
+        IRenderedComponent<LedgerSdkShell> component = Render<LedgerSdkShell>();
 
         component.WaitForAssertion(() =>
             Assert.Equal("account", sideMenus.GetSnapshot(MenuId).SelectedItemId));
@@ -62,7 +62,7 @@ public sealed class LedgerSdkShellComponentTests : TestContext
         RenderFragment navigation = builder =>
             builder.AddMarkupContent(0, "<nav data-testid='custom-sdk-navigation'>Custom navigation</nav>");
 
-        IRenderedComponent<LedgerSdkShell> component = RenderComponent<LedgerSdkShell>(parameters => parameters
+        IRenderedComponent<LedgerSdkShell> component = Render<LedgerSdkShell>(parameters => parameters
             .Add(x => x.Navigation, navigation));
 
         Sidebar sidebar = component.FindComponent<Sidebar>().Instance;

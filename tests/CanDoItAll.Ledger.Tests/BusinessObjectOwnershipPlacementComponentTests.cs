@@ -11,7 +11,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
+public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContext
 {
     public BusinessObjectOwnershipPlacementComponentTests()
     {
@@ -28,7 +28,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             .First(item => item is IMediaBusinessObjectView);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject)
                 .Add(x => x.ViewedAtUtc, workspace.ViewedAtUtc));
 
@@ -45,10 +45,10 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
 
         IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+            Render<EconomyAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
         IRenderedComponent<MessageSecurityPanel> security =
-            RenderComponent<MessageSecurityPanel>(parameters => parameters
+            Render<MessageSecurityPanel>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(security, "Ownership");
@@ -71,7 +71,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             .ToArray();
 
         IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+            Render<EconomyAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(home, "Balances");
@@ -96,7 +96,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     {
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
         IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+            Render<EconomyAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(home, "Balances");
@@ -121,7 +121,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             SpendableOutputs = []
         };
         IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+            Render<EconomyAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(home, "Balances");
@@ -138,7 +138,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
 
         IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+            Render<EconomyAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         var tabs = home.FindAll("[role='tab']");
@@ -167,7 +167,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
         BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
 
         IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+            Render<EconomyAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         AssertActionLabel(home, "cda-action-send", "Send");

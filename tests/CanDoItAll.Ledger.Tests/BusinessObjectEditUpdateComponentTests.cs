@@ -13,7 +13,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectEditUpdateComponentTests : TestContext
+public sealed class BusinessObjectEditUpdateComponentTests : BunitContext
 {
     public BusinessObjectEditUpdateComponentTests()
     {
@@ -33,7 +33,7 @@ public sealed class BusinessObjectEditUpdateComponentTests : TestContext
         BusinessObjectCreationWizardModel model = BusinessObjectCreationWizardModel.ForEdit(businessObject, step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -82,7 +82,7 @@ public sealed class BusinessObjectEditUpdateComponentTests : TestContext
             .First(item => item is IMediaBusinessObjectView);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -107,7 +107,7 @@ public sealed class BusinessObjectEditUpdateComponentTests : TestContext
             .First(item => item is IMediaBusinessObjectView);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject)
                 .Add(x => x.Workspace, workspace)
                 .Add(

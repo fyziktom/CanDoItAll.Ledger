@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class TransactionFlowFoundationTests : TestContext
+public sealed class TransactionFlowFoundationTests : BunitContext
 {
     private static readonly Address Alice = Address.FromPublicKey([1, 2, 3, 4]);
     private static readonly Address Bob = Address.FromPublicKey([5, 6, 7, 8]);
@@ -43,7 +43,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
     public void Flow_chooser_changes_family_without_committing_until_an_operation_is_selected()
     {
         BusinessObjectTransactionMode? selected = null;
-        IRenderedComponent<TransactionFlowChooser> component = RenderComponent<TransactionFlowChooser>(parameters => parameters
+        IRenderedComponent<TransactionFlowChooser> component = Render<TransactionFlowChooser>(parameters => parameters
             .Add(item => item.SelectedMode, BusinessObjectTransactionMode.CloneObject)
             .Add(item => item.SelectedModeChanged, EventCallback.Factory.Create<BusinessObjectTransactionMode>(this, mode => selected = mode)));
 
@@ -147,12 +147,12 @@ public sealed class TransactionFlowFoundationTests : TestContext
             PaymentAmount = Amount.Zero
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, draft)
             .Add(item => item.Balance, CreateBalance(25m)));
 
         component.Find("[data-testid='transaction-mode-MainPayment']").Click();
-        component.SetParametersAndRender(parameters => parameters
+        component.Render(parameters => parameters
             .Add(item => item.Draft, draft)
             .Add(item => item.Balance, CreateBalance(25m)));
 
@@ -179,7 +179,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             SelectedMode = BusinessObjectTransactionMode.TransferObject
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, draft)
             .Add(item => item.BusinessObjects, Array.Empty<IBusinessObjectView>()));
 
@@ -197,7 +197,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             SelectedMode = BusinessObjectTransactionMode.Create
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, draft));
 
         await component.Find("[data-testid='transaction-mode-Create']").ClickAsync(new MouseEventArgs());
@@ -230,7 +230,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             PaymentAmount = Amount.FromInt64(10)
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, draft)
             .Add(item => item.Balance, CreateBalance(25m)));
 
@@ -260,7 +260,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             Amount.FromInt64(1),
             Repeatable: true);
         EconomyTokenCreationRequest? submitted = null;
-        IRenderedComponent<TokenCreationDialogContent> component = RenderComponent<TokenCreationDialogContent>(parameters => parameters
+        IRenderedComponent<TokenCreationDialogContent> component = Render<TokenCreationDialogContent>(parameters => parameters
             .Add(item => item.Authorities, new[] { authority })
             .Add(
                 item => item.SubmitRequested,
@@ -285,7 +285,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
     [Fact]
     public void Token_transfer_explains_when_no_transferable_balance_exists()
     {
-        IRenderedComponent<TransactionTokenTransferForm> component = RenderComponent<TransactionTokenTransferForm>(parameters => parameters
+        IRenderedComponent<TransactionTokenTransferForm> component = Render<TransactionTokenTransferForm>(parameters => parameters
             .Add(item => item.Draft, CreateDraft() with { SelectedMode = BusinessObjectTransactionMode.TokenTransfer })
             .Add(item => item.Options, Array.Empty<EconomyTokenOption>()));
 
@@ -303,7 +303,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             PaymentAmount = Amount.FromInt64(9)
         };
 
-        IRenderedComponent<TransactionReviewPanel> component = RenderComponent<TransactionReviewPanel>(parameters => parameters
+        IRenderedComponent<TransactionReviewPanel> component = Render<TransactionReviewPanel>(parameters => parameters
             .Add(item => item.Draft, payment));
 
         Assert.Contains("Review payment", component.Markup, StringComparison.OrdinalIgnoreCase);
@@ -330,7 +330,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
         BusinessObjectTransactionMode mode,
         string expectedTestId)
     {
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, CreateDraft() with { SelectedMode = mode }));
 
         await component.Find($"[data-testid='transaction-mode-{mode}']").ClickAsync(new MouseEventArgs());
@@ -353,7 +353,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
     [Fact]
     public async Task Composer_change_type_removes_workbench_and_restores_only_selector()
     {
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, CreateDraft() with { SelectedMode = BusinessObjectTransactionMode.Create }));
 
         await component.Find("[data-testid='transaction-mode-Create']").ClickAsync(new MouseEventArgs());
@@ -381,7 +381,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             UtxoSplitOutputs = [new UtxoSplitOutput(Bob, Amount.FromInt64(1))]
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, draft)
             .Add(item => item.DraftChanged, next => captured = next));
 
@@ -418,7 +418,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             TokenAmount = Amount.FromInt64(1)
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, baseline)
             .Add(item => item.TokenOptions, new[] { tokenOption })
             .Add(item => item.DraftChanged, next => captured = next));
@@ -489,14 +489,14 @@ public sealed class TransactionFlowFoundationTests : TestContext
             ExternalRef = "replacement://seed"
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, initial)
             .Add(item => item.DraftChanged, next => captured = next));
 
         await component.Find("[data-testid='transaction-mode-MainPayment']").ClickAsync(new MouseEventArgs());
         Assert.Single(component.FindAll("[data-testid='transaction-workbench']"));
 
-        component.SetParametersAndRender(parameters => parameters
+        component.Render(parameters => parameters
             .Add(item => item.Draft, replacement)
             .Add(item => item.DraftChanged, next => captured = next));
 
@@ -536,7 +536,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             Amount.FromInt64(5),
             IsMain: false);
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(item => item.Draft, draft)
             .Add(item => item.TokenOptions, new[] { option })
             .Add(item => item.DraftChanged, next => captured = next));
@@ -555,7 +555,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
         OutPoint outPoint = new(new TxId("plain-accessible"), 2);
         LedgerSpendableOutput output = CreatePlainOutput(outPoint, 5m);
 
-        IRenderedComponent<UtxoSelectionList> component = RenderComponent<UtxoSelectionList>(parameters => parameters
+        IRenderedComponent<UtxoSelectionList> component = Render<UtxoSelectionList>(parameters => parameters
             .Add(item => item.Outputs, new[] { output }));
 
         Assert.Contains($"Select UTXO {outPoint}", component.Markup, StringComparison.Ordinal);
@@ -567,7 +567,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
         LedgerSpendableOutput plain = CreatePlainOutput(new OutPoint(new TxId("plain"), 0), 5m);
         LedgerSpendableOutput token = CreateTokenOutput(new OutPoint(new TxId("token"), 1));
 
-        IRenderedComponent<UtxoPickerDialogContent> component = RenderComponent<UtxoPickerDialogContent>(parameters => parameters
+        IRenderedComponent<UtxoPickerDialogContent> component = Render<UtxoPickerDialogContent>(parameters => parameters
             .Add(item => item.Outputs, new[] { plain, token })
             .Add(item => item.InitialSelected, new[] { plain.OutPoint, token.OutPoint })
             .Add(item => item.MinimumSelections, 2));
@@ -582,7 +582,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
         LedgerSpendableOutput plain = CreatePlainOutput(new OutPoint(new TxId("plain"), 0), 5m);
         LedgerSpendableOutput token = CreateTokenOutput(new OutPoint(new TxId("token"), 1));
         IReadOnlyList<OutPoint>? captured = null;
-        IRenderedComponent<UtxoSelectionList> component = RenderComponent<UtxoSelectionList>(parameters => parameters
+        IRenderedComponent<UtxoSelectionList> component = Render<UtxoSelectionList>(parameters => parameters
             .Add(item => item.Outputs, new[] { plain, token })
             .Add(item => item.SelectedOutPoints, new[] { token.OutPoint })
             .Add(item => item.SelectedOutPointsChanged, EventCallback.Factory.Create<IReadOnlyList<OutPoint>>(this, value => captured = value)));
@@ -598,7 +598,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
     {
         IBusinessObjectView item = CreateBusinessObject("bo:order:1", "purchase-order");
         IReadOnlyList<IBusinessObjectView>? selected = null;
-        IRenderedComponent<BusinessObjectSelectionGrid> component = RenderComponent<BusinessObjectSelectionGrid>(parameters => parameters
+        IRenderedComponent<BusinessObjectSelectionGrid> component = Render<BusinessObjectSelectionGrid>(parameters => parameters
             .Add(value => value.Items, new[] { item })
             .Add(value => value.SelectedChanged, EventCallback.Factory.Create<IReadOnlyList<IBusinessObjectView>>(this, value => selected = value)));
 
@@ -618,7 +618,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
     {
         IBusinessObjectView order = CreateBusinessObject("bo:order:1", "purchase-order");
         IBusinessObjectView ticket = CreateBusinessObject("bo:ticket:1", "ticket");
-        IRenderedComponent<BusinessObjectSelectionGrid> component = RenderComponent<BusinessObjectSelectionGrid>(parameters => parameters
+        IRenderedComponent<BusinessObjectSelectionGrid> component = Render<BusinessObjectSelectionGrid>(parameters => parameters
             .Add(value => value.Items, new[] { order, ticket }));
 
         component.Find("[data-testid='bo-selection-filter']").Input("ticket");
@@ -633,7 +633,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
     {
         IBusinessObjectView order = CreateBusinessObject("bo:order:1", "purchase-order");
         IBusinessObjectView ticket = CreateBusinessObject("bo:ticket:1", "ticket");
-        IRenderedComponent<BusinessObjectPickerDialogContent> component = RenderComponent<BusinessObjectPickerDialogContent>(parameters => parameters
+        IRenderedComponent<BusinessObjectPickerDialogContent> component = Render<BusinessObjectPickerDialogContent>(parameters => parameters
             .Add(value => value.Items, new[] { order, ticket })
             .Add(value => value.MinimumSelections, 2)
             .Add(value => value.MaximumSelections, 2)
@@ -652,7 +652,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
     {
         LedgerSpendableOutput first = CreatePlainOutput(new OutPoint(new TxId("tx-first"), 0), 4m);
         LedgerSpendableOutput second = CreatePlainOutput(new OutPoint(new TxId("tx-second"), 1), 6m);
-        IRenderedComponent<UtxoSelectionList> component = RenderComponent<UtxoSelectionList>(parameters => parameters
+        IRenderedComponent<UtxoSelectionList> component = Render<UtxoSelectionList>(parameters => parameters
             .Add(value => value.Outputs, new[] { first, second })
             .Add(value => value.SelectedOutPoints, new[] { first.OutPoint }));
 
@@ -675,7 +675,7 @@ public sealed class TransactionFlowFoundationTests : TestContext
             request = value;
             return Task.FromResult<IReadOnlyList<IBusinessObjectView>>([item]);
         };
-        IRenderedComponent<BusinessObjectLookupPanel> component = RenderComponent<BusinessObjectLookupPanel>(parameters => parameters
+        IRenderedComponent<BusinessObjectLookupPanel> component = Render<BusinessObjectLookupPanel>(parameters => parameters
             .Add(value => value.AllowExternalSources, true)
             .Add(value => value.LookupAsync, lookup)
             .Add(value => value.ResultsLoaded, EventCallback.Factory.Create<IReadOnlyList<IBusinessObjectView>>(this, value => loaded = value)));

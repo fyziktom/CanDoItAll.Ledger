@@ -1,6 +1,7 @@
 using System.Globalization;
 using CanDoItAll.Economy.BusinessObjects;
 using NCalc;
+using NCalc.Exceptions;
 
 namespace CanDoItAll.Economy.Rules.NCalc;
 
@@ -47,7 +48,7 @@ public sealed class NCalcAccountRuleExpressionEvaluator : IAccountRuleExpression
 
         try
         {
-            var expression = new Expression(expressionText);
+            var expression = new Expression(expressionText, CultureInfo.InvariantCulture);
             foreach ((string key, object? value) in variables)
             {
                 expression.Parameters[key] = NormalizeParameterValue(value);
@@ -55,12 +56,12 @@ public sealed class NCalcAccountRuleExpressionEvaluator : IAccountRuleExpression
 
             if (expression.HasErrors())
             {
-                return DriverEvaluation.Failed(expression.Error);
+                return DriverEvaluation.Failed(expression.Error?.Message ?? "Expression parsing failed.");
             }
 
             return DriverEvaluation.Success(expression.Evaluate());
         }
-        catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException or EvaluationException)
+        catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException or NCalcException)
         {
             return DriverEvaluation.Failed(ex.Message);
         }

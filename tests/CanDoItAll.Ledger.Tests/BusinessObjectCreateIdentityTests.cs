@@ -13,7 +13,7 @@ using Xunit;
 
 namespace CanDoItAll.Economy.Tests;
 
-public sealed class BusinessObjectCreateIdentityTests : TestContext
+public sealed class BusinessObjectCreateIdentityTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("test-ledger"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
@@ -109,7 +109,7 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
             null);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, CreateWorkspace())
                 .Add(
