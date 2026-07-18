@@ -51,7 +51,7 @@
          @onpointerup="EndPan"
          @onpointerleave="EndPan"
          @onwheel="HandleWheel"
-         @onwheel:preventDefault="true">
+         @onwheel:preventDefault="@IsImagePreview">
         @if (Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null)
         {
             <img src="@PreviewUri"
@@ -59,7 +59,7 @@
                  draggable="false"
                  style="@ImageTransformStyle" />
         }
-        else if (Item.Type == BusinessObjectDataItemType.Pdf && PreviewUri is not null)
+        else if (IsDocumentFrame && PreviewUri is not null)
         {
             <iframe src="@PreviewUri" title="@Item.Name"></iframe>
         }
@@ -103,17 +103,30 @@
     private double lastX;
     private double lastY;
     private bool dragging;
+    private string? displayedItemKey;
 
     [Parameter, EditorRequired]
     public BusinessObjectDataItem Item { get; set; } = default!;
 
     protected override void OnParametersSet()
     {
+        string nextItemKey = $"{Item.Storage}\u001f{Item.Type}\u001f{Item.Hash}\u001f{Item.Name}";
+        if (string.Equals(displayedItemKey, nextItemKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        displayedItemKey = nextItemKey;
         ResetView();
     }
 
     private string? PreviewUri
         => ResolveActionableDataItemUriString(Item);
+
+    private bool IsDocumentFrame
+        => Item.Type is BusinessObjectDataItemType.Pdf
+            or BusinessObjectDataItemType.Json
+            or BusinessObjectDataItemType.Text;
 
     private string DownloadFileName
         => string.IsNullOrWhiteSpace(Item.FileName)
@@ -138,9 +151,12 @@
                 || Item.FileName?.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) == true);
 
     private string CanvasClass
-        => Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null
+        => IsImagePreview
             ? "is-draggable"
             : string.Empty;
+
+    private bool IsImagePreview
+        => Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null;
 
     private string ImageTransformStyle
         => string.Create(

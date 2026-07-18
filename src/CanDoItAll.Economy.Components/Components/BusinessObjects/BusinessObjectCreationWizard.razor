@@ -25,101 +25,130 @@
 
     @if (currentStep == 1)
     {
-        <SectionCard Title="Upload Data Items"
-                     Description="Images, media, PDF, JSON, HTML, and Mermaid files can become business-object payload data.">
-            <HeaderActions>
-                <StatusBadge Text="@($"{DisplayDataItems.Count} item(s)")" Tone="info" />
-            </HeaderActions>
-            <ChildContent>
-                <Grid ColumnsLg="2"
-                      ColumnTemplateLg="minmax(18rem, 0.8fr) minmax(0, 1.2fr)"
-                      Gap="LayoutGap.Medium">
-                    <Stack GapScale="LayoutGap.Small" Class="min-w-0">
-                        <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
-                            Files are uploaded to IPFS immediately. The business-object transaction stores only CIDs and metadata.
-                        </Alert>
-                        <FileUpload PrimaryText="Drop or choose files"
-                                    SecondaryText="PNG, JPEG, MP3, MP4, JSON, PDF, HTML, or MMD."
-                                    ButtonText="Choose files"
-                                    Compact="true"
-                                    Disabled="@uploadInProgress"
-                                    Multiple="true"
-                                    Change="HandleUploadChangeAsync"
-                                    Accept="image/*,.pdf,.json,.html,.mmd,.mp3,.mp4"
-                                    InputTestHookId="bo-upload-input"
-                                    RootTestHookId="bo-upload"
-                                    DropZoneTestHookId="bo-upload-zone" />
-                        <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
-                            <SummaryTile Label="Type" Value="@SelectedDefinition.DisplayName" Compact="true" />
-                            <SummaryTile Label="Main" Value="@(MainDataItem?.Name ?? "none")" Compact="true" />
-                            <SummaryTile Label="Loaded" Value="@DisplayDataItems.Count.ToString()" Compact="true" />
-                            <SummaryTile Label="Storage" Value="@UploadStorageLabel" Compact="true" />
-                        </SummaryTiles>
-                    </Stack>
+        <section class="cda-bo-wizard-step cda-bo-wizard-step--upload"
+                 aria-label="Upload data items"
+                 data-testid="bo-wizard-step">
+            <div class="cda-bo-upload-gallery" data-testid="bo-upload-item-list">
+                <div class="cda-bo-upload-gallery__header">
+                    <div class="cda-bo-upload-gallery__copy">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Data items" />
+                        <TextBlock TextStyle="TextStyle.Caption" Value="Select a thumbnail to set the gallery and detail preview." />
+                    </div>
+                    <Cluster Gap="LayoutGap.XSmall"
+                             Wrap="FlexWrap.Wrap"
+                             Class="cda-bo-wizard-statuses"
+                             data-testid="bo-upload-statuses">
+                        <StatusBadge Text="@LoadedDataItemLabel" Tone="info" NoWrap="true" />
+                        <StatusBadge Text="@SelectedDefinition.DisplayName" Tone="neutral" NoWrap="true" />
+                        <StatusBadge Text="@UploadStorageLabel" Tone="neutral" NoWrap="true" />
+                        @if (MainDataItem is not null)
+                        {
+                            <StatusBadge Text="Main selected" Tone="info" NoWrap="true" />
+                        }
+                    </Cluster>
+                </div>
 
-                    <Stack GapScale="LayoutGap.Small" Class="min-w-0">
-                        <Grid ColumnsLg="2" ColumnTemplateLg="minmax(0, 0.9fr) minmax(0, 1.1fr)" Gap="LayoutGap.Small">
-                            <SurfaceCard Soft="true">
-                                <Stack GapScale="LayoutGap.Small">
-                                    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
-                                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Selected Preview" />
-                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@(LastUploadedItem?.Name ?? "No file")" />
-                                    </Split>
-                                @if (LastUploadedItem is not null)
-                                {
-                                    <BusinessObjectDataItemPreview Item="LastUploadedItem" Large="true" />
-                                }
-                                else
-                                {
-                                    <EmptyState Eyebrow="Preview"
-                                                Title="No preview yet"
-                                                Description="Choose a file to inspect it before staging the transaction." />
-                                }
-                                </Stack>
-                            </SurfaceCard>
+                @if (DisplayDataItems.Count == 0)
+                {
+                    <div class="cda-bo-upload-gallery__empty">No files loaded yet.</div>
+                }
+                else
+                {
+                    <div class="cda-bo-upload-items" role="list" aria-label="Uploaded data items">
+                        @for (int index = 0; index < DisplayDataItems.Count; index++)
+                        {
+                            BusinessObjectDataItem item = DisplayDataItems[index];
+                            int itemIndex = index;
+                            <div @key="itemIndex"
+                                 class="@UploadItemClass(item.IsMain)"
+                                 role="listitem"
+                                 data-item-name="@item.Name"
+                                 data-item-hash="@item.Hash"
+                                 data-testid="bo-upload-item">
+                                <div class="cda-bo-upload-item__thumbnail">
+                                    <BusinessObjectDataItemPreview Item="item" Thumbnail="true" Flush="true" />
+                                    <button type="button"
+                                            class="cda-bo-upload-item__select"
+                                            @onclick="@(() => SelectMainDataItem(itemIndex))"
+                                            aria-pressed="@(item.IsMain ? "true" : "false")"
+                                            aria-controls="bo-upload-main-viewer"
+                                            aria-label="@($"Use {item.Name} as the main data item")"
+                                            data-item-name="@item.Name"
+                                            data-testid="bo-upload-item-select">
+                                        <span class="sr-only">Use @item.Name as the main data item</span>
+                                    </button>
+                                </div>
+                                <span class="cda-bo-upload-item__copy">
+                                    <strong title="@item.Name">@item.Name</strong>
+                                    <span>@item.Type / @item.Storage</span>
+                                </span>
+                                <span class="cda-bo-upload-item__status">
+                                    @if (item.IsMain)
+                                    {
+                                        <StatusBadge Text="Main" Tone="info" NoWrap="true" />
+                                    }
+                                </span>
+                                <Button Text="Remove"
+                                        Icon="delete"
+                                        Size="ButtonSize.Small"
+                                        Variant="Variant.Outlined"
+                                        ButtonStyle="ButtonStyle.Danger"
+                                        Click="@(() => RemoveDataItem(itemIndex))"
+                                        aria-label="@($"Remove {item.Name}")"
+                                        data-item-name="@item.Name"
+                                        data-testid="bo-upload-item-remove" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
 
-                            <SurfaceCard Soft="true">
-                                <Stack GapScale="LayoutGap.Small">
-                                    <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
-                                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Loaded Data Items" />
-                                        <StatusBadge Text="@($"{DisplayDataItems.Count} total")" Tone="neutral" />
-                                    </Split>
-                                @if (DisplayDataItems.Count == 0)
-                                {
-                                    <EmptyState Title="No data items"
-                                                Description="Choose files to prepare business-object data items." />
-                                }
-                                else
-                                {
-                                    <Grid ColumnsSm="2" Gap="LayoutGap.Small">
-                                        @foreach (BusinessObjectDataItem item in DisplayDataItems)
-                                        {
-                                            <SurfaceCard Soft="true">
-                                                <Stack GapScale="LayoutGap.Small">
-                                                    <BusinessObjectDataItemPreview Item="item" />
-                                                    <HashDisplay Value="@item.Hash" />
-                                                    <Cluster AlignItems="AlignItems.Center" Gap="LayoutGap.XSmall">
-                                                        <CheckBox TValue="bool" Value="@item.IsMain" Disabled="true" />
-                                                        <span>Main</span>
-                                                    </Cluster>
-                                                </Stack>
-                                            </SurfaceCard>
-                                        }
-                                    </Grid>
-                                }
-                                </Stack>
-                            </SurfaceCard>
-                        </Grid>
-                    </Stack>
-                </Grid>
-            </ChildContent>
-        </SectionCard>
+            <Grid ColumnsLg="2"
+                  ColumnTemplateLg="minmax(17rem, 0.58fr) minmax(0, 1.42fr)"
+                  Gap="LayoutGap.Small">
+                <Stack GapScale="LayoutGap.Small" Class="min-w-0">
+                    <div class="cda-bo-upload-note">
+                        <Icon Name="cloud_upload" />
+                        <TextBlock TextStyle="TextStyle.Note"
+                                   Value="Files upload to IPFS immediately; the transaction stores only CIDs and metadata." />
+                    </div>
+                    <FileUpload PrimaryText="Drop or choose files"
+                                SecondaryText="Images, media, documents, or text."
+                                ButtonText="Choose files"
+                                Icon=""
+                                Compact="true"
+                                Disabled="@uploadInProgress"
+                                Multiple="true"
+                                Change="HandleUploadChangeAsync"
+                                Accept="image/*,.svg,.pdf,.json,.txt,.html,.mmd,.mp3,.mp4"
+                                InputTestHookId="bo-upload-input"
+                                RootTestHookId="bo-upload"
+                                DropZoneTestHookId="bo-upload-zone" />
+                </Stack>
+
+                <div id="bo-upload-main-viewer"
+                     class="cda-bo-wizard-viewer cda-bo-wizard-viewer--upload"
+                     data-testid="bo-upload-main-preview">
+                    @if (MainDataItem is not null)
+                    {
+                        <BusinessObjectDataItemInteractivePreview Item="MainDataItem" />
+                    }
+                    else
+                    {
+                        <EmptyState Eyebrow="Preview"
+                                    Title="No preview yet"
+                                    Description="Choose a file to inspect it before staging the transaction." />
+                    }
+                </div>
+            </Grid>
+        </section>
     }
     else if (currentStep == 2)
     {
-        <SectionCard Title="Information about the data"
-                     Description="Describe the business object and fill any fields required by its selected type.">
-                <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+        <section class="cda-bo-wizard-step"
+                 aria-label="Data information"
+                 data-testid="bo-wizard-step">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Small">
                     <Stack GapScale="LayoutGap.Small" Class="min-w-0">
                         <FormField Text="Type">
                             <DropDown TValue="string"
@@ -339,81 +368,89 @@
                         }
                     </Stack>
                 </Grid>
-        </SectionCard>
+        </section>
     }
     else
     {
-        <SectionCard Title="Finish"
-                     Description="Review the preview, metadata, and creation source before staging the transaction.">
-                <Grid ColumnsLg="2" ColumnTemplateLg="minmax(0, 1.4fr) minmax(320px, 0.8fr)" Gap="LayoutGap.Large">
-                    <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
-                        <Button Look="ButtonLook.SheetCardGhost" Class="w-full" Click="@OpenFinishDetailsAsync">
-                            @if (LastUploadedItem is not null)
-                            {
-                                <BusinessObjectDataItemPreview Item="LastUploadedItem" Large="true" />
-                            }
-                            else
-                            {
-                                <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Center">
-                                    <Icon Name="@FinishIcon" />
-                                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="@ShortType(selectedObjectType)" />
-                                </Stack>
-                            }
-                        </Button>
-                        <Stack GapScale="LayoutGap.Small">
+        <section class="cda-bo-wizard-step cda-bo-wizard-step--finish"
+                 aria-label="Finish"
+                 data-testid="bo-wizard-step">
+            <Cluster Gap="LayoutGap.XSmall"
+                     Wrap="FlexWrap.Wrap"
+                     Class="cda-bo-wizard-statuses"
+                     data-testid="bo-finish-statuses">
+                <StatusBadge Text="@SelectedDefinition.DisplayName" Tone="info" NoWrap="true" />
+                <StatusBadge Text="@LoadedDataItemLabel" Tone="neutral" NoWrap="true" />
+                @foreach (BusinessObjectDisplayFact fact in TypedFacts.Take(4))
+                {
+                    <StatusBadge Text="@($"{fact.Label}: {fact.Value}")" Tone="neutral" />
+                }
+                @if (IsEditMode && Model.EditSource is not null)
+                {
+                    <span data-testid="bo-edit-source">
+                        <StatusBadge Text="@($"Update {ShortObjectId(Model.EditSource.ObjectId)}")" Tone="neutral" />
+                    </span>
+                }
+            </Cluster>
+
+            <div class="cda-bo-finish-layout" data-testid="bo-finish-preview">
+                <Grid ColumnsLg="2"
+                      ColumnTemplateLg="minmax(0, 1.35fr) minmax(18rem, 0.65fr)"
+                      Gap="LayoutGap.Small">
+                    <div class="cda-bo-wizard-viewer cda-bo-wizard-viewer--finish">
+                        @if (MainDataItem is not null)
+                        {
+                            <BusinessObjectDataItemInteractivePreview Item="MainDataItem" />
+                        }
+                        else
+                        {
+                            <EmptyState Eyebrow="Preview"
+                                        Title="@ShortType(selectedObjectType)"
+                                        Description="No main data item is attached." />
+                        }
+                    </div>
+
+                    <Stack GapScale="LayoutGap.Small" Class="min-w-0">
+                        <div class="cda-bo-finish-summary">
                             <TextBlock TextStyle="TextStyle.H3" Value="@name" />
                             <TextBlock TextStyle="TextStyle.Body2" Value="@description" />
-                            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
-                                <StatusBadge Text="Economy BO" Tone="info" />
-                                <StatusBadge Text="BO" Tone="neutral" />
-                                <StatusBadge Text="@selectedObjectType" Tone="neutral" />
-                            </Cluster>
                             <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
                                 @foreach (string tag in Tags)
                                 {
                                     <TagBadge Tag="@tag" AccountScope="@TagAccountScope" />
                                 }
                             </Cluster>
-                        </Stack>
-                    </Stack>
+                        </div>
 
-                    <Stack GapScale="LayoutGap.Medium" Class="min-w-0">
-                        <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
-                            <SummaryTile Label="Type" Value="@SelectedDefinition.DisplayName" Compact="true" />
-                            <SummaryTile Label="Data Items" Value="@DisplayDataItems.Count.ToString()" Compact="true" />
-                            <SummaryTile Label="Name" Value="@name" Compact="true" />
-                        </SummaryTiles>
-                        @if (TypedFacts.Count > 0)
-                        {
-                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
-                                @foreach (BusinessObjectDisplayFact fact in TypedFacts.Take(4))
-                                {
-                                    <SummaryTile Label="@fact.Label" Value="@fact.Value" Compact="true" />
-                                }
-                            </SummaryTiles>
-                        }
-                        @if (IsEditMode && Model.EditSource is not null)
-                        {
-                            <div data-testid="bo-edit-source">
-                                <SummaryTile Label="Update source" Value="@ShortObjectId(Model.EditSource.ObjectId)" Compact="true" />
-                            </div>
-                        }
-                        else if (Workspace is not null)
+                        @if (!IsEditMode && Workspace is not null)
                         {
                             <AvailableTokenSelector Options="Workspace.TokenOptions"
                                                     SelectedKey="@selectedTokenKey"
                                                     SelectedKeyChanged="@(key => selectedTokenKey = key)"
                                                     Label="Creation asset"
+                                                    Compact="true"
                                                     DataTestId="bo-create-token-selector" />
-                            <SummaryTile Label="Source status" Value="@CreationAssetHint" Compact="true" />
+                            <TextBlock TextStyle="TextStyle.Note" Value="@CreationAssetHint" />
                         }
-                        <Cluster Gap="LayoutGap.Small">
-                            <Button Text="@StageButtonText" Icon="receipt_long" ButtonStyle="ButtonStyle.Secondary" Disabled="@(!CanStageSelectedAsset)" Click="StageBusinessObjectAsync" />
-                            <Button Text="Preview Details" Icon="info" Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Secondary" Click="OpenFinishDetailsAsync" />
+
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap" Class="cda-bo-finish-actions">
+                            <Button Text="@StageButtonText"
+                                    Icon="receipt_long"
+                                    ButtonStyle="ButtonStyle.Secondary"
+                                    Disabled="@(!CanStageSelectedAsset)"
+                                    Click="StageBusinessObjectAsync" />
+                            <Button Text="Preview Details"
+                                    Icon="info"
+                                    Size="ButtonSize.Small"
+                                    Variant="Variant.Outlined"
+                                    ButtonStyle="ButtonStyle.Secondary"
+                                    Click="OpenFinishDetailsAsync"
+                                    data-testid="bo-finish-preview-details" />
                         </Cluster>
                     </Stack>
                 </Grid>
-        </SectionCard>
+            </div>
+        </section>
     }
 </Stack>
 
@@ -450,7 +487,7 @@
     private string description = string.Empty;
     private string text = string.Empty;
     private Dictionary<string, string> fieldValues = new(StringComparer.Ordinal);
-    private IReadOnlyList<BusinessObjectDataItem> uploadedItems = [];
+    private IReadOnlyList<BusinessObjectDataItem> dataItems = [];
     private bool uploadInProgress;
     private IBusinessObjectView? selectedTicketEvent;
     private bool multimintEnabled;
@@ -494,7 +531,7 @@
         fieldValues = new Dictionary<string, string>(
             BusinessObjectPayloadBuilder.NormalizeFields(definition, editPayload?.Fields),
             StringComparer.Ordinal);
-        uploadedItems = [];
+        dataItems = NormalizeMainDataItem(Model.DataItems);
         EnsureFieldKeys();
         ApplyCreateDefaults();
         selectedTicketEvent = null;
@@ -513,10 +550,7 @@
     }
 
     private IReadOnlyList<BusinessObjectDataItem> DisplayDataItems
-        => uploadedItems.Count == 0 ? Model.DataItems : uploadedItems.Concat(Model.DataItems).ToArray();
-
-    private BusinessObjectDataItem? LastUploadedItem
-        => uploadedItems.FirstOrDefault() ?? Model.LastUploadedItem;
+        => dataItems;
 
     private BusinessObjectDataItem? MainDataItem
         => DisplayDataItems.FirstOrDefault(item => item.IsMain) ?? DisplayDataItems.FirstOrDefault();
@@ -587,6 +621,11 @@
             : DisplayDataItems.Count == 0
                 ? "IPFS required"
                 : "IPFS CID";
+
+    private string LoadedDataItemLabel
+        => DisplayDataItems.Count == 1
+            ? "1 file"
+            : $"{DisplayDataItems.Count} files";
 
     private bool IsTicketSelected
         => selectedObjectType.Equals("ticket", StringComparison.OrdinalIgnoreCase);
@@ -914,7 +953,7 @@
             {
                 try
                 {
-                    items.Add(await CreateIpfsDataItemAsync(uploadService, file, items.Count == 0));
+                    items.Add(await CreateIpfsDataItemAsync(uploadService, file, dataItems.Count == 0 && items.Count == 0));
                 }
                 catch (Exception exception)
                 {
@@ -922,10 +961,10 @@
                 }
             }
 
-            uploadedItems = items;
             if (items.Count > 0)
             {
-                Notifications.Success("Uploaded to IPFS", $"{items.Count} file(s) stored as CID-backed DataItems.", position: NotificationPosition.BottomCenter);
+                dataItems = NormalizeMainDataItem(dataItems.Concat(items).ToArray());
+                Notifications.Success("Uploaded to IPFS", $"Added {items.Count} CID-backed DataItem(s).", position: NotificationPosition.BottomCenter);
             }
         }
         finally
@@ -955,6 +994,73 @@
                 "Uploaded through BO wizard"),
             CancellationToken.None);
     }
+
+    private void SelectMainDataItem(int selectedIndex)
+    {
+        if (selectedIndex < 0 || selectedIndex >= dataItems.Count)
+        {
+            return;
+        }
+
+        dataItems = dataItems
+            .Select((item, index) => item.IsMain == (index == selectedIndex)
+                ? item
+                : item with { IsMain = index == selectedIndex })
+            .ToArray();
+    }
+
+    private void RemoveDataItem(int removedIndex)
+    {
+        if (removedIndex < 0 || removedIndex >= dataItems.Count)
+        {
+            return;
+        }
+
+        var remainingItems = dataItems.ToList();
+        bool removedMainItem = remainingItems[removedIndex].IsMain;
+        remainingItems.RemoveAt(removedIndex);
+
+        if (remainingItems.Count > 0 && (removedMainItem || remainingItems.All(item => !item.IsMain)))
+        {
+            int fallbackIndex = Math.Min(removedIndex, remainingItems.Count - 1);
+            for (int index = 0; index < remainingItems.Count; index++)
+            {
+                remainingItems[index] = remainingItems[index] with { IsMain = index == fallbackIndex };
+            }
+        }
+
+        dataItems = remainingItems;
+    }
+
+    private static IReadOnlyList<BusinessObjectDataItem> NormalizeMainDataItem(IReadOnlyList<BusinessObjectDataItem> items)
+    {
+        if (items.Count == 0)
+        {
+            return [];
+        }
+
+        int mainIndex = -1;
+        for (int index = 0; index < items.Count; index++)
+        {
+            if (items[index].IsMain)
+            {
+                mainIndex = index;
+                break;
+            }
+        }
+
+        mainIndex = mainIndex < 0 ? 0 : mainIndex;
+        return items
+            .Select((item, index) => item.IsMain == (index == mainIndex)
+                ? item
+                : item with { IsMain = index == mainIndex })
+            .ToArray();
+    }
+
+    private static string UploadItemClass(bool isMain)
+        => CssClassBuilder.Join(
+            "cda-bo-upload-item",
+            isMain ? "cda-bo-upload-item--main" : null);
 
     private Task OpenFinishDetailsAsync()
     {

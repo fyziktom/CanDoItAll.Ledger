@@ -17,7 +17,9 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 var accountAppOptions = builder.Configuration.GetSection("AccountApp").Get<AccountAppOptions>() ?? new AccountAppOptions();
 builder.Services.AddSingleton(accountAppOptions);
 builder.Services.AddSingleton<IBusinessObjectDataItemUriResolver>(
-    new IpfsGatewayDataItemUriResolver(accountAppOptions.IpfsGatewayBaseUri));
+    accountAppOptions.IpfsContentEndpointUri is null
+        ? new IpfsGatewayDataItemUriResolver(accountAppOptions.IpfsGatewayBaseUri)
+        : new IpfsContentEndpointDataItemUriResolver(accountAppOptions.IpfsContentEndpointUri));
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddCanDoItAllBaseLib();
 builder.Services.AddCanDoItAllQrCode();

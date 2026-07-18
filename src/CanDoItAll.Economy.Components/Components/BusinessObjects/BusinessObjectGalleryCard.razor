@@ -6,14 +6,10 @@
          data-bo-operation="@Item.Operation.ToString()"
          data-testid="@TestId">
   <SurfaceCard Class="cda-bo-gallery-surface">
-    <button type="button"
-            class="cda-bo-gallery-preview"
-            data-testid="cda-bo-card-action"
-            aria-label="@InfoLabel"
-            @onclick="OpenAsync">
-        @if (PreviewImage is not null)
+    <div class="cda-bo-gallery-preview">
+        @if (PreviewItem is not null)
         {
-            <BusinessObjectDataItemPreview Item="PreviewImage" Flush="true" />
+            <BusinessObjectDataItemPreview Item="PreviewItem" Thumbnail="true" Flush="true" />
         }
         else
         {
@@ -24,7 +20,12 @@
                 <SmallText Text="@Item.ObjectType" />
             </span>
         }
-    </button>
+        <button type="button"
+                class="cda-bo-gallery-preview__action"
+                data-testid="cda-bo-card-action"
+                aria-label="@InfoLabel"
+                @onclick="OpenAsync"></button>
+    </div>
 
     <Stack GapScale="LayoutGap.Small"
            AlignItems="AlignItems.Stretch"
@@ -170,8 +171,8 @@
             Compact ? "cda-bo-gallery-card--compact" : null,
             Class);
 
-    private BusinessObjectDataItem? PreviewImage
-        => BusinessObjectCardDisplay.ImageFor(Item);
+    private BusinessObjectDataItem? PreviewItem
+        => BusinessObjectCardDisplay.PreviewFor(Item);
 
     private string DisplayName
         => BusinessObjectCardDisplay.DisplayName(Item);

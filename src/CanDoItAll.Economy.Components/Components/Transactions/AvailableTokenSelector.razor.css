@@ -2,6 +2,14 @@
     display: none;
 }
 
+.available-token-selector--compact .available-token-selector__cards {
+    display: none;
+}
+
+.available-token-selector--compact .available-token-selector__dropdown {
+    display: block;
+}
+
 .available-token-selector__cards ::deep .cad-card-button {
     height: auto;
     min-height: 4.5rem;

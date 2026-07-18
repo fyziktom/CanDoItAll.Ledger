@@ -135,6 +135,140 @@ public sealed class BusinessObjectCommerceUiComponentTests : TestContext
     }
 
     [Fact]
+    public void GalleryCard_UsesTheMainImageWhenItIsNotTheFirstDataItem()
+    {
+        var firstImage = new BusinessObjectDataItem(
+            "first.png",
+            BusinessObjectDataItemType.Image,
+            BusinessObjectDataItemStorage.Url,
+            "first-image-hash",
+            new Uri("https://example.test/first.png"),
+            "image/png",
+            "first.png");
+        var mainImage = new BusinessObjectDataItem(
+            "main.svg",
+            BusinessObjectDataItemType.Image,
+            BusinessObjectDataItemStorage.Url,
+            "main-image-hash",
+            new Uri("https://example.test/main.svg"),
+            "image/svg+xml",
+            "main.svg",
+            IsMain: true);
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("image");
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            "Main image gallery proof",
+            "The selected main image must drive the gallery thumbnail.",
+            string.Empty,
+            "#image",
+            [firstImage, mainImage]);
+        ITypedBusinessObjectView imageObject = CreateTypedView(
+            new BusinessObjectId("bo:image:main-gallery-proof"),
+            "image",
+            BusinessObjectPayloadBuilder.Serialize(payload));
+
+        IRenderedComponent<BusinessObjectGalleryCard> component =
+            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+                .Add(x => x.Item, imageObject));
+
+        IElement image = component.Find(".cda-bo-gallery-preview img");
+        Assert.Equal("main.svg", image.GetAttribute("alt"));
+        Assert.Equal("https://example.test/main.svg", image.GetAttribute("src"));
+    }
+
+    [Fact]
+    public void GalleryCard_UsesTheMainDataItemEvenWhenItIsNotAnImage()
+    {
+        var image = new BusinessObjectDataItem(
+            "available-image.png",
+            BusinessObjectDataItemType.Image,
+            BusinessObjectDataItemStorage.Url,
+            "available-image-hash",
+            new Uri("https://example.test/available-image.png"),
+            "image/png",
+            "available-image.png");
+        var mainPdf = new BusinessObjectDataItem(
+            "main-document.pdf",
+            BusinessObjectDataItemType.Pdf,
+            BusinessObjectDataItemStorage.Ipfs,
+            "main-document-hash",
+            ContentType: "application/pdf",
+            FileName: "main-document.pdf",
+            IsMain: true);
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("image");
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            "Main document gallery proof",
+            "The selected main data item must drive the gallery thumbnail.",
+            string.Empty,
+            "#document",
+            [image, mainPdf]);
+        ITypedBusinessObjectView imageObject = CreateTypedView(
+            new BusinessObjectId("bo:image:main-document-gallery-proof"),
+            "image",
+            BusinessObjectPayloadBuilder.Serialize(payload));
+
+        IRenderedComponent<BusinessObjectGalleryCard> component =
+            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+                .Add(x => x.Item, imageObject));
+
+        BusinessObjectDataItemPreview preview = component
+            .FindComponent<BusinessObjectDataItemPreview>()
+            .Instance;
+        Assert.Equal(mainPdf, preview.Item);
+        Assert.True(preview.Thumbnail);
+        Assert.Contains("PDF", component.Find(".cda-bo-gallery-preview").TextContent);
+    }
+
+    [Fact]
+    public void GalleryCard_PrefersAnImageWhenLegacyDataHasNoMainItem()
+    {
+        var firstPdf = new BusinessObjectDataItem(
+            "first-document.pdf",
+            BusinessObjectDataItemType.Pdf,
+            BusinessObjectDataItemStorage.Ipfs,
+            "first-document-hash",
+            ContentType: "application/pdf",
+            FileName: "first-document.pdf");
+        var fallbackImage = new BusinessObjectDataItem(
+            "fallback-image.png",
+            BusinessObjectDataItemType.Image,
+            BusinessObjectDataItemStorage.Url,
+            "fallback-image-hash",
+            new Uri("https://example.test/fallback-image.png"),
+            "image/png",
+            "fallback-image.png");
+        BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("image");
+        BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.CreatePayload(
+            definition,
+            "Legacy mixed-item gallery proof",
+            "An available image remains the gallery fallback when no main flag was persisted.",
+            string.Empty,
+            "#legacy",
+            []);
+        GenericTypedBusinessObjectView imageObject = Assert.IsType<GenericTypedBusinessObjectView>(
+            CreateTypedView(
+                new BusinessObjectId("bo:image:legacy-gallery-fallback"),
+                "image",
+                BusinessObjectPayloadBuilder.Serialize(payload))) with
+        {
+            DataItems = [firstPdf, fallbackImage]
+        };
+
+        IRenderedComponent<BusinessObjectGalleryCard> component =
+            RenderComponent<BusinessObjectGalleryCard>(parameters => parameters
+                .Add(x => x.Item, imageObject));
+
+        BusinessObjectDataItemPreview preview = component
+            .FindComponent<BusinessObjectDataItemPreview>()
+            .Instance;
+        Assert.Equal(fallbackImage, preview.Item);
+        Assert.Equal(
+            "https://example.test/fallback-image.png",
+            component.Find(".cda-bo-gallery-preview img").GetAttribute("src"));
+    }
+
+    [Fact]
     public void GalleryCard_LimitsTagsAndShowsTheRemainderThroughTooltipService()
     {
         BusinessObjectFamilyDefinition definition = BusinessObjectFamilyCatalog.FindOrDefault("post");

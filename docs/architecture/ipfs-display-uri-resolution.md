@@ -10,8 +10,8 @@ Resolve business-object data-item addresses at display time through a small, rep
 |---|---|---|
 | Persist a data item's storage kind, CID, and original URI | `BusinessObjectDataItem` | unchanged |
 | Select the URI used by previews and actions | individual Razor components | `IBusinessObjectDataItemUriResolver` |
-| Convert an IPFS CID to a path-gateway URI | ad hoc stored URI/fallback logic | `IpfsGatewayDataItemUriResolver` |
-| Select the local or remote gateway | upload-time AccountApp configuration only | AccountApp composition root and `AccountApp:IpfsGatewayBaseUri` |
+| Convert an IPFS CID to a display URI | ad hoc stored URI/fallback logic | `IpfsGatewayDataItemUriResolver` for path gateways or `IpfsContentEndpointDataItemUriResolver` when the endpoint needs the original filename to return the correct MIME type |
+| Select the local or remote gateway | upload-time AccountApp configuration only | AccountApp composition root and `AccountApp:IpfsGatewayBaseUri`; local Light-mode demos can additionally select `AccountApp:IpfsContentEndpointUri` for filename-aware MIME responses |
 | Make the strategy available to nested reusable components | none | AccountApp root cascading value |
 
 This is a local provider-isolation change in the existing UI project. It does not justify a new project: the contract has one UI-projection method, introduces no SDK or transport dependency, and follows the existing `Components -> BusinessObjects` reference direction.
@@ -28,7 +28,9 @@ This is a local provider-isolation change in the existing UI project. It does no
 
 ### Selected pattern
 
-Strategy: `IBusinessObjectDataItemUriResolver` is the stable UI contract and `IpfsGatewayDataItemUriResolver` is the configured path-gateway strategy. A small component base consumes the optional cascaded strategy and preserves stored-URI fallback for component hosts that have not opted in.
+Strategy: `IBusinessObjectDataItemUriResolver` is the stable UI contract. `IpfsGatewayDataItemUriResolver` supports ordinary path gateways, while `IpfsContentEndpointDataItemUriResolver` sends the CID and original filename to a content endpoint so SVG, PDF, audio, and video responses keep their MIME type. A small component base consumes the optional cascaded strategy and preserves stored-URI fallback for component hosts that have not opted in.
+
+`IpfsContentEndpointDataItemUriResolver` is intended for the local node-control Light-mode endpoint. Pro/remote deployments must use a dedicated anonymous, read-only content endpoint (preferably on a content-only origin) or retain the ordinary path-gateway resolver; browser media elements cannot attach an admin API key.
 
 ### Rejected alternatives
 

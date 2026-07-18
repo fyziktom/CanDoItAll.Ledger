@@ -122,6 +122,39 @@ internal static class BusinessObjectCardDisplay
         return null;
     }
 
+    public static BusinessObjectDataItem? PreviewFor(IBusinessObjectView item)
+    {
+        IReadOnlyList<BusinessObjectDataItem> mediaDataItems = item is IMediaBusinessObjectView media
+            ? media.DataItems
+            : [];
+        BusinessObjectMediaPayload? payload = PayloadFor(item);
+        BusinessObjectDataItem? dataItem = mediaDataItems
+            .Concat(payload?.DataItems ?? [])
+            .OrderByDescending(candidate => candidate.IsMain)
+            .ThenByDescending(candidate => candidate.Type == BusinessObjectDataItemType.Image)
+            .FirstOrDefault();
+
+        if (dataItem is not null)
+        {
+            return dataItem;
+        }
+
+        if (!string.IsNullOrWhiteSpace(payload?.ImageLink)
+            && Uri.TryCreate(payload.ImageLink, UriKind.Absolute, out Uri? uri))
+        {
+            return new BusinessObjectDataItem(
+                "Image",
+                BusinessObjectDataItemType.Image,
+                BusinessObjectDataItemStorage.Url,
+                uri.ToString(),
+                uri,
+                "image/*",
+                IsMain: true);
+        }
+
+        return null;
+    }
+
     public static IReadOnlyList<BusinessObjectDisplayFact> FactsFor(IBusinessObjectView item)
     {
         if (item is ITypedBusinessObjectView typed)

@@ -94,6 +94,7 @@ services:
       ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
       ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5081/ipfs-api/
       ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
+      ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
     ports:
       - "5081:80"
     extra_hosts:
@@ -116,6 +117,7 @@ services:
       ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
       ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5082/ipfs-api/
       ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
+      ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
     ports:
       - "5082:80"
     extra_hosts:
@@ -138,6 +140,7 @@ services:
       ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
       ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:5083/ipfs-api/
       ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
+      ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
     ports:
       - "5083:80"
     extra_hosts:

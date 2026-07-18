@@ -2,6 +2,7 @@
 
 <Stack AlignItems="AlignItems.Stretch"
        GapScale="LayoutGap.Small"
+       Class="@SelectorClass"
        data-testid="@DataTestId">
     @if (!string.IsNullOrWhiteSpace(Label))
     {
@@ -71,6 +72,12 @@
 
     [Parameter]
     public string? DataTestId { get; set; }
+
+    [Parameter]
+    public bool Compact { get; set; }
+
+    private string SelectorClass
+        => Compact ? "available-token-selector--compact" : string.Empty;
 
     private IReadOnlyList<EconomyTokenOption> OrderedOptions
         => Options

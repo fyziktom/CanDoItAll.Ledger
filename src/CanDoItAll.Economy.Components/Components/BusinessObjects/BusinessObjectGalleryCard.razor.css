@@ -23,19 +23,26 @@
 }
 
 .cda-bo-gallery-preview {
+    position: relative;
     display: grid;
     width: 100%;
     min-width: 0;
     min-height: 0;
-    cursor: pointer;
     overflow: hidden;
-    padding: 0;
-    border: 0;
     border-bottom: 1px solid var(--cad-color-border-soft);
     background: var(--cad-color-surface-soft);
 }
 
-.cda-bo-gallery-preview:focus-visible {
+.cda-bo-gallery-preview__action {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+}
+
+.cda-bo-gallery-preview__action:focus-visible {
     outline: 2px solid var(--cad-color-accent, #0ea5e9);
     outline-offset: -2px;
 }
