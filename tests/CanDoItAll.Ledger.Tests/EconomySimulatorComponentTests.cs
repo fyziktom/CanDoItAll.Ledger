@@ -258,8 +258,8 @@ public sealed class EconomySimulatorComponentTests : BunitContext
             Assert.Contains("InMemory", tooltipHost.Markup, StringComparison.Ordinal);
         }, TimeSpan.FromSeconds(2));
 
-        trigger.MouseLeave();
-        Assert.Null(service.Current);
+        component.InvokeAsync(() => trigger.TriggerEvent("onmouseleave", new MouseEventArgs()));
+        component.WaitForAssertion(() => Assert.Null(service.Current));
     }
 
     [Fact]
@@ -305,6 +305,15 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         Assert.Contains("BusinessUnitApproved", markup, StringComparison.Ordinal);
         Assert.Contains("Rent of offices", markup, StringComparison.Ordinal);
         Assert.Contains("simulation-planned-expense-timeline", markup, StringComparison.Ordinal);
+        IRenderedComponent<TreeView> scheduleTree = Assert.Single(component.FindComponents<TreeView>());
+        TreeViewNode prototypingSchedule = scheduleTree.Instance.Items
+            .SelectMany(businessUnit => businessUnit.Children)
+            .SelectMany(group => group.Children)
+            .Single(node => node.Id == "vef-2022-other-33-prototyping");
+        Assert.Equal("BusinessUnitApproved", prototypingSchedule.BadgeText);
+        Assert.Contains("2022 Prototyping", prototypingSchedule.Tooltip, StringComparison.Ordinal);
+        Assert.Contains("vef-2022-other-33-prototyping", prototypingSchedule.Tooltip, StringComparison.Ordinal);
+        Assert.Contains("BusinessUnitApproved", prototypingSchedule.Tooltip, StringComparison.Ordinal);
 
         await component.InvokeAsync(() => component.Find("[data-testid^='simulation-planned-expense-row-']").Click());
 

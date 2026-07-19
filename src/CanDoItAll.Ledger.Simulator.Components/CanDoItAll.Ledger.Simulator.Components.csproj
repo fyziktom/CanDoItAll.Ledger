@@ -3,12 +3,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CanDoItAll.Economy.Simulator.Components</AssemblyName>
     <RootNamespace>CanDoItAll.Economy.Simulator.Components</RootNamespace>
+    <UseComponentsBaseLibPackage Condition="'$(UseComponentsBaseLibPackage)' == ''">true</UseComponentsBaseLibPackage>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
-    <PackageReference Include="CanDoItAll.Components.BaseLib" />
+    <PackageReference Condition="'$(UseComponentsBaseLibPackage)' == 'true'" Include="CanDoItAll.Components.BaseLib" />
     <PackageReference Include="CanDoItAll.Components.Charts" />
+    <ProjectReference Condition="'$(UseComponentsBaseLibPackage)' != 'true'" Include="..\..\..\CanDoItAll.Components\src\CanDoItAll.Components.BaseLib\CanDoItAll.Components.BaseLib.csproj" />
     <ProjectReference Include="..\CanDoItAll.Ledger.Simulator\CanDoItAll.Ledger.Simulator.csproj" />
   </ItemGroup>
 </Project>

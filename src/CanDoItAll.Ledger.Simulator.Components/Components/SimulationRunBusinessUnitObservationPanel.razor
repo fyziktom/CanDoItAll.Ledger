@@ -223,6 +223,7 @@
                             Text = snapshot.AccountRole.ToString(),
                             Icon = "account_balance_wallet",
                             BadgeText = Money(snapshot.Balance),
+                            Tooltip = $"{snapshot.AccountRole} · {snapshot.BusinessUnitName} · balance {Money(snapshot.Balance)} · {snapshot.BindingStatus} · address {snapshot.AccountAddress.Value} · {snapshot.CurrentBusinessObjectIds.Count} BO(s) · {snapshot.ProcessedTriggerCount} trigger(s) · {snapshot.FailedActionCount} failed",
                             IsSelected = SnapshotNodeId(snapshot) == SelectedId || snapshot.SnapshotId == SelectedId,
                             DataTestId = $"simulation-run-account-node-{snapshot.AccountRole}"
                         }))
@@ -234,6 +235,7 @@
                     Text = businessUnit.DisplayName,
                     Icon = businessUnit.Kind == BusinessUnitKind.RevenueCenter ? "trending_up" : businessUnit.Kind == BusinessUnitKind.CostCenter ? "payments" : "business",
                     BadgeText = businessUnit.Kind.ToString(),
+                    Tooltip = $"{businessUnit.DisplayName} · {businessUnit.Kind} · {businessUnit.Path} · {businessUnit.Status} · {businessUnit.CurrencyCode ?? "project currency"}",
                     Children = children,
                     IsExpanded = expandedNodeIds.Contains(businessUnit.BusinessUnitId.Value),
                     IsSelected = businessUnit.BusinessUnitId.Value == SelectedId,

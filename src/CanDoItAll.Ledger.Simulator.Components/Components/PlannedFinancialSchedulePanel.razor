@@ -160,6 +160,7 @@
                 Text = BusinessUnitName(group.Key),
                 Icon = "account_tree",
                 BadgeText = group.Count().ToString(CultureInfo.InvariantCulture),
+                Tooltip = $"{BusinessUnitName(group.Key)} · business unit {group.Key.Value} · {group.Count()} scheduled item(s)",
                 IsExpanded = expandedNodeIds.Contains($"bu:{group.Key.Value}"),
                 Children = group
                     .GroupBy(schedule => schedule.Metadata.GetValueOrDefault("uiGroup", "schedule"), StringComparer.Ordinal)
@@ -170,6 +171,7 @@
                         Text = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(scheduleGroup.Key.Replace('-', ' ')),
                         Icon = GroupIcon(scheduleGroup.Key),
                         BadgeText = scheduleGroup.Count().ToString(CultureInfo.InvariantCulture),
+                        Tooltip = $"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(scheduleGroup.Key.Replace('-', ' '))} · {BusinessUnitName(group.Key)} · {scheduleGroup.Count()} scheduled item(s)",
                         IsExpanded = expandedNodeIds.Contains($"group:{group.Key.Value}:{scheduleGroup.Key}"),
                         Children = scheduleGroup
                             .OrderBy(schedule => schedule.DisplayName, StringComparer.Ordinal)
@@ -179,6 +181,7 @@
                                 Text = schedule.DisplayName,
                                 Icon = ScheduleIcon(schedule),
                                 BadgeText = schedule.RequiresApproval ? ApprovalText(schedule) : schedule.Kind.ToString(),
+                                Tooltip = ScheduleTooltip(schedule),
                                 IsSelected = schedule.ScheduleId == SelectedId,
                                 DataTestId = $"simulation-financial-schedule-node-{schedule.ScheduleId}"
                             })
@@ -282,6 +285,9 @@
 
     private static decimal ScheduleTotal(ScenarioFinancialScheduleState schedule)
         => schedule.Amounts.Sum(amount => amount.Amount.Value);
+
+    private string ScheduleTooltip(ScenarioFinancialScheduleState schedule)
+        => $"{schedule.DisplayName} · {schedule.ScheduleId} · BU {BusinessUnitName(schedule.BusinessUnitId)} · {schedule.Kind} · {schedule.Section} · approval {ApprovalText(schedule)} · source {PlanSourceText(schedule)} · total {FormatAmount(ScheduleTotal(schedule))} {Project.Model.BaseCurrencyCode}";
 
     private string PlanSourceText(ScenarioFinancialScheduleState schedule)
     {

@@ -224,6 +224,7 @@
                             Text = definition.DisplayName,
                             Icon = definition.Kind == SimulationBusinessObjectDefinitionKind.RuleDefinition ? "rule" : "draft",
                             BadgeText = definition.Kind.ToString(),
+                            Tooltip = $"{definition.DisplayName} · {definition.Kind} · {definition.ObjectType} · schema {definition.SchemaVersion} · owner BU {definition.OwnerBusinessUnitId?.Value ?? "not assigned"}",
                             IsSelected = definition.DefinitionId == SelectedId,
                             DataTestId = $"simulation-bo-node-{definition.DefinitionId}"
                         }))
@@ -234,6 +235,7 @@
                     Text = folder.DisplayName,
                     Icon = "folder",
                     BadgeText = folder.Kind.ToString(),
+                    Tooltip = $"{folder.DisplayName} · {folder.Kind} · {children.Count} item(s)",
                     Children = children,
                     IsExpanded = expandedNodeIds.Contains(folder.FolderId),
                     IsSelected = folder.FolderId == SelectedId,

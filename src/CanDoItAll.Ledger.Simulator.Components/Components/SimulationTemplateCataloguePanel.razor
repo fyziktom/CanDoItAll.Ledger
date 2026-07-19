@@ -210,6 +210,7 @@
             Text = group.Key,
             Icon = "account_tree",
             BadgeText = group.Count().ToString(CultureInfo.InvariantCulture),
+            Tooltip = $"{group.Key} · {group.Count()} template(s)",
             IsExpanded = expandedNodeIds.Contains($"template-group:{group.Key}"),
             Children = group
                 .GroupBy(template => TreePath(template).Contains('/') ? TreePath(template).Split('/')[1] : "Templates", StringComparer.Ordinal)
@@ -220,6 +221,7 @@
                     Text = child.Key,
                     Icon = "folder",
                     BadgeText = child.Count().ToString(CultureInfo.InvariantCulture),
+                    Tooltip = $"{group.Key} / {child.Key} · {child.Count()} template(s)",
                     IsExpanded = expandedNodeIds.Contains($"template-group:{group.Key}:{child.Key}"),
                     Children = child
                         .OrderBy(template => template.DisplayName, StringComparer.Ordinal)
@@ -229,6 +231,7 @@
                             Text = template.DisplayName,
                             Icon = TemplateIcon(template),
                             BadgeText = template.Kind.ToString(),
+                            Tooltip = $"{template.DisplayName} · {template.Kind} · {template.TemplateId} v{template.Version} · {template.Description} · {template.Parameters.Count} parameter(s) · {template.Outputs.Count} output(s)",
                             IsSelected = string.Equals(template.TemplateId, SelectedTemplate?.TemplateId, StringComparison.Ordinal),
                             DataTestId = $"simulation-template-node-{template.TemplateId}"
                         })

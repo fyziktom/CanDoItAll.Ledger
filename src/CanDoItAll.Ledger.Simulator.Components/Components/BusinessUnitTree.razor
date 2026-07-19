@@ -233,6 +233,7 @@ else
                             Text = binding.DisplayName ?? binding.Role.ToString(),
                             Icon = "account_balance_wallet",
                             BadgeText = binding.Role.ToString(),
+                            Tooltip = $"{binding.DisplayName ?? binding.Role.ToString()} · {binding.Role} · {binding.Status} · address {binding.Address.Value} · {(binding.IsPrimary ? "primary" : "secondary")}",
                             IsSelected = BindingNodeId(binding) == SelectedId,
                             DataTestId = $"simulation-binding-node-{binding.Role}"
                         }))
@@ -243,6 +244,7 @@ else
                     Text = businessUnit.DisplayName,
                     Icon = businessUnit.Kind is BusinessUnitKind.RevenueCenter ? "trending_up" : businessUnit.Kind is BusinessUnitKind.CostCenter ? "payments" : "business",
                     BadgeText = businessUnit.Kind.ToString(),
+                    Tooltip = $"{businessUnit.DisplayName} · {businessUnit.Kind} · {businessUnit.Path} · {businessUnit.Status} · {businessUnit.CurrencyCode ?? "project currency"} · address {businessUnit.PrimaryAddress.Value}",
                     Children = children,
                     IsExpanded = expandedNodeIds.Contains(businessUnit.BusinessUnitId.Value),
                     IsSelected = businessUnit.BusinessUnitId.Value == SelectedId,
