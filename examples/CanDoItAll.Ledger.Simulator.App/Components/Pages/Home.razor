@@ -1,5 +1,5 @@
 @page "/"
-@inject IConfiguration Configuration
+@inject EconomySimulatorProjectionPersistenceSelection PersistenceSelection
 @inject ISimulationRunLifecycleService RunLifecycle
 @inject ISimulationProjectWorkspaceService Workspace
 @inject ISimulationProjectImportExportService ImportExport
@@ -8,6 +8,7 @@
 <PageTitle>Economy Simulator</PageTitle>
 
 <EconomySimulatorAppShell ActivePage="projects">
+    <ProjectionStorageNotice />
     <EconomySimulatorShell ViewModel="ViewModel"
                            RunRequested="StartRunAsync"
                            LaunchMessages="launchMessages"
@@ -22,11 +23,16 @@
     {
         get
         {
-            string storageMode = Configuration["EconomySimulator:StorageMode"] ?? "InMemory";
+            string projectionStorageMode = PersistenceSelection.StorageModeName;
             IReadOnlyList<SimulationProjectSummary> projects = Workspace.ListProjects();
-            SimulationProjectState? selectedProject = Workspace.GetProject("vef-financial-plan")
-                ?? projects.Select(project => Workspace.GetProject(project.ProjectId)).FirstOrDefault(project => project is not null)
-                ?? EconomySimulatorSampleData.CreateProjectState(storageMode);
+            IReadOnlyList<SimulationProjectState> projectStates = projects
+                .Select(project => Workspace.GetProject(project.ProjectId))
+                .Where(project => project is not null)
+                .Cast<SimulationProjectState>()
+                .ToArray();
+            SimulationProjectState? selectedProject = projectStates.FirstOrDefault(project => string.Equals(project.Summary.ProjectId, "vef-financial-plan", StringComparison.Ordinal))
+                ?? projectStates.FirstOrDefault()
+                ?? EconomySimulatorSampleData.CreateProjectState(projectionStorageMode);
             SimulationProjectExportManifest manifest = ImportExport.CreateManifest(selectedProject, DateTimeOffset.Parse("2026-05-15T12:00:00Z"));
             SimulationProjectImportPreview importPreview = ImportExport.PreviewImport(ImportExport.SerializeManifest(manifest));
 
@@ -34,7 +40,10 @@
                 projects.Count == 0 ? [selectedProject.Summary] : projects,
                 selectedProject,
                 manifest,
-                importPreview);
+                importPreview)
+            {
+                ProjectStates = projectStates.Count == 0 ? [selectedProject] : projectStates
+            };
         }
     }
 

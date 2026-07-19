@@ -257,7 +257,20 @@ public sealed class SimulationApiEndpointTests
         var validation = new SimulationProjectValidationService();
         var importExport = new SimulationProjectImportExportService(serializer, validation);
         var observation = new SimulationRunObservationService(serializer);
-        return new InMemorySimulationRunLifecycleService(validation, importExport, observation, serializer, new FixedTimeProvider(DateTimeOffset.Parse("2026-05-14T12:00:00Z")));
+        var scenarioCatalog = new EconomyScenarioTemplateCatalog();
+        var scenarioMaterializer = new EconomyScenarioRunMaterializer(
+            scenarioCatalog,
+            new EconomyScenarioEventCompiler(serializer),
+            new EconomyProjectionService(),
+            serializer);
+        return new InMemorySimulationRunLifecycleService(
+            validation,
+            importExport,
+            observation,
+            serializer,
+            new FixedTimeProvider(DateTimeOffset.Parse("2026-05-14T12:00:00Z")),
+            scenarioCatalog,
+            scenarioMaterializer);
     }
 
     private static int GetFreeTcpPort()

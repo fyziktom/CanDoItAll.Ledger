@@ -1,0 +1,583 @@
+@namespace CanDoItAll.Economy.Simulator.Components.Components
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Web
+
+@if (Groups.Count == 0)
+{
+    <div class="cda-sim-project-tree__empty"
+         role="status"
+         data-testid="simulation-project-tree-empty">
+        No projects match the current search.
+    </div>
+}
+else
+{
+    <ul @ref="treeElement"
+        class="cda-sim-project-tree"
+        role="tree"
+        tabindex="0"
+        aria-label="Simulation projects grouped by project family"
+        aria-activedescendant="@ResolveActiveElementId()"
+        @onfocus="EnsureActiveItem"
+        @onkeydown="HandleTreeKeyDownAsync"
+        data-testid="simulation-project-tree">
+        @foreach (ProjectGroup group in Groups)
+        {
+            bool expanded = IsExpanded(group.Id);
+            <li role="none" class="cda-sim-project-tree__group">
+                <button type="button"
+                        id="@ResolveNodeElementId(GroupNodeId(group.Id))"
+                        class="@GroupRowClass(group.Id)"
+                        role="treeitem"
+                        tabindex="-1"
+                        aria-level="1"
+                        aria-expanded="@expanded.ToString().ToLowerInvariant()"
+                        data-testid="@($"simulation-project-group-{group.Id}")"
+                        @onclick="@(() => ActivateGroupAsync(group))">
+                    <Icon Name="@(expanded ? "expand_more" : "chevron_right")" />
+                    <Icon Name="@(expanded ? "folder_open" : "folder")" />
+                    <span class="cda-sim-project-tree__group-name">@group.Name</span>
+                    <span class="cda-sim-project-tree__count">@group.Projects.Count</span>
+                </button>
+
+                @if (expanded)
+                {
+                    <ul class="cda-sim-project-tree__children"
+                        role="group"
+                        data-testid="@($"simulation-project-group-{group.Id}-children")">
+                        @foreach (SimulationProjectState project in group.Projects)
+                        {
+                            SimulationProjectSummary summary = project.Summary;
+                            bool selectedProject = string.Equals(summary.ProjectId, SelectedProjectId, StringComparison.Ordinal);
+                            bool hasScenarioChildren = project.RunSetups.Count > 1;
+                            bool projectExpanded = IsProjectExpanded(summary.ProjectId);
+                            bool projectRowSelected = selectedProject && (!hasScenarioChildren || string.IsNullOrWhiteSpace(SelectedSetupId));
+                            <li role="none" class="cda-sim-project-tree__project-node">
+                                <div class="cda-sim-project-tree__project-shell">
+                                    @if (hasScenarioChildren)
+                                    {
+                                        <button type="button"
+                                                class="cda-sim-project-tree__branch-toggle"
+                                                tabindex="-1"
+                                                aria-label="@(projectExpanded ? $"Collapse scenarios for {summary.DisplayName}" : $"Expand scenarios for {summary.DisplayName}")"
+                                                data-testid="@($"simulation-project-toggle-{summary.ProjectId}")"
+                                                @onclick="@(() => ToggleProjectAsync(summary.ProjectId))">
+                                            <Icon Name="@(projectExpanded ? "expand_more" : "chevron_right")" />
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="cda-sim-project-tree__branch-toggle cda-sim-project-tree__branch-toggle--placeholder" aria-hidden="true"></span>
+                                    }
+
+                                    <TooltipTarget Position="TooltipPosition.Right"
+                                                   Delay="@TimeSpan.FromMilliseconds(160)"
+                                                   Duration="@((TimeSpan?)null)"
+                                                   CloseOnMouseLeave="true"
+                                                   TriggerClass="cda-sim-project-tree__tooltip-target"
+                                                   TestId="@($"simulation-project-tooltip-{summary.ProjectId}")">
+                                        <TooltipContent Context="_">
+                                            <div class="cda-sim-project-tooltip">
+                                                <strong>@summary.DisplayName</strong>
+                                                <span>@ScenarioSummary(project)</span>
+                                                <dl>
+                                                    <div><dt>Status</dt><dd>@summary.Status</dd></div>
+                                                    <div><dt>Currency</dt><dd>@summary.BaseCurrencyCode</dd></div>
+                                                    <div><dt>Planning</dt><dd>@FormatRange(summary)</dd></div>
+                                                    <div><dt>Issues</dt><dd>@summary.IssueCount</dd></div>
+                                                    <div><dt>Last run</dt><dd>@FormatLastRun(summary)</dd></div>
+                                                    <div><dt>Storage</dt><dd>@summary.StorageMode</dd></div>
+                                                    <div><dt>Updated</dt><dd>@summary.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture)</dd></div>
+                                                </dl>
+                                            </div>
+                                        </TooltipContent>
+                                        <ChildContent>
+                                            <button type="button"
+                                                    id="@ResolveNodeElementId(ProjectNodeId(summary.ProjectId))"
+                                                    class="@ProjectRowClass(summary.ProjectId, projectRowSelected)"
+                                                    role="treeitem"
+                                                    tabindex="-1"
+                                                    aria-level="2"
+                                                    aria-expanded="@(hasScenarioChildren ? projectExpanded.ToString().ToLowerInvariant() : null)"
+                                                    aria-selected="@projectRowSelected.ToString().ToLowerInvariant()"
+                                                    data-testid="@($"simulation-project-row-{summary.ProjectId}")"
+                                                    @onclick="@(() => ActivateProjectAsync(project))">
+                                                <span class="cda-sim-project-tree__status-dot"
+                                                      data-status="@summary.Status.ToString().ToLowerInvariant()"
+                                                      aria-hidden="true"></span>
+                                                <span class="cda-sim-project-tree__project-name">@summary.DisplayName</span>
+                                                <span class="cda-sim-project-tree__project-badge">@(hasScenarioChildren ? $"{project.RunSetups.Count} scenarios" : ProjectBadge(project))</span>
+                                            </button>
+                                        </ChildContent>
+                                    </TooltipTarget>
+                                </div>
+
+                                @if (hasScenarioChildren && projectExpanded)
+                                {
+                                    <ul class="cda-sim-project-tree__children cda-sim-project-tree__scenario-children"
+                                        role="group"
+                                        data-testid="@($"simulation-project-scenarios-{summary.ProjectId}")">
+                                        @foreach (SimulationRunSetupState setup in project.RunSetups.OrderBy(candidate => candidate.ScenarioName, StringComparer.Ordinal))
+                                        {
+                                            bool setupSelected = selectedProject && string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal);
+                                            <li role="none">
+                                                <button type="button"
+                                                        id="@ResolveNodeElementId(SetupNodeId(summary.ProjectId, setup.SetupId))"
+                                                        class="@SetupRowClass(summary.ProjectId, setup.SetupId, setupSelected)"
+                                                        role="treeitem"
+                                                        tabindex="-1"
+                                                        aria-level="3"
+                                                        aria-selected="@setupSelected.ToString().ToLowerInvariant()"
+                                                        data-testid="@($"simulation-project-setup-{TestSegment(summary.ProjectId)}-{TestSegment(setup.SetupId)}")"
+                                                        @onclick="@(() => ActivateSetupAsync(project, setup))">
+                                                    <Icon Name="science" />
+                                                    <span class="cda-sim-project-tree__project-name">@setup.ScenarioName</span>
+                                                    <span class="cda-sim-project-tree__project-badge">@setup.StepPeriod</span>
+                                                </button>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private readonly HashSet<string> collapsedGroupIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> collapsedProjectIds = new(StringComparer.Ordinal);
+    private readonly string treeInstanceId = $"simulation-project-tree-{Guid.NewGuid():N}";
+    private ElementReference treeElement;
+    private string? activeNodeId;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<SimulationProjectState> Projects { get; set; } = [];
+
+    [Parameter]
+    public string SelectedProjectId { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> SelectedProjectIdChanged { get; set; }
+
+    [Parameter]
+    public string? SelectedSetupId { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> SelectedSetupIdChanged { get; set; }
+
+    private IReadOnlyList<ProjectGroup> Groups => Projects
+        .GroupBy(ResolveGroupId, StringComparer.Ordinal)
+        .Select(group => new ProjectGroup(
+            group.Key,
+            ResolveGroupName(group.First()),
+            ResolveGroupOrder(group.First()),
+            group.OrderBy(project => project.Summary.DisplayName, StringComparer.Ordinal)
+                .ThenBy(project => project.Summary.ProjectId, StringComparer.Ordinal)
+                .ToArray()))
+        .OrderBy(group => group.Order)
+        .ThenBy(group => group.Name, StringComparer.Ordinal)
+        .ToArray();
+
+    private bool IsExpanded(string groupId) => !collapsedGroupIds.Contains(groupId);
+
+    private bool IsProjectExpanded(string projectId) => !collapsedProjectIds.Contains(projectId);
+
+    protected override void OnParametersSet()
+    {
+        IReadOnlyList<VisibleTreeNode> visibleNodes = BuildVisibleNodes();
+        if (activeNodeId is null || visibleNodes.All(node => !string.Equals(node.NodeId, activeNodeId, StringComparison.Ordinal)))
+        {
+            activeNodeId = visibleNodes.FirstOrDefault(node => node.SetupId is not null
+                    && string.Equals(node.ProjectId, SelectedProjectId, StringComparison.Ordinal)
+                    && string.Equals(node.SetupId, SelectedSetupId, StringComparison.Ordinal))?.NodeId
+                ?? visibleNodes.FirstOrDefault(node => node.ProjectId is not null
+                    && node.SetupId is null
+                    && string.Equals(node.ProjectId, SelectedProjectId, StringComparison.Ordinal))?.NodeId
+                ?? visibleNodes.FirstOrDefault()?.NodeId;
+        }
+    }
+
+    private void ToggleGroup(string groupId)
+    {
+        if (!collapsedGroupIds.Add(groupId))
+        {
+            collapsedGroupIds.Remove(groupId);
+        }
+    }
+
+    private void ToggleProject(string projectId)
+    {
+        if (!collapsedProjectIds.Add(projectId))
+        {
+            collapsedProjectIds.Remove(projectId);
+        }
+    }
+
+    private async Task ActivateGroupAsync(ProjectGroup group)
+    {
+        activeNodeId = GroupNodeId(group.Id);
+        await treeElement.FocusAsync(preventScroll: true);
+        ToggleGroup(group.Id);
+    }
+
+    private async Task ActivateProjectAsync(SimulationProjectState project)
+    {
+        activeNodeId = ProjectNodeId(project.Summary.ProjectId);
+        await treeElement.FocusAsync(preventScroll: true);
+        await SelectedProjectIdChanged.InvokeAsync(project.Summary.ProjectId);
+        string? setupId = project.RunSetups.Any(setup => string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal))
+            ? SelectedSetupId
+            : project.RunSetups.FirstOrDefault()?.SetupId;
+        await SelectedSetupIdChanged.InvokeAsync(setupId);
+    }
+
+    private async Task ActivateSetupAsync(SimulationProjectState project, SimulationRunSetupState setup)
+    {
+        activeNodeId = SetupNodeId(project.Summary.ProjectId, setup.SetupId);
+        await treeElement.FocusAsync(preventScroll: true);
+        await SelectedProjectIdChanged.InvokeAsync(project.Summary.ProjectId);
+        await SelectedSetupIdChanged.InvokeAsync(setup.SetupId);
+    }
+
+    private async Task ToggleProjectAsync(string projectId)
+    {
+        activeNodeId = ProjectNodeId(projectId);
+        await treeElement.FocusAsync(preventScroll: true);
+        ToggleProject(projectId);
+    }
+
+    private async Task HandleTreeKeyDownAsync(KeyboardEventArgs args)
+    {
+        IReadOnlyList<VisibleTreeNode> visibleNodes = BuildVisibleNodes();
+        if (visibleNodes.Count == 0)
+        {
+            return;
+        }
+
+        switch (args.Key)
+        {
+            case "ArrowDown":
+                MoveActive(visibleNodes, 1);
+                break;
+            case "ArrowUp":
+                MoveActive(visibleNodes, -1);
+                break;
+            case "Home":
+                activeNodeId = visibleNodes[0].NodeId;
+                break;
+            case "End":
+                activeNodeId = visibleNodes[^1].NodeId;
+                break;
+            case "ArrowRight":
+                MoveIntoOrExpand(visibleNodes);
+                break;
+            case "ArrowLeft":
+                CollapseOrMoveToParent(visibleNodes);
+                break;
+            case "Enter":
+            case " ":
+                await ActivateCurrentAsync(visibleNodes);
+                break;
+            default:
+                ActivateByTypeAhead(visibleNodes, args.Key);
+                break;
+        }
+    }
+
+    private void MoveActive(IReadOnlyList<VisibleTreeNode> visibleNodes, int delta)
+    {
+        int currentIndex = IndexOfActiveNode(visibleNodes);
+        currentIndex = currentIndex < 0 ? 0 : Math.Clamp(currentIndex + delta, 0, visibleNodes.Count - 1);
+        activeNodeId = visibleNodes[currentIndex].NodeId;
+    }
+
+    private void MoveIntoOrExpand(IReadOnlyList<VisibleTreeNode> visibleNodes)
+    {
+        VisibleTreeNode? active = FindActiveNode(visibleNodes);
+        if (active is null || active.SetupId is not null)
+        {
+            return;
+        }
+
+        if (active.ProjectId is not null)
+        {
+            SimulationProjectState? project = Projects.FirstOrDefault(candidate => string.Equals(candidate.Summary.ProjectId, active.ProjectId, StringComparison.Ordinal));
+            if (project is null || project.RunSetups.Count <= 1)
+            {
+                return;
+            }
+
+            if (!IsProjectExpanded(active.ProjectId))
+            {
+                ToggleProject(active.ProjectId);
+                return;
+            }
+
+            activeNodeId = visibleNodes.FirstOrDefault(node => string.Equals(node.ParentNodeId, active.NodeId, StringComparison.Ordinal))?.NodeId
+                ?? activeNodeId;
+            return;
+        }
+
+        if (active.GroupId is not null)
+        {
+            if (!IsExpanded(active.GroupId))
+            {
+                ToggleGroup(active.GroupId);
+                return;
+            }
+
+            activeNodeId = visibleNodes.FirstOrDefault(node => string.Equals(node.ParentNodeId, active.NodeId, StringComparison.Ordinal))?.NodeId
+                ?? activeNodeId;
+        }
+    }
+
+    private void CollapseOrMoveToParent(IReadOnlyList<VisibleTreeNode> visibleNodes)
+    {
+        VisibleTreeNode? active = FindActiveNode(visibleNodes);
+        if (active is null)
+        {
+            return;
+        }
+
+        if (active.SetupId is null && active.ProjectId is not null)
+        {
+            SimulationProjectState? project = Projects.FirstOrDefault(candidate => string.Equals(candidate.Summary.ProjectId, active.ProjectId, StringComparison.Ordinal));
+            if (project is not null && project.RunSetups.Count > 1 && IsProjectExpanded(active.ProjectId))
+            {
+                ToggleProject(active.ProjectId);
+                return;
+            }
+        }
+        else if (active.ProjectId is null && active.GroupId is not null && IsExpanded(active.GroupId))
+        {
+            ToggleGroup(active.GroupId);
+            return;
+        }
+
+        if (active.ParentNodeId is not null)
+        {
+            activeNodeId = active.ParentNodeId;
+        }
+    }
+
+    private async Task ActivateCurrentAsync(IReadOnlyList<VisibleTreeNode> visibleNodes)
+    {
+        VisibleTreeNode? active = FindActiveNode(visibleNodes);
+        if (active is null)
+        {
+            return;
+        }
+
+        if (active.ProjectId is not null)
+        {
+            SimulationProjectState? project = Projects.FirstOrDefault(candidate => string.Equals(candidate.Summary.ProjectId, active.ProjectId, StringComparison.Ordinal));
+            if (project is null)
+            {
+                return;
+            }
+
+            if (active.SetupId is not null)
+            {
+                SimulationRunSetupState? setup = project.RunSetups.FirstOrDefault(candidate => string.Equals(candidate.SetupId, active.SetupId, StringComparison.Ordinal));
+                if (setup is not null)
+                {
+                    await SelectedProjectIdChanged.InvokeAsync(active.ProjectId);
+                    await SelectedSetupIdChanged.InvokeAsync(setup.SetupId);
+                }
+            }
+            else
+            {
+                await SelectedProjectIdChanged.InvokeAsync(active.ProjectId);
+                await SelectedSetupIdChanged.InvokeAsync(project.RunSetups.FirstOrDefault()?.SetupId);
+            }
+        }
+        else if (active.GroupId is not null)
+        {
+            ToggleGroup(active.GroupId);
+        }
+    }
+
+    private void ActivateByTypeAhead(IReadOnlyList<VisibleTreeNode> visibleNodes, string key)
+    {
+        if (key.Length != 1 || char.IsControl(key[0]))
+        {
+            return;
+        }
+
+        int startIndex = Math.Max(0, IndexOfActiveNode(visibleNodes));
+        for (int offset = 1; offset <= visibleNodes.Count; offset++)
+        {
+            VisibleTreeNode candidate = visibleNodes[(startIndex + offset) % visibleNodes.Count];
+            if (candidate.Text.StartsWith(key, StringComparison.CurrentCultureIgnoreCase))
+            {
+                activeNodeId = candidate.NodeId;
+                return;
+            }
+        }
+    }
+
+    private void EnsureActiveItem()
+        => activeNodeId ??= BuildVisibleNodes().FirstOrDefault()?.NodeId;
+
+    private IReadOnlyList<VisibleTreeNode> BuildVisibleNodes()
+    {
+        var nodes = new List<VisibleTreeNode>();
+        foreach (ProjectGroup group in Groups)
+        {
+            string groupNodeId = GroupNodeId(group.Id);
+            nodes.Add(new VisibleTreeNode(groupNodeId, group.Name, null, group.Id, null, null));
+            if (!IsExpanded(group.Id))
+            {
+                continue;
+            }
+
+            foreach (SimulationProjectState project in group.Projects)
+            {
+                string projectId = project.Summary.ProjectId;
+                string projectNodeId = ProjectNodeId(projectId);
+                nodes.Add(new VisibleTreeNode(projectNodeId, project.Summary.DisplayName, groupNodeId, group.Id, projectId, null));
+                if (project.RunSetups.Count <= 1 || !IsProjectExpanded(projectId))
+                {
+                    continue;
+                }
+
+                nodes.AddRange(project.RunSetups
+                    .OrderBy(setup => setup.ScenarioName, StringComparer.Ordinal)
+                    .Select(setup => new VisibleTreeNode(
+                        SetupNodeId(projectId, setup.SetupId),
+                        setup.ScenarioName,
+                        projectNodeId,
+                        group.Id,
+                        projectId,
+                        setup.SetupId)));
+            }
+        }
+
+        return nodes;
+    }
+
+    private int IndexOfActiveNode(IReadOnlyList<VisibleTreeNode> visibleNodes)
+    {
+        for (int index = 0; index < visibleNodes.Count; index++)
+        {
+            if (string.Equals(visibleNodes[index].NodeId, activeNodeId, StringComparison.Ordinal))
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private VisibleTreeNode? FindActiveNode(IReadOnlyList<VisibleTreeNode> visibleNodes)
+        => visibleNodes.FirstOrDefault(node => string.Equals(node.NodeId, activeNodeId, StringComparison.Ordinal));
+
+    private string? ResolveActiveElementId()
+        => activeNodeId is null ? null : ResolveNodeElementId(activeNodeId);
+
+    private string ResolveNodeElementId(string nodeId)
+        => $"{treeInstanceId}-item-{string.Concat(nodeId.Select(character => char.IsLetterOrDigit(character) || character is '-' or '_' ? character : '-'))}";
+
+    private static string GroupNodeId(string groupId) => $"group:{groupId}";
+
+    private static string ProjectNodeId(string projectId) => $"project:{projectId}";
+
+    private static string SetupNodeId(string projectId, string setupId) => $"setup:{projectId}:{setupId}";
+
+    private static string ResolveGroupId(SimulationProjectState project)
+        => Metadata(project, "projectGroupId", "workspace-projects");
+
+    private static string ResolveGroupName(SimulationProjectState project)
+        => Metadata(project, "projectGroupName", "Workspace projects");
+
+    private static int ResolveGroupOrder(SimulationProjectState project)
+        => int.TryParse(Metadata(project, "projectGroupOrder", "100"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int order)
+            ? order
+            : 100;
+
+    private static string ProjectBadge(SimulationProjectState project)
+        => project.Metadata.TryGetValue("scenarioCode", out string? scenarioCode) && !string.IsNullOrWhiteSpace(scenarioCode)
+            ? scenarioCode
+            : project.Summary.BaseCurrencyCode;
+
+    private static string ScenarioSummary(SimulationProjectState project)
+    {
+        string[] scenarioNames = project.RunSetups
+            .Select(setup => setup.ScenarioName)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        return scenarioNames.Length == 0
+            ? "No run scenario configured"
+            : $"Scenario{(scenarioNames.Length == 1 ? string.Empty : "s")}: {string.Join(", ", scenarioNames)}";
+    }
+
+    private static string FormatRange(SimulationProjectSummary project)
+        => $"{project.PlanningStartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)} to {project.PlanningEndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}";
+
+    private static string FormatLastRun(SimulationProjectSummary project)
+        => project.LastRunAtUtc?.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture) ?? "No run";
+
+    private static string Metadata(SimulationProjectState project, string key, string fallback)
+        => project.Metadata.TryGetValue(key, out string? value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : fallback;
+
+    private string GroupRowClass(string groupId)
+        => string.Equals(activeNodeId, GroupNodeId(groupId), StringComparison.Ordinal)
+            ? "cda-sim-project-tree__group-row is-active"
+            : "cda-sim-project-tree__group-row";
+
+    private string ProjectRowClass(string projectId, bool selected)
+    {
+        string cssClass = "cda-sim-project-tree__project-row";
+        if (selected)
+        {
+            cssClass += " is-selected";
+        }
+
+        if (string.Equals(activeNodeId, ProjectNodeId(projectId), StringComparison.Ordinal))
+        {
+            cssClass += " is-active";
+        }
+
+        return cssClass;
+    }
+
+    private string SetupRowClass(string projectId, string setupId, bool selected)
+    {
+        string cssClass = "cda-sim-project-tree__setup-row";
+        if (selected)
+        {
+            cssClass += " is-selected";
+        }
+
+        if (string.Equals(activeNodeId, SetupNodeId(projectId, setupId), StringComparison.Ordinal))
+        {
+            cssClass += " is-active";
+        }
+
+        return cssClass;
+    }
+
+    private static string TestSegment(string value)
+        => string.Concat(value.Select(character => char.IsLetterOrDigit(character) || character is '-' or '_' ? character : '-'));
+
+    private sealed record ProjectGroup(
+        string Id,
+        string Name,
+        int Order,
+        IReadOnlyList<SimulationProjectState> Projects);
+
+    private sealed record VisibleTreeNode(
+        string NodeId,
+        string Text,
+        string? ParentNodeId,
+        string? GroupId,
+        string? ProjectId,
+        string? SetupId);
+}

@@ -1,7 +1,9 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 @using System.Globalization
 
-<PageScaffold Mode="PageScaffoldMode.FocusWorkbench" FillHeight="true" MaxWidthClass="max-w-none">
+<PageScaffold Mode="PageScaffoldMode.FocusWorkbench"
+              MaxWidthClass="max-w-none"
+              Style="height:auto;min-height:100%;overflow:visible;">
     <Header>
         <Split Breakpoint="LayoutBreakpoint.Lg"
                AlignItems="AlignItems.Start"
@@ -28,8 +30,8 @@
               Gap="LayoutGap.Large"
               AlignItems="AlignItems.Start"
               data-testid="simulation-run-console-page">
-            <WorkspacePanel Class="min-h-0 overflow-hidden">
-                <Stack FillHeight="true" GapScale="LayoutGap.Medium">
+            <WorkspacePanel Class="min-h-0">
+                <Stack GapScale="LayoutGap.Medium">
                     <FormField Text="Project">
                         <TextBox Value="@Selected.Project.Summary.DisplayName" ReadOnly="true" />
                     </FormField>
@@ -77,8 +79,8 @@
                 </Stack>
             </WorkspacePanel>
 
-            <WorkspacePanel Class="min-h-0 overflow-hidden">
-                <Stack FillHeight="true" GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch">
+            <WorkspacePanel Class="min-h-0">
+                <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch">
                     <Split Breakpoint="LayoutBreakpoint.Lg"
                            AlignItems="AlignItems.Start"
                            JustifyContent="JustifyContent.SpaceBetween"
@@ -217,11 +219,12 @@
                           SelectedIndex="@selectedObservationTabIndex"
                           SelectedIndexChanged="@OnObservationTabChanged"
                           OverflowMode="TabsOverflowMode.Wrap"
-                          PanelOverflowMode="TabsPanelOverflowMode.Auto"
-                          FillHeight="true"
+                          PanelOverflowMode="TabsPanelOverflowMode.Visible"
                           data-testid="simulation-run-observation-tabs">
                         <TabsItem Text="State" Icon="monitoring">
-                            <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch" data-testid="simulation-run-state-tab">
+                            @if (selectedObservationTabIndex == 0)
+                            {
+                                <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch" data-testid="simulation-run-state-tab">
                                 <div data-testid="simulation-run-kpi-strip">
                                     <SummaryTiles ColumnsSm="2" ColumnsXl="4">
                                         @foreach (SimulationRunKpiSnapshot kpi in Selected.Kpis)
@@ -339,24 +342,36 @@
                                     <SmallText Text="@($"Last update: {Selected.Run.LastUpdatedAtUtc.ToString("HH:mm:ss", CultureInfo.InvariantCulture)}")" />
                                     <SmallText Text="Auto-refresh: deterministic sample provider" />
                                 </Cluster>
-                            </Stack>
+                                </Stack>
+                            }
                         </TabsItem>
                         <TabsItem Text="Summary" Icon="calendar_view_month">
-                            <SimulationPeriodSummaryPanel Run="Selected" />
+                            @if (selectedObservationTabIndex == 1)
+                            {
+                                <SimulationPeriodSummaryPanel Run="Selected" />
+                            }
                         </TabsItem>
                         <TabsItem Text="Graphs" Icon="monitoring">
-                            <div data-testid="simulation-run-graphs-tab">
-                                <EconomyScenarioGraphPanel Graphs="Selected.Observation.Graphs"
-                                                           BusinessUnits="GraphBusinessUnits"
-                                                           AddressBindings="GraphAddressBindings" />
-                            </div>
+                            @if (selectedObservationTabIndex == 2)
+                            {
+                                <div data-testid="simulation-run-graphs-tab">
+                                    <EconomyScenarioGraphPanel Graphs="Selected.Observation.Graphs"
+                                                               BusinessUnits="GraphBusinessUnits"
+                                                               AddressBindings="GraphAddressBindings" />
+                                </div>
+                            }
                         </TabsItem>
                         <TabsItem Text="BUs" Icon="account_tree">
-                            <SimulationRunBusinessUnitObservationPanel Project="Selected.Project"
-                                                                       Observation="Selected.Observation" />
+                            @if (selectedObservationTabIndex == 3)
+                            {
+                                <SimulationRunBusinessUnitObservationPanel Project="Selected.Project"
+                                                                           Observation="Selected.Observation" />
+                            }
                         </TabsItem>
                         <TabsItem Text="BO Evidence" Icon="rule">
-                            <Grid ColumnsLg="2" Gap="LayoutGap.Large" data-testid="simulation-run-bo-evidence-tab">
+                            @if (selectedObservationTabIndex == 4)
+                            {
+                                <Grid ColumnsLg="2" Gap="LayoutGap.Large" data-testid="simulation-run-bo-evidence-tab">
                                 <FormSection Title="Rule execution evidence" Description="Evidence generated by existing account-rule automation contracts.">
                                     <DataGrid TItem="RuleExecutionEvidenceState" Data="Selected.Observation.RuleEvidence">
                                         <DataGridColumn TItem="RuleExecutionEvidenceState" Property="RuleId" Title="Rule" />
@@ -378,10 +393,13 @@
                                         <DataGridColumn TItem="SimulationOutputSourceRef" Property="RuleId" Title="Rule" />
                                     </DataGrid>
                                 </FormSection>
-                            </Grid>
+                                </Grid>
+                            }
                         </TabsItem>
                         <TabsItem Text="Issues" Icon="report_problem">
-                            <FormSection Title="Run issues" Description="Deficits, inactive bindings, rule gaps, and failed posting evidence surfaced from the observation read model.">
+                            @if (selectedObservationTabIndex == 5)
+                            {
+                                <FormSection Title="Run issues" Description="Deficits, inactive bindings, rule gaps, and failed posting evidence surfaced from the observation read model.">
                                 <DataGrid TItem="SimulationIssue" Data="Selected.Observation.Issues" AllowPaging="true" PageSize="8" data-testid="simulation-run-issues-tab">
                                     <DataGridColumn TItem="SimulationIssue" Title="Date">
                                         <Template Context="issue">
@@ -401,10 +419,13 @@
                                     </DataGridColumn>
                                     <DataGridColumn TItem="SimulationIssue" Property="Message" Title="Message" />
                                 </DataGrid>
-                            </FormSection>
+                                </FormSection>
+                            }
                         </TabsItem>
                         <TabsItem Text="Artifacts" Icon="inventory_2">
-                            <Grid ColumnsLg="2" Gap="LayoutGap.Large" data-testid="simulation-run-artifacts-tab">
+                            @if (selectedObservationTabIndex == 6)
+                            {
+                                <Grid ColumnsLg="2" Gap="LayoutGap.Large" data-testid="simulation-run-artifacts-tab">
                                 <FormSection Title="Artifacts" Description="Generated run outputs and local or persisted paths.">
                                     <DataGrid TItem="SimulationRunArtifactState" Data="Selected.Observation.Artifacts">
                                         <DataGridColumn TItem="SimulationRunArtifactState" Property="DisplayName" Title="Artifact" />
@@ -424,7 +445,8 @@
                                         <DataGridColumn TItem="SimulationRunAssumptionItem" Property="Source" Title="Source" />
                                     </DataGrid>
                                 </FormSection>
-                            </Grid>
+                                </Grid>
+                            }
                         </TabsItem>
                     </Tabs>
                 </Stack>

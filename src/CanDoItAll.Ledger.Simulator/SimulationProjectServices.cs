@@ -62,6 +62,19 @@ public sealed class SimulationProjectValidationService : ISimulationProjectValid
                 "model.planningEndDate",
                 project.Model.ProjectId));
         }
+
+        if (project.Metadata.TryGetValue("scenarioProject", out string? scenarioProjectValue)
+            && bool.TryParse(scenarioProjectValue, out bool isScenarioProject)
+            && isScenarioProject
+            && (!project.Metadata.TryGetValue("scenarioCode", out string? scenarioCode)
+                || string.IsNullOrWhiteSpace(scenarioCode)))
+        {
+            messages.Add(Error(
+                "missing-scenario-code",
+                "Scenario projects require non-empty 'scenarioCode' metadata.",
+                "metadata.scenarioCode",
+                project.Summary.ProjectId));
+        }
     }
 
     private static void ValidateFolders(SimulationProjectState project, ICollection<SimulationProjectValidationMessage> messages)

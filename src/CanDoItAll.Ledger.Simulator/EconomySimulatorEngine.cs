@@ -312,6 +312,7 @@ public static class EconomySimulatorServiceCollectionExtensions
         services.TryAddScoped<IEconomyScenarioRunner, EconomyScenarioRunner>();
         services.TryAddSingleton<IEconomyScenarioTemplateCatalog, EconomyScenarioTemplateCatalog>();
         services.TryAddSingleton<IEconomyScenarioEventCompiler, EconomyScenarioEventCompiler>();
+        services.TryAddSingleton<ISimulationScenarioRunMaterializer, EconomyScenarioRunMaterializer>();
         services.TryAddSingleton<ISimulationScenarioProjectFactory, SimulationScenarioProjectFactory>();
         services.TryAddScoped<IActualTrackingService, ActualTrackingService>();
         services.TryAddScoped<IEconomyCalibrationService, EconomyCalibrationService>();

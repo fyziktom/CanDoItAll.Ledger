@@ -21,7 +21,7 @@
             <Stack GapScale="LayoutGap.Small">
                 @foreach (SimulationRunSetupState setup in Project.RunSetups.OrderBy(x => x.SetupId, StringComparer.Ordinal))
                 {
-                    bool selected = string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal);
+                    bool selected = string.Equals(setup.SetupId, EffectiveSetupId, StringComparison.Ordinal);
                     <SelectionListItem IsSelected="@selected"
                                        Dense="true"
                                        Title="@setup.ScenarioName"
@@ -154,9 +154,15 @@
     [Parameter]
     public EventCallback<SimulationProjectRunRequest> RunRequested { get; set; }
 
-    private string SelectedSetupId => selectedSetupId ?? Project.RunSetups.FirstOrDefault()?.SetupId ?? string.Empty;
+    [Parameter]
+    public string? SelectedSetupId { get; set; }
 
-    private SimulationRunSetupState? SelectedSetup => Project.RunSetups.FirstOrDefault(setup => string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal));
+    [Parameter]
+    public EventCallback<string?> SelectedSetupIdChanged { get; set; }
+
+    private string EffectiveSetupId => selectedSetupId ?? Project.RunSetups.FirstOrDefault()?.SetupId ?? string.Empty;
+
+    private SimulationRunSetupState? SelectedSetup => Project.RunSetups.FirstOrDefault(setup => string.Equals(setup.SetupId, EffectiveSetupId, StringComparison.Ordinal));
 
     private IReadOnlyList<BusinessUnitState> IncludedBusinessUnits => SelectedSetup is null
         ? []
@@ -176,12 +182,20 @@
 
     protected override void OnParametersSet()
     {
-        selectedSetupId ??= Project.RunSetups.FirstOrDefault()?.SetupId;
+        if (Project.RunSetups.Any(setup => string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal)))
+        {
+            selectedSetupId = SelectedSetupId;
+        }
+        else if (Project.RunSetups.All(setup => !string.Equals(setup.SetupId, selectedSetupId, StringComparison.Ordinal)))
+        {
+            selectedSetupId = Project.RunSetups.FirstOrDefault()?.SetupId;
+        }
     }
 
-    private void SelectSetup(string setupId)
+    private async Task SelectSetup(string setupId)
     {
         selectedSetupId = setupId;
+        await SelectedSetupIdChanged.InvokeAsync(setupId);
     }
 
     private Task RunSelectedSetupAsync()

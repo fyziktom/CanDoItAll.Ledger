@@ -177,6 +177,65 @@ public sealed class SimulationProjectManagementTests
     }
 
     [Fact]
+    public void RunLifecycle_SameTimestampCreatesDistinctRunsWithoutOverwritingHistory()
+    {
+        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        InMemorySimulationRunLifecycleService service = CreateLifecycleService();
+        DateTimeOffset started = DateTimeOffset.Parse("2026-05-16T10:15:00Z");
+
+        SimulationRunCommandResult first = service.StartRun(
+            project,
+            project.RunSetups[0].SetupId,
+            started,
+            SimulationRunMode.Manual);
+        SimulationRunCommandResult second = service.StartRun(
+            project,
+            project.RunSetups[0].SetupId,
+            started,
+            SimulationRunMode.Manual);
+
+        Assert.True(first.Succeeded);
+        Assert.True(second.Succeeded);
+        Assert.NotEqual(first.RunId, second.RunId);
+        Assert.NotNull(service.GetRun(first.RunId!));
+        Assert.NotNull(service.GetRun(second.RunId!));
+        Assert.Equal(2, service.ListRuns(project.Summary.ProjectId).Count);
+    }
+
+    [Fact]
+    public async Task RunLifecycle_RequestCancellationAfterStartDoesNotAbandonServerOwnedRun()
+    {
+        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationRunSetupState setup = project.RunSetups[0] with
+        {
+            StepCount = 3,
+            HorizonEndDate = project.RunSetups[0].HorizonStartDate.AddMonths(2)
+        };
+        project = project with { RunSetups = [setup] };
+        InMemorySimulationRunLifecycleService service = CreateLifecycleService();
+        using var requestCancellation = new CancellationTokenSource();
+
+        SimulationRunCommandResult result = await service.StartRunAsync(
+            project,
+            setup.SetupId,
+            DateTimeOffset.Parse("2026-05-16T10:15:00Z"),
+            SimulationRunMode.Automatic,
+            requestCancellation.Token);
+        requestCancellation.Cancel();
+
+        SimulationRunConsoleState current = service.GetRun(result.RunId!)!;
+        for (int attempt = 0; attempt < 20 && current.Run.Status != SimulationRunLifecycleStatus.Completed; attempt++)
+        {
+            await Task.Delay(100, TestContext.Current.CancellationToken);
+            current = service.GetRun(result.RunId!)!;
+        }
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(SimulationRunLifecycleStatus.Completed, current.Run.Status);
+        Assert.Equal(setup.StepCount, current.Run.AvailableStep);
+    }
+
+    [Fact]
     public void RunLifecycle_ManualStartWaitsAtFirstStep()
     {
         SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
@@ -362,7 +421,20 @@ public sealed class SimulationProjectManagementTests
         var validation = new SimulationProjectValidationService();
         var importExport = new SimulationProjectImportExportService(serializer, validation);
         var observation = new SimulationRunObservationService(serializer);
-        return new InMemorySimulationRunLifecycleService(validation, importExport, observation, serializer, new SystemTimeProvider());
+        var scenarioCatalog = new EconomyScenarioTemplateCatalog();
+        var scenarioMaterializer = new EconomyScenarioRunMaterializer(
+            scenarioCatalog,
+            new EconomyScenarioEventCompiler(serializer),
+            new EconomyProjectionService(),
+            serializer);
+        return new InMemorySimulationRunLifecycleService(
+            validation,
+            importExport,
+            observation,
+            serializer,
+            new SystemTimeProvider(),
+            scenarioCatalog,
+            scenarioMaterializer);
     }
 
     private static ServiceProvider BuildScenarioProvider()

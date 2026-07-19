@@ -36,9 +36,8 @@ public sealed class InMemorySimulationRunLifecycleService(
     ISimulationRunObservationService observationService,
     IEconomySimulatorJsonSerializer serializer,
     ITimeProvider timeProvider,
-    IEconomyScenarioTemplateCatalog? scenarioCatalog = null,
-    IEconomyScenarioEventCompiler? scenarioCompiler = null,
-    IEconomyProjectionService? projectionService = null) : ISimulationRunLifecycleService
+    IEconomyScenarioTemplateCatalog scenarioCatalog,
+    ISimulationScenarioRunMaterializer scenarioMaterializer) : ISimulationRunLifecycleService
 {
     private readonly object sync = new();
     private readonly Dictionary<string, SimulationRunSession> runs = new(StringComparer.Ordinal);
@@ -104,20 +103,21 @@ public sealed class InMemorySimulationRunLifecycleService(
         }
 
         DateTimeOffset started = startedAtUtc ?? timeProvider.UtcNow;
-        string runId = EconomySimulatorIdentifiers.RunId(project.Summary.ProjectId, setup.ScenarioId, started).Value;
-        SimulationRunSession session = CreateRunSession(
-            project,
-            setup,
-            runId,
-            started,
-            mode,
-            mode == SimulationRunMode.Automatic
-                ? "Automatic run materialized to the configured horizon."
-                : "Manual run created and waiting for the next step.");
-
+        string runId;
+        SimulationRunSession session;
         lock (sync)
         {
-            runs[runId] = session;
+            runId = CreateAvailableRunId(project.Summary.ProjectId, setup.ScenarioId, started);
+            session = CreateRunSession(
+                project,
+                setup,
+                runId,
+                started,
+                mode,
+                mode == SimulationRunMode.Automatic
+                    ? "Automatic run materialized to the configured horizon."
+                    : "Manual run created and waiting for the next step.");
+            runs.Add(runId, session);
         }
 
         return new SimulationRunCommandResult(true, runId, session.Selected.Run.Status, []);
@@ -151,20 +151,22 @@ public sealed class InMemorySimulationRunLifecycleService(
         }
 
         DateTimeOffset started = startedAtUtc ?? timeProvider.UtcNow;
-        string runId = EconomySimulatorIdentifiers.RunId(project.Summary.ProjectId, setup.ScenarioId, started).Value;
-        SimulationRunSession session = CreateLiveAutomaticRunSession(
-            project,
-            setup,
-            runId,
-            started,
-            "Automatic run started in live mode. Steps will materialize in the background.");
-
+        string runId;
+        SimulationRunSession session;
         lock (sync)
         {
-            runs[runId] = session;
+            runId = CreateAvailableRunId(project.Summary.ProjectId, setup.ScenarioId, started);
+            session = CreateLiveAutomaticRunSession(
+                project,
+                setup,
+                runId,
+                started,
+                "Automatic run started in live mode. Steps will materialize in the background.");
+            runs.Add(runId, session);
         }
 
-        _ = MaterializeAutomaticRunAsync(runId, cancellationToken);
+        // A successfully registered run is server-owned. Request cancellation must not strand it in Running.
+        _ = MaterializeAutomaticRunAsync(runId, CancellationToken.None);
         return Task.FromResult(new SimulationRunCommandResult(true, runId, session.Selected.Run.Status, []));
     }
 
@@ -196,7 +198,7 @@ public sealed class InMemorySimulationRunLifecycleService(
             DateTimeOffset updated = timeProvider.UtcNow;
             if (command == SimulationRunCommandKind.Restart)
             {
-                string nextRunId = EconomySimulatorIdentifiers.RunId(state.Project.Summary.ProjectId, state.Setup.ScenarioId, updated).Value;
+                string nextRunId = CreateAvailableRunId(state.Project.Summary.ProjectId, state.Setup.ScenarioId, updated);
                 SimulationRunSession restarted = CreateRunSession(
                     state.Project,
                     state.Setup,
@@ -566,6 +568,24 @@ public sealed class InMemorySimulationRunLifecycleService(
         }
     }
 
+    private string CreateAvailableRunId(string projectId, ScenarioId scenarioId, DateTimeOffset startedAtUtc)
+    {
+        string baseRunId = EconomySimulatorIdentifiers.RunId(projectId, scenarioId, startedAtUtc).Value;
+        if (!runs.ContainsKey(baseRunId))
+        {
+            return baseRunId;
+        }
+
+        for (int suffix = 2; ; suffix++)
+        {
+            string candidate = $"{baseRunId}:{suffix:000}";
+            if (!runs.ContainsKey(candidate))
+            {
+                return candidate;
+            }
+        }
+    }
+
     private SimulationRunSession CreateSeedSession(
         SimulationProjectState project,
         SimulationRunSetupState setup,
@@ -648,17 +668,20 @@ public sealed class InMemorySimulationRunLifecycleService(
         int normalizedStep = Math.Clamp(currentStep, 1, Math.Max(1, setup.StepCount));
         int normalizedAvailableStep = Math.Clamp(availableStep, normalizedStep, Math.Max(1, setup.StepCount));
         DateOnly currentDate = ProjectDateAtStep(setup, normalizedStep);
-        ScenarioRunMaterialization? scenarioMaterialization = TryBuildScenarioMaterialization(
-            project,
-            setup,
-            runId,
-            status,
-            startedAtUtc,
-            finishedAtUtc,
-            normalizedStep,
-            currentDate,
-            interventions,
-            commandMessages ?? []);
+        DateOnly stepEndDate = ProjectDateAtStepEnd(setup, normalizedStep);
+        SimulationScenarioRunMaterialization? scenarioMaterialization = scenarioMaterializer.TryMaterialize(
+            new SimulationScenarioRunMaterializationRequest(
+                project,
+                setup,
+                runId,
+                status,
+                startedAtUtc,
+                finishedAtUtc,
+                normalizedStep,
+                currentDate,
+                stepEndDate,
+                interventions,
+                commandMessages ?? []));
         IReadOnlyList<SimulationIssue> issues = scenarioMaterialization?.Result.Issues
             ?? BuildIssues(project, setup, status, currentDate, commandMessages ?? []);
         IReadOnlyList<CashFlowProjectionPoint> cashFlow = scenarioMaterialization?.Result.CashFlow
@@ -718,7 +741,9 @@ public sealed class InMemorySimulationRunLifecycleService(
                 ["currentStep"] = normalizedStep.ToString(CultureInfo.InvariantCulture)
             });
         IReadOnlyList<RuleExecutionEvidenceState> evidence = BuildRuleEvidence(project, setup, runId, status, startedAtUtc);
-        IReadOnlyList<EconomyGraphData> graphs = scenarioMaterialization?.Graphs ?? BuildGraphs(project, result);
+        IReadOnlyList<EconomyGraphData> graphs = scenarioMaterialization is null
+            ? BuildGraphs(project, result)
+            : BuildScenarioGraphs(project, result, scenarioMaterialization.Events, result.CashFlow, scenarioMaterialization.StepEndDate);
         SimulationRunObservationState observation = observationService.BuildObservation(project, setup, runState, result, graphs, evidence);
         int warningCount = issues.Count(issue => issue.Severity.Equals("warning", StringComparison.OrdinalIgnoreCase));
         int errorCount = issues.Count(issue => issue.Severity.Equals("error", StringComparison.OrdinalIgnoreCase));
@@ -776,125 +801,6 @@ public sealed class InMemorySimulationRunLifecycleService(
             BuildAssumptions(project, setup, interventions),
             scenarioMaterialization is null ? BuildOutputSources(project, evidence) : BuildScenarioOutputSources(project, scenarioMaterialization, evidence),
             stepSnapshots);
-    }
-
-    private ScenarioRunMaterialization? TryBuildScenarioMaterialization(
-        SimulationProjectState project,
-        SimulationRunSetupState setup,
-        string runId,
-        SimulationRunLifecycleStatus status,
-        DateTimeOffset startedAtUtc,
-        DateTimeOffset? finishedAtUtc,
-        int normalizedStep,
-        DateOnly currentDate,
-        IReadOnlyList<SimulationRunInterventionState> interventions,
-        IReadOnlyList<SimulationProjectValidationMessage> commandMessages)
-    {
-        if (!IsScenarioProject(project)
-            || scenarioCatalog is null
-            || scenarioCompiler is null
-            || projectionService is null
-            || !project.Metadata.TryGetValue("scenarioCode", out string? scenarioCode)
-            || string.IsNullOrWhiteSpace(scenarioCode))
-        {
-            return null;
-        }
-
-        ScenarioBusinessModelState scenario = ApplyScenarioInterventions(
-            scenarioCatalog.GetScenario(scenarioCode),
-            interventions);
-        DateOnly stepEndDate = ProjectDateAtStepEnd(setup, normalizedStep);
-        EconomyScenarioEventCompileResult compiled = scenarioCompiler.Compile(new EconomyScenarioEventCompileRequest(
-            scenario,
-            setup.ScenarioId,
-            setup.HorizonStartDate,
-            stepEndDate));
-        IReadOnlyList<EconomicEventState> scheduledEvents = EconomyProjectionService.SortEvents(compiled.Events)
-            .Where(x => x.EconomicDate >= setup.HorizonStartDate && x.EconomicDate <= stepEndDate)
-            .Select(x =>
-            {
-                var metadata = new Dictionary<string, string>(x.Metadata, StringComparer.Ordinal)
-                {
-                    ["runId"] = runId
-                };
-                return x with
-                {
-                    Status = x.Status == EconomicEventStatus.Planned ? EconomicEventStatus.Simulated : x.Status,
-                    Metadata = metadata
-                };
-            })
-            .ToArray();
-        EconomyProjection projection = projectionService.BuildProjection(new ProjectionRequest(project.Summary.ProjectId, scenario.OpeningCash, scheduledEvents));
-        IReadOnlyList<SimulationIssue> issues = projection.Issues
-            .Concat(commandMessages.Select(message => new SimulationIssue(
-                $"issue:{setup.SetupId}:{message.Code}",
-                message.Code,
-                message.Severity.ToString(),
-                currentDate,
-                null,
-                null,
-                null,
-                null,
-                message.Message,
-                new Dictionary<string, string>(StringComparer.Ordinal))))
-            .ToArray();
-        Amount closingCash = projection.CashFlow.Count == 0 ? scenario.OpeningCash : projection.CashFlow[^1].BalanceAfter;
-        Amount minimumCash = projection.CashFlow.Count == 0
-            ? scenario.OpeningCash
-            : Amount.FromDecimal(projection.CashFlow.Min(x => x.BalanceAfter.Value));
-        SimulationIssue? firstDeficit = issues.FirstOrDefault(x => x.Code.Contains("deficit", StringComparison.OrdinalIgnoreCase));
-        IReadOnlyDictionary<string, decimal> kpis = BuildScenarioKpiValues(scenario, scheduledEvents, projection, issues, interventions);
-        string eventsHash = serializer.HashJson(scheduledEvents);
-        string interventionHash = serializer.HashJson(interventions.Select(intervention => new
-        {
-            intervention.InterventionId,
-            intervention.Kind,
-            intervention.TargetId,
-            intervention.EffectiveDate,
-            intervention.QuantityDelta,
-            intervention.Multiplier,
-            intervention.Amount,
-            intervention.DepreciationMonths,
-            intervention.BusinessObjectDefinitionId
-        }));
-        var result = new SimulationResultState(
-            project.Summary.ProjectId,
-            setup.ScenarioId,
-            runId,
-            finishedAtUtc ?? startedAtUtc.AddMinutes(Math.Max(1, normalizedStep)),
-            setup.HorizonStartDate,
-            setup.HorizonEndDate,
-            scenario.OpeningCash,
-            closingCash,
-            minimumCash,
-            firstDeficit?.Date,
-            firstDeficit?.BusinessUnitId,
-            firstDeficit?.Amount ?? Amount.Zero,
-            Amount.FromDecimal(Math.Max(0m, Math.Abs(minimumCash.Value - scenario.MinimumCash.Value) * 1.15m)),
-            projection.CashFlow,
-            issues,
-            kpis,
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["result"] = serializer.HashJson(new { runId, status, normalizedStep, eventsHash, projectionHash = serializer.HashJson(projection.CashFlow), interventionHash }),
-                ["events"] = eventsHash,
-                ["interventions"] = interventionHash,
-                ["cashflow"] = serializer.HashJson(projection.CashFlow),
-                ["schedule"] = compiled.ScheduleHash,
-                ["runLog"] = serializer.HashJson(new { runId, status, normalizedStep, scenarioCode })
-            },
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["scenarioCode"] = scenarioCode,
-                ["currentStep"] = normalizedStep.ToString(CultureInfo.InvariantCulture),
-                ["currentDate"] = currentDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                ["stepEndDate"] = stepEndDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                ["eventCount"] = scheduledEvents.Count.ToString(CultureInfo.InvariantCulture),
-                ["interventionCount"] = interventions.Count.ToString(CultureInfo.InvariantCulture)
-            });
-
-        IReadOnlyList<EconomyGraphData> graphs = BuildScenarioGraphs(project, result, scheduledEvents, projection.CashFlow, stepEndDate);
-        return new ScenarioRunMaterialization(scenario, scheduledEvents, result, graphs, kpis, result.OutputHashes["result"], interventions);
     }
 
     private IReadOnlyList<SimulationProjectValidationMessage> ValidateInterventionRequest(
@@ -1145,110 +1051,9 @@ public sealed class InMemorySimulationRunLifecycleService(
         };
     }
 
-    private ScenarioBusinessModelState ApplyScenarioInterventions(
-        ScenarioBusinessModelState scenario,
-        IReadOnlyList<SimulationRunInterventionState> interventions)
-    {
-        SimulationRunInterventionState[] activeInterventions = interventions
-            .Where(intervention => intervention.Status == SimulationRunInterventionStatus.Applied)
-            .OrderBy(intervention => intervention.AppliedAtUtc)
-            .ToArray();
-        if (activeInterventions.Length == 0)
-        {
-            return scenario;
-        }
-
-        IReadOnlyList<DemandScheduleState> demandSchedules = scenario.DemandSchedules
-            .Select(schedule => ApplyDemandInterventions(schedule, activeInterventions))
-            .ToArray();
-        IReadOnlyList<CapexPlanState> capexPlans =
-        [
-            ..scenario.CapexPlans,
-            ..activeInterventions
-                .Where(intervention => intervention.Kind == SimulationRunInterventionKind.CapacityExpansion)
-                .Select(intervention => CreateCapacityExpansionCapexPlan(scenario, intervention))
-        ];
-        var metadata = new Dictionary<string, string>(scenario.Metadata, StringComparer.Ordinal)
-        {
-            ["runtimeInterventionCount"] = activeInterventions.Length.ToString(CultureInfo.InvariantCulture),
-            ["runtimeInterventionIds"] = string.Join(';', activeInterventions.Select(intervention => intervention.InterventionId))
-        };
-
-        return scenario with
-        {
-            DemandSchedules = demandSchedules,
-            CapexPlans = capexPlans,
-            Metadata = metadata
-        };
-    }
-
-    private static DemandScheduleState ApplyDemandInterventions(
-        DemandScheduleState schedule,
-        IReadOnlyList<SimulationRunInterventionState> interventions)
-    {
-        SimulationRunInterventionState[] related = interventions
-            .Where(intervention => intervention.Kind == SimulationRunInterventionKind.DemandChange)
-            .Where(intervention => string.Equals(intervention.TargetId, schedule.DemandScheduleId, StringComparison.Ordinal))
-            .OrderBy(intervention => intervention.EffectiveDate)
-            .ToArray();
-        if (related.Length == 0)
-        {
-            return schedule;
-        }
-
-        IReadOnlyList<DemandChangeState> demandChanges =
-        [
-            ..schedule.DemandChanges,
-            ..related.Select(intervention => new DemandChangeState(
-                intervention.EffectiveDate,
-                intervention.QuantityDelta ?? 0m,
-                intervention.Multiplier ?? 1m,
-                intervention.Reason,
-                new Dictionary<string, string>(intervention.Metadata, StringComparer.Ordinal)
-                {
-                    ["interventionId"] = intervention.InterventionId,
-                    ["businessObjectDefinitionId"] = intervention.BusinessObjectDefinitionId
-                }))
-        ];
-        return schedule with
-        {
-            DemandChanges = demandChanges,
-            Metadata = new Dictionary<string, string>(schedule.Metadata, StringComparer.Ordinal)
-            {
-                ["runtimeInterventionCount"] = related.Length.ToString(CultureInfo.InvariantCulture)
-            }
-        };
-    }
-
-    private static CapexPlanState CreateCapacityExpansionCapexPlan(
-        ScenarioBusinessModelState scenario,
-        SimulationRunInterventionState intervention)
-    {
-        BusinessUnitState businessUnit = scenario.BusinessUnits.FirstOrDefault(unit => string.Equals(unit.BusinessUnitId.Value, intervention.TargetId, StringComparison.Ordinal))
-            ?? scenario.BusinessUnits.FirstOrDefault(unit => string.Equals(unit.Path, intervention.TargetId, StringComparison.OrdinalIgnoreCase))
-            ?? scenario.BusinessUnits.First(unit => unit.Kind == BusinessUnitKind.CostCenter);
-        string capexId = $"runtime-capacity:{EconomySimulatorIdentifiers.NormalizeSegment(intervention.InterventionId)}";
-        return new CapexPlanState(
-            scenario.ProjectId,
-            capexId,
-            businessUnit.BusinessUnitId,
-            intervention.DisplayName,
-            Amount.FromDecimal(intervention.Amount ?? 0m),
-            intervention.EffectiveDate,
-            intervention.DepreciationMonths ?? 60,
-            new Dictionary<string, string>(intervention.Metadata, StringComparer.Ordinal)
-            {
-                ["interventionId"] = intervention.InterventionId,
-                ["businessObjectDefinitionId"] = intervention.BusinessObjectDefinitionId,
-                ["capitalAllocationProcess"] = "runtime-capacity-expansion",
-                ["liquidityReview"] = "required"
-            });
-    }
-
     private bool TryGetScenarioFromProject(SimulationProjectState project, out ScenarioBusinessModelState scenario)
     {
-        if (scenarioCatalog is not null
-            && project.Metadata.TryGetValue("scenarioCode", out string? scenarioCode)
+        if (project.Metadata.TryGetValue("scenarioCode", out string? scenarioCode)
             && !string.IsNullOrWhiteSpace(scenarioCode))
         {
             try
@@ -1515,52 +1320,6 @@ public sealed class InMemorySimulationRunLifecycleService(
             ScenarioGraphMetric.Expense => point.PlannedOutflow + point.CommittedOutflow + point.SimulatedOutflow + point.NonCashExpense,
             _ => point.PlannedInflow + point.CommittedInflow + point.SimulatedInflow - point.PlannedOutflow - point.CommittedOutflow - point.SimulatedOutflow
         };
-
-    private static IReadOnlyDictionary<string, decimal> BuildScenarioKpiValues(
-        ScenarioBusinessModelState scenario,
-        IReadOnlyList<EconomicEventState> events,
-        EconomyProjection projection,
-        IReadOnlyList<SimulationIssue> issues,
-        IReadOnlyList<SimulationRunInterventionState> interventions)
-    {
-        decimal revenue = events
-            .Where(x => x.Kind == EconomicEventKind.Revenue && x.ImpactKind == EconomicImpactKind.AccrualOnly)
-            .Sum(x => x.Amount.Value);
-        decimal cashReceipts = events
-            .Where(x => x.Kind == EconomicEventKind.Revenue && x.ImpactKind == EconomicImpactKind.CashOnly)
-            .Sum(x => x.Amount.Value);
-        decimal profitAndLossExpense = events
-            .Where(x => x.ImpactKind is EconomicImpactKind.CashAndAccrual or EconomicImpactKind.NonCashPnl or EconomicImpactKind.AccrualOnly)
-            .Where(x => EconomyProjectionService.IsOutflow(x))
-            .Where(x => x.Metadata.TryGetValue(EconomyScenarioMetadataKeys.FinancialStatementSection, out string? section)
-                && section is nameof(FinancialStatementSection.Cogs) or nameof(FinancialStatementSection.Opex) or nameof(FinancialStatementSection.Payroll) or nameof(FinancialStatementSection.Depreciation))
-            .Sum(x => x.Amount.Value);
-        decimal cashOutflow = projection.CashFlow.Sum(x => x.PlannedOutflow.Value + x.CommittedOutflow.Value + x.ActualOutflow.Value + x.SimulatedOutflow.Value);
-        decimal cashInflow = projection.CashFlow.Sum(x => x.PlannedInflow.Value + x.CommittedInflow.Value + x.ActualInflow.Value + x.SimulatedInflow.Value);
-        decimal closingCash = projection.CashFlow.Count == 0 ? scenario.OpeningCash.Value : projection.CashFlow[^1].BalanceAfter.Value;
-        decimal minimumCash = projection.CashFlow.Count == 0 ? scenario.OpeningCash.Value : projection.CashFlow.Min(x => x.BalanceAfter.Value);
-
-        return new Dictionary<string, decimal>(StringComparer.Ordinal)
-        {
-            ["cashBalance"] = closingCash,
-            ["minimumCash"] = minimumCash,
-            ["minimumCashFloor"] = scenario.MinimumCash.Value,
-            ["cashHeadroom"] = closingCash - scenario.MinimumCash.Value,
-            ["revenue"] = revenue,
-            ["cashReceipts"] = cashReceipts,
-            ["expenses"] = profitAndLossExpense,
-            ["cashInflow"] = cashInflow,
-            ["cashOutflow"] = cashOutflow,
-            ["netCashFlow"] = cashInflow - cashOutflow,
-            ["profit"] = revenue - profitAndLossExpense,
-            ["serviceHours"] = events.Where(x => x.TokenEffect?.TokenId.Value.Contains(":service-hour:", StringComparison.Ordinal) == true).Sum(x => x.TokenEffect!.Amount.Value),
-            ["productFlowUnits"] = events.Where(x => x.TokenEffect?.TokenId.Value.Contains(":product-unit:", StringComparison.Ordinal) == true).Sum(x => x.TokenEffect!.Amount.Value),
-            ["interventionCount"] = interventions.Count,
-            ["eventCount"] = events.Count,
-            ["deficitCount"] = issues.Count(x => x.Code.Contains("deficit", StringComparison.OrdinalIgnoreCase)),
-            ["warningCount"] = issues.Count(x => x.Severity.Equals("warning", StringComparison.OrdinalIgnoreCase))
-        };
-    }
 
     private static IReadOnlyList<EconomyGraphData> BuildScenarioGraphs(
         SimulationProjectState project,
@@ -1924,7 +1683,7 @@ public sealed class InMemorySimulationRunLifecycleService(
 
     private static IReadOnlyList<SimulationOutputSourceRef> BuildScenarioOutputSources(
         SimulationProjectState project,
-        ScenarioRunMaterialization materialization,
+        SimulationScenarioRunMaterialization materialization,
         IReadOnlyList<RuleExecutionEvidenceState> evidence)
     {
         BusinessUnitState treasury = project.BusinessUnits.FirstOrDefault(unit => unit.BusinessUnitId == project.Model.TreasuryBusinessUnitId) ?? project.BusinessUnits[0];
@@ -2040,15 +1799,6 @@ public sealed class InMemorySimulationRunLifecycleService(
                     }))
                 .ToArray();
     }
-
-    private sealed record ScenarioRunMaterialization(
-        ScenarioBusinessModelState Scenario,
-        IReadOnlyList<EconomicEventState> Events,
-        SimulationResultState Result,
-        IReadOnlyList<EconomyGraphData> Graphs,
-        IReadOnlyDictionary<string, decimal> KpiValues,
-        string OutputHash,
-        IReadOnlyList<SimulationRunInterventionState> Interventions);
 
     private sealed record SeedRun(
         string RunId,

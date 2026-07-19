@@ -23,7 +23,10 @@ public sealed record SimulationProjectManagementViewModel(
     IReadOnlyList<SimulationProjectSummary> Projects,
     SimulationProjectState SelectedProject,
     SimulationProjectExportManifest ExportManifest,
-    SimulationProjectImportPreview ImportPreview);
+    SimulationProjectImportPreview ImportPreview)
+{
+    public IReadOnlyList<SimulationProjectState> ProjectStates { get; init; } = [];
+}
 
 public sealed record SimulationRunObservationViewModel(
     SimulationProjectState Project,

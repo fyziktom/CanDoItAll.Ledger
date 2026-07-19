@@ -110,6 +110,9 @@ public sealed class SimulationScenarioProjectFactory(
             {
                 ["scenarioCode"] = scenario.ScenarioCode,
                 ["scenarioProject"] = "true",
+                ["projectGroupId"] = scenario.ScenarioCode.Equals("VEF", StringComparison.OrdinalIgnoreCase) ? "reference-plans" : "company-scenarios",
+                ["projectGroupName"] = scenario.ScenarioCode.Equals("VEF", StringComparison.OrdinalIgnoreCase) ? "Reference plans" : "Company scenarios",
+                ["projectGroupOrder"] = scenario.ScenarioCode.Equals("VEF", StringComparison.OrdinalIgnoreCase) ? "30" : "20",
                 ["openingCash"] = scenario.OpeningCash.Value.ToString("0.##", CultureInfo.InvariantCulture),
                 ["minimumCash"] = scenario.MinimumCash.Value.ToString("0.##", CultureInfo.InvariantCulture)
             });
