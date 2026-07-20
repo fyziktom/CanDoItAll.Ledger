@@ -10,7 +10,9 @@
 <EconomySimulatorAppShell ActivePage="projects">
     <ProjectionStorageNotice />
     <EconomySimulatorShell ViewModel="ViewModel"
+                           ImportExportService="ImportExport"
                            RunRequested="StartRunAsync"
+                           ProjectImported="ImportProjectAsync"
                            LaunchMessages="launchMessages"
                            IsRunLaunching="isStartingRun" />
 </EconomySimulatorAppShell>
@@ -70,5 +72,13 @@
         {
             isStartingRun = false;
         }
+    }
+
+    private Task ImportProjectAsync(SimulationProjectState project)
+    {
+        Workspace.UpsertProject(project);
+        launchMessages = [];
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 }

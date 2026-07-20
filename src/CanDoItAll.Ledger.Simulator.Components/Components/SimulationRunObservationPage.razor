@@ -5,51 +5,43 @@
               MaxWidthClass="max-w-none"
               Style="height:auto;min-height:100%;overflow:visible;">
     <Header>
-        <Split Breakpoint="LayoutBreakpoint.Lg"
-               AlignItems="AlignItems.Start"
+        <Split Breakpoint="LayoutBreakpoint.Md"
+               AlignItems="AlignItems.Center"
                JustifyContent="JustifyContent.SpaceBetween"
-               Gap="LayoutGap.Large"
+               Gap="LayoutGap.Medium"
                Wrap="FlexWrap.Wrap">
             <Stack GapScale="LayoutGap.Tiny">
-                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Simulation observation" />
-                <TextBlock TextStyle="TextStyle.H2" Value="Run Observation" />
-                <SmallText Text="@($"{Selected.Project.Summary.DisplayName} | {Selected.Run.RunId} | Updated {Selected.Run.LastUpdatedAtUtc:yyyy-MM-dd HH:mm} UTC")" />
+                <TextBlock TextStyle="TextStyle.H4" Value="@Selected.Run.RunId" />
+                <SmallText Text="@($"{Selected.Project.Summary.DisplayName} · {Selected.Run.ScenarioName} · {FormatDate(Selected.Run.CurrentDate)}")" />
             </Stack>
             <Cluster Gap="LayoutGap.Small">
                 <StatusBadge Text="@DisplayStatus(Selected.Run.Status)" Tone="@LifecycleTone(Selected.Run.Status)" />
                 <StatusBadge Text="@($"{Selected.Run.CurrentStep}/{Selected.Run.TotalSteps}")" Tone="info" />
-                <Button Text="@PauseResumeText" Icon="@PauseResumeIcon" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@PauseOrResumeAsync" />
-                <Button Text="Stop" Icon="stop" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@(() => CommandRequested.InvokeAsync(SimulationRunCommandKind.Stop))" />
-                <Button Text="Export artifacts" Icon="download" />
+                <Button Text="@PauseResumeText" Icon="@PauseResumeIcon" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" Disabled="@(!CanPauseOrResume)" Click="@PauseOrResumeAsync" />
+                <Button Text="Stop" Icon="stop" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" Disabled="@(!CanStop)" Click="@(() => CommandRequested.InvokeAsync(SimulationRunCommandKind.Stop))" />
             </Cluster>
         </Split>
     </Header>
 
     <ChildContent>
-        <Grid ColumnTemplateLg="minmax(18rem, 22rem) minmax(0, 1fr)"
-              Gap="LayoutGap.Large"
-              AlignItems="AlignItems.Start"
-              data-testid="simulation-run-console-page">
-            <WorkspacePanel Class="min-h-0">
-                <Stack GapScale="LayoutGap.Medium">
-                    <FormField Text="Project">
-                        <TextBox Value="@Selected.Project.Summary.DisplayName" ReadOnly="true" />
-                    </FormField>
-
-                    <Split Breakpoint="LayoutBreakpoint.None"
-                           AlignItems="AlignItems.Center"
-                           JustifyContent="JustifyContent.SpaceBetween"
-                           Gap="LayoutGap.Small">
-                        <TextBlock TextStyle="TextStyle.H4" Value="Runs" />
-                        <Button Icon="refresh" Variant="Variant.Text" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" aria-label="Refresh runs" />
-                    </Split>
-
-                    <FormField Text="Search runs">
-                        <TextBox Value="@runSearch"
-                                 ValueChanged="@(value => runSearch = value ?? string.Empty)"
-                                 Immediate="true"
-                                 Placeholder="Search runs..." />
-                    </FormField>
+        <ListDetailShell Dense="true"
+                         ListPaneWidth="19rem"
+                         ListPaneClass="min-h-[34rem]"
+                         DetailPaneClass="min-h-[34rem]"
+                         data-testid="simulation-run-console-page">
+            <ListHeader>
+                <ListPanelHeader Title="Runs"
+                                 Count="@FilteredRuns.Count.ToString(CultureInfo.InvariantCulture)"
+                                 HelpText="Runs refresh automatically. Search by id, scenario, or lifecycle status."
+                                 Dense="true" />
+            </ListHeader>
+            <ListContent>
+                <Stack GapScale="LayoutGap.Small">
+                    <TextBox Value="@runSearch"
+                             ValueChanged="@(value => runSearch = value ?? string.Empty)"
+                             Immediate="true"
+                             Placeholder="Search runs..."
+                             aria-label="Search runs" />
 
                     <Stack GapScale="LayoutGap.Small"
                            Class="min-h-0 max-h-[48rem] overflow-auto"
@@ -75,28 +67,20 @@
                         }
                     </Stack>
 
-                    <Button Text="Start new run" Icon="add" ButtonStyle="ButtonStyle.Secondary" Click="@(() => CommandRequested.InvokeAsync(SimulationRunCommandKind.Restart))" />
                 </Stack>
-            </WorkspacePanel>
+            </ListContent>
 
-            <WorkspacePanel Class="min-h-0">
-                <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch">
-                    <Split Breakpoint="LayoutBreakpoint.Lg"
-                           AlignItems="AlignItems.Start"
-                           JustifyContent="JustifyContent.SpaceBetween"
-                           Gap="LayoutGap.Large"
-                           Wrap="FlexWrap.Wrap"
-                           data-testid="simulation-run-header">
-                        <Grid ColumnTemplate="repeat(auto-fit, minmax(9rem, 1fr))" Gap="LayoutGap.Large">
-                            <RunHeaderFact Label="Project" Value="@Selected.Run.ProjectName" />
-                            <RunHeaderFact Label="Scenario" Value="@Selected.Run.ScenarioName" />
-                            <RunHeaderFact Label="Run ID" Value="@Selected.Run.RunId" Monospace="true" />
-                            <RunHeaderFact Label="Status" Value="@DisplayStatus(Selected.Run.Status)" BadgeTone="@LifecycleTone(Selected.Run.Status)" />
-                            <RunHeaderFact Label="Current step / date" Value="@($"{Selected.Run.CurrentStep}/{Selected.Run.TotalSteps} - {FormatDate(Selected.Run.CurrentDate)}")" />
-                            <RunHeaderFact Label="Elapsed" Value="@FormatDuration(Selected.Run.WallClockElapsed)" />
-                            <RunHeaderFact Label="Output hash" Value="@Short(Selected.Run.OutputHash)" Monospace="true" />
-                        </Grid>
-                    </Split>
+            <DetailContent>
+                <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                    <CompactStatStrip data-testid="simulation-run-header">
+                        <CompactStat Label="Project" Value="@Selected.Run.ProjectName" Position="TooltipPosition.Right" />
+                        <CompactStat Label="Scenario" Value="@Selected.Run.ScenarioName" Position="TooltipPosition.Right" />
+                        <CompactStat Label="Status" Value="@DisplayStatus(Selected.Run.Status)" Tone="@LifecycleTone(Selected.Run.Status)" />
+                        <CompactStat Label="Step/date" Value="@($"{Selected.Run.CurrentStep}/{Selected.Run.TotalSteps} · {FormatDate(Selected.Run.CurrentDate)}")" />
+                        <CompactStat Label="Elapsed" Value="@FormatDuration(Selected.Run.WallClockElapsed)" />
+                        <CompactStat Label="Output hash" Value="@Short(Selected.Run.OutputHash)" TooltipText="@Selected.Run.OutputHash" Position="TooltipPosition.Right" />
+                        <CompactStat Label="Updated" Value="@Selected.Run.LastUpdatedAtUtc.ToString("HH:mm:ss", CultureInfo.InvariantCulture)" TooltipText="@Selected.Run.LastUpdatedAtUtc.ToString("u", CultureInfo.InvariantCulture)" Position="TooltipPosition.Right" />
+                    </CompactStatStrip>
 
                     @if (Console.CommandMessages.Count > 0)
                     {
@@ -128,9 +112,13 @@
 
                     @if (CanApplyInterventions)
                     {
-                        <PanelCard data-testid="simulation-run-intervention-panel">
-                            <Stack GapScale="LayoutGap.Large">
-                                <PanelHeading Title="Manual interventions" LinkText="@($"{RuntimeInterventionCount} applied")" />
+                        <details class="rounded-lg border border-slate-200 bg-white p-3" data-testid="simulation-run-intervention-panel">
+                            <summary class="flex cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-slate-900">
+                                <span>Manual intervention</span>
+                                <Pill Tone="PillTone.Label" Text="@($"{RuntimeInterventionCount} applied")" />
+                            </summary>
+                            <div class="mt-3">
+                            <Stack GapScale="LayoutGap.Medium">
                                 <Grid ColumnsMd="2" Gap="LayoutGap.Medium" role="group" aria-label="Intervention type">
                                     <Button Look="ButtonLook.SheetCardGhost"
                                             Class="h-full w-full items-start justify-start text-left"
@@ -164,14 +152,21 @@
 
                                 <Grid ColumnTemplate="repeat(auto-fit, minmax(12rem, 1fr))" Gap="LayoutGap.Medium">
                                     <FormField Text="@InterventionTargetLabel">
-                                        <TextBox Value="@interventionTargetId"
-                                                 ValueChanged="@(value => interventionTargetId = value ?? string.Empty)"
-                                                 Immediate="true" />
+                                        <DropDown TValue="string"
+                                                  Data="InterventionTargetOptions"
+                                                  Value="@interventionTargetId"
+                                                  ValueChanged="@(value => interventionTargetId = value ?? string.Empty)"
+                                                  Placeholder="Choose a target"
+                                                  aria-label="@InterventionTargetLabel" />
                                     </FormField>
                                     <FormField Text="Effective date">
-                                        <TextBox Value="@interventionEffectiveDate"
-                                                 ValueChanged="@(value => interventionEffectiveDate = value ?? string.Empty)"
-                                                 Immediate="true" />
+                                        <input type="date"
+                                               class="min-h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                                               min="@FormatDate(Selected.Run.CurrentDate)"
+                                               max="@FormatDate(Selected.Setup.HorizonEndDate)"
+                                               value="@interventionEffectiveDate"
+                                               @onchange="OnInterventionDateChanged"
+                                               aria-label="Intervention effective date" />
                                     </FormField>
                                     @if (pendingInterventionKind == SimulationRunInterventionKind.DemandChange)
                                     {
@@ -206,66 +201,52 @@
                                     </FormField>
                                 </Grid>
 
+                                @if (InterventionValidationMessage is { } interventionValidationMessage)
+                                {
+                                    <Alert AlertStyle="AlertStyle.Warning">
+                                        <strong>Check intervention</strong>
+                                        <span>@interventionValidationMessage</span>
+                                    </Alert>
+                                }
+
                                 <Cluster JustifyContent="JustifyContent.End" Gap="LayoutGap.Small">
                                     <Button Text="Reset" Icon="restart_alt" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="@ResetInterventionForm" />
-                                    <Button Text="Apply" Icon="playlist_add_check" Click="@ApplyInterventionAsync" data-testid="simulation-apply-intervention" />
+                                    <Button Text="Apply" Icon="playlist_add_check" Disabled="@(!CanSubmitIntervention)" Click="@ApplyInterventionAsync" data-testid="simulation-apply-intervention" />
                                 </Cluster>
                             </Stack>
-                        </PanelCard>
+                            </div>
+                        </details>
                     }
 
                     <Tabs AriaLabel="Simulation run observation workspace"
+                          Variant="TabsVariant.WorkspaceTertiary"
                           RenderMode="TabRenderMode.Client"
                           SelectedIndex="@selectedObservationTabIndex"
                           SelectedIndexChanged="@OnObservationTabChanged"
-                          OverflowMode="TabsOverflowMode.Wrap"
+                          OverflowMode="TabsOverflowMode.Scroll"
                           PanelOverflowMode="TabsPanelOverflowMode.Visible"
                           data-testid="simulation-run-observation-tabs">
                         <TabsItem Text="State" Icon="monitoring">
-                            @if (selectedObservationTabIndex == 0)
-                            {
-                                <Stack GapScale="LayoutGap.Large" AlignItems="AlignItems.Stretch" data-testid="simulation-run-state-tab">
+                            <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="simulation-run-state-tab">
                                 <div data-testid="simulation-run-kpi-strip">
-                                    <SummaryTiles ColumnsSm="2" ColumnsXl="4">
+                                    <SummaryTiles ColumnsSm="2" ColumnsMd="3" ColumnsXl="6" GapScale="LayoutGap.Small">
                                         @foreach (SimulationRunKpiSnapshot kpi in Selected.Kpis)
                                         {
                                             <SummaryTile Label="@kpi.DisplayName"
                                                          Value="@kpi.Value"
                                                          HelperText="@($"{kpi.Unit} | {kpi.DeltaText} | {kpi.SourceLabel}")"
-                                                         Tone="@KpiTone(kpi.Tone)" />
+                                                         Tone="@KpiTone(kpi.Tone)"
+                                                         Compact="true"
+                                                         ShowHelperTextAsTooltip="true" />
                                         }
                                     </SummaryTiles>
                                 </div>
 
-                                <PanelCard data-testid="simulation-run-clock">
-                                    <Stack GapScale="LayoutGap.Large">
-                                        <Stack GapScale="LayoutGap.Tiny">
-                                            <TextBlock TextStyle="TextStyle.H4" Value="Run clock" />
-                                            <SmallText Text="Simulation time, step progress, and wall clock state." />
-                                        </Stack>
-                                        <Grid ColumnTemplate="repeat(auto-fit, minmax(9rem, 1fr))" Gap="LayoutGap.Large">
-                                        <RunHeaderFact Label="Simulated time" Value="@FormatDate(Selected.Run.CurrentDate)" />
-                                        <RunHeaderFact Label="Period" Value="@($"{Selected.Run.CurrentStep} / {Selected.Run.TotalSteps}")" />
-                                        <RunHeaderFact Label="Steps completed" Value="@Selected.Run.CurrentStep.ToString(CultureInfo.InvariantCulture)" />
-                                        <MetricCard Label="Step progress">
-                                            <ValueContent>
-                                                <Stack GapScale="LayoutGap.Tiny">
-                                                    <ProgressBar Value="@((double)ProgressPercent)" Max="100" aria-label="Step progress" />
-                                                    <SmallText Text="@($"{ProgressPercent:0}%")" />
-                                                </Stack>
-                                            </ValueContent>
-                                        </MetricCard>
-                                        <RunHeaderFact Label="Wall clock elapsed" Value="@FormatDuration(Selected.Run.WallClockElapsed)" />
-                                        <RunHeaderFact Label="Est. time remaining" Value="@(Selected.Run.EstimatedRemaining is null ? "Complete" : FormatDuration(Selected.Run.EstimatedRemaining.Value))" />
-                                        </Grid>
-                                    </Stack>
-                                </PanelCard>
-
-                                <Grid ColumnTemplateLg="minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(16rem, 0.8fr)"
-                                      Gap="LayoutGap.Large">
+                                <Grid ColumnTemplateLg="minmax(0, 1.15fr) minmax(0, 0.85fr)"
+                                      Gap="LayoutGap.Medium">
                                     <PanelCard data-testid="simulation-run-events-panel">
                                         <Stack GapScale="LayoutGap.Medium">
-                                            <PanelHeading Title="Recent events" LinkText="View all events" />
+                                            <PanelHeading Title="Recent events" />
                                             <DataGrid TItem="SimulationRunEventState" Data="Selected.Events.Take(5)" Caption="Recent simulation events">
                                                 <DataGridColumn TItem="SimulationRunEventState" Title="Time (sim)">
                                                     <Template Context="item"><TextBlock Value="@FormatDate(item.SimulationDate)" /></Template>
@@ -281,7 +262,7 @@
 
                                     <PanelCard data-testid="simulation-run-top-issues-panel">
                                         <Stack GapScale="LayoutGap.Medium">
-                                            <PanelHeading Title="@($"Top issues ({Selected.TopIssues.Count})")" LinkText="View all issues" />
+                                            <PanelHeading Title="@($"Top issues ({Selected.TopIssues.Count})")" />
                                             <DataGrid TItem="SimulationRunTopIssueState" Data="Selected.TopIssues.Take(4)" Caption="Top simulation issues">
                                                 <DataGridColumn TItem="SimulationRunTopIssueState" Title="Severity">
                                                     <Template Context="issue"><StatusBadge Text="@issue.Severity.ToString()" Tone="@SeverityTone(issue.Severity)" /></Template>
@@ -301,7 +282,7 @@
 
                                     <PanelCard data-testid="simulation-run-resources-panel">
                                         <Stack GapScale="LayoutGap.Medium">
-                                            <PanelHeading Title="Resource usage" LinkText="View run diagnostics" />
+                                            <PanelHeading Title="Resource usage" />
                                             @foreach (SimulationRunResourceMetricState metric in Selected.ResourceUsage.Metrics)
                                             {
                                                 <Grid ColumnTemplateSm="5.5rem minmax(4rem, 1fr) minmax(5rem, 7rem)"
@@ -318,7 +299,7 @@
 
                                 <PanelCard data-testid="simulation-run-pipeline-panel">
                                     <Stack GapScale="LayoutGap.Medium">
-                                        <PanelHeading Title="Simulation pipeline" LinkText="View step details" />
+                                        <PanelHeading Title="Simulation pipeline" />
                                         <Grid ColumnTemplate="repeat(auto-fit, minmax(8.5rem, 1fr))" Gap="LayoutGap.Small">
                                             @foreach (SimulationRunPipelineStepState step in Selected.Pipeline.OrderBy(x => x.SortOrder))
                                             {
@@ -333,45 +314,25 @@
                                     </Stack>
                                 </PanelCard>
 
-                                <Cluster Gap="LayoutGap.Medium"
-                                         AlignItems="AlignItems.Center"
-                                         Wrap="FlexWrap.Wrap"
-                                         Class="border-t border-slate-200 pt-3">
-                                    <StatusBadge Text="@DisplayStatus(Selected.Run.Status)" Tone="@LifecycleTone(Selected.Run.Status)" />
-                                    <SmallText Text="@($"Run started: {Selected.Run.StartedAtUtc.ToString("MMM d, yyyy HH:mm", CultureInfo.InvariantCulture)} by {Selected.Run.StartedBy}")" />
-                                    <SmallText Text="@($"Last update: {Selected.Run.LastUpdatedAtUtc.ToString("HH:mm:ss", CultureInfo.InvariantCulture)}")" />
-                                    <SmallText Text="Auto-refresh: deterministic sample provider" />
-                                </Cluster>
-                                </Stack>
-                            }
+                            </Stack>
                         </TabsItem>
                         <TabsItem Text="Summary" Icon="calendar_view_month">
-                            @if (selectedObservationTabIndex == 1)
-                            {
-                                <SimulationPeriodSummaryPanel Run="Selected" />
-                            }
+                            <SimulationPeriodSummaryPanel Run="Selected" />
                         </TabsItem>
                         <TabsItem Text="Graphs" Icon="monitoring">
-                            @if (selectedObservationTabIndex == 2)
-                            {
-                                <div data-testid="simulation-run-graphs-tab">
-                                    <EconomyScenarioGraphPanel Graphs="Selected.Observation.Graphs"
-                                                               BusinessUnits="GraphBusinessUnits"
-                                                               AddressBindings="GraphAddressBindings" />
-                                </div>
-                            }
+                            <div data-testid="simulation-run-graphs-tab">
+                                <EconomyScenarioGraphPanel Graphs="Selected.Observation.Graphs"
+                                                           BusinessUnits="GraphBusinessUnits"
+                                                           AddressBindings="GraphAddressBindings"
+                                                           CurrencyCode="@Selected.Project.Model.BaseCurrencyCode" />
+                            </div>
                         </TabsItem>
                         <TabsItem Text="BUs" Icon="account_tree">
-                            @if (selectedObservationTabIndex == 3)
-                            {
-                                <SimulationRunBusinessUnitObservationPanel Project="Selected.Project"
-                                                                           Observation="Selected.Observation" />
-                            }
+                            <SimulationRunBusinessUnitObservationPanel Project="Selected.Project"
+                                                                       Observation="Selected.Observation" />
                         </TabsItem>
-                        <TabsItem Text="BO Evidence" Icon="rule">
-                            @if (selectedObservationTabIndex == 4)
-                            {
-                                <Grid ColumnsLg="2" Gap="LayoutGap.Large" data-testid="simulation-run-bo-evidence-tab">
+                        <TabsItem Text="Evidence" Icon="rule" BadgeText="@Selected.Observation.RuleEvidence.Count.ToString(CultureInfo.InvariantCulture)">
+                            <Grid ColumnsLg="1" Gap="LayoutGap.Medium" data-testid="simulation-run-bo-evidence-tab">
                                 <FormSection Title="Rule execution evidence" Description="Evidence generated by existing account-rule automation contracts.">
                                     <DataGrid TItem="RuleExecutionEvidenceState" Data="Selected.Observation.RuleEvidence">
                                         <DataGridColumn TItem="RuleExecutionEvidenceState" Property="RuleId" Title="Rule" />
@@ -393,14 +354,26 @@
                                         <DataGridColumn TItem="SimulationOutputSourceRef" Property="RuleId" Title="Rule" />
                                     </DataGrid>
                                 </FormSection>
-                                </Grid>
-                            }
+                            </Grid>
                         </TabsItem>
-                        <TabsItem Text="Issues" Icon="report_problem">
-                            @if (selectedObservationTabIndex == 5)
-                            {
-                                <FormSection Title="Run issues" Description="Deficits, inactive bindings, rule gaps, and failed posting evidence surfaced from the observation read model.">
-                                <DataGrid TItem="SimulationIssue" Data="Selected.Observation.Issues" AllowPaging="true" PageSize="8" data-testid="simulation-run-issues-tab">
+                        <TabsItem Text="Issues" Icon="report_problem" BadgeText="@Selected.Observation.Issues.Count.ToString(CultureInfo.InvariantCulture)">
+                            <Stack GapScale="LayoutGap.Medium" data-testid="simulation-run-issues-tab">
+                                <Grid ColumnTemplate="minmax(12rem, 1fr) minmax(10rem, 0.45fr) auto" Gap="LayoutGap.Small" AlignItems="AlignItems.End">
+                                    <TextBox Value="@issueSearch"
+                                             ValueChanged="@(value => issueSearch = value ?? string.Empty)"
+                                             Immediate="true"
+                                             Placeholder="Search issues..."
+                                             aria-label="Search run issues" />
+                                    <DropDown TValue="string"
+                                              Data="IssueSeverityOptions"
+                                              Placeholder="All severities"
+                                              AllowClear="true"
+                                              Value="@selectedIssueSeverity"
+                                              ValueChanged="@(value => selectedIssueSeverity = value)"
+                                              aria-label="Filter issues by severity" />
+                                    <CompactStat Label="Matches" Value="@FilteredIssues.Count.ToString(CultureInfo.InvariantCulture)" />
+                                </Grid>
+                                <DataGrid TItem="SimulationIssue" Data="FilteredIssues" AllowPaging="true" PageSize="8">
                                     <DataGridColumn TItem="SimulationIssue" Title="Date">
                                         <Template Context="issue">
                                             <TextBlock TextStyle="TextStyle.Body2" Value="@FormatDate(issue.Date)" />
@@ -419,20 +392,26 @@
                                     </DataGridColumn>
                                     <DataGridColumn TItem="SimulationIssue" Property="Message" Title="Message" />
                                 </DataGrid>
-                                </FormSection>
-                            }
+                            </Stack>
                         </TabsItem>
-                        <TabsItem Text="Artifacts" Icon="inventory_2">
-                            @if (selectedObservationTabIndex == 6)
-                            {
-                                <Grid ColumnsLg="2" Gap="LayoutGap.Large" data-testid="simulation-run-artifacts-tab">
+                        <TabsItem Text="Artifacts" Icon="inventory_2" BadgeText="@Selected.Observation.Artifacts.Count.ToString(CultureInfo.InvariantCulture)">
+                            <Grid ColumnsLg="2" Gap="LayoutGap.Medium" data-testid="simulation-run-artifacts-tab">
                                 <FormSection Title="Artifacts" Description="Generated run outputs and local or persisted paths.">
                                     <DataGrid TItem="SimulationRunArtifactState" Data="Selected.Observation.Artifacts">
                                         <DataGridColumn TItem="SimulationRunArtifactState" Property="DisplayName" Title="Artifact" />
                                         <DataGridColumn TItem="SimulationRunArtifactState" Property="ArtifactType" Title="Type" />
+                                        <DataGridColumn TItem="SimulationRunArtifactState" Title="Path">
+                                            <Template Context="artifact">
+                                                <TooltipTarget Text="@(artifact.Path ?? "Not persisted")" Position="TooltipPosition.Right" TabIndex="0">
+                                                    <SmallText Text="@(artifact.Path is null ? "In memory" : Short(artifact.Path))" />
+                                                </TooltipTarget>
+                                            </Template>
+                                        </DataGridColumn>
                                         <DataGridColumn TItem="SimulationRunArtifactState" Title="Hash">
                                             <Template Context="artifact">
-                                                <MonoText Text="@Short(artifact.Hash)" />
+                                                <TooltipTarget Text="@artifact.Hash" Position="TooltipPosition.Right" TabIndex="0">
+                                                    <MonoText Text="@Short(artifact.Hash)" />
+                                                </TooltipTarget>
                                             </Template>
                                         </DataGridColumn>
                                     </DataGrid>
@@ -445,13 +424,12 @@
                                         <DataGridColumn TItem="SimulationRunAssumptionItem" Property="Source" Title="Source" />
                                     </DataGrid>
                                 </FormSection>
-                                </Grid>
-                            }
+                            </Grid>
                         </TabsItem>
                     </Tabs>
                 </Stack>
-            </WorkspacePanel>
-        </Grid>
+            </DetailContent>
+        </ListDetailShell>
     </ChildContent>
 </PageScaffold>
 
@@ -470,9 +448,8 @@
     private string interventionAmount = "250000";
     private string interventionDepreciationMonths = "60";
     private string interventionReason = "Management scenario change";
-
-    [Parameter]
-    public SimulationRunObservationViewModel? ViewModel { get; set; }
+    private string issueSearch = string.Empty;
+    private string? selectedIssueSeverity;
 
     [Parameter]
     public SimulationRunConsoleViewModel? ConsoleViewModel { get; set; }
@@ -504,6 +481,14 @@
         {
             ResetInterventionFormValues();
             interventionFormRunId = Selected.Run.RunId;
+            issueSearch = string.Empty;
+            selectedIssueSeverity = null;
+        }
+        else if (!DateOnly.TryParseExact(interventionEffectiveDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly effectiveDate)
+            || effectiveDate < Selected.Run.CurrentDate
+            || effectiveDate > Selected.Setup.HorizonEndDate)
+        {
+            interventionEffectiveDate = DefaultInterventionDate().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         }
     }
 
@@ -521,6 +506,8 @@
 
     private bool CanPauseOrResume => Selected.Run.Status is SimulationRunLifecycleStatus.Running or SimulationRunLifecycleStatus.Paused;
 
+    private bool CanStop => Selected.Run.Status is SimulationRunLifecycleStatus.Running or SimulationRunLifecycleStatus.Paused;
+
     private bool CanStepBack => Selected.Run.SelectedStep > 1;
 
     private bool CanStepForward => Selected.Run.SelectedStep < Selected.Run.TotalSteps
@@ -534,6 +521,83 @@
     private string InterventionTargetLabel => pendingInterventionKind == SimulationRunInterventionKind.DemandChange
         ? "Demand schedule"
         : "Business unit";
+
+    private IReadOnlyList<string> InterventionTargetOptions
+    {
+        get
+        {
+            IEnumerable<string> targets = pendingInterventionKind == SimulationRunInterventionKind.DemandChange
+                ? Selected.Project.BusinessObjectDefinitions
+                    .Where(definition => definition.ObjectType.Contains("schedule", StringComparison.OrdinalIgnoreCase)
+                        || definition.Metadata.Values.Any(value => value.Contains("schedule", StringComparison.OrdinalIgnoreCase)))
+                    .Select(definition => definition.DefinitionId)
+                : Selected.Project.BusinessUnits
+                    .Where(unit => unit.Status == BusinessUnitStatus.Active)
+                    .Select(unit => unit.BusinessUnitId.Value);
+
+            string defaultTarget = pendingInterventionKind == SimulationRunInterventionKind.DemandChange
+                ? DefaultDemandTarget()
+                : DefaultCapacityTarget();
+            return targets
+                .Prepend(defaultTarget)
+                .Where(target => !string.IsNullOrWhiteSpace(target))
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+        }
+    }
+
+    private string? InterventionValidationMessage
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(interventionTargetId))
+            {
+                return "Choose a target.";
+            }
+
+            if (!DateOnly.TryParseExact(interventionEffectiveDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly effectiveDate)
+                || effectiveDate < Selected.Run.CurrentDate
+                || effectiveDate > Selected.Setup.HorizonEndDate)
+            {
+                return $"Choose a date from {FormatDate(Selected.Run.CurrentDate)} through {FormatDate(Selected.Setup.HorizonEndDate)}.";
+            }
+
+            if (string.IsNullOrWhiteSpace(interventionReason))
+            {
+                return "Explain the reason for the change.";
+            }
+
+            if (pendingInterventionKind == SimulationRunInterventionKind.DemandChange)
+            {
+                if (TryParseDecimal(interventionMultiplier) is not { } multiplier || multiplier <= 0m)
+                {
+                    return "Multiplier must be a positive number.";
+                }
+
+                if (TryParseDecimal(interventionQuantityDelta) is null)
+                {
+                    return "Quantity delta must be a number.";
+                }
+
+                return null;
+            }
+
+            if (TryParseDecimal(interventionAmount) is not { } amount || amount <= 0m)
+            {
+                return "CapEx amount must be a positive number.";
+            }
+
+            if (!int.TryParse(interventionDepreciationMonths, NumberStyles.Integer, CultureInfo.InvariantCulture, out int months) || months <= 0)
+            {
+                return "Depreciation months must be a positive whole number.";
+            }
+
+            return null;
+        }
+    }
+
+    private bool CanSubmitIntervention => InterventionValidationMessage is null;
 
     private TimelineStepperMode SelectedTimelineMode => Selected.Run.RunMode == SimulationRunMode.Automatic
         ? TimelineStepperMode.Automatic
@@ -620,6 +684,24 @@
             : DefaultCapacityTarget();
     }
 
+    private IReadOnlyList<string> IssueSeverityOptions => Selected.Observation.Issues
+        .Select(issue => issue.Severity)
+        .Distinct(StringComparer.Ordinal)
+        .Order(StringComparer.Ordinal)
+        .ToArray();
+
+    private IReadOnlyList<SimulationIssue> FilteredIssues => Selected.Observation.Issues
+        .Where(issue => string.IsNullOrWhiteSpace(selectedIssueSeverity)
+            || string.Equals(issue.Severity, selectedIssueSeverity, StringComparison.Ordinal))
+        .Where(issue => string.IsNullOrWhiteSpace(issueSearch)
+            || issue.Code.Contains(issueSearch, StringComparison.OrdinalIgnoreCase)
+            || issue.Message.Contains(issueSearch, StringComparison.OrdinalIgnoreCase)
+            || BusinessUnitName(issue.BusinessUnitId).Contains(issueSearch, StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+
+    private void OnInterventionDateChanged(ChangeEventArgs args)
+        => interventionEffectiveDate = Convert.ToString(args.Value, CultureInfo.InvariantCulture) ?? string.Empty;
+
     private static string? ChoiceCardStyle(bool selected)
         => selected
             ? "border-color:var(--cad-tone-info-soft-border);background:var(--cad-tone-info-soft-bg);color:var(--cad-tone-info-soft-fg);box-shadow:var(--cad-shadow-soft);"
@@ -638,13 +720,18 @@
         interventionEffectiveDate = DefaultInterventionDate().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         interventionMultiplier = "1.25";
         interventionQuantityDelta = "0";
-        interventionAmount = Selected.Project.Summary.BaseCurrencyCode == "EUR" ? "250000" : "250000";
+        interventionAmount = "250000";
         interventionDepreciationMonths = "60";
         interventionReason = "Management scenario change";
     }
 
     private Task ApplyInterventionAsync()
     {
+        if (!CanSubmitIntervention)
+        {
+            return Task.CompletedTask;
+        }
+
         DateOnly? effectiveDate = DateOnly.TryParseExact(interventionEffectiveDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly parsedDate)
             ? parsedDate
             : null;
@@ -692,7 +779,14 @@
     private IReadOnlyList<TimelineStepperTick> TimelineTicks => BuildTimelineTicks(Selected.Setup, Selected.Run.TotalSteps, Selected.Run.AvailableStep);
 
     private DateOnly DefaultInterventionDate()
-        => DateAtStep(Selected.Setup, Math.Min(Selected.Run.TotalSteps, Selected.Run.SelectedStep + 1));
+    {
+        DateOnly candidate = DateAtStep(Selected.Setup, Math.Min(Selected.Run.TotalSteps, Selected.Run.SelectedStep + 1));
+        return candidate < Selected.Run.CurrentDate
+            ? Selected.Run.CurrentDate
+            : candidate > Selected.Setup.HorizonEndDate
+                ? Selected.Setup.HorizonEndDate
+                : candidate;
+    }
 
     private string DefaultDemandTarget()
     {
@@ -754,7 +848,7 @@
 
     private static string FormatDuration(TimeSpan value)
         => value.TotalHours >= 1
-            ? value.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)
+            ? $"{(long)value.TotalHours:00}:{value.Minutes:00}:{value.Seconds:00}"
             : value.ToString(@"mm\:ss", CultureInfo.InvariantCulture);
 
     private static string Short(string value)

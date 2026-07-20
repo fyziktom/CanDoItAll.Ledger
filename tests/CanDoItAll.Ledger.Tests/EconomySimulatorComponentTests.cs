@@ -14,6 +14,10 @@ namespace CanDoItAll.Economy.Tests;
 
 public sealed class EconomySimulatorComponentTests : BunitContext
 {
+    private readonly SimulationProjectImportExportService importExport = new(
+        new EconomySimulatorJsonSerializer(),
+        new SimulationProjectValidationService());
+
     public EconomySimulatorComponentTests()
     {
         Services.AddCanDoItAllBaseLib();
@@ -37,65 +41,75 @@ public sealed class EconomySimulatorComponentTests : BunitContext
     }
 
     [Fact]
-    public async Task EconomySimulatorShell_RendersOnlyTheActiveProjectTabAndNavigatesToOtherContent()
+    public async Task EconomySimulatorShell_LazilyMountsAndPreservesVisitedProjectTabs()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
-            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement()));
+            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement())
+            .Add(x => x.ImportExportService, importExport));
         string markup = component.Markup;
 
         async Task ClickTabButtonAsync(int tabIndex)
         {
-            var tabButtons = component.FindAll("[data-testid='simulation-project-tabs'] button[role='tab']");
+            var tabButtons = component.FindAll("[data-testid='simulation-project-tabs'] > .cad-tabs__list > button[role='tab']");
             await component.InvokeAsync(() => tabButtons[tabIndex].Click());
-            var updatedTabButtons = component.FindAll("[data-testid='simulation-project-tabs'] button[role='tab']");
+            var updatedTabButtons = component.FindAll("[data-testid='simulation-project-tabs'] > .cad-tabs__list > button[role='tab']");
             Assert.Equal("true", updatedTabButtons[tabIndex].GetAttribute("aria-selected"));
             Assert.Single(updatedTabButtons, button => button.GetAttribute("aria-selected") == "true");
+            var panels = component.FindAll("[data-testid='simulation-project-tabs'] > .cad-tabs__panels > [role='tabpanel']");
+            Assert.Equal(7, panels.Count);
+            Assert.Equal("false", panels[tabIndex].GetAttribute("aria-hidden"));
+            Assert.Single(panels, panel => panel.GetAttribute("aria-hidden") == "false");
         }
 
-        Assert.Contains("Economy Simulator", markup, StringComparison.Ordinal);
-        Assert.Contains("Simulation project management", markup, StringComparison.Ordinal);
         Assert.Contains("Project Alpha", markup, StringComparison.Ordinal);
         Assert.Contains("Project Beta", markup, StringComparison.Ordinal);
-        Assert.Contains("Basic info", markup, StringComparison.Ordinal);
-        Assert.Contains("BUs and accounts", markup, StringComparison.Ordinal);
-        Assert.Contains("BOs and rules", markup, StringComparison.Ordinal);
-        Assert.Contains("Financial inputs", markup, StringComparison.Ordinal);
-        Assert.Contains("Planned expenses", markup, StringComparison.Ordinal);
-        Assert.Contains("Simulation setup", markup, StringComparison.Ordinal);
-        Assert.Contains("Export/import", markup, StringComparison.Ordinal);
-        Assert.Contains("Project identity", markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Project treasury", markup, StringComparison.Ordinal);
+        Assert.Contains("Overview", markup, StringComparison.Ordinal);
+        Assert.Contains("Units", markup, StringComparison.Ordinal);
+        Assert.Contains("Objects", markup, StringComparison.Ordinal);
+        Assert.Contains("Inputs", markup, StringComparison.Ordinal);
+        Assert.Contains("Schedules", markup, StringComparison.Ordinal);
+        Assert.Contains("Run setup", markup, StringComparison.Ordinal);
+        Assert.Contains("Transfer", markup, StringComparison.Ordinal);
+        Assert.Contains("Project settings", markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Cashpool sweep rule", markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Sales tax rate", markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Planned schedule tree", markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Financial schedules", markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Baseline monthly run", markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Export manifest", markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(1);
         Assert.Contains("Project treasury", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Project identity", component.Markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(2);
         Assert.Contains("Cashpool sweep rule", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Project treasury", component.Markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(3);
         Assert.Contains("Sales tax rate", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Cashpool sweep rule", component.Markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(4);
-        Assert.Contains("Planned schedule tree", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Sales tax rate", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Financial schedules", component.Markup, StringComparison.Ordinal);
+        component.Find("input[placeholder='Search schedules...']").Input("prototyping");
 
         await ClickTabButtonAsync(5);
         Assert.Contains("Baseline monthly run", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Planned schedule tree", component.Markup, StringComparison.Ordinal);
+        Assert.Equal(
+            "0",
+            component.Find("section[aria-labelledby='run-identity-title'] span[aria-describedby]")
+                .GetAttribute("tabindex"));
+        Assert.All(
+            component.FindAll("section[aria-labelledby='included-templates-title'] span[aria-describedby]"),
+            trigger => Assert.Equal("0", trigger.GetAttribute("tabindex")));
+
+        await ClickTabButtonAsync(4);
+        Assert.Equal("prototyping", component.Find("input[placeholder='Search schedules...']").GetAttribute("value"));
 
         await ClickTabButtonAsync(6);
         Assert.Contains("Export manifest", component.Markup, StringComparison.Ordinal);
         Assert.Contains("reserve-threshold", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("data-testid=\"simulation-setup-tab\"", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("data-testid=\"simulation-setup-tab\"", component.Markup, StringComparison.Ordinal);
+        Assert.All(
+            component.FindAll("[data-testid='simulation-import-export-tab'] details span[aria-describedby]"),
+            trigger => Assert.Equal("0", trigger.GetAttribute("tabindex")));
     }
 
     [Fact]
@@ -114,7 +128,8 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         };
 
         IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
-            .Add(x => x.ViewModel, model));
+            .Add(x => x.ViewModel, model)
+            .Add(x => x.ImportExportService, importExport));
 
         var tree = component.Find("[data-testid='simulation-project-tree']");
         Assert.Equal("tree", tree.GetAttribute("role"));
@@ -123,13 +138,13 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         Assert.Contains("Company scenarios", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Reference plans", component.Markup, StringComparison.Ordinal);
         Assert.Equal(projectStates.Count, component.FindAll("[data-testid^='simulation-project-row-']").Count);
-        Assert.Single(component.FindAll("[role='treeitem'][aria-selected='true']"));
+        Assert.Single(tree.QuerySelectorAll("[role='treeitem'][aria-selected='true']"));
 
         component.Find("[data-testid='simulation-project-group-company-scenarios']").Click();
 
         Assert.Equal("false", component.Find("[data-testid='simulation-project-group-company-scenarios']").GetAttribute("aria-expanded"));
         Assert.Empty(component.FindAll("[data-testid='simulation-project-group-company-scenarios-children']"));
-        Assert.Single(component.FindAll("[role='treeitem'][aria-selected='true']"));
+        Assert.Single(tree.QuerySelectorAll("[role='treeitem'][aria-selected='true']"));
     }
 
     [Fact]
@@ -137,14 +152,15 @@ public sealed class EconomySimulatorComponentTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
-            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement()));
+            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement())
+            .Add(x => x.ImportExportService, importExport));
 
         var tree = component.Find("[data-testid='simulation-project-tree']");
         var group = component.Find("[data-testid='simulation-project-group-workspace-projects']");
         var firstProject = component.Find("[data-testid='simulation-project-row-project-alpha']");
 
         Assert.Equal("0", tree.GetAttribute("tabindex"));
-        Assert.All(component.FindAll("[role='treeitem']"), item => Assert.Equal("-1", item.GetAttribute("tabindex")));
+        Assert.All(tree.QuerySelectorAll("[role='treeitem']"), item => Assert.Equal("-1", item.GetAttribute("tabindex")));
 
         tree.KeyDown(new KeyboardEventArgs { Key = "Home" });
         Assert.Equal(group.GetAttribute("id"), tree.GetAttribute("aria-activedescendant"));
@@ -184,7 +200,8 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         };
 
         IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
-            .Add(x => x.ViewModel, model));
+            .Add(x => x.ViewModel, model)
+            .Add(x => x.ImportExportService, importExport));
 
         Assert.Equal("true", component.Find("[data-testid='simulation-project-row-project-alpha']").GetAttribute("aria-expanded"));
         Assert.Equal(2, component.FindAll("[data-testid^='simulation-project-setup-project-alpha-']").Count);
@@ -211,7 +228,8 @@ public sealed class EconomySimulatorComponentTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
-            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement()));
+            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement())
+            .Add(x => x.ImportExportService, importExport));
 
         component.Find("[data-testid='simulation-project-row-project-beta']").Click();
 
@@ -219,14 +237,14 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         Assert.Equal("false", component.Find("[data-testid='simulation-project-row-project-alpha']").GetAttribute("aria-selected"));
         Assert.Equal("Project Beta", component.Find("[data-testid='simulation-selected-project-name']").TextContent.Trim());
 
-        component.Find("input[placeholder='Search project, scenario, or currency...']").Input("Beta");
+        component.Find("input[placeholder='Search projects or scenarios...']").Input("Beta");
 
         Assert.Single(component.FindAll("[data-testid^='simulation-project-row-']"));
         Assert.Contains("Workspace projects", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Project Beta", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Project Gamma", component.Markup, StringComparison.Ordinal);
 
-        component.Find("input[placeholder='Search project, scenario, or currency...']").Input("no matching project");
+        component.Find("input[placeholder='Search projects or scenarios...']").Input("no matching project");
         Assert.Contains("No projects match the current search.", component.Markup, StringComparison.Ordinal);
     }
 
@@ -235,14 +253,17 @@ public sealed class EconomySimulatorComponentTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
-            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement()));
+            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement())
+            .Add(x => x.ImportExportService, importExport));
         IRenderedComponent<Tooltip> tooltipHost = Render<Tooltip>();
         IRenderedComponent<TooltipTarget> tooltipTarget = Assert.Single(
             component.FindComponents<TooltipTarget>(),
             candidate => candidate.Instance.TestId == "simulation-project-tooltip-project-beta");
 
         Assert.Equal(TooltipPosition.Right, tooltipTarget.Instance.Position);
+        Assert.Equal(0, tooltipTarget.Instance.TabIndex);
         var trigger = tooltipTarget.Find("span.cda-sim-project-tree__tooltip-target");
+        Assert.Equal("0", trigger.GetAttribute("tabindex"));
         trigger.MouseEnter(new MouseEventArgs { ClientX = 280, ClientY = 240 });
 
         TooltipService service = Services.GetRequiredService<TooltipService>();
@@ -269,10 +290,14 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         SimulationProjectRunRequest? captured = null;
         IRenderedComponent<EconomySimulatorShell> component = Render<EconomySimulatorShell>(parameters => parameters
             .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateProjectManagement())
+            .Add(x => x.ImportExportService, importExport)
             .Add(x => x.RunRequested, EventCallback.Factory.Create<SimulationProjectRunRequest>(this, request => captured = request)));
 
-        await component.InvokeAsync(() => component.Find("[data-testid='simulation-run-selected']").Click());
+        await component.InvokeAsync(() => component.Find("[data-testid='simulation-project-run']").Click());
         Assert.Contains("Start simulation", component.Markup, StringComparison.Ordinal);
+        Assert.Equal("true", component.Find("[data-testid='simulation-start-automatic']").GetAttribute("aria-pressed"));
+        Assert.Equal("false", component.Find("[data-testid='simulation-start-manual']").GetAttribute("aria-pressed"));
+        await component.InvokeAsync(() => component.Find("[data-testid='simulation-start-manual']").Click());
         Assert.Equal("false", component.Find("[data-testid='simulation-start-automatic']").GetAttribute("aria-pressed"));
         Assert.Equal("true", component.Find("[data-testid='simulation-start-manual']").GetAttribute("aria-pressed"));
         await component.InvokeAsync(() => component.Find("[data-testid='simulation-start-automatic']").Click());
@@ -299,12 +324,10 @@ public sealed class EconomySimulatorComponentTests : BunitContext
             .Add(x => x.Project, project));
         string markup = component.Markup;
 
-        Assert.Contains("Planned schedule tree", markup, StringComparison.Ordinal);
-        Assert.Contains("Approval timeline", markup, StringComparison.Ordinal);
-        Assert.Contains("Selected planned expense", markup, StringComparison.Ordinal);
+        Assert.Contains("Financial schedules", markup, StringComparison.Ordinal);
+        Assert.Contains("Approval queue", markup, StringComparison.Ordinal);
         Assert.Contains("BusinessUnitApproved", markup, StringComparison.Ordinal);
         Assert.Contains("Rent of offices", markup, StringComparison.Ordinal);
-        Assert.Contains("simulation-planned-expense-timeline", markup, StringComparison.Ordinal);
         IRenderedComponent<TreeView> scheduleTree = Assert.Single(component.FindComponents<TreeView>());
         TreeViewNode prototypingSchedule = scheduleTree.Instance.Items
             .SelectMany(businessUnit => businessUnit.Children)
@@ -315,11 +338,20 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         Assert.Contains("vef-2022-other-33-prototyping", prototypingSchedule.Tooltip, StringComparison.Ordinal);
         Assert.Contains("BusinessUnitApproved", prototypingSchedule.Tooltip, StringComparison.Ordinal);
 
+        var approvalQueueTab = component.FindAll("button[role='tab']")
+            .Single(button => button.TextContent.Contains("Approval queue", StringComparison.Ordinal));
+        Assert.Equal("false", approvalQueueTab.GetAttribute("aria-selected"));
+        await component.InvokeAsync(() => approvalQueueTab.Click());
+        approvalQueueTab = component.FindAll("button[role='tab']")
+            .Single(button => button.TextContent.Contains("Approval queue", StringComparison.Ordinal));
+        Assert.Equal("true", approvalQueueTab.GetAttribute("aria-selected"));
+        Assert.Contains("simulation-planned-expense-timeline", component.Markup, StringComparison.Ordinal);
+
         await component.InvokeAsync(() => component.Find("[data-testid^='simulation-planned-expense-row-']").Click());
 
         Assert.Contains("Scheduled amounts", component.Markup, StringComparison.Ordinal);
-        Assert.Contains("Plan source", component.Markup, StringComparison.Ordinal);
-        Assert.Contains("Period", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Details", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Month", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain(">Cell<", component.Markup, StringComparison.Ordinal);
     }
 
@@ -336,8 +368,8 @@ public sealed class EconomySimulatorComponentTests : BunitContext
             .Add(x => x.Project, project));
         string markup = component.Markup;
 
-        Assert.Contains("Rule process settings", markup, StringComparison.Ordinal);
-        Assert.Contains("Payload preview", markup, StringComparison.Ordinal);
+        Assert.Contains("simulation-definition-settings-panel", markup, StringComparison.Ordinal);
+        Assert.Contains("Payload JSON", markup, StringComparison.Ordinal);
         Assert.Contains("simulation-template-catalogue-open", markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Simulation Templates Catalogue", markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Search tags, rules, BOs", markup, StringComparison.Ordinal);
@@ -422,37 +454,42 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         IRenderedComponent<BusinessUnitTree> component = Render<BusinessUnitTree>(parameters => parameters
             .Add(x => x.Project, EconomySimulatorSampleData.CreateProjectState()));
 
+        component.Find("[data-testid='simulation-bu-node-sales']").Click();
         component.Find("[data-testid='simulation-binding-node-Revenue']").Click();
 
-        Assert.Contains("Account binding", component.Markup, StringComparison.Ordinal);
+        Assert.NotEmpty(component.FindAll("[data-testid='simulation-selected-account-detail']"));
         Assert.Contains("Sales revenue", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Revenue", component.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SimulationRunObservationPage_RendersOnlyTheActiveObservationTabAndNavigatesToOtherContent()
+    public async Task SimulationRunObservationPage_KeepsClientPanelsMountedAndNavigatesObservationTabs()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         IRenderedComponent<SimulationRunObservationPage> component = Render<SimulationRunObservationPage>(parameters => parameters
-            .Add(x => x.ViewModel, EconomySimulatorSampleData.CreateRunObservation()));
+            .Add(x => x.ConsoleViewModel, EconomySimulatorSampleData.CreateRunConsole()));
         string markup = component.Markup;
 
         async Task ClickTabButtonAsync(int tabIndex)
         {
-            var tabButtons = component.FindAll("[data-testid='simulation-run-observation-tabs'] button[role='tab']");
+            var tabButtons = component.FindAll("[data-testid='simulation-run-observation-tabs'] > .cad-tabs__list > button[role='tab']");
             await component.InvokeAsync(() => tabButtons[tabIndex].Click());
-            var updatedTabButtons = component.FindAll("[data-testid='simulation-run-observation-tabs'] button[role='tab']");
+            var updatedTabButtons = component.FindAll("[data-testid='simulation-run-observation-tabs'] > .cad-tabs__list > button[role='tab']");
             Assert.Equal("true", updatedTabButtons[tabIndex].GetAttribute("aria-selected"));
             Assert.Single(updatedTabButtons, button => button.GetAttribute("aria-selected") == "true");
+            var panels = component.FindAll("[data-testid='simulation-run-observation-tabs'] > .cad-tabs__panels > [role='tabpanel']");
+            Assert.Equal(7, panels.Count);
+            Assert.Equal("false", panels[tabIndex].GetAttribute("aria-hidden"));
+            Assert.Single(panels, panel => panel.GetAttribute("aria-hidden") == "false");
         }
 
-        Assert.Contains("Simulation observation", markup, StringComparison.Ordinal);
-        Assert.Contains("Run Observation", markup, StringComparison.Ordinal);
+        Assert.Contains("simulation-run-console-page", markup, StringComparison.Ordinal);
+        Assert.Contains("simulation-run-header", markup, StringComparison.Ordinal);
         Assert.Contains("State", markup, StringComparison.Ordinal);
         Assert.Contains("Summary", markup, StringComparison.Ordinal);
         Assert.Contains("Graphs", markup, StringComparison.Ordinal);
         Assert.Contains("BUs", markup, StringComparison.Ordinal);
-        Assert.Contains("BO Evidence", markup, StringComparison.Ordinal);
+        Assert.Contains("Evidence", markup, StringComparison.Ordinal);
         Assert.Contains("Issues", markup, StringComparison.Ordinal);
         Assert.Contains("Artifacts", markup, StringComparison.Ordinal);
         Assert.Contains("Recent events", markup, StringComparison.Ordinal);
@@ -460,37 +497,35 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         Assert.Contains("Simulation pipeline", markup, StringComparison.Ordinal);
         Assert.Contains("simulation-run-timeline-stepper", markup, StringComparison.Ordinal);
         Assert.Contains("Data available", markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Management summary", markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Output source map", markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Generated run outputs", markup, StringComparison.Ordinal);
+        Assert.Contains("Quarterly management summary", markup, StringComparison.Ordinal);
+        Assert.Contains("Output source map", markup, StringComparison.Ordinal);
+        Assert.Contains("simulation-run-artifacts-tab", markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(1);
-        Assert.Contains("Management summary", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Quarterly management summary", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Income distribution", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Expense distribution", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Recent events", component.Markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(2);
         Assert.Contains("simulation-run-graphs-tab", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Management summary", component.Markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(3);
         Assert.Contains("simulation-run-bu-tab", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("simulation-run-graphs-tab", component.Markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(4);
         Assert.Contains("Output source map", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Rule execution evidence", component.Markup, StringComparison.Ordinal);
         Assert.Contains("alpha.cashpool-sweep.v1", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("simulation-run-bu-tab", component.Markup, StringComparison.Ordinal);
 
         await ClickTabButtonAsync(5);
         Assert.Contains("BO-FX-02", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Output source map", component.Markup, StringComparison.Ordinal);
+        component.Find("input[placeholder='Search issues...']").Input("FX");
 
         await ClickTabButtonAsync(6);
-        Assert.Contains("Generated run outputs", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("BO-FX-02", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("simulation-run-artifacts-tab", component.Markup, StringComparison.Ordinal);
+
+        await ClickTabButtonAsync(5);
+        Assert.Equal("FX", component.Find("input[placeholder='Search issues...']").GetAttribute("value"));
     }
 
     [Fact]
@@ -500,14 +535,14 @@ public sealed class EconomySimulatorComponentTests : BunitContext
         IRenderedComponent<SimulationPeriodSummaryPanel> component = Render<SimulationPeriodSummaryPanel>(parameters => parameters
             .Add(x => x.Run, EconomySimulatorSampleData.CreateRunConsole().SelectedRun));
 
-        Assert.Contains("Quarterly view", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Quarterly management summary", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Q1", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Income distribution", component.Markup, StringComparison.Ordinal);
 
         IRenderedComponent<Button> yearButton = component.FindComponents<Button>().Single(button => string.Equals(button.Instance.Text, "Year", StringComparison.Ordinal));
         await component.InvokeAsync(() => yearButton.Instance.Click.InvokeAsync());
 
-        Assert.Contains("Yearly view", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Yearly management summary", component.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -546,7 +581,7 @@ public sealed class EconomySimulatorComponentTests : BunitContext
             .Add(x => x.ConsoleViewModel, console)
             .Add(x => x.InterventionRequested, EventCallback.Factory.Create<SimulationRunInterventionRequest>(this, request => captured = request)));
 
-        Assert.Contains("Manual interventions", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Manual intervention", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Demand", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Production line", component.Markup, StringComparison.Ordinal);
         Assert.Equal("true", component.Find("[data-testid='simulation-intervention-demand']").GetAttribute("aria-pressed"));
