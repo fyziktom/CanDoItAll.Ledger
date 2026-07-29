@@ -1,4 +1,5 @@
 # Economy Simulator
+> Historical design record. Project names and some integration claims below describe the pre-move Economy repository. For the current Ledger-owned simulator, its confirmed limitations, and the active refactoring boundary, see [`../architecture/ledger-simulator-vision-and-refactoring.md`](../architecture/ledger-simulator-vision-and-refactoring.md).
 
 The economy simulator is an SDK-level example that sits above `CanDoItAll.Economy.Sdk`. It demonstrates how to model business units, economic events, templates, scenario runs, projections, actual tracking, reconciliation, calibration, and external settlement policy without moving simulator-specific concepts into Core, Ledger, BusinessObjects, SDK, Node, or CLI.
 
@@ -9,7 +10,7 @@ The economy simulator is an SDK-level example that sits above `CanDoItAll.Econom
 | `src/CanDoItAll.Economy.Simulator` | Headless domain/application library. References SDK, BusinessObjects, and Core. |
 | `src/CanDoItAll.Economy.Simulator.Persistence.EFCore` | Optional simulator projection/cache persistence through `IDbContextFactory`. |
 | `src/CanDoItAll.Economy.Simulator.Components` | BaseLib/SDK-based simulator UI components. |
-| `examples/CanDoItAll.Economy.Simulator.App` | Blazor SSR example app. |
+| `examples/CanDoItAll.Ledger.Simulator.App` | Blazor SSR example app. |
 
 ## Persistence Modes
 
@@ -24,6 +25,8 @@ The SSR app supports both modes through configuration:
 ```
 
 Use `StorageMode = "PostgreSql"` and set `EconomySimulator:PostgreSql:ConnectionString` to use PostgreSQL. In-memory and PostgreSQL paths register both the existing ledger persistence and simulator projection persistence via `AddDbContextFactory`.
+
+Current host note: this setting configures the projection provider adapters, but the run lifecycle does not write through them yet. The project workspace, runs, and generated graphs remain in memory.
 
 ## P0 Settlement Policy
 
@@ -158,9 +161,9 @@ sequenceDiagram
 ## Validation
 
 ```powershell
-dotnet test tests\CanDoItAll.Economy.Tests\CanDoItAll.Economy.Tests.csproj --no-restore -p:UseSharedCompilation=false
-dotnet build CanDoItAll.Economy.slnx --no-restore -p:UseSharedCompilation=false
-dotnet run --project examples\CanDoItAll.Economy.Simulator.App\CanDoItAll.Economy.Simulator.App.csproj --urls http://127.0.0.1:5287
+dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj --no-restore --disable-build-servers --filter FullyQualifiedName~EconomySimulator
+dotnet build examples\CanDoItAll.Ledger.Simulator.App\CanDoItAll.Ledger.Simulator.App.csproj --no-restore --disable-build-servers
+dotnet run --disable-build-servers --project examples\CanDoItAll.Ledger.Simulator.App\CanDoItAll.Ledger.Simulator.App.csproj -- --urls http://127.0.0.1:5287
 ```
 
 Browser validation screenshots are recorded under `output/playwright/economy-simulator-run-console/` during run-console validation.

@@ -109,7 +109,7 @@ public static class EconomySimulatorSampleData
         SimulationProjectExportManifest manifest = importExport.CreateManifest(selectedProject, DateTimeOffset.Parse("2026-05-14T12:00:00Z"));
         SimulationProjectImportPreview importPreview = importExport.PreviewImport(importExport.SerializeManifest(manifest));
 
-        var projects = new[]
+        var projectSummaries = new[]
         {
             selectedProject.Summary,
             new SimulationProjectSummary(
@@ -136,7 +136,23 @@ public static class EconomySimulatorSampleData
                 DateTimeOffset.Parse("2026-05-10T09:15:00Z"))
         };
 
-        return new SimulationProjectManagementViewModel(projects, selectedProject, manifest, importPreview);
+        IReadOnlyList<SimulationProjectState> projectStates = projectSummaries
+            .Select(summary => selectedProject with
+            {
+                Summary = summary,
+                Metadata = new Dictionary<string, string>(selectedProject.Metadata, StringComparer.Ordinal)
+                {
+                    ["projectGroupId"] = "workspace-projects",
+                    ["projectGroupName"] = "Workspace projects",
+                    ["projectGroupOrder"] = "10"
+                }
+            })
+            .ToArray();
+
+        return new SimulationProjectManagementViewModel(projectSummaries, selectedProject, manifest, importPreview)
+        {
+            ProjectStates = projectStates
+        };
     }
 
     public static SimulationRunObservationViewModel CreateRunObservation(string storageMode = "InMemory")
@@ -262,7 +278,20 @@ public static class EconomySimulatorSampleData
         var validation = new SimulationProjectValidationService();
         var importExport = new SimulationProjectImportExportService(serializer, validation);
         var observation = new SimulationRunObservationService(serializer);
-        var lifecycle = new InMemorySimulationRunLifecycleService(validation, importExport, observation, serializer, new SystemTimeProvider());
+        var scenarioCatalog = new EconomyScenarioTemplateCatalog();
+        var scenarioMaterializer = new EconomyScenarioRunMaterializer(
+            scenarioCatalog,
+            new EconomyScenarioEventCompiler(serializer),
+            new EconomyProjectionService(),
+            serializer);
+        var lifecycle = new InMemorySimulationRunLifecycleService(
+            validation,
+            importExport,
+            observation,
+            serializer,
+            new SystemTimeProvider(),
+            scenarioCatalog,
+            scenarioMaterializer);
         IReadOnlyList<SimulationRunConsoleState> runs = lifecycle.EnsureProjectRuns(management.SelectedProject);
         SimulationRunConsoleState selected = string.IsNullOrWhiteSpace(selectedRunId)
             ? runs[0]
@@ -415,7 +444,10 @@ public static class EconomySimulatorSampleData
             validationMessages,
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["layoutProposal"] = "artifacts/economy/simulator/layout-proposals"
+                ["layoutProposal"] = "artifacts/economy/simulator/layout-proposals",
+                ["projectGroupId"] = "workspace-projects",
+                ["projectGroupName"] = "Workspace projects",
+                ["projectGroupOrder"] = "10"
             });
     }
 

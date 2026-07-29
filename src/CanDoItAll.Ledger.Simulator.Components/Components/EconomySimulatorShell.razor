@@ -1,99 +1,63 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 @using System.Globalization
 
-<PageScaffold Mode="PageScaffoldMode.FocusWorkbench" FillHeight="true" MaxWidthClass="max-w-none">
-    <Header>
-        <Split Breakpoint="LayoutBreakpoint.Md"
-               AlignItems="AlignItems.Start"
-               JustifyContent="JustifyContent.SpaceBetween"
-               Gap="LayoutGap.Large"
-               Wrap="FlexWrap.Wrap">
-            <Stack GapScale="LayoutGap.Tiny">
-                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Economy Simulator" />
-                <TextBlock TextStyle="TextStyle.H2" Value="Simulation project management" />
-                <SmallText Text="Create, edit, validate, import, export, and prepare BO-backed simulation projects." />
-            </Stack>
-            <Cluster Gap="LayoutGap.Small">
-                <Button Text="Create project" Icon="add_circle" ButtonStyle="ButtonStyle.Secondary" />
-                <Button Text="Import" Icon="upload_file" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" />
-                <Button Text="Run selected" Icon="play_arrow" Click="@OpenRunDialog" IsBusy="@IsLaunchOverlayVisible" data-testid="simulation-run-selected" />
-            </Cluster>
-        </Split>
-    </Header>
-
+<PageScaffold Mode="PageScaffoldMode.FocusWorkbench"
+              MaxWidthClass="max-w-none"
+              Style="height:auto;min-height:100%;overflow:visible;">
     <ChildContent>
-        <Grid ColumnTemplateLg="minmax(18rem, 22rem) minmax(0, 1fr)"
-              Gap="LayoutGap.Large"
-              AlignItems="AlignItems.Start"
-              data-testid="simulation-project-workbench">
-            <WorkspacePanel Class="min-h-0 overflow-hidden">
-                <Stack FillHeight="true" GapScale="LayoutGap.Medium">
-                    <Split Breakpoint="LayoutBreakpoint.None"
-                           AlignItems="AlignItems.Center"
-                           JustifyContent="JustifyContent.SpaceBetween"
-                           Gap="LayoutGap.Small">
-                        <Stack GapScale="LayoutGap.Tiny">
-                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Projects" />
-                            <TextBlock TextStyle="TextStyle.H4" Value="@FilteredProjects.Count.ToString(CultureInfo.InvariantCulture)" />
-                        </Stack>
-                        <StatusBadge Text="@SelectedProject.Summary.StorageMode.ToString()" Tone="info" />
-                    </Split>
+        <ListDetailShell Dense="true"
+                         ListPaneWidth="17rem"
+                         ListPaneClass="min-h-[30rem]"
+                         DetailPaneClass="min-h-[30rem]"
+                         data-testid="simulation-project-workbench">
+            <ListHeader>
+                <ListPanelHeader Title="Projects"
+                                 Count="@FilteredProjectStates.Count.ToString(CultureInfo.InvariantCulture)"
+                                 HelpText="Projects are grouped by workspace purpose; scenarios sit below their parent project."
+                                 Dense="true" />
+            </ListHeader>
+            <ListContent>
+                <Stack GapScale="LayoutGap.Small">
+                    <TextBox Value="@projectSearch"
+                             ValueChanged="@(value => projectSearch = value ?? string.Empty)"
+                             Immediate="true"
+                             Placeholder="Search projects or scenarios..."
+                             aria-label="Search projects" />
 
-                    <FormField Text="Search projects">
-                        <TextBox Value="@projectSearch"
-                                 ValueChanged="@(value => projectSearch = value ?? string.Empty)"
-                                 Immediate="true"
-                                 Placeholder="Search name or currency..." />
-                    </FormField>
-
-                    <Stack GapScale="LayoutGap.Small"
-                           Class="min-h-0 flex-1 overflow-auto"
-                           data-testid="simulation-project-rail">
-                        @foreach (SimulationProjectSummary project in FilteredProjects)
-                        {
-                            bool selected = string.Equals(project.ProjectId, selectedProjectId, StringComparison.Ordinal);
-                            <SelectionListItem IsSelected="@selected"
-                                               Dense="true"
-                                               Title="@project.DisplayName"
-                                               Meta="@($"{project.BaseCurrencyCode} · {project.StorageMode}")"
-                                               Summary="@($"{FormatDate(project.PlanningStartDate)} - {FormatDate(project.PlanningEndDate)}")"
-                                               DataTestId="@($"simulation-project-row-{project.ProjectId}")"
-                                               OnSelect="@(() => SelectProject(project.ProjectId))">
-                                <Status>
-                                    <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.End">
-                                        <StatusBadge Text="@project.Status.ToString()" Tone="@StatusTone(project.Status)" />
-                                        <SmallText Text="@($"{project.IssueCount} issue(s)")" />
-                                        <SmallText Text="@(project.LastRunAtUtc is null ? "No run" : $"Run {project.LastRunAtUtc.Value:yyyy-MM-dd}")" />
-                                    </Stack>
-                                </Status>
-                            </SelectionListItem>
-                        }
-                    </Stack>
+                    <div class="min-h-0 overflow-y-auto overscroll-contain"
+                         style="max-height:min(38rem,72svh);scrollbar-gutter:stable;"
+                         data-testid="simulation-project-rail">
+                        <SimulationProjectTree Projects="FilteredProjectStates"
+                                               SelectedProjectId="@selectedProjectId"
+                                               SelectedProjectIdChanged="SelectProject"
+                                               SelectedSetupId="@selectedSetupId"
+                                               SelectedSetupIdChanged="SelectSetup" />
+                    </div>
                 </Stack>
-            </WorkspacePanel>
-
-            <WorkspacePanel Class="min-h-0 overflow-hidden">
-                <Stack FillHeight="true" GapScale="LayoutGap.Large">
-                    <Split Breakpoint="LayoutBreakpoint.Lg"
-                           AlignItems="AlignItems.Start"
-                           JustifyContent="JustifyContent.SpaceBetween"
-                           Gap="LayoutGap.Large"
-                           Wrap="FlexWrap.Wrap">
-                        <Stack GapScale="LayoutGap.Tiny">
-                            <Cluster Gap="LayoutGap.Small">
-                                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Simulation project" />
-                                <StatusBadge Text="@SelectedProject.Summary.Status.ToString()" Tone="@StatusTone(SelectedProject.Summary.Status)" />
-                            </Cluster>
-                            <TextBlock TextStyle="TextStyle.H2" Value="@SelectedProject.Summary.DisplayName" />
-                            <SmallText Text="@($"{SelectedProject.Summary.BaseCurrencyCode} | {FormatDate(SelectedProject.Summary.PlanningStartDate)} - {FormatDate(SelectedProject.Summary.PlanningEndDate)} | Updated {SelectedProject.Summary.UpdatedAtUtc:yyyy-MM-dd HH:mm} UTC")" />
-                        </Stack>
+            </ListContent>
+            <DetailHeader>
+                <Split Breakpoint="LayoutBreakpoint.Md"
+                       AlignItems="AlignItems.Center"
+                       JustifyContent="JustifyContent.SpaceBetween"
+                       Gap="LayoutGap.Medium"
+                       Wrap="FlexWrap.Wrap">
+                    <Stack GapScale="LayoutGap.Tiny">
                         <Cluster Gap="LayoutGap.Small">
-                            <StatusBadge Text="@($"{SelectedProject.ValidationMessages.Count} validation note(s)")" Tone="@ValidationTone" />
-                            <Button Text="Validate" Icon="rule" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" />
-                            <Button Text="Export" Icon="download" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" />
-                            <Button Text="Run" Icon="play_arrow" Click="@OpenRunDialog" IsBusy="@IsLaunchOverlayVisible" data-testid="simulation-project-run" />
+                            <div data-testid="simulation-selected-project-name">
+                                <TextBlock TextStyle="TextStyle.H3" Value="@SelectedProject.Summary.DisplayName" />
+                            </div>
+                            <StatusBadge Text="@SelectedProject.Summary.Status.ToString()" Tone="@StatusTone(SelectedProject.Summary.Status)" />
                         </Cluster>
-                    </Split>
+                        <SmallText Text="@($"{SelectedProject.Summary.BaseCurrencyCode} · {FormatDate(SelectedProject.Summary.PlanningStartDate)}–{FormatDate(SelectedProject.Summary.PlanningEndDate)} · {SelectedProject.Summary.StorageMode}")" />
+                    </Stack>
+                    <Cluster Gap="LayoutGap.Small">
+                        <StatusBadge Text="@(SelectedProject.ValidationMessages.Count == 0 ? "Validated" : $"{SelectedProject.ValidationMessages.Count} note(s)")" Tone="@ValidationTone" />
+                        <Button Text="Run" Icon="play_arrow" Size="ButtonSize.Small" Click="@OpenRunDialog" IsBusy="@IsLaunchOverlayVisible" data-testid="simulation-project-run" />
+                    </Cluster>
+                </Split>
+            </DetailHeader>
+            <DetailContent>
+                <Stack GapScale="LayoutGap.Medium">
 
                     @if (LaunchMessages.Count > 0)
                     {
@@ -101,39 +65,67 @@
                     }
 
                     <Tabs AriaLabel="Selected simulation project workspace"
+                          Variant="TabsVariant.WorkspaceTertiary"
                           RenderMode="TabRenderMode.Client"
-                          OverflowMode="TabsOverflowMode.Wrap"
-                          PanelOverflowMode="TabsPanelOverflowMode.Auto"
-                          FillHeight="true"
+                          SelectedIndex="@selectedProjectTabIndex"
+                          SelectedIndexChanged="@OnProjectTabChanged"
+                          OverflowMode="TabsOverflowMode.Scroll"
+                          PanelOverflowMode="TabsPanelOverflowMode.Visible"
                           data-testid="simulation-project-tabs">
-                        <TabsItem Text="Basic info" Icon="info">
-                            <SimulationProjectBasicInfoPanel Project="SelectedProject" />
+                        <TabsItem Text="Overview" Icon="info">
+                            @if (IsProjectTabVisited(0))
+                            {
+                                <SimulationProjectBasicInfoPanel Project="SelectedProject" />
+                            }
                         </TabsItem>
-                        <TabsItem Text="BUs and accounts" Icon="account_tree">
-                            <BusinessUnitTree Project="SelectedProject" />
+                        <TabsItem Text="Units" Icon="account_tree">
+                            @if (IsProjectTabVisited(1))
+                            {
+                                <BusinessUnitTree Project="SelectedProject" />
+                            }
                         </TabsItem>
-                        <TabsItem Text="BOs and rules" Icon="rule_folder">
-                            <SimulationBoRuleDesigner Project="SelectedProject" />
+                        <TabsItem Text="Objects" Icon="rule_folder">
+                            @if (IsProjectTabVisited(2))
+                            {
+                                <SimulationBoRuleDesigner Project="SelectedProject" />
+                            }
                         </TabsItem>
-                        <TabsItem Text="Financial inputs" Icon="payments">
-                            <SimulationFinancialInputsPanel Project="SelectedProject" />
+                        <TabsItem Text="Inputs" Icon="payments">
+                            @if (IsProjectTabVisited(3))
+                            {
+                                <SimulationFinancialInputsPanel Project="SelectedProject" />
+                            }
                         </TabsItem>
-                        <TabsItem Text="Planned expenses" Icon="event_note" data-testid="simulation-planned-financial-schedules-tab-button">
-                            <PlannedFinancialSchedulePanel Project="SelectedProject" />
+                        <TabsItem Text="Schedules" Icon="event_note" data-testid="simulation-planned-financial-schedules-tab-button">
+                            @if (IsProjectTabVisited(4))
+                            {
+                                <PlannedFinancialSchedulePanel Project="SelectedProject" />
+                            }
                         </TabsItem>
-                        <TabsItem Text="Simulation setup" Icon="tune">
-                            <SimulationSetupPanel Project="SelectedProject"
-                                                  RunRequested="RunRequested" />
+                        <TabsItem Text="Run setup" Icon="tune">
+                            @if (IsProjectTabVisited(5))
+                            {
+                                <SimulationSetupPanel Project="SelectedProject"
+                                                      ImportExportService="ImportExportService"
+                                                      SelectedSetupId="@selectedSetupId"
+                                                      SelectedSetupIdChanged="SelectSetup"
+                                                      RunRequested="RunRequested" />
+                            }
                         </TabsItem>
-                        <TabsItem Text="Export/import" Icon="sync_alt">
-                            <SimulationProjectImportExportPanel Project="SelectedProject"
-                                                                Manifest="Model.ExportManifest"
-                                                                ImportPreview="Model.ImportPreview" />
+                        <TabsItem Text="Transfer" Icon="sync_alt">
+                            @if (IsProjectTabVisited(6))
+                            {
+                                <SimulationProjectImportExportPanel Project="SelectedProject"
+                                                                    ImportExportService="ImportExportService"
+                                                                    Manifest="Model.ExportManifest"
+                                                                    ImportPreview="Model.ImportPreview"
+                                                                    ProjectImported="OnProjectImportedAsync" />
+                            }
                         </TabsItem>
                     </Tabs>
                 </Stack>
-            </WorkspacePanel>
-        </Grid>
+            </DetailContent>
+        </ListDetailShell>
     </ChildContent>
 </PageScaffold>
 
@@ -146,50 +138,32 @@
         OnClose="@CloseRunDialog">
     <ChildContent>
         <Stack GapScale="LayoutGap.Medium">
-            <Grid ColumnsMd="2" Gap="LayoutGap.Medium" role="group" aria-label="Run mode">
-                <Button Look="ButtonLook.SheetCardGhost"
-                        Class="h-full w-full items-start justify-start text-left"
-                        Style="@ChoiceCardStyle(pendingRunMode == SimulationRunMode.Automatic)"
+            <Cluster Gap="LayoutGap.Small" role="group" aria-label="Run mode">
+                <Button Text="Full horizon"
+                        Icon="fast_forward"
+                        ButtonStyle="@(pendingRunMode == SimulationRunMode.Automatic ? ButtonStyle.Info : ButtonStyle.Secondary)"
+                        Variant="@(pendingRunMode == SimulationRunMode.Automatic ? Variant.Filled : Variant.Outlined)"
+                        Size="ButtonSize.Small"
                         aria-pressed="@(pendingRunMode == SimulationRunMode.Automatic ? "true" : "false")"
                         data-testid="simulation-start-automatic"
-                        Click="@(() => pendingRunMode = SimulationRunMode.Automatic)">
-                    <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.Stretch" Class="w-full">
-                        <Cluster JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Small">
-                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="Run full horizon" />
-                            <Pill Tone="PillTone.Label" Text="Automatic" />
-                        </Cluster>
-                        <TextBlock TextStyle="TextStyle.Body2" Value="Run all configured steps to the preset horizon." />
-                    </Stack>
-                </Button>
-                <Button Look="ButtonLook.SheetCardGhost"
-                        Class="h-full w-full items-start justify-start text-left"
-                        Style="@ChoiceCardStyle(pendingRunMode == SimulationRunMode.Manual)"
+                        Click="@(() => pendingRunMode = SimulationRunMode.Automatic)" />
+                <Button Text="Manual steps"
+                        Icon="step_over"
+                        ButtonStyle="@(pendingRunMode == SimulationRunMode.Manual ? ButtonStyle.Info : ButtonStyle.Secondary)"
+                        Variant="@(pendingRunMode == SimulationRunMode.Manual ? Variant.Filled : Variant.Outlined)"
+                        Size="ButtonSize.Small"
                         aria-pressed="@(pendingRunMode == SimulationRunMode.Manual ? "true" : "false")"
                         data-testid="simulation-start-manual"
-                        Click="@(() => pendingRunMode = SimulationRunMode.Manual)">
-                    <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.Stretch" Class="w-full">
-                        <Cluster JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Small">
-                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="Manual stepping" />
-                            <Pill Tone="PillTone.Label" Text="Manual" />
-                        </Cluster>
-                        <TextBlock TextStyle="TextStyle.Body2" Value="Open the run page at step 1 and wait for next-step input." />
-                    </Stack>
-                </Button>
-            </Grid>
+                        Click="@(() => pendingRunMode = SimulationRunMode.Manual)" />
+            </Cluster>
 
-            <TimelineStepper CurrentStep="1"
-                             TotalSteps="@PendingSetupStepCount"
-                             AvailableStep="1"
-                             Mode="@PendingTimelineMode"
-                             ShowModeToggle="false"
-                             StepLabel="@PendingSetupPeriodLabel"
-                             CurrentLabel="@PendingSetupStartLabel"
-                             StatusText="@PendingModeStatusText"
-                             StatusTone="info"
-                             CanStepBack="false"
-                             CanStepForward="false"
-                             ShowPlayPause="false"
-                             Ticks="@PendingSetupTicks" />
+            <CompactStatStrip>
+                <CompactStat Label="Setup" Value="@(PendingSetup?.ScenarioName ?? "Default")" />
+                <CompactStat Label="Cadence" Value="@(PendingSetup?.StepPeriod.ToString() ?? "Project")" />
+                <CompactStat Label="Steps" Value="@PendingSetupStepCount.ToString(CultureInfo.InvariantCulture)" />
+                <CompactStat Label="Starts" Value="@PendingSetupStartLabel" />
+                <CompactStat Label="Mode" Value="@PendingModeStatusText" Tone="info" />
+            </CompactStatStrip>
         </Stack>
     </ChildContent>
     <Footer>
@@ -213,14 +187,22 @@
 </Dialog>
 
 @code {
+    private const int ProjectTabCount = 7;
+
     private string selectedProjectId = string.Empty;
+    private string? selectedSetupId;
+    private readonly HashSet<int> visitedProjectTabIndices = [0];
+    private int selectedProjectTabIndex;
     private string projectSearch = string.Empty;
     private bool isRunDialogOpen;
     private bool isSubmittingRun;
-    private SimulationRunMode pendingRunMode = SimulationRunMode.Manual;
+    private SimulationRunMode pendingRunMode = SimulationRunMode.Automatic;
 
     [Parameter]
     public SimulationProjectManagementViewModel? ViewModel { get; set; }
+
+    [Parameter, EditorRequired]
+    public ISimulationProjectImportExportService ImportExportService { get; set; } = default!;
 
     [Parameter]
     public EventCallback<SimulationProjectRunRequest> RunRequested { get; set; }
@@ -231,33 +213,43 @@
     [Parameter]
     public IReadOnlyList<SimulationProjectValidationMessage> LaunchMessages { get; set; } = [];
 
+    [Parameter]
+    public EventCallback<SimulationProjectState> ProjectImported { get; set; }
+
     private SimulationProjectManagementViewModel Model => ViewModel ?? EconomySimulatorSampleData.CreateProjectManagement();
 
     private SimulationProjectState SelectedProject
-    {
-        get
-        {
-            SimulationProjectSummary summary = Model.Projects.FirstOrDefault(project => string.Equals(project.ProjectId, selectedProjectId, StringComparison.Ordinal))
-                ?? Model.SelectedProject.Summary;
-            return string.Equals(summary.ProjectId, Model.SelectedProject.Summary.ProjectId, StringComparison.Ordinal)
-                ? Model.SelectedProject
-                : Model.SelectedProject with { Summary = summary };
-        }
-    }
+        => AvailableProjectStates.FirstOrDefault(project => string.Equals(project.Summary.ProjectId, selectedProjectId, StringComparison.Ordinal))
+            ?? Model.SelectedProject;
 
-    private IReadOnlyList<SimulationProjectSummary> FilteredProjects
+    private SimulationRunSetupState? SelectedSetup
+        => SelectedProject.RunSetups.FirstOrDefault(setup => string.Equals(setup.SetupId, selectedSetupId, StringComparison.Ordinal))
+            ?? SelectedProject.RunSetups.FirstOrDefault();
+
+    private IReadOnlyList<SimulationProjectState> AvailableProjectStates
+        => Model.ProjectStates.Count > 0
+            ? Model.ProjectStates
+            : Model.Projects
+                .Select(summary => string.Equals(summary.ProjectId, Model.SelectedProject.Summary.ProjectId, StringComparison.Ordinal)
+                    ? Model.SelectedProject
+                    : Model.SelectedProject with { Summary = summary })
+                .ToArray();
+
+    private IReadOnlyList<SimulationProjectState> FilteredProjectStates
     {
         get
         {
             if (string.IsNullOrWhiteSpace(projectSearch))
             {
-                return Model.Projects;
+                return AvailableProjectStates;
             }
 
-            return Model.Projects
-                .Where(project => project.DisplayName.Contains(projectSearch, StringComparison.OrdinalIgnoreCase)
-                    || project.ProjectId.Contains(projectSearch, StringComparison.OrdinalIgnoreCase)
-                    || project.BaseCurrencyCode.Contains(projectSearch, StringComparison.OrdinalIgnoreCase))
+            return AvailableProjectStates
+                .Where(project => project.Summary.DisplayName.Contains(projectSearch, StringComparison.OrdinalIgnoreCase)
+                    || project.Summary.ProjectId.Contains(projectSearch, StringComparison.OrdinalIgnoreCase)
+                    || project.Summary.BaseCurrencyCode.Contains(projectSearch, StringComparison.OrdinalIgnoreCase)
+                    || project.RunSetups.Any(setup => setup.ScenarioName.Contains(projectSearch, StringComparison.OrdinalIgnoreCase))
+                    || project.Metadata.Values.Any(value => value.Contains(projectSearch, StringComparison.OrdinalIgnoreCase)))
                 .ToArray();
         }
     }
@@ -272,20 +264,57 @@
 
     protected override void OnParametersSet()
     {
-        if (string.IsNullOrWhiteSpace(selectedProjectId))
+        if (string.IsNullOrWhiteSpace(selectedProjectId)
+            || AvailableProjectStates.All(project => !string.Equals(project.Summary.ProjectId, selectedProjectId, StringComparison.Ordinal)))
         {
             selectedProjectId = Model.SelectedProject.Summary.ProjectId;
+        }
+
+        if (SelectedProject.RunSetups.All(setup => !string.Equals(setup.SetupId, selectedSetupId, StringComparison.Ordinal)))
+        {
+            selectedSetupId = SelectedProject.RunSetups.FirstOrDefault()?.SetupId;
         }
     }
 
     private void SelectProject(string projectId)
     {
         selectedProjectId = projectId;
+        SimulationProjectState? project = AvailableProjectStates.FirstOrDefault(candidate => string.Equals(candidate.Summary.ProjectId, projectId, StringComparison.Ordinal));
+        if (project is not null && project.RunSetups.All(setup => !string.Equals(setup.SetupId, selectedSetupId, StringComparison.Ordinal)))
+        {
+            selectedSetupId = project.RunSetups.FirstOrDefault()?.SetupId;
+        }
     }
+
+    private async Task OnProjectImportedAsync(SimulationProjectState project)
+    {
+        selectedProjectId = project.Summary.ProjectId;
+        selectedSetupId = project.RunSetups.FirstOrDefault()?.SetupId;
+        await ProjectImported.InvokeAsync(project);
+    }
+
+    private void SelectSetup(string? setupId)
+    {
+        selectedSetupId = SelectedProject.RunSetups.Any(setup => string.Equals(setup.SetupId, setupId, StringComparison.Ordinal))
+            ? setupId
+            : SelectedProject.RunSetups.FirstOrDefault()?.SetupId;
+        selectedProjectTabIndex = 5;
+        visitedProjectTabIndices.Add(selectedProjectTabIndex);
+    }
+
+    private Task OnProjectTabChanged(int index)
+    {
+        selectedProjectTabIndex = Math.Clamp(index, 0, ProjectTabCount - 1);
+        visitedProjectTabIndices.Add(selectedProjectTabIndex);
+        return Task.CompletedTask;
+    }
+
+    private bool IsProjectTabVisited(int index)
+        => visitedProjectTabIndices.Contains(index);
 
     private void OpenRunDialog()
     {
-        pendingRunMode = SimulationRunMode.Manual;
+        pendingRunMode = SimulationRunMode.Automatic;
         isRunDialogOpen = true;
     }
 
@@ -302,7 +331,7 @@
             return;
         }
 
-        string? setupId = SelectedProject.RunSetups.FirstOrDefault()?.SetupId;
+        string? setupId = SelectedSetup?.SetupId;
         isRunDialogOpen = false;
         isSubmittingRun = true;
         try
@@ -315,7 +344,7 @@
         }
     }
 
-    private SimulationRunSetupState? PendingSetup => SelectedProject.RunSetups.FirstOrDefault();
+    private SimulationRunSetupState? PendingSetup => SelectedSetup;
 
     private int PendingSetupStepCount => Math.Max(1, PendingSetup?.StepCount ?? 1);
 

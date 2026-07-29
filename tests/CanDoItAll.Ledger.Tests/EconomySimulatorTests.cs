@@ -389,6 +389,7 @@ public sealed class EconomySimulatorTests
             ValidateScopes = true
         });
 
+        Assert.NotNull(provider.GetRequiredService<ISimulationScenarioRunMaterializer>());
         Assert.NotNull(provider.GetRequiredService<ISimulationRunLifecycleService>());
     }
 

@@ -1,16 +1,15 @@
 @namespace CanDoItAll.Economy.Simulator.Components.Components
 @using System.Globalization
 
-<Stack GapScale="LayoutGap.Large" data-testid="simulation-period-summary-panel">
+<Stack GapScale="LayoutGap.Medium" data-testid="simulation-period-summary-panel">
     <Split Breakpoint="LayoutBreakpoint.Lg"
            AlignItems="AlignItems.Start"
            JustifyContent="JustifyContent.SpaceBetween"
            Gap="LayoutGap.Medium"
            Wrap="FlexWrap.Wrap">
         <Stack GapScale="LayoutGap.Tiny">
-            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Management summary" />
-            <TextBlock TextStyle="TextStyle.H3" Value="@($"{GranularityLabel} view")" />
-            <SmallText Text="@($"{FormatDate(Summary.PeriodStart)} to {FormatDate(Summary.PeriodEnd)}")" />
+            <TextBlock TextStyle="TextStyle.H4" Value="@($"{GranularityLabel} management summary")" />
+            <SmallText Text="@($"{FormatDate(Summary.PeriodStart)}–{FormatDate(Summary.PeriodEnd)} · {Summary.CurrencyCode}")" />
         </Stack>
         <Cluster Gap="LayoutGap.Small">
             <Button Text="Quarter"
@@ -28,13 +27,13 @@
         </Cluster>
     </Split>
 
-    <SummaryTiles ColumnsSm="2" ColumnsMd="3" ColumnsXl="6">
-        <SummaryTile Label="Cash flow" Value="@Money(Summary.TotalCashFlow)" HelperText="@($"{Summary.Periods.Count} period(s)")" Tone="info" />
-        <SummaryTile Label="Income" Value="@Money(Summary.TotalIncome)" HelperText="@($"{Summary.IncomeDistribution.Count} category(s)")" Tone="success" />
-        <SummaryTile Label="Expenses" Value="@Money(Summary.TotalExpenses)" HelperText="@($"{Summary.ExpenseDistribution.Count} category(s)")" Tone="warning" />
-        <SummaryTile Label="Profit" Value="@Money(Summary.TotalProfit)" HelperText="@ProfitTone" Tone="@ProfitStatusTone" />
-        <SummaryTile Label="Own capital" Value="@Money(Summary.EndingOwnCapital)" HelperText="Ending cash funded" Tone="secondary" />
-        <SummaryTile Label="External capital" Value="@Money(Summary.EndingExternalCapital)" HelperText="@($"Floor {Money(Summary.MinimumCashFloor)}")" />
+    <SummaryTiles ColumnsSm="2" ColumnsMd="3" ColumnsXl="6" GapScale="LayoutGap.Small">
+        <SummaryTile Label="Cash flow" Value="@Money(Summary.TotalCashFlow)" HelperText="@($"{Summary.Periods.Count} period(s)")" Tone="info" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="Income" Value="@Money(Summary.TotalIncome)" HelperText="@($"{Summary.IncomeDistribution.Count} category(s)")" Tone="success" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="Expenses" Value="@Money(Summary.TotalExpenses)" HelperText="@($"{Summary.ExpenseDistribution.Count} category(s)")" Tone="warning" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="Profit" Value="@Money(Summary.TotalProfit)" HelperText="@ProfitTone" Tone="@ProfitStatusTone" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="Own capital" Value="@Money(Summary.EndingOwnCapital)" HelperText="Ending cash funded" Tone="secondary" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="External capital" Value="@Money(Summary.EndingExternalCapital)" HelperText="@($"Floor {Money(Summary.MinimumCashFloor)}")" Compact="true" ShowHelperTextAsTooltip="true" />
     </SummaryTiles>
 
     <CdaChart Title="@($"{GranularityLabel} CFO trend")"
@@ -42,11 +41,11 @@
               AriaLabel="@($"{GranularityLabel} cash flow, income, expenses, profit, own capital, and external capital trend")"
               Series="@TrendChartSeries"
               Options="@TrendChartOptions"
-              Height="320"
+              Height="250"
               EmptyText="Run the simulation to build period summary rows."
               data-testid="simulation-period-summary-trend" />
 
-    <Grid ColumnsLg="2" Gap="LayoutGap.Large">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
         @DistributionChart("Income distribution", Summary.TotalIncome, Summary.IncomeDistribution, "simulation-period-summary-income")
         @DistributionChart("Expense distribution", Summary.TotalExpenses, Summary.ExpenseDistribution, "simulation-period-summary-expense")
     </Grid>
@@ -164,7 +163,7 @@
                        AriaLabel="@($"{title} in {Summary.CurrencyCode}")"
                        Series="@DistributionSeries(slices)"
                        Options="@DistributionChartOptions"
-                       Height="320"
+                       Height="220"
                        EmptyText="This run has no values in the selected period."
                        data-testid="@testId" />;
 
