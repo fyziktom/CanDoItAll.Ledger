@@ -1,0 +1,27 @@
+.cda-bo-selected-preview {
+    height: clamp(16rem, 32vw, 29rem);
+    min-width: 0;
+}
+
+.cda-bo-selected-preview ::deep .cda-bo-preview-stage {
+    height: 100%;
+}
+
+::deep .cda-bo-long-description-text {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+@media (min-width: 64rem) {
+    .cda-bo-overview-media {
+        align-self: start;
+        position: sticky;
+        top: 0;
+    }
+}
+
+@media (max-width: 64rem) {
+    .cda-bo-selected-preview {
+        height: clamp(16rem, 52vw, 26rem);
+    }
+}

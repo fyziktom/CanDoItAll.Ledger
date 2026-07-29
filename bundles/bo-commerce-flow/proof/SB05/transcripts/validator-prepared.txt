@@ -1,3 +1,0 @@
-Command: proof capture: validator-prepared.txt
-﻿Bundle is valid for stage 'prepared': C:\repositories\CanDoItAll.Ledger\bundles\bo-commerce-flow
-ExitCode: 0

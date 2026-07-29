@@ -7,14 +7,18 @@
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="_content/CanDoItAll.Components.BaseLib/css/material-icons.css" />
     <link rel="stylesheet" href="_content/CanDoItAll.Components.BaseLib/css/output.css" />
-    <link rel="stylesheet" href="_content/CanDoItAll.Economy.Simulator.Components/css/economy-simulator.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="CanDoItAll.Ledger.Simulator.App.styles.css" />
     <ChartsHeadAssets />
     <HeadOutlet />
 </head>
 <body>
-    <Routes @rendermode="InteractiveServer" />
-    <DialogHost @rendermode="InteractiveServer" />
-    <Notification Position="NotificationPosition.BottomCenter" @rendermode="InteractiveServer" />
+    <ThemeHost>
+        <Routes @rendermode="InteractiveServer" />
+        <DialogHost @rendermode="InteractiveServer" />
+        <Notification Position="NotificationPosition.BottomCenter" @rendermode="InteractiveServer" />
+        <Tooltip @rendermode="InteractiveServer" />
+    </ThemeHost>
     <script src="_framework/blazor.web.js"></script>
 </body>
 </html>

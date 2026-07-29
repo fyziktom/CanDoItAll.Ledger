@@ -1,126 +1,114 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
-<div class="cda-sim-split-grid" data-testid="simulation-financial-inputs-tab">
-    <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
-        <Stack FillHeight="true" GapScale="LayoutGap.Medium">
-            <Split Breakpoint="LayoutBreakpoint.None"
-                   AlignItems="AlignItems.Center"
-                   JustifyContent="JustifyContent.SpaceBetween"
-                   Gap="LayoutGap.Small">
-                <Stack GapScale="LayoutGap.Tiny">
-                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Financial profiles" />
-                    <TextBlock TextStyle="TextStyle.H4" Value="@Project.FinancialInputProfiles.Count.ToString(CultureInfo.InvariantCulture)" />
-                </Stack>
-                <Button Text="Add input" Icon="add" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" />
-            </Split>
-
-            @foreach (SimulationFinancialInputProfileState profile in Project.FinancialInputProfiles)
-            {
-                <SectionCard Title="@profile.DisplayName" Description="@($"{profile.Inputs.Count} typed assumption(s)")">
-                    <Stack GapScale="LayoutGap.Small">
-                        @foreach (SimulationFinancialInputState input in profile.Inputs.OrderBy(x => x.Kind).ThenBy(x => x.DisplayName, StringComparer.Ordinal))
-                        {
-                            bool selected = string.Equals(input.InputId, SelectedInputId, StringComparison.Ordinal);
-                            <button type="button"
-                                    class="@ResolveInputButtonClass(selected)"
-                                    data-testid="@($"simulation-financial-input-{input.InputId}")"
-                                    @onclick="@(() => SelectInput(input.InputId))">
-                                <span class="flex min-w-0 flex-col items-start gap-1 text-left">
-                                    <span class="max-w-full truncate text-sm font-semibold text-slate-950">@input.DisplayName</span>
-                                    <span class="max-w-full truncate text-xs text-slate-500">@input.Kind</span>
-                                </span>
-                                <span class="text-right text-xs font-semibold text-slate-700">@FormatInputValue(input)</span>
-                            </button>
-                        }
-                    </Stack>
-                </SectionCard>
-            }
-        </Stack>
-    </WorkspacePanel>
-
-    <WorkspacePanel Class="min-h-0 overflow-auto">
+<ListDetailShell Dense="true"
+                 ListPaneWidth="19rem"
+                 ListPaneClass="min-h-[26rem]"
+                 DetailPaneClass="min-h-[26rem]"
+                 data-testid="simulation-financial-inputs-tab">
+    <ListHeader>
+        <ListPanelHeader Title="Financial inputs"
+                         Count="@Inputs.Count.ToString(CultureInfo.InvariantCulture)"
+                         HelpText="Typed assumptions are grouped by profile. Their project dates and business-unit scope are inherited unless overridden."
+                         Dense="true" />
+    </ListHeader>
+    <ListContent>
+        @if (Inputs.Count == 0)
+        {
+            <Alert AlertStyle="AlertStyle.Info">
+                <strong>No financial inputs</strong>
+                <span>Import or configure a profile before starting a run.</span>
+            </Alert>
+        }
+        else
+        {
+            <div class="max-h-[34rem] min-h-0 w-full min-w-0 overflow-y-auto pr-1">
+                <TreeView Items="InputNodes"
+                          Style="TreeViewStyle.Workbench"
+                          AriaLabel="Financial input profiles"
+                          OnSelect="SelectInputNode"
+                          OnToggle="ToggleInputProfile" />
+            </div>
+        }
+    </ListContent>
+    <DetailHeader>
         @if (SelectedInput is not null)
         {
-            <Stack GapScale="LayoutGap.Large" data-testid="simulation-selected-financial-input-detail">
-                <Split Breakpoint="LayoutBreakpoint.Md"
-                       AlignItems="AlignItems.Start"
-                       JustifyContent="JustifyContent.SpaceBetween"
-                       Gap="LayoutGap.Medium"
-                       Wrap="FlexWrap.Wrap">
-                    <Stack GapScale="LayoutGap.Tiny">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="@SelectedInput.Kind.ToString()" />
-                        <TextBlock TextStyle="TextStyle.H3" Value="@SelectedInput.DisplayName" />
-                        <SmallText Text="@SelectedInput.InputId" />
+            <Split Breakpoint="LayoutBreakpoint.Md"
+                   AlignItems="AlignItems.Center"
+                   JustifyContent="JustifyContent.SpaceBetween"
+                   Gap="LayoutGap.Medium"
+                   Wrap="FlexWrap.Wrap">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <TextBlock TextStyle="TextStyle.H4" Value="@SelectedInput.DisplayName" />
+                    <SmallText Text="@SelectedInput.InputId" />
+                </Stack>
+                <Cluster Gap="LayoutGap.Small">
+                    <StatusBadge Text="@SelectedInput.Kind.ToString()" Tone="muted" />
+                    <StatusBadge Text="@SelectedInput.Unit.ToString()" Tone="info" />
+                    <StatusBadge Text="@(InputValidationMessages.Count == 0 ? "Validated" : $"{InputValidationMessages.Count} note(s)")"
+                                 Tone="@(InputValidationMessages.Count == 0 ? "success" : "warning")" />
+                </Cluster>
+            </Split>
+        }
+    </DetailHeader>
+    <DetailContent>
+        @if (SelectedInput is not null)
+        {
+            <Stack GapScale="LayoutGap.Medium" data-testid="simulation-selected-financial-input-detail">
+                <CompactStatStrip>
+                    <CompactStat Label="Value"
+                                 Value="@FormatInputValue(SelectedInput)"
+                                 HelperText="@SelectedInput.UnitCode"
+                                 Position="TooltipPosition.Right"
+                                 Tone="info" />
+                    <CompactStat Label="Business unit"
+                                 Value="@BusinessUnitName(SelectedInput.BusinessUnitId)"
+                                 HelperText="The project owns assumptions without a BU override."
+                                 Position="TooltipPosition.Right" />
+                    <CompactStat Label="Valid from"
+                                 Value="@(SelectedInput.ValidFrom?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "Project start")"
+                                 HelperText="Inherited project start when no override is stored."
+                                 Position="TooltipPosition.Right" />
+                    <CompactStat Label="Valid to"
+                                 Value="@(SelectedInput.ValidTo?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "Project end")"
+                                 HelperText="Inherited project end when no override is stored."
+                                 Position="TooltipPosition.Right" />
+                    <CompactStat Label="Source"
+                                 Value="@(SelectedInput.Source ?? "Manual")"
+                                 HelperText="Provenance included in the deterministic setup."
+                                 Position="TooltipPosition.Right" />
+                </CompactStatStrip>
+
+                <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-labelledby="assumption-contract-title">
+                    <Stack GapScale="LayoutGap.Small">
+                        <TextBlock TextStyle="TextStyle.Subtitle1" Value="Assumption contract" id="assumption-contract-title" />
+                        <dl class="grid min-w-0 grid-cols-1 gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+                            @Fact("Input id", SelectedInput.InputId)
+                            @Fact("Kind", SelectedInput.Kind.ToString())
+                            @Fact("Unit", SelectedInput.Unit.ToString())
+                            @Fact("Unit code", string.IsNullOrWhiteSpace(SelectedInput.UnitCode) ? "Not set" : SelectedInput.UnitCode)
+                        </dl>
                     </Stack>
-                    <Cluster Gap="LayoutGap.Small">
-                        <StatusBadge Text="@SelectedInput.Unit.ToString()" Tone="info" />
-                        <Button Text="Edit" Icon="edit" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
-                        <Button Text="Validate" Icon="rule" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
-                    </Cluster>
-                </Split>
-
-                <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
-                    <SectionCard Title="Current value" Description="@SelectedInput.UnitCode">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@FormatInputValue(SelectedInput)" />
-                    </SectionCard>
-                    <SectionCard Title="Business unit" Description="Scoped assumption owner.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@BusinessUnitName(SelectedInput.BusinessUnitId)" />
-                    </SectionCard>
-                    <SectionCard Title="Valid from" Description="Inclusive date.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@(SelectedInput.ValidFrom?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "project start")" />
-                    </SectionCard>
-                    <SectionCard Title="Valid to" Description="Inclusive date.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@(SelectedInput.ValidTo?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "project end")" />
-                    </SectionCard>
-                </Grid>
-
-                <FormSection Title="Assumption definition" Description="Typed simulator assumption stored in the project manifest and consumed by deterministic run setup hashes.">
-                    <FormRow Split="true">
-                        <FormField Text="Input id">
-                            <TextBox Value="@SelectedInput.InputId" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Kind">
-                            <TextBox Value="@SelectedInput.Kind.ToString()" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Unit">
-                            <TextBox Value="@SelectedInput.Unit.ToString()" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Source">
-                            <TextBox Value="@(SelectedInput.Source ?? "not set")" ReadOnly="true" />
-                        </FormField>
-                    </FormRow>
-                </FormSection>
-
-                <FormSection Title="Profile inputs" Description="Tax rates, inflation, acquisition, collection timing, supplier terms, wages, and custom drivers roundtrip together.">
-                    <DataGrid TItem="SimulationFinancialInputState" Data="SelectedProfileInputs">
-                        <DataGridColumn TItem="SimulationFinancialInputState" Property="DisplayName" Title="Input" />
-                        <DataGridColumn TItem="SimulationFinancialInputState" Title="Kind">
-                            <Template Context="input">
-                                <StatusBadge Text="@input.Kind.ToString()" Tone="info" />
-                            </Template>
-                        </DataGridColumn>
-                        <DataGridColumn TItem="SimulationFinancialInputState" Title="Value">
-                            <Template Context="input">
-                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@FormatInputValue(input)" />
-                            </Template>
-                        </DataGridColumn>
-                        <DataGridColumn TItem="SimulationFinancialInputState" Title="BU">
-                            <Template Context="input">
-                                <SmallText Text="@BusinessUnitName(input.BusinessUnitId)" />
-                            </Template>
-                        </DataGridColumn>
-                    </DataGrid>
-                </FormSection>
+                </section>
 
                 <ValidationList Messages="InputValidationMessages" />
             </Stack>
         }
-    </WorkspacePanel>
-</div>
+        else
+        {
+            <Alert AlertStyle="AlertStyle.Info">
+                <strong>Select an input</strong>
+                <span>Choose a typed assumption from the profile list.</span>
+            </Alert>
+        }
+    </DetailContent>
+</ListDetailShell>
 
 @code {
+    private readonly HashSet<string> expandedProfileIds = new(StringComparer.Ordinal);
     private string? selectedInputId;
+    private string renderedProjectId = string.Empty;
 
     [Parameter, EditorRequired]
     public SimulationProjectState Project { get; set; } = default!;
@@ -131,13 +119,36 @@
         .ThenBy(input => input.DisplayName, StringComparer.Ordinal)
         .ToArray();
 
+    private IReadOnlyList<TreeViewNode> InputNodes => Project.FinancialInputProfiles
+        .OrderBy(profile => profile.DisplayName, StringComparer.Ordinal)
+        .Select(profile => new TreeViewNode
+        {
+            Id = $"profile:{profile.ProfileId}",
+            Text = profile.DisplayName,
+            Icon = "folder",
+            BadgeText = profile.Inputs.Count.ToString(CultureInfo.InvariantCulture),
+            Tooltip = $"{profile.DisplayName} · {profile.ProfileId} · {profile.Inputs.Count} typed assumption(s)",
+            IsExpanded = expandedProfileIds.Contains(profile.ProfileId),
+            Children = profile.Inputs
+                .OrderBy(input => input.Kind)
+                .ThenBy(input => input.DisplayName, StringComparer.Ordinal)
+                .Select(input => new TreeViewNode
+                {
+                    Id = input.InputId,
+                    Text = input.DisplayName,
+                    Icon = "payments",
+                    BadgeText = FormatInputValue(input),
+                    Tooltip = $"{input.DisplayName} · {input.Kind} · {FormatInputValue(input)} · {input.InputId}",
+                    IsSelected = string.Equals(input.InputId, SelectedInputId, StringComparison.Ordinal),
+                    DataTestId = $"simulation-financial-input-{input.InputId}"
+                })
+                .ToArray()
+        })
+        .ToArray();
+
     private string SelectedInputId => selectedInputId ?? Inputs.FirstOrDefault()?.InputId ?? string.Empty;
 
     private SimulationFinancialInputState? SelectedInput => Inputs.FirstOrDefault(input => string.Equals(input.InputId, SelectedInputId, StringComparison.Ordinal));
-
-    private IReadOnlyList<SimulationFinancialInputState> SelectedProfileInputs => Project.FinancialInputProfiles
-        .FirstOrDefault(profile => profile.Inputs.Any(input => string.Equals(input.InputId, SelectedInputId, StringComparison.Ordinal)))
-        ?.Inputs ?? [];
 
     private IReadOnlyList<SimulationProjectValidationMessage> InputValidationMessages => Project.ValidationMessages
         .Where(message => SelectedInput is not null && string.Equals(message.RelatedId, SelectedInput.InputId, StringComparison.Ordinal))
@@ -145,12 +156,48 @@
 
     protected override void OnParametersSet()
     {
-        selectedInputId ??= Inputs.FirstOrDefault()?.InputId;
+        if (!string.Equals(renderedProjectId, Project.Summary.ProjectId, StringComparison.Ordinal))
+        {
+            renderedProjectId = Project.Summary.ProjectId;
+            expandedProfileIds.Clear();
+            foreach (SimulationFinancialInputProfileState profile in Project.FinancialInputProfiles)
+            {
+                expandedProfileIds.Add(profile.ProfileId);
+            }
+            selectedInputId = null;
+        }
+
+        if (Inputs.All(input => !string.Equals(input.InputId, selectedInputId, StringComparison.Ordinal)))
+        {
+            selectedInputId = Inputs.FirstOrDefault()?.InputId;
+        }
     }
 
-    private void SelectInput(string inputId)
+    private Task SelectInputNode(string nodeId)
     {
-        selectedInputId = inputId;
+        if (Inputs.Any(input => string.Equals(input.InputId, nodeId, StringComparison.Ordinal)))
+        {
+            selectedInputId = nodeId;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleInputProfile(string nodeId)
+    {
+        const string prefix = "profile:";
+        if (!nodeId.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        string profileId = nodeId[prefix.Length..];
+        if (!expandedProfileIds.Add(profileId))
+        {
+            expandedProfileIds.Remove(profileId);
+        }
+
+        return Task.CompletedTask;
     }
 
     private string BusinessUnitName(BusinessUnitId? businessUnitId)
@@ -167,15 +214,15 @@
     {
         if (input.Unit == SimulationFinancialInputUnit.Text)
         {
-            return input.TextValue ?? "not set";
+            return input.TextValue ?? "Not set";
         }
 
         if (input.NumericValue is null)
         {
-            return "missing";
+            return "Not derived";
         }
 
-        return input.Unit switch
+        string formatted = input.Unit switch
         {
             SimulationFinancialInputUnit.Percent => input.NumericValue.Value.ToString("P2", CultureInfo.InvariantCulture),
             SimulationFinancialInputUnit.Amount => input.NumericValue.Value.ToString("#,0.##", CultureInfo.InvariantCulture),
@@ -183,11 +230,25 @@
             SimulationFinancialInputUnit.Count => input.NumericValue.Value.ToString("#,0.##", CultureInfo.InvariantCulture),
             _ => input.NumericValue.Value.ToString(CultureInfo.InvariantCulture)
         };
+        return input.Unit == SimulationFinancialInputUnit.Amount && !string.IsNullOrWhiteSpace(input.UnitCode)
+            ? $"{input.UnitCode} {formatted}"
+            : formatted;
     }
 
-    private static string ResolveInputButtonClass(bool selected)
-        => string.Join(' ', [
-            "flex w-full min-w-0 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition",
-            selected ? "border-sky-300 bg-sky-50" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-        ]);
+    private static RenderFragment Fact(string label, string value) => builder =>
+    {
+        int sequence = 0;
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "min-w-0");
+        builder.OpenElement(sequence++, "dt");
+        builder.AddAttribute(sequence++, "class", "text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-500");
+        builder.AddContent(sequence++, label);
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "dd");
+        builder.AddAttribute(sequence++, "class", "mt-0.5 truncate text-sm font-semibold text-slate-900");
+        builder.AddAttribute(sequence++, "title", value);
+        builder.AddContent(sequence++, value);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
 }

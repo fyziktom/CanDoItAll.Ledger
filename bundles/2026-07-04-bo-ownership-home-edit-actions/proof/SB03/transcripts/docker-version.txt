@@ -1,9 +1,0 @@
-Command: docker --version; docker compose version
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-StartTimeUtc: 2026-07-04T23:21:43.0922931Z
-ExitCode: 0
-Output:
-Docker version 29.5.2, build 79eb04c
-
-Docker Compose version v5.1.3
-

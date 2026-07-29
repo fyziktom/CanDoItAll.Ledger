@@ -1,40 +1,40 @@
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectCommerceDispatcherTests
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("commerce-dispatch"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-dispatch-public"));
     private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-dispatch-public"));
-    private static readonly BusinessObjectId TargetObjectId = new("bo:post:dispatch-target");
-    private static readonly BusinessObjectId ImageTargetObjectId = new("bo:image:dispatch-target");
-    private static readonly BusinessObjectId PaymentObjectId = new("bo:payment:dispatch-payment");
+    private static readonly BusinessObjectId TargetObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('a', 64)), 0);
+    private static readonly BusinessObjectId ImageTargetObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('b', 64)), 0);
+    private static readonly BusinessObjectId PaymentObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('c', 64)), 0);
     private static readonly DateTimeOffset Now = DateTimeOffset.Parse("2026-06-30T12:00:00Z");
     private static readonly TokenId OperatingToken = new("ops.carrier");
 
     [Fact]
-    public async Task CopySale_DispatchesDeterministicCloneAndLinkedRecords()
+    public async Task CopySale_DerivesCloneAndLinkedRecordIdsFromConfirmedOutputs()
     {
         ITypedBusinessObjectView target = CreateListedTarget(BusinessObjectSaleMode.Copy, maxClones: 2);
         ICommerceBusinessObjectView payment = await CreatePaymentViewAsync(BusinessObjectSaleMode.Copy);
         BusinessObjectWorkspaceModel workspace = CreateWorkspace(target, payment);
         var adapter = new CapturingWorkspaceAdapter(workspace);
         var dispatcher = new BusinessObjectCommerceDispatcher(() => Now.AddMinutes(5));
-        BusinessObjectId expectedCloneId = BusinessObjectCommercePayloadBuilder.CreateCloneObjectId(TargetObjectId, PaymentObjectId);
+        BusinessObjectId expectedCloneId = BusinessObjectId.FromOutPoint(ExecutionTxId(1), 0);
 
         BusinessObjectCommerceDispatchResult result = await dispatcher.DispatchPendingAsync(adapter, workspace);
 
         Assert.Equal(5, result.AcceptedCount);
         BusinessObjectTransactionDraft cloneDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.SelectedMode == BusinessObjectTransactionMode.CloneObject);
-        Assert.Equal(TargetObjectId, cloneDraft.SourceObjectId);
-        Assert.Equal(expectedCloneId, cloneDraft.TargetObjectId);
+        Assert.Equal(BusinessObjectId.FromOutPoint(target.CurrentOutPoint), cloneDraft.SourceObjectId);
+        Assert.Equal(BusinessObjectId.FromOutPoint(target.CurrentOutPoint), cloneDraft.ObjectId);
         Assert.Equal(Bob, cloneDraft.OwnerAddress);
         Assert.Equal(OperatingToken, cloneDraft.TokenId);
         Assert.Equal("1", cloneDraft.TokenAmount!.Value.ToString());
@@ -54,8 +54,11 @@ public sealed class BusinessObjectCommerceDispatcherTests
         Assert.Equal(BusinessObjectCommerceRecordStatus.Dispatched, completedPayment.Status);
         Assert.Equal(expectedCloneId.Value, completedPayment.DeliveredObjectId);
         Assert.NotNull(completedPayment.DispatchTxId);
+        Assert.Equal(PaymentObjectId.RequireOutPoint().TxId.Value, completedPayment.PaymentTxId);
         Assert.NotNull(completedPayment.ReceiptObjectId);
         Assert.NotNull(completedPayment.PurchaseObjectId);
+        Assert.Equal(BusinessObjectId.FromOutPoint(ExecutionTxId(3), 0).Value, completedPayment.ReceiptObjectId);
+        Assert.Equal(BusinessObjectId.FromOutPoint(ExecutionTxId(4), 0).Value, completedPayment.PurchaseObjectId);
 
         BusinessObjectTransactionDraft receiptDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.ObjectType == "receipt" && draft.OwnerAddress == Alice);
         BusinessObjectTransactionDraft purchaseDraft = Assert.Single(adapter.SubmittedDrafts, draft => draft.ObjectType == "purchase" && draft.OwnerAddress == Bob);
@@ -74,7 +77,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
         {
             TokenOptions =
             [
-                new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+                new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
                 new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, UniqueAmount: Amount.FromInt64(9), UniqueUtxoCount: 9, TotalUtxoCount: 9)
             ]
         };
@@ -98,21 +101,23 @@ public sealed class BusinessObjectCommerceDispatcherTests
     [Fact]
     public async Task DispatchedPaymentWithExistingArtifacts_DoesNotSubmitDuplicateTransactions()
     {
-        BusinessObjectId cloneId = BusinessObjectCommercePayloadBuilder.CreateCloneObjectId(TargetObjectId, PaymentObjectId);
-        TxId dispatchTxId = new("tx-commerce-dispatch-existing");
+        TxId dispatchTxId = new(new string('d', 64));
+        BusinessObjectId cloneId = BusinessObjectId.FromOutPoint(dispatchTxId, 0);
+        BusinessObjectId receiptId = BusinessObjectId.FromOutPoint(new TxId(new string('e', 64)), 0);
+        BusinessObjectId purchaseId = BusinessObjectId.FromOutPoint(new TxId(new string('f', 64)), 0);
         BusinessObjectPaymentRecord completed = CreatePaymentRecord(BusinessObjectSaleMode.Copy) with
         {
             Status = BusinessObjectCommerceRecordStatus.Dispatched,
             DispatchTxId = dispatchTxId.Value,
             DeliveredObjectId = cloneId.Value,
-            ReceiptObjectId = BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(PaymentObjectId).Value,
-            PurchaseObjectId = BusinessObjectCommercePayloadBuilder.CreatePurchaseObjectId(PaymentObjectId).Value
+            ReceiptObjectId = receiptId.Value,
+            PurchaseObjectId = purchaseId.Value
         };
         ICommerceBusinessObjectView payment = await CreatePaymentViewAsync(completed);
-        ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync(completed);
+        ICommerceBusinessObjectView receipt = await CreateReceiptViewAsync(completed, receiptId);
         BusinessObjectWorkspaceModel workspace = CreateWorkspace(
             [payment, receipt],
-            [CreateObjectOutputTransaction(completed.PurchaseObjectId!, Bob)]);
+            [CreateObjectOutputTransaction(purchaseId, Bob)]);
         var adapter = new CapturingWorkspaceAdapter(workspace);
         var dispatcher = new BusinessObjectCommerceDispatcher(() => Now.AddMinutes(5));
 
@@ -120,6 +125,105 @@ public sealed class BusinessObjectCommerceDispatcherTests
 
         Assert.Equal(0, result.SubmittedCount);
         Assert.Empty(adapter.SubmittedDrafts);
+    }
+
+    [Fact]
+    public async Task DispatchedPaymentWithStaleCanonicalLinks_RecreatesMissingArtifacts()
+    {
+        TxId dispatchTxId = new(new string('d', 64));
+        BusinessObjectPaymentRecord completed = CreatePaymentRecord(BusinessObjectSaleMode.Copy) with
+        {
+            Status = BusinessObjectCommerceRecordStatus.Dispatched,
+            DispatchTxId = dispatchTxId.Value,
+            DeliveredObjectId = BusinessObjectId.FromOutPoint(dispatchTxId, 0).Value,
+            ReceiptObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('e', 64)), 0).Value,
+            PurchaseObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('f', 64)), 0).Value
+        };
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync(completed);
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(payment);
+        var adapter = new CapturingWorkspaceAdapter(workspace);
+        var dispatcher = new BusinessObjectCommerceDispatcher(() => Now.AddMinutes(5));
+
+        BusinessObjectCommerceDispatchResult result = await dispatcher.DispatchPendingAsync(adapter, workspace);
+
+        Assert.Equal(3, result.AcceptedCount);
+        Assert.Contains(adapter.SubmittedDrafts, draft => draft.ObjectType == "receipt");
+        Assert.Contains(adapter.SubmittedDrafts, draft => draft.ObjectType == "purchase");
+        Assert.Contains(adapter.SubmittedDrafts, draft => draft.SelectedMode == BusinessObjectTransactionMode.UpdateObject);
+    }
+
+    [Theory]
+    [InlineData(BusinessObjectSaleMode.Copy, "clone")]
+    [InlineData(BusinessObjectSaleMode.Original, "transfer")]
+    public async Task PendingPaymentWithPreviouslyConfirmedDelivery_RecoversOutputIdWithoutRedispatching(
+        BusinessObjectSaleMode saleMode,
+        string correlationAction)
+    {
+        ITypedBusinessObjectView target = CreateListedTarget(
+            saleMode,
+            maxClones: saleMode == BusinessObjectSaleMode.Copy ? 2 : null);
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync(saleMode);
+        TxId dispatchTxId = new(new string('d', 64));
+        const int dispatchOutputIndex = 2;
+        LedgerTransactionSummary delivery = CreateDeliveryTransaction(
+            dispatchTxId,
+            dispatchOutputIndex,
+            Bob,
+            $"bo-commerce://{correlationAction}/payment/{PaymentObjectId.Value}");
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace([target, payment], [delivery]);
+        var adapter = new CapturingWorkspaceAdapter(workspace);
+        var dispatcher = new BusinessObjectCommerceDispatcher(() => Now.AddMinutes(5));
+
+        BusinessObjectCommerceDispatchResult result = await dispatcher.DispatchPendingAsync(adapter, workspace);
+
+        Assert.Equal(3, result.AcceptedCount);
+        Assert.DoesNotContain(
+            adapter.SubmittedDrafts,
+            draft => draft.SelectedMode is BusinessObjectTransactionMode.CloneObject or BusinessObjectTransactionMode.TransferObject);
+        BusinessObjectTransactionDraft paymentUpdate = Assert.Single(
+            adapter.SubmittedDrafts,
+            draft => draft.ExternalRef.StartsWith("bo-commerce://payment/", StringComparison.Ordinal));
+        BusinessObjectPaymentRecord completedPayment = BusinessObjectPayloadBuilder
+            .ParseMediaPayload(paymentUpdate.StateJson, "payment")
+            .Commerce!
+            .Payment!;
+        Assert.Equal(BusinessObjectId.FromOutPoint(dispatchTxId, dispatchOutputIndex).Value, completedPayment.DeliveredObjectId);
+        Assert.Equal(dispatchTxId.Value, completedPayment.DispatchTxId);
+    }
+
+    [Fact]
+    public async Task PendingPaymentWithConfirmedArtifacts_RecoversCrossAccountIdsWithoutDuplicates()
+    {
+        ITypedBusinessObjectView target = CreateListedTarget(BusinessObjectSaleMode.Copy, maxClones: 2);
+        ICommerceBusinessObjectView payment = await CreatePaymentViewAsync(BusinessObjectSaleMode.Copy);
+        TxId dispatchTxId = new(new string('d', 64));
+        BusinessObjectId receiptId = BusinessObjectId.FromOutPoint(new TxId(new string('e', 64)), 0);
+        BusinessObjectId purchaseId = BusinessObjectId.FromOutPoint(new TxId(new string('f', 64)), 1);
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(
+            [target, payment],
+            [
+                CreateDeliveryTransaction(
+                    dispatchTxId,
+                    2,
+                    Bob,
+                    $"bo-commerce://clone/payment/{PaymentObjectId.Value}"),
+                CreateCommerceArtifactTransaction(receiptId, Alice, "receipt", PaymentObjectId),
+                CreateCommerceArtifactTransaction(purchaseId, Bob, "purchase", PaymentObjectId)
+            ]);
+        var adapter = new CapturingWorkspaceAdapter(workspace);
+        var dispatcher = new BusinessObjectCommerceDispatcher(() => Now.AddMinutes(5));
+
+        BusinessObjectCommerceDispatchResult result = await dispatcher.DispatchPendingAsync(adapter, workspace);
+
+        Assert.Equal(1, result.AcceptedCount);
+        BusinessObjectTransactionDraft paymentUpdate = Assert.Single(adapter.SubmittedDrafts);
+        BusinessObjectPaymentRecord completedPayment = BusinessObjectPayloadBuilder
+            .ParseMediaPayload(paymentUpdate.StateJson, "payment")
+            .Commerce!
+            .Payment!;
+        Assert.Equal(receiptId.Value, completedPayment.ReceiptObjectId);
+        Assert.Equal(purchaseId.Value, completedPayment.PurchaseObjectId);
+        Assert.Equal(BusinessObjectId.FromOutPoint(dispatchTxId, 2).Value, completedPayment.DeliveredObjectId);
     }
 
     [Fact]
@@ -169,7 +273,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
             .ParseMediaPayload(paymentUpdate.StateJson, "payment")
             .Commerce!
             .Payment!;
-        Assert.Equal(TargetObjectId.Value, completedPayment.DeliveredObjectId);
+        Assert.Equal(BusinessObjectId.FromOutPoint(ExecutionTxId(1), 0).Value, completedPayment.DeliveredObjectId);
     }
 
     [Fact]
@@ -276,21 +380,17 @@ public sealed class BusinessObjectCommerceDispatcherTests
     {
         BusinessObjectId targetId = targetObjectId ?? TargetObjectId;
         BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
-            PaymentObjectId,
             Bob,
             Alice,
             targetId,
             targetVersion: 1,
-            targetOutPoint: new OutPoint(new TxId("tx-target"), 0),
+            targetOutPoint: targetId.RequireOutPoint(),
             Amount.FromDecimal(7.25m),
             saleMode,
             paymentTxId: null,
             Now,
             saleMaxClones: saleMode == BusinessObjectSaleMode.Copy ? 2 : null);
-        return payment with
-        {
-            PurchaseObjectId = BusinessObjectCommercePayloadBuilder.CreatePurchaseObjectId(PaymentObjectId).Value
-        };
+        return payment;
     }
 
     private static async Task<ICommerceBusinessObjectView> CreatePaymentViewAsync(BusinessObjectPaymentRecord payment)
@@ -300,17 +400,19 @@ public sealed class BusinessObjectCommerceDispatcherTests
         return await CastCommerceViewAsync(PaymentObjectId, "payment", stateJson, Alice);
     }
 
-    private static async Task<ICommerceBusinessObjectView> CreateReceiptViewAsync(BusinessObjectPaymentRecord payment)
+    private static async Task<ICommerceBusinessObjectView> CreateReceiptViewAsync(
+        BusinessObjectPaymentRecord payment,
+        BusinessObjectId receiptObjectId)
     {
+        BusinessObjectPaymentRecord paymentViewRecord = payment with { PaymentObjectId = PaymentObjectId.Value };
         BusinessObjectReceiptRecord receipt = BusinessObjectCommercePayloadBuilder.CreateReceiptRecord(
-            new BusinessObjectId(payment.ReceiptObjectId!),
-            payment,
-            new BusinessObjectId(payment.DeliveredObjectId!),
-            new TxId(payment.DispatchTxId!),
+            paymentViewRecord,
+            new BusinessObjectId(paymentViewRecord.DeliveredObjectId!),
+            new TxId(paymentViewRecord.DispatchTxId!),
             Now.AddMinutes(2));
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
             BusinessObjectCommercePayloadBuilder.CreateReceiptPayload(receipt));
-        return await CastCommerceViewAsync(new BusinessObjectId(receipt.ReceiptObjectId), "receipt", stateJson, Alice);
+        return await CastCommerceViewAsync(receiptObjectId, "receipt", stateJson, Alice);
     }
 
     private static async Task<ICommerceBusinessObjectView> CastCommerceViewAsync(
@@ -343,7 +445,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
             owner,
             BusinessObjectOperation.Create,
             new HashHex(new string('1', 64)),
-            new OutPoint(new TxId($"tx-{objectType}"), 0),
+            objectId.RequireOutPoint(),
             stateJson,
             null,
             TransactionDataItemType.BusinessObject,
@@ -376,7 +478,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
             owner,
             BusinessObjectOperation.Create,
             new HashHex(new string('2', 64)),
-            new OutPoint(new TxId($"tx-{objectType}"), 0),
+            objectId.RequireOutPoint(),
             stateJson,
             null,
             TransactionDataItemType.BusinessObject,
@@ -425,7 +527,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
             Alice,
             balance,
             [
-                new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+                new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
                 new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, SourceAmount: Amount.FromInt64(9), SourceUtxoCount: 1, TotalUtxoCount: 1)
             ],
             [],
@@ -438,10 +540,12 @@ public sealed class BusinessObjectCommerceDispatcherTests
             Now);
     }
 
-    private static LedgerTransactionSummary CreateObjectOutputTransaction(string objectId, Address owner)
-        => new(
+    private static LedgerTransactionSummary CreateObjectOutputTransaction(BusinessObjectId objectId, Address owner)
+    {
+        OutPoint outPoint = objectId.RequireOutPoint();
+        return new(
             Context,
-            new TxId($"tx-{objectId.Replace(':', '-')}"),
+            outPoint.TxId,
             TransactionKind.BusinessObject,
             TransactionStatus.Confirmed,
             Now.AddMinutes(1),
@@ -450,14 +554,66 @@ public sealed class BusinessObjectCommerceDispatcherTests
             [],
             [
                 new LedgerTransactionOutputSummary(
-                    0,
+                    outPoint.OutputIndex,
                     owner,
                     Amount.Zero,
                     null,
-                    new BusinessObjectRef(new BusinessObjectId(objectId), 1, BusinessObjectOperation.Create, new HashHex(new string('3', 64))))
+                    new BusinessObjectRef(new BusinessObjectLineageKey($"lineage:test:{outPoint.TxId.Value}"), 1, BusinessObjectOperation.Create, new HashHex(new string('3', 64))))
             ]);
+    }
 
-    private sealed class CapturingWorkspaceAdapter(BusinessObjectWorkspaceModel workspace) : IEconomyAccountWorkspaceAdapter
+    private static LedgerTransactionSummary CreateDeliveryTransaction(
+        TxId txId,
+        int outputIndex,
+        Address owner,
+        string externalRef)
+        => new(
+            Context,
+            txId,
+            TransactionKind.BusinessObject,
+            TransactionStatus.Confirmed,
+            Now.AddMinutes(1),
+            [Alice],
+            [owner],
+            [],
+            [
+                new LedgerTransactionOutputSummary(
+                    outputIndex,
+                    owner,
+                    Amount.Zero,
+                    null,
+                    new BusinessObjectRef(new BusinessObjectLineageKey("lineage:test:delivery"), 1, BusinessObjectOperation.Create, new HashHex(new string('4', 64))))
+            ],
+            new TransactionData(
+                "application/json",
+                new HashHex(new string('5', 64)),
+                "{}",
+                externalRef,
+                TransactionDataItemType.BusinessObject));
+
+    private static LedgerTransactionSummary CreateCommerceArtifactTransaction(
+        BusinessObjectId objectId,
+        Address owner,
+        string objectType,
+        BusinessObjectId paymentObjectId)
+    {
+        LedgerTransactionSummary transaction = CreateObjectOutputTransaction(objectId, owner);
+        string inlineJson = $$"""{"objectType":"{{objectType}}","schemaVersion":"1.0","stateJson":{},"references":[]}""";
+        return transaction with
+        {
+            Data = new TransactionData(
+                "application/json",
+                new HashHex(new string('6', 64)),
+                inlineJson,
+                $"bo-commerce://{objectType}/payment/{paymentObjectId.Value}",
+                TransactionDataItemType.BusinessObject)
+        };
+    }
+
+    private static TxId ExecutionTxId(int submissionNumber)
+        => new(new string(submissionNumber.ToString("x")[0], 64));
+
+    private sealed class CapturingWorkspaceAdapter(BusinessObjectWorkspaceModel workspace) : ILedgerAccountWorkspaceAdapter
     {
         public List<BusinessObjectTransactionDraft> SubmittedDrafts { get; } = [];
 
@@ -473,35 +629,35 @@ public sealed class BusinessObjectCommerceDispatcherTests
             CancellationToken cancellationToken = default)
             => Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(workspace, maxTransactions, workspace.ViewedAtUtc));
 
-        public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(
+        public Task<LedgerTransactionDetailsModel?> GetTransactionDetailsAsync(
             TxId txId,
             CancellationToken cancellationToken = default)
-            => Task.FromResult<EconomyTransactionDetailsModel?>(null);
+            => Task.FromResult<LedgerTransactionDetailsModel?>(null);
 
-        public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
+        public Task<LedgerTransactionExecutionResult> SubmitTransactionAsync(
             BusinessObjectTransactionDraft draft,
             CancellationToken cancellationToken = default)
         {
             SubmittedDrafts.Add(draft);
-            return Task.FromResult(new EconomyTransactionExecutionResult(
+            return Task.FromResult(new LedgerTransactionExecutionResult(
                 draft.SelectedMode,
                 Accepted: true,
-                TxId: new TxId($"tx-commerce-{SubmittedDrafts.Count}"),
+                TxId: ExecutionTxId(SubmittedDrafts.Count),
                 LedgerSequence: SubmittedDrafts.Count,
                 "Accepted."));
         }
 
-        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+        public Task<LedgerTransactionExecutionResult> SendBusinessObjectAsync(
             BusinessObjectSendRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException("Dispatcher must submit deterministic drafts.");
 
-        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+        public Task<LedgerTransactionExecutionResult> SetBusinessObjectPriceAsync(
             BusinessObjectPriceRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException("Dispatcher must submit explicit update drafts.");
 
-        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+        public Task<LedgerTransactionExecutionResult> UpdateProfileAsync(
             ProfileEditRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
@@ -511,7 +667,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
-        public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        public Task<LedgerTransactionExecutionResult> UseTicketAsync(
             BusinessObjectTicketUseRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
@@ -521,13 +677,13 @@ public sealed class BusinessObjectCommerceDispatcherTests
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
-        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
-            EconomyTokenCreationRequest request,
+        public Task<LedgerTransactionExecutionResult> CreateTokenAsync(
+            LedgerTokenCreationRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
-        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
-            EconomyRuleTokenCreationRequest request,
+        public Task<LedgerTransactionExecutionResult> CreateRuleTokenAsync(
+            LedgerRuleTokenCreationRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 

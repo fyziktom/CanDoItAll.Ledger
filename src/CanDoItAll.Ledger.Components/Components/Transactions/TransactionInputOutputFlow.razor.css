@@ -1,0 +1,23 @@
+.transaction-io-flow__connector-line {
+  width: auto;
+  height: 1px;
+  flex: 1 1 auto;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+@media (max-width: 1023px) {
+  .transaction-io-flow__direction {
+    flex-direction: column;
+  }
+
+  .transaction-io-flow__connector-line {
+    width: 1px;
+    height: 1.5rem;
+    flex: 0 0 auto;
+  }
+
+  .transaction-io-flow__arrow {
+    transform: rotate(90deg);
+  }
+}

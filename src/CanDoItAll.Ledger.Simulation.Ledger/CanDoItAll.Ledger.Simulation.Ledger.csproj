@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Ledger.Simulation.Ledger</AssemblyName>
+    <RootNamespace>CanDoItAll.Ledger.Simulation.Ledger</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Ledger.Simulation.Abstractions\CanDoItAll.Ledger.Simulation.Abstractions.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Engine\CanDoItAll.Ledger.Engine.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.BusinessObjects\CanDoItAll.Ledger.BusinessObjects.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Sdk\CanDoItAll.Ledger.Sdk.csproj" />
+  </ItemGroup>
+</Project>

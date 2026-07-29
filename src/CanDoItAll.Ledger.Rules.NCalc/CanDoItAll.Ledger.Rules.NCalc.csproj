@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Ledger.Rules.NCalc</AssemblyName>
+    <RootNamespace>CanDoItAll.Ledger.Rules.NCalc</RootNamespace>
+    <Description>Invariant-culture NCalc adapter for CanDoItAll Ledger account-rule expressions.</Description>
+    <PackageTags>candoitall;ledger;rules;ncalc;expressions;finance</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Ledger.BusinessObjects\CanDoItAll.Ledger.BusinessObjects.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="NCalc" />
+  </ItemGroup>
+</Project>

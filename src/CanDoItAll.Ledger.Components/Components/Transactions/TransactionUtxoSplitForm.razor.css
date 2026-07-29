@@ -1,0 +1,6 @@
+.transaction-split-output-list {
+    max-height: min(20rem, calc(100vh - 36rem));
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}

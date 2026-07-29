@@ -1,36 +1,46 @@
-# Namespace Compatibility Plan
+# Persisted Identity Compatibility
 
-The physical repository split preserves imported `CanDoItAll.Economy.*` namespaces temporarily. This is a compatibility liability, not a statement of current ownership.
+CanDoItAll.Ledger uses `CanDoItAll.Ledger.*` for active projects, assemblies,
+namespaces, types, configuration, infrastructure, examples, tools, and tests.
 
-## Compatibility Map
+Some persisted browser, backup, and relational identifiers predate the current
+product identity. They remain frozen because existing data relies on their exact
+values. Their text is a compatibility contract, not a naming pattern for new
+features.
 
-| Current namespace/project | Target namespace/project | Public API impact | Migration plan | Owner | Sunset milestone |
-| --- | --- | --- | --- | --- | --- |
-| `CanDoItAll.Economy.Core` | `CanDoItAll.Ledger.Core` | High: core contracts appear in downstream code. | Add package migration guide, then rename with type forwarding where packages require it. | Ledger namespace migration owner | After two-repo build/test/audit gates pass for two consecutive split releases. |
-| `CanDoItAll.Economy.Cryptography` | `CanDoItAll.Ledger.Cryptography` | Medium: direct crypto driver users need imports updated. | Rename after core package plan is accepted. | Ledger namespace migration owner | Same release as core rename or immediately after. |
-| `CanDoItAll.Economy.Ledger` | `CanDoItAll.Ledger.Runtime` | High: runtime package identity is public. | Introduce target package identity, document type forwards, then rename source. | Ledger runtime owner | After SDK and node consumers pass compatibility tests. |
-| `CanDoItAll.Economy.BusinessObjects` | `CanDoItAll.Ledger.BusinessObjects` | High: object workflow clients may compile against it. | Publish consumer migration notes and test package compatibility. | Ledger API owner | After external client inventory is complete. |
-| `CanDoItAll.Economy.Sdk` | `CanDoItAll.Ledger.Sdk` | High: client-facing package and namespace. | Create package alias or migration facade before source rename. | Ledger SDK owner | After runtime rename plan is complete. |
-| `CanDoItAll.Economy.Node` | `CanDoItAll.Ledger.Node` | Medium: host startup and appsettings references change. | Rename host after local and AppHost smoke tests are stable. | Ledger node owner | After node smoke is part of the regular validation lane. |
-| `CanDoItAll.Economy.Persistence.EFCore` | `CanDoItAll.Ledger.Persistence.EFCore` | Medium: persistence registrations and migrations move names. | Rename with migration assembly guidance and compatibility tests. | Ledger persistence owner | After database migration strategy is documented. |
-| `CanDoItAll.Economy.Persistence.PostgreSql` | `CanDoItAll.Ledger.Persistence.PostgreSql` | Medium: registration package and migrations are visible. | Rename with EF Core persistence lane. | Ledger persistence owner | Same milestone as EF Core persistence. |
-| `CanDoItAll.Economy.Components` | `CanDoItAll.Ledger.Components` | Medium: UI consumers need imports updated. | Rename only after shared component dependency direction is verified. | Ledger UI owner | After UI package consumers are inventoried. |
-| `CanDoItAll.Economy.Simulation.Abstractions` | `CanDoItAll.Ledger.Simulation.Abstractions` or neutral package | Medium: used only for ledger-backed simulation contracts. | Keep only if independent from the separated simulator lane; otherwise split to a neutral helper package. | Ledger simulation owner | After ledger-backed simulation ownership decision is reviewed. |
-| `CanDoItAll.Economy.Simulation.Ledger` | `CanDoItAll.Ledger.Simulation` | Medium: adapter namespace rename. | Rename after simulation abstractions target is chosen. | Ledger simulation owner | Same milestone as simulation abstractions. |
-| `CanDoItAll.Economy.Storage.InMemory` | `CanDoItAll.Ledger.Storage.InMemory` | Low: mostly local tests and demo runtime. | Rename after runtime/core rename. | Ledger storage owner | After runtime rename. |
-| `CanDoItAll.Economy.Cli` | `CanDoItAll.Ledger.Cli` | Medium: executable and docs rename. | Rename executable after SDK/runtime target names stabilize. | Ledger CLI owner | After SDK rename. |
-| `CanDoItAll.Economy.Simulator` in `CanDoItAll.Ledger.Simulator` | `CanDoItAll.Ledger.Simulator` | High: moved BO/project simulator contracts and route extensions compile against the old namespace. | Preserve namespace only during physical landing, then rename after SB04 cross-repo review approves the split. | Ledger simulator owner | After Ledger landing proof and Economy removal proof both pass. |
-| `CanDoItAll.Economy.Simulator.Components` in `CanDoItAll.Ledger.Simulator.Components` | `CanDoItAll.Ledger.Simulator.Components` | Medium: Razor component consumers and static web assets use old names during landing. | Preserve namespace and assembly identity for SB02; rename when the browser host smoke and package map are updated. | Ledger simulator UI owner | After browser smoke is in the Ledger validation lane. |
-| `CanDoItAll.Economy.Simulator.Persistence.EFCore` in `CanDoItAll.Ledger.Simulator.Persistence.EFCore` | `CanDoItAll.Ledger.Simulator.Persistence.EFCore` | Medium: persistence registration names are used by the moved app and tests. | Preserve namespace during landing; rename with EF migration assembly guidance. | Ledger simulator persistence owner | After simulator persistence tests and docs pass under Ledger ownership. |
-| `CanDoItAll.Economy.Simulator.App` in `CanDoItAll.Ledger.Simulator.App` | `CanDoItAll.Ledger.Simulator.App` | Low/medium: local app host name is visible in launch settings and docs. | Rename after route ownership and browser smoke proof are stable. | Ledger simulator host owner | After SB04 migration review. |
+## Persisted Compatibility Allowlist
 
-## New-Code Guidance
+- `candoitall-economy-accountapp-vault-backup-v1`
+- `candoitall-economy-address-directory-v1`
+- `candoitall-economy-tags-v1`
+- `candoitall-economy-node-operations-public-v1`
+- `candoitall-economy-accountapp-settings-backup-v1`
+- `candoitall-economy-account-backup-v1`
+- PostgreSQL table, index, primary-key, and check-constraint names with the
+  `Economy_`, `PK_Economy_`, `IX_Economy_`, or `CK_Economy_` prefixes
 
-- New internal Ledger-only types should use `CanDoItAll.Ledger.*` where they do not extend an existing compatibility namespace.
-- New public APIs inside compatibility projects may stay in the existing namespace only when required to avoid mixed public API shape during the migration window.
-- New docs must describe compatibility namespaces as temporary shims with owner, cost, and sunset condition.
-- New code must not use compatibility names to imply ownership of the separated Economy simulator lane.
+Changing one of these values requires an explicit data-compatibility design,
+including dual-read or schema-migration behavior, upgrade evidence, and a
+tested rollback path. Do not rename them during unrelated cleanup.
 
-## Optional Neutral Helper Rule
+## Current Identity Rules
 
-Ledger may reference a neutral helper package only when the package has no simulator host, scenario-pack, transaction runtime, persistence, WebGL, UI, or node dependency. The dependency must document owner, expected benefit, complexity delta, validation cost, enforcement cost, simplification potential, and retirement condition.
+- Use `CanDoItAll.Ledger.*` for .NET namespaces and package identities.
+- Use `Ledger__*` for Compose environment configuration.
+- Use `CANDOITALL_LEDGER_*` for tool and process environment variables.
+- Use a new versioned Ledger identifier for every new persisted format.
+- Do not copy a compatibility identifier as the basis for a new contract.
+- Keep `CanDoItAll.Ledger.Engine` distinct from contract-focused
+  `CanDoItAll.Ledger.Core`.
+
+## Enforcement
+
+Run:
+
+```powershell
+.\tools\validation\Test-LedgerIdentity.ps1 -RunNegativeFixture
+```
+
+The validator scans active projects, examples, tests, tools, Docker assets, the
+solution, and Compose configuration. It permits only the exact compatibility
+identifiers above and proves the rules reject invalid product identities.

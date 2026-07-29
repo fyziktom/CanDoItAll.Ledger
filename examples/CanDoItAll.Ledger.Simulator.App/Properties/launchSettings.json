@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "CanDoItAll.Economy.Simulator.App": {
+    "CanDoItAll.Ledger.Simulator.App": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

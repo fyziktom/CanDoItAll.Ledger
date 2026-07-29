@@ -1,0 +1,26 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-transaction-receipt">
+<SectionCard Title="@(Result.Accepted ? "Accepted" : "Rejected")" Description="Receipt">
+    <HeaderActions>
+        <StatusBadge Text="@Result.Mode.ToString()" Tone="@(Result.Accepted ? "success" : "danger")" />
+    </HeaderActions>
+    <ChildContent>
+        <Grid ColumnsLg="3" Gap="LayoutGap.Small">
+            <SurfaceCard Soft="true">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Tx id" />
+                    <CopyableMonoValue Value="@(Result.TxId?.Value)" EmptyText="none" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" />
+                </Stack>
+            </SurfaceCard>
+            <SummaryTile Label="Ledger sequence" Value="@(Result.LedgerSequence?.ToString() ?? "pending")" Compact="true" />
+            <SummaryTile Label="Message" Value="@Result.Message" Compact="true" />
+        </Grid>
+    </ChildContent>
+</SectionCard>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public LedgerTransactionExecutionResult Result { get; set; } = default!;
+}

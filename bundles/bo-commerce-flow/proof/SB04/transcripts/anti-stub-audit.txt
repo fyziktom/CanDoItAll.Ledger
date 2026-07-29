@@ -1,3 +1,0 @@
-Command: proof capture: anti-stub-audit.txt
-No matches
-ExitCode: 0

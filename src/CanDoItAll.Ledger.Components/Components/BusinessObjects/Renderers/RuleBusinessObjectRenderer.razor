@@ -1,0 +1,47 @@
+@namespace CanDoItAll.Ledger.Components
+
+@if (Mode == BusinessObjectRenderMode.Summary)
+{
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@(rule?.RuleId ?? Object.ObjectId.Value)" />
+        <TextBlock TextStyle="TextStyle.Caption" Value="@(rule?.RuleNamespace ?? "rule")" />
+        <Cluster Gap="LayoutGap.Small">
+            <Pill Tone="PillTone.Info" Text="rule" />
+            <Pill Tone="PillTone.Neutral" Text="@(rule?.Trigger?.Kind.ToString() ?? "unknown")" />
+        </Cluster>
+    </Stack>
+}
+else if (rule is null)
+{
+    <Alert AlertStyle="AlertStyle.Warning">
+        <strong>Rule payload unavailable</strong>
+        <span>The BusinessObject looks like a rule but its payload could not be validated against the BO hash.</span>
+    </Alert>
+}
+else
+{
+    <AccountRuleLogicPreview Rule="rule" />
+}
+
+@code {
+    private AccountRuleDefinition? rule;
+
+    [Parameter, EditorRequired]
+    public IBusinessObjectView Object { get; set; } = default!;
+
+    [Parameter]
+    public BusinessObjectRenderMode Mode { get; set; } = BusinessObjectRenderMode.Detail;
+
+    [Parameter]
+    public DateTimeOffset? ViewedAtUtc { get; set; }
+
+    [Parameter, EditorRequired]
+    public BusinessObjectRendererDescriptor Descriptor { get; set; } = default!;
+
+    protected override void OnParametersSet()
+    {
+        rule = RuleBusinessObjectDisplay.TryReadRule(Object, out AccountRuleDefinition parsed)
+            ? parsed
+            : null;
+    }
+}

@@ -1,0 +1,81 @@
+@namespace CanDoItAll.Ledger.Components
+
+<DialogScaffold Eyebrow="Account directory"
+                Title="Create subaccount"
+                Description="Create a child account under the active ledger account without leaking key material into the UI."
+                ContextRail="@RenderContext"
+                ReviewPanel="@RenderReview"
+                ValidationContent="@RenderValidation"
+                Footer="@RenderFooter"
+                data-testid="cda-subaccount-create-dialog">
+    <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <FormField Text="Subaccount name">
+                <TextBox @bind-Value="name" Placeholder="Treasury approval" />
+            </FormField>
+            <FormField Text="Initial label">
+                <TextBox @bind-Value="label" Placeholder="Operations approval" />
+            </FormField>
+        </Grid>
+        <FormField Text="Parent address">
+            <TextBox Value="@ParentAddress.Value" ReadOnly="true" />
+        </FormField>
+    </Stack>
+</DialogScaffold>
+
+@code {
+    private string name = "Audit approval";
+    private string label = "Two-step approval account";
+
+    [Parameter, EditorRequired]
+    public Address ParentAddress { get; set; }
+
+    private RenderFragment RenderContext => builder =>
+    {
+        builder.OpenComponent<StatusCheckList>(0);
+        builder.AddAttribute(1, nameof(StatusCheckList.Title), "Creation guard");
+        builder.AddAttribute(2, nameof(StatusCheckList.Items), new[]
+        {
+            new StatusCheckItem { Label = "Parent selected", Status = "Ready", Tone = "success", Complete = true },
+            new StatusCheckItem { Label = "Backup required", Status = "Prompt", Tone = "warning" },
+            new StatusCheckItem { Label = "No private key display", Status = "Enforced", Tone = "success", Complete = true }
+        });
+        builder.CloseComponent();
+    };
+
+    private RenderFragment RenderReview => builder =>
+    {
+        builder.OpenComponent<ActionReviewPanel>(0);
+        builder.AddAttribute(1, nameof(ActionReviewPanel.Title), "Review child account");
+        builder.AddAttribute(2, nameof(ActionReviewPanel.Items), new[]
+        {
+            new ActionReviewFact("Name", name),
+            new ActionReviewFact("Label", label),
+            new ActionReviewFact("Parent", ParentAddress.Value)
+        });
+        builder.CloseComponent();
+    };
+
+    private RenderFragment RenderValidation => builder =>
+    {
+        builder.OpenComponent<Alert>(0);
+        builder.AddAttribute(1, nameof(Alert.AlertStyle), AlertStyle.Warning);
+        builder.AddAttribute(2, nameof(Alert.ChildContent), (RenderFragment)(content =>
+        {
+            content.AddContent(0, "The next step must force backup confirmation before the account can be used for signing.");
+        }));
+        builder.CloseComponent();
+    };
+
+    private RenderFragment RenderFooter => builder =>
+    {
+        builder.OpenComponent<Button>(0);
+        builder.AddAttribute(1, nameof(Button.Text), "Cancel");
+        builder.AddAttribute(2, nameof(Button.Variant), Variant.Outlined);
+        builder.CloseComponent();
+        builder.OpenComponent<Button>(3);
+        builder.AddAttribute(4, nameof(Button.Text), "Create and back up");
+        builder.AddAttribute(5, nameof(Button.Icon), "person_add");
+        builder.CloseComponent();
+    };
+}

@@ -108,7 +108,7 @@ After the first administrator is created, prefer removing `SeedAdmin` or the adm
 The repository includes a node container and Compose stack:
 
 - `src/CanDoItAll.Economy.Node/Dockerfile` publishes the ASP.NET Core node on port `8080`.
-- `examples/CanDoItAll.Economy.Components.Demo/Dockerfile` publishes the VENFT/component demo app.
+- `examples/CanDoItAll.Economy.Components.Demo/Dockerfile` publishes the Economy component demo app.
 - `tools/CanDoItAll.Economy.DemoSeeder/Dockerfile` publishes a one-shot seeder that creates Alice/Bob key files and the HreVaDa demo token state.
 - `compose.yaml` runs the node plus PostgreSQL with cookie UI auth, JWT API auth, persistent data-protection keys, and local-only port bindings by default.
 - `compose.demo.yaml` is the local HTTPS demo overlay. It adds a Kestrel dev certificate, switches the node API to `RequireApiKeyOrJwt`, seeds Alice and Bob, and starts the demo app after seeding succeeds.

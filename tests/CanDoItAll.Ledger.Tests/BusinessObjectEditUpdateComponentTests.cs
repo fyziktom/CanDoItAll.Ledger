@@ -1,39 +1,39 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
-public sealed class BusinessObjectEditUpdateComponentTests : TestContext
+public sealed class BusinessObjectEditUpdateComponentTests : BunitContext
 {
     public BusinessObjectEditUpdateComponentTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
     public async Task EditWizard_PrefillsSelectedBusinessObjectAndStagesUpdateDraft()
     {
         var stagedDrafts = new List<BusinessObjectTransactionDraft>();
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
         string originalName = DisplayName(businessObject);
         BusinessObjectCreationWizardModel model = BusinessObjectCreationWizardModel.ForEdit(businessObject, step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -51,7 +51,10 @@ public sealed class BusinessObjectEditUpdateComponentTests : TestContext
 
         nameInput.Input("Updated BO Name");
         await ClickButtonAsync(component, "Next");
-        Assert.Contains(businessObject.ObjectId.Value, component.Find("[data-testid='bo-edit-source']").TextContent, StringComparison.Ordinal);
+        Assert.True(businessObject.ObjectId.IsCanonicalOutPointId());
+        string sourceSummary = component.Find("[data-testid='bo-edit-source']").TextContent;
+        Assert.Contains(businessObject.ObjectId.Value[..14], sourceSummary, StringComparison.Ordinal);
+        Assert.Contains(businessObject.ObjectId.Value[^6..], sourceSummary, StringComparison.Ordinal);
 
         await ClickButtonAsync(component, "Stage BO Update");
 
@@ -74,12 +77,12 @@ public sealed class BusinessObjectEditUpdateComponentTests : TestContext
     [Fact]
     public void DetailsActions_RenderEditActionWithoutOwnershipVerifierScanner()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -99,12 +102,12 @@ public sealed class BusinessObjectEditUpdateComponentTests : TestContext
     public async Task DetailsActions_RecycleButtonEmitsCloseDraft()
     {
         var stagedDrafts = new List<BusinessObjectTransactionDraft>();
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject)
                 .Add(x => x.Workspace, workspace)
                 .Add(

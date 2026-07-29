@@ -1,0 +1,35 @@
+@namespace CanDoItAll.Ledger.Components
+
+<CdaChart Title="Token allocation"
+          Description="Available token balances by asset label."
+          Series="Series"
+          Options="Options"
+          data-testid="cda-token-allocation-donut" />
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerTokenOption> TokenOptions { get; set; } = [];
+
+    private IReadOnlyList<CdaChartSeries> Series
+        =>
+        [
+            new CdaChartSeries
+            {
+                Name = "Tokens",
+                Type = CdaChartType.Donut,
+                Points = TokenOptions
+                    .Where(item => item.AvailableAmount.Value > 0)
+                    .Select(item => new CdaChartPoint(item.AssetLabel, item.AvailableAmount.Value))
+                    .ToArray()
+            }
+        ];
+
+    private static readonly CdaChartOptions Options = new()
+    {
+        Type = CdaChartType.Donut,
+        XAxisType = CdaChartAxisType.Category,
+        ShowToolbar = false,
+        ShowDataLabels = true,
+        Palette = ["#0f766e", "#2563eb", "#b45309", "#9333ea", "#be123c"]
+    };
+}

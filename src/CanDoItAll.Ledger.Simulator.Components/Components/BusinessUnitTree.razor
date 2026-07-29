@@ -1,4 +1,4 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 
 @if (Project is null)
 {
@@ -26,112 +26,94 @@
 }
 else
 {
-    <div class="cda-sim-split-grid" data-testid="simulation-bu-accounts-tab">
-        <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
-            <Stack FillHeight="true" GapScale="LayoutGap.Medium">
-                <Split Breakpoint="LayoutBreakpoint.None"
-                       AlignItems="AlignItems.Center"
-                       JustifyContent="JustifyContent.SpaceBetween"
-                       Gap="LayoutGap.Small">
-                    <Stack GapScale="LayoutGap.Tiny">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Business unit tree" />
-                        <TextBlock TextStyle="TextStyle.H4" Value="@Project.BusinessUnits.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
-                    </Stack>
-                    <Button Text="Add BU" Icon="add" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" />
-                </Split>
+    <ListDetailShell Dense="true"
+                     ListPaneWidth="17rem"
+                     ListPaneClass="min-h-[27rem]"
+                     DetailPaneClass="min-h-[27rem]"
+                     data-testid="simulation-bu-accounts-tab">
+        <ListHeader>
+            <ListPanelHeader Title="Business units"
+                             Count="@($"{Project.BusinessUnits.Count} · {Project.AddressBindings.Count} accounts")"
+                             HelpText="Expand only the branch you need. Account bindings appear beneath their owning business unit."
+                             Dense="true" />
+        </ListHeader>
+        <ListContent>
+            @if (Project.BusinessUnits.Count == 0)
+            {
+                <Alert AlertStyle="AlertStyle.Info">
+                    <strong>No business units</strong>
+                    <span>Import a project structure before configuring runs.</span>
+                </Alert>
+            }
+            else
+            {
+                <div class="max-h-[36rem] min-h-0 overflow-y-auto pr-1">
                 <TreeView Items="BusinessUnitNodes"
                           Style="TreeViewStyle.Workbench"
                           AriaLabel="Business unit hierarchy"
                           OnSelect="SelectNode"
                           OnToggle="ToggleNode" />
-            </Stack>
-        </WorkspacePanel>
-
-        <WorkspacePanel Class="min-h-0 overflow-auto">
+                </div>
+            }
+        </ListContent>
+        <DetailHeader>
             @if (SelectedBinding is not null)
             {
-                <Stack GapScale="LayoutGap.Large" data-testid="simulation-selected-account-detail">
-                    <Split Breakpoint="LayoutBreakpoint.Md"
-                           AlignItems="AlignItems.Start"
-                           JustifyContent="JustifyContent.SpaceBetween"
-                           Gap="LayoutGap.Medium"
-                           Wrap="FlexWrap.Wrap">
-                        <Stack GapScale="LayoutGap.Tiny">
-                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Account binding" />
-                            <TextBlock TextStyle="TextStyle.H3" Value="@SelectedBinding.DisplayName" />
-                            <SmallText Text="@SelectedBinding.Address.Value" />
-                        </Stack>
-                        <Cluster Gap="LayoutGap.Small">
-                            <StatusBadge Text="@SelectedBinding.Status.ToString()" Tone="@StatusTone(SelectedBinding.Status)" />
-                            <Button Text="Rotate" Icon="published_with_changes" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
-                            <Button Text="Suspend" Icon="pause_circle" ButtonStyle="ButtonStyle.Warning" Variant="Variant.Outlined" Size="ButtonSize.Small" />
-                        </Cluster>
-                    </Split>
-
-                    <FormSection Title="Account binding" Description="Role, validity, parent relationship, and account status for the selected BU account.">
-                        <FormRow Split="true">
-                            <FormField Text="Business unit">
-                                <TextBox Value="@SelectedBinding.BusinessUnitId.Value" ReadOnly="true" />
-                            </FormField>
-                            <FormField Text="Role">
-                                <TextBox Value="@SelectedBinding.Role.ToString()" ReadOnly="true" />
-                            </FormField>
-                            <FormField Text="Primary">
-                                <TextBox Value="@(SelectedBinding.IsPrimary ? "yes" : "no")" ReadOnly="true" />
-                            </FormField>
-                            <FormField Text="Validity">
-                                <TextBox Value="@ValidityText(SelectedBinding)" ReadOnly="true" />
-                            </FormField>
-                        </FormRow>
-                    </FormSection>
-
+                <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Medium" Wrap="FlexWrap.Wrap">
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBinding.DisplayName" />
+                        <TooltipTarget Text="@SelectedBinding.Address.Value" Position="TooltipPosition.Right" TabIndex="0">
+                            <MonoText Text="@Short(SelectedBinding.Address.Value)" />
+                        </TooltipTarget>
+                    </Stack>
+                    <StatusBadge Text="@SelectedBinding.Status.ToString()" Tone="@StatusTone(SelectedBinding.Status)" />
+                </Split>
+            }
+            else if (SelectedBusinessUnit is not null)
+            {
+                <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Medium" Wrap="FlexWrap.Wrap">
+                    <Stack GapScale="LayoutGap.Tiny">
+                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBusinessUnit.DisplayName" />
+                        <SmallText Text="@SelectedBusinessUnit.Path" />
+                    </Stack>
+                    <Cluster Gap="LayoutGap.Small">
+                        <StatusBadge Text="@SelectedBusinessUnit.Kind.ToString()" Tone="info" />
+                        <StatusBadge Text="@SelectedBusinessUnit.Status.ToString()" Tone="@StatusTone(SelectedBusinessUnit.Status)" />
+                    </Cluster>
+                </Split>
+            }
+        </DetailHeader>
+        <DetailContent>
+            @if (SelectedBinding is not null)
+            {
+                <Stack GapScale="LayoutGap.Medium" data-testid="simulation-selected-account-detail">
+                    <CompactStatStrip>
+                        <CompactStat Label="Business unit" Value="@BusinessUnitName(SelectedBinding.BusinessUnitId)" HelperText="Owning BU" Position="TooltipPosition.Right" />
+                        <CompactStat Label="Role" Value="@SelectedBinding.Role.ToString()" />
+                        <CompactStat Label="Primary" Value="@(SelectedBinding.IsPrimary ? "Yes" : "No")" />
+                        <CompactStat Label="Validity" Value="@ValidityText(SelectedBinding)" Position="TooltipPosition.Right" />
+                    </CompactStatStrip>
                     <ValidationList Messages="BindingValidationMessages" />
                 </Stack>
             }
             else if (SelectedBusinessUnit is not null)
             {
-                <Stack GapScale="LayoutGap.Large" data-testid="simulation-selected-bu-detail">
-                    <Split Breakpoint="LayoutBreakpoint.Md"
-                           AlignItems="AlignItems.Start"
-                           JustifyContent="JustifyContent.SpaceBetween"
-                           Gap="LayoutGap.Medium"
-                           Wrap="FlexWrap.Wrap">
-                        <Stack GapScale="LayoutGap.Tiny">
-                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Selected BU" />
-                            <TextBlock TextStyle="TextStyle.H3" Value="@SelectedBusinessUnit.DisplayName" />
-                            <SmallText Text="@SelectedBusinessUnit.Path" />
-                        </Stack>
-                        <Cluster Gap="LayoutGap.Small">
-                            <StatusBadge Text="@SelectedBusinessUnit.Status.ToString()" Tone="@StatusTone(SelectedBusinessUnit.Status)" />
-                            <Button Text="Edit" Icon="edit" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
-                            <Button Text="Move" Icon="drive_file_move" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
-                        </Cluster>
-                    </Split>
+                <Stack GapScale="LayoutGap.Medium" data-testid="simulation-selected-bu-detail">
+                    <CompactStatStrip>
+                        <CompactStat Label="BU id" Value="@SelectedBusinessUnit.BusinessUnitId.Value" Position="TooltipPosition.Right" />
+                        <CompactStat Label="Parent" Value="@BusinessUnitName(SelectedBusinessUnit.ParentBusinessUnitId)" Position="TooltipPosition.Right" />
+                        <CompactStat Label="Currency"
+                                     Value="@(SelectedBusinessUnit.CurrencyCode ?? Project.Model.BaseCurrencyCode)"
+                                     HelperText="@(SelectedBusinessUnit.CurrencyCode is null ? "Inherited from project" : "BU override")"
+                                     Position="TooltipPosition.Right" />
+                        <CompactStat Label="External" Value="@(SelectedBusinessUnit.IsExternal ? "Yes" : "No")" />
+                        <CompactStat Label="Simulation only" Value="@(SelectedBusinessUnit.IsSimulationOnly ? "Yes" : "No")" />
+                        <CompactStat Label="Accounts" Value="@SelectedBusinessUnitBindings.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                    </CompactStatStrip>
 
-                    <FormSection Title="BU definition" Description="Identity, parent, path, status, and simulation flags.">
-                        <FormRow Split="true">
-                            <FormField Text="BU id">
-                                <TextBox Value="@SelectedBusinessUnit.BusinessUnitId.Value" ReadOnly="true" />
-                            </FormField>
-                            <FormField Text="Kind">
-                                <TextBox Value="@SelectedBusinessUnit.Kind.ToString()" ReadOnly="true" />
-                            </FormField>
-                            <FormField Text="Parent">
-                                <TextBox Value="@(SelectedBusinessUnit.ParentBusinessUnitId?.Value ?? "root")" ReadOnly="true" />
-                            </FormField>
-                            <FormField Text="Currency">
-                                <TextBox Value="@(SelectedBusinessUnit.CurrencyCode ?? Project.Model.BaseCurrencyCode)" ReadOnly="true" />
-                            </FormField>
-                            <FormField Text="External">
-                                <TextBox Value="@(SelectedBusinessUnit.IsExternal ? "yes" : "no")" ReadOnly="true" />
-                            </FormField>
-                            <FormField Text="Simulation only">
-                                <TextBox Value="@(SelectedBusinessUnit.IsSimulationOnly ? "yes" : "no")" ReadOnly="true" />
-                            </FormField>
-                        </FormRow>
-                    </FormSection>
-
-                    <FormSection Title="Address bindings" Description="Known account addresses and role assignments for this BU.">
+                    <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-labelledby="address-bindings-title">
+                        <Stack GapScale="LayoutGap.Small">
+                            <TextBlock TextStyle="TextStyle.Subtitle1" Value="Address bindings" id="address-bindings-title" />
                         <DataGrid TItem="BusinessUnitAddressBindingState" Data="SelectedBusinessUnitBindings">
                             <DataGridColumn TItem="BusinessUnitAddressBindingState" Title="Role">
                                 <Template Context="binding">
@@ -140,7 +122,9 @@ else
                             </DataGridColumn>
                             <DataGridColumn TItem="BusinessUnitAddressBindingState" Title="Address">
                                 <Template Context="binding">
-                                    <MonoText Text="@Short(binding.Address.Value)" />
+                                    <TooltipTarget Text="@binding.Address.Value" Position="TooltipPosition.Right" TabIndex="0">
+                                        <MonoText Text="@Short(binding.Address.Value)" />
+                                    </TooltipTarget>
                                 </Template>
                             </DataGridColumn>
                             <DataGridColumn TItem="BusinessUnitAddressBindingState" Title="Status">
@@ -154,18 +138,20 @@ else
                                 </Template>
                             </DataGridColumn>
                         </DataGrid>
-                    </FormSection>
+                        </Stack>
+                    </section>
 
                     <ValidationList Messages="BusinessUnitValidationMessages" />
                 </Stack>
             }
-        </WorkspacePanel>
-    </div>
+        </DetailContent>
+    </ListDetailShell>
 }
 
 @code {
     private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);
     private string? selectedNodeId;
+    private string renderedProjectId = string.Empty;
 
     [Parameter]
     public SimulationProjectState? Project { get; set; }
@@ -205,12 +191,23 @@ else
             return;
         }
 
-        foreach (BusinessUnitState root in Project.BusinessUnits)
+        if (!string.Equals(renderedProjectId, Project.Summary.ProjectId, StringComparison.Ordinal))
         {
-            expandedNodeIds.Add(root.BusinessUnitId.Value);
+            renderedProjectId = Project.Summary.ProjectId;
+            expandedNodeIds.Clear();
+            selectedNodeId = Project.BusinessUnits.FirstOrDefault(unit => unit.ParentBusinessUnitId is null)?.BusinessUnitId.Value
+                ?? Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value;
         }
 
-        selectedNodeId ??= Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value;
+        bool selectionExists = Project.BusinessUnits.Any(unit => string.Equals(unit.BusinessUnitId.Value, selectedNodeId, StringComparison.Ordinal))
+            || Project.AddressBindings.Any(binding => string.Equals(BindingNodeId(binding), selectedNodeId, StringComparison.Ordinal));
+        if (!selectionExists)
+        {
+            selectedNodeId = Project.BusinessUnits.FirstOrDefault(unit => unit.ParentBusinessUnitId is null)?.BusinessUnitId.Value
+                ?? Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value;
+        }
+
+        EnsureSelectedAncestryExpanded();
     }
 
     private IReadOnlyList<TreeViewNode> BuildBusinessUnitNodes(IEnumerable<BusinessUnitState> businessUnits)
@@ -230,6 +227,7 @@ else
                             Text = binding.DisplayName ?? binding.Role.ToString(),
                             Icon = "account_balance_wallet",
                             BadgeText = binding.Role.ToString(),
+                            Tooltip = $"{binding.DisplayName ?? binding.Role.ToString()} · {binding.Role} · {binding.Status} · address {binding.Address.Value} · {(binding.IsPrimary ? "primary" : "secondary")}",
                             IsSelected = BindingNodeId(binding) == SelectedId,
                             DataTestId = $"simulation-binding-node-{binding.Role}"
                         }))
@@ -240,6 +238,7 @@ else
                     Text = businessUnit.DisplayName,
                     Icon = businessUnit.Kind is BusinessUnitKind.RevenueCenter ? "trending_up" : businessUnit.Kind is BusinessUnitKind.CostCenter ? "payments" : "business",
                     BadgeText = businessUnit.Kind.ToString(),
+                    Tooltip = $"{businessUnit.DisplayName} · {businessUnit.Kind} · {businessUnit.Path} · {businessUnit.Status} · {businessUnit.CurrencyCode ?? "project currency"} · address {businessUnit.PrimaryAddress.Value}",
                     Children = children,
                     IsExpanded = expandedNodeIds.Contains(businessUnit.BusinessUnitId.Value),
                     IsSelected = businessUnit.BusinessUnitId.Value == SelectedId,
@@ -251,6 +250,7 @@ else
     private Task SelectNode(string nodeId)
     {
         selectedNodeId = nodeId;
+        EnsureSelectedAncestryExpanded();
         return Task.CompletedTask;
     }
 
@@ -266,6 +266,27 @@ else
 
     private static string BindingNodeId(BusinessUnitAddressBindingState binding)
         => $"binding:{binding.BusinessUnitId.Value}:{binding.Role}:{binding.Address.Value}";
+
+    private void EnsureSelectedAncestryExpanded()
+    {
+        if (Project is null)
+        {
+            return;
+        }
+
+        BusinessUnitId? currentId = SelectedBinding?.BusinessUnitId ?? SelectedBusinessUnit?.BusinessUnitId;
+        while (currentId is not null)
+        {
+            expandedNodeIds.Add(currentId.Value.Value);
+            currentId = Project.BusinessUnits.FirstOrDefault(unit => unit.BusinessUnitId == currentId.Value)?.ParentBusinessUnitId;
+        }
+    }
+
+    private string BusinessUnitName(BusinessUnitId id)
+        => Project?.BusinessUnits.FirstOrDefault(unit => unit.BusinessUnitId == id)?.DisplayName ?? id.Value;
+
+    private string BusinessUnitName(BusinessUnitId? id)
+        => id is null ? "Root" : BusinessUnitName(id.Value);
 
     private static string StatusTone(string status)
         => status.Equals("Active", StringComparison.OrdinalIgnoreCase) ? "success" : "warning";

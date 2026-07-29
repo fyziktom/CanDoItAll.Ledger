@@ -1,6 +1,0 @@
-﻿Command: PowerShell anti-stub audit for SB02 changed files
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-Start: 2026-07-05T09:09:24.7966855-04:00
-Invariant: INV-SB02-HOME-ACTION-LABELS
-No TODO, NotImplemented, fixture-specific, or stub markers found in SB02 changed files.
-ExitCode: 0

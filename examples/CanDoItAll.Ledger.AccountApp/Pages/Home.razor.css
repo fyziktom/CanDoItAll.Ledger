@@ -1,0 +1,30 @@
+.import-mode-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: .125rem .625rem;
+    min-width: 0;
+    padding: .625rem;
+    cursor: pointer;
+    border: 1px solid var(--cad-color-border);
+    border-radius: var(--cad-radius-control);
+    background: var(--cad-color-surface);
+    color: var(--cad-color-text);
+    transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+
+.import-mode-option:hover,
+.import-mode-option:focus-within,
+.import-mode-option--selected {
+    border-color: var(--cad-tone-primary-solid-border);
+    background: var(--cad-tone-primary-soft-bg);
+}
+
+.import-mode-option--selected {
+    box-shadow: 0 0 0 1px var(--cad-tone-primary-solid-border);
+}
+
+.import-mode-option__control {
+    grid-row: 1 / span 2;
+    margin-top: .2rem;
+    accent-color: var(--cad-tone-primary-solid-bg);
+}

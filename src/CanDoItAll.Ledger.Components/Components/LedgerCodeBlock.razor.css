@@ -1,0 +1,8 @@
+.cda-ledger-code-block {
+    max-height: 18rem;
+    overflow: auto;
+    font-family: var(--font-mono);
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}

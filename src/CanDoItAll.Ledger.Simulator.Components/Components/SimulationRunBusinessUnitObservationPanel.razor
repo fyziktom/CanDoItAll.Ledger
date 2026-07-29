@@ -1,91 +1,84 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
-<div class="cda-sim-split-grid" data-testid="simulation-run-bu-tab">
-    <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
-        <Stack FillHeight="true" GapScale="LayoutGap.Medium">
-            <Split Breakpoint="LayoutBreakpoint.None"
-                   AlignItems="AlignItems.Center"
-                   JustifyContent="JustifyContent.SpaceBetween"
-                   Gap="LayoutGap.Small">
-                <Stack GapScale="LayoutGap.Tiny">
-                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="BU/account state" />
-                    <TextBlock TextStyle="TextStyle.H4" Value="@Observation.AccountSnapshots.Count.ToString(CultureInfo.InvariantCulture)" />
-                </Stack>
+<ListDetailShell Dense="true"
+                 ListPaneWidth="17rem"
+                 ListPaneClass="min-h-[27rem]"
+                 DetailPaneClass="min-h-[27rem]"
+                 data-testid="simulation-run-bu-tab">
+    <ListHeader>
+        <ListPanelHeader Title="Observed units"
+                         Count="@Observation.AccountSnapshots.Count.ToString(CultureInfo.InvariantCulture)"
+                         HelpText="Select a business unit for its account rollup or an account for rule and issue evidence."
+                         Dense="true">
+            <Actions>
                 <StatusBadge Text="@Observation.Summary.Status" Tone="@StatusTone(Observation.Summary.Status)" />
-            </Split>
-
+            </Actions>
+        </ListPanelHeader>
+    </ListHeader>
+    <ListContent>
+        <div class="max-h-[36rem] min-h-0 overflow-y-auto pr-1">
             <TreeView Items="BusinessUnitNodes"
                       Style="TreeViewStyle.Workbench"
                       AriaLabel="Run observation business unit and account tree"
                       OnSelect="SelectNode"
                       OnToggle="ToggleNode" />
-        </Stack>
-    </WorkspacePanel>
-
-    <WorkspacePanel Class="min-h-0 overflow-auto">
+        </div>
+    </ListContent>
+    <DetailHeader>
         @if (SelectedSnapshot is not null)
         {
-            <Stack GapScale="LayoutGap.Large" data-testid="simulation-run-selected-account-detail">
-                <Split Breakpoint="LayoutBreakpoint.Lg"
-                       AlignItems="AlignItems.Start"
-                       JustifyContent="JustifyContent.SpaceBetween"
-                       Gap="LayoutGap.Medium"
-                       Wrap="FlexWrap.Wrap">
-                    <Stack GapScale="LayoutGap.Tiny">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Account snapshot" />
-                        <TextBlock TextStyle="TextStyle.H3" Value="@SelectedSnapshot.BusinessUnitName" />
-                        <SmallText Text="@SelectedSnapshot.AccountAddress.Value" />
-                    </Stack>
-                    <Cluster Gap="LayoutGap.Small">
-                        <StatusBadge Text="@SelectedSnapshot.AccountRole.ToString()" Tone="info" />
-                        <StatusBadge Text="@SelectedSnapshot.BindingStatus.ToString()" Tone="@StatusTone(SelectedSnapshot.BindingStatus)" />
-                    </Cluster>
-                </Split>
+            <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Medium" Wrap="FlexWrap.Wrap">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSnapshot.BusinessUnitName" />
+                    <TooltipTarget Text="@SelectedSnapshot.AccountAddress.Value" Position="TooltipPosition.Right" TabIndex="0">
+                        <MonoText Text="@Short(SelectedSnapshot.AccountAddress.Value)" />
+                    </TooltipTarget>
+                </Stack>
+                <Cluster Gap="LayoutGap.Small">
+                    <StatusBadge Text="@SelectedSnapshot.AccountRole.ToString()" Tone="info" />
+                    <StatusBadge Text="@SelectedSnapshot.BindingStatus.ToString()" Tone="@StatusTone(SelectedSnapshot.BindingStatus)" />
+                </Cluster>
+            </Split>
+        }
+        else if (SelectedBusinessUnit is not null)
+        {
+            <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Medium" Wrap="FlexWrap.Wrap">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBusinessUnit.DisplayName" />
+                    <SmallText Text="@SelectedBusinessUnit.Path" />
+                </Stack>
+                <StatusBadge Text="@SelectedBusinessUnit.Kind.ToString()" Tone="info" />
+            </Split>
+        }
+    </DetailHeader>
+    <DetailContent>
+        @if (SelectedSnapshot is not null)
+        {
+            <Stack GapScale="LayoutGap.Medium" data-testid="simulation-run-selected-account-detail">
+                <CompactStatStrip>
+                    <CompactStat Label="Balance" Value="@Money(SelectedSnapshot.Balance)" Tone="info" />
+                    <CompactStat Label="Current BOs" Value="@SelectedSnapshot.CurrentBusinessObjectIds.Count.ToString(CultureInfo.InvariantCulture)" />
+                    <CompactStat Label="Processed" Value="@SelectedSnapshot.ProcessedTriggerCount.ToString(CultureInfo.InvariantCulture)" />
+                    <CompactStat Label="Failed/skipped" Value="@($"{SelectedSnapshot.FailedActionCount}/{SelectedSnapshot.SkippedActionCount}")" />
+                    <CompactStat Label="Rule token" Value="@(SelectedSnapshot.HasRuleToken ? "Present" : "Missing")" Tone="@(SelectedSnapshot.HasRuleToken ? "success" : "warning")" />
+                    <CompactStat Label="Snapshot" Value="@SelectedSnapshot.SnapshotId" Position="TooltipPosition.Right" />
+                </CompactStatStrip>
 
-                <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
-                    <SectionCard Title="Balance" Description="Observed account balance.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@Money(SelectedSnapshot.Balance)" />
-                    </SectionCard>
-                    <SectionCard Title="Current BOs" Description="Linked current business objects.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSnapshot.CurrentBusinessObjectIds.Count.ToString(CultureInfo.InvariantCulture)" />
-                    </SectionCard>
-                    <SectionCard Title="Processed" Description="Executed rule triggers.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSnapshot.ProcessedTriggerCount.ToString(CultureInfo.InvariantCulture)" />
-                    </SectionCard>
-                    <SectionCard Title="Failed/skipped" Description="Rule action outcomes.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@($"{SelectedSnapshot.FailedActionCount}/{SelectedSnapshot.SkippedActionCount}")" />
-                    </SectionCard>
-                </Grid>
-
-                <FormSection Title="Account identity" Description="Run observation joins the account snapshot back to the project BU and address binding.">
-                    <FormRow Split="true">
-                        <FormField Text="Snapshot id">
-                            <TextBox Value="@SelectedSnapshot.SnapshotId" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Business unit">
-                            <TextBox Value="@SelectedSnapshot.BusinessUnitId.Value" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Role">
-                            <TextBox Value="@SelectedSnapshot.AccountRole.ToString()" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Rule token">
-                            <TextBox Value="@(SelectedSnapshot.HasRuleToken ? "present" : "not present")" ReadOnly="true" />
-                        </FormField>
-                    </FormRow>
-                </FormSection>
-
-                <div class="cda-sim-equal-grid">
-                    <SectionCard Title="Current business objects" Description="BO ids related to this account at the observation point.">
+                <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                    <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-label="Current business objects">
                         <Stack GapScale="LayoutGap.Small">
-                            @foreach (string objectId in SelectedSnapshot.CurrentBusinessObjectIds.DefaultIfEmpty("none"))
+                            <TextBlock TextStyle="TextStyle.Subtitle1" Value="Current business objects" />
+                            @foreach (string objectId in SelectedSnapshot.CurrentBusinessObjectIds.DefaultIfEmpty("None"))
                             {
-                                <MonoText Text="@objectId" />
+                                <TooltipTarget Text="@objectId" Position="TooltipPosition.Right" TabIndex="0"><MonoText Text="@objectId" /></TooltipTarget>
                             }
                         </Stack>
-                    </SectionCard>
+                    </section>
 
-                    <FormSection Title="Related issues" Description="Issues tied to this account snapshot.">
+                    <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-label="Related issues">
+                        <Stack GapScale="LayoutGap.Small">
+                            <TextBlock TextStyle="TextStyle.Subtitle1" Value="Related issues" />
                         <DataGrid TItem="SimulationIssue" Data="SelectedSnapshotIssues">
                             <DataGridColumn TItem="SimulationIssue" Property="Code" Title="Code" />
                             <DataGridColumn TItem="SimulationIssue" Title="Severity">
@@ -95,42 +88,24 @@
                             </DataGridColumn>
                             <DataGridColumn TItem="SimulationIssue" Property="Message" Title="Message" />
                         </DataGrid>
-                    </FormSection>
-                </div>
+                        </Stack>
+                    </section>
+                </Grid>
             </Stack>
         }
         else if (SelectedBusinessUnit is not null)
         {
-            <Stack GapScale="LayoutGap.Large" data-testid="simulation-run-selected-bu-detail">
-                <Split Breakpoint="LayoutBreakpoint.Md"
-                       AlignItems="AlignItems.Start"
-                       JustifyContent="JustifyContent.SpaceBetween"
-                       Gap="LayoutGap.Medium"
-                       Wrap="FlexWrap.Wrap">
-                    <Stack GapScale="LayoutGap.Tiny">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Observed BU" />
-                        <TextBlock TextStyle="TextStyle.H3" Value="@SelectedBusinessUnit.DisplayName" />
-                        <SmallText Text="@SelectedBusinessUnit.Path" />
-                    </Stack>
-                    <StatusBadge Text="@SelectedBusinessUnit.Kind.ToString()" Tone="info" />
-                </Split>
+            <Stack GapScale="LayoutGap.Medium" data-testid="simulation-run-selected-bu-detail">
+                <CompactStatStrip>
+                    <CompactStat Label="Accounts" Value="@SelectedBusinessUnitSnapshots.Count.ToString(CultureInfo.InvariantCulture)" />
+                    <CompactStat Label="Total balance" Value="@Money(Amount.FromDecimal(SelectedBusinessUnitSnapshots.Sum(x => x.Balance.Value)))" Tone="info" />
+                    <CompactStat Label="Issues" Value="@SelectedBusinessUnitIssues.Count.ToString(CultureInfo.InvariantCulture)" Tone="@(SelectedBusinessUnitIssues.Count == 0 ? "success" : "warning")" />
+                    <CompactStat Label="Status" Value="@SelectedBusinessUnit.Status.ToString()" />
+                </CompactStatStrip>
 
-                <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
-                    <SectionCard Title="Accounts" Description="Observed snapshots.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBusinessUnitSnapshots.Count.ToString(CultureInfo.InvariantCulture)" />
-                    </SectionCard>
-                    <SectionCard Title="Total balance" Description="Sum of observed accounts.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@Money(Amount.FromDecimal(SelectedBusinessUnitSnapshots.Sum(x => x.Balance.Value)))" />
-                    </SectionCard>
-                    <SectionCard Title="Issues" Description="BU-related issues.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBusinessUnitIssues.Count.ToString(CultureInfo.InvariantCulture)" />
-                    </SectionCard>
-                    <SectionCard Title="Status" Description="Project BU status.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedBusinessUnit.Status.ToString()" />
-                    </SectionCard>
-                </Grid>
-
-                <FormSection Title="Account snapshots" Description="Actual account states, balances, rule-token coverage, and issue links for this BU.">
+                <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-label="Account snapshots">
+                    <Stack GapScale="LayoutGap.Small">
+                        <TextBlock TextStyle="TextStyle.Subtitle1" Value="Account snapshots" />
                     <DataGrid TItem="SimulationBusinessUnitAccountSnapshot" Data="SelectedBusinessUnitSnapshots">
                         <DataGridColumn TItem="SimulationBusinessUnitAccountSnapshot" Title="Role">
                             <Template Context="snapshot">
@@ -153,15 +128,17 @@
                             </Template>
                         </DataGridColumn>
                     </DataGrid>
-                </FormSection>
+                    </Stack>
+                </section>
             </Stack>
         }
-    </WorkspacePanel>
-</div>
+    </DetailContent>
+</ListDetailShell>
 
 @code {
     private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);
     private string? selectedNodeId;
+    private string renderedRunKey = string.Empty;
 
     [Parameter, EditorRequired]
     public SimulationProjectState Project { get; set; } = default!;
@@ -170,8 +147,8 @@
     public SimulationRunObservationState Observation { get; set; } = default!;
 
     private string SelectedId => selectedNodeId
+        ?? Project.BusinessUnits.FirstOrDefault(unit => unit.ParentBusinessUnitId is null)?.BusinessUnitId.Value
         ?? Observation.AccountSnapshots.FirstOrDefault()?.SnapshotId
-        ?? Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value
         ?? string.Empty;
 
     private SimulationBusinessUnitAccountSnapshot? SelectedSnapshot => Observation.AccountSnapshots.FirstOrDefault(snapshot => SnapshotNodeId(snapshot) == SelectedId || snapshot.SnapshotId == SelectedId);
@@ -195,12 +172,17 @@
 
     protected override void OnParametersSet()
     {
-        foreach (BusinessUnitState root in Project.BusinessUnits)
+        string runKey = $"{Observation.Summary.RunId}:{Observation.Summary.CurrentStep}";
+        if (!string.Equals(renderedRunKey, runKey, StringComparison.Ordinal))
         {
-            expandedNodeIds.Add(root.BusinessUnitId.Value);
+            renderedRunKey = runKey;
+            expandedNodeIds.Clear();
+            selectedNodeId = Project.BusinessUnits.FirstOrDefault(unit => unit.ParentBusinessUnitId is null)?.BusinessUnitId.Value
+                ?? Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value
+                ?? Observation.AccountSnapshots.FirstOrDefault()?.SnapshotId;
         }
 
-        selectedNodeId ??= Observation.AccountSnapshots.FirstOrDefault()?.SnapshotId ?? Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value;
+        EnsureSelectedAncestryExpanded();
     }
 
     private IReadOnlyList<TreeViewNode> BuildBusinessUnitNodes(IEnumerable<BusinessUnitState> businessUnits)
@@ -220,6 +202,7 @@
                             Text = snapshot.AccountRole.ToString(),
                             Icon = "account_balance_wallet",
                             BadgeText = Money(snapshot.Balance),
+                            Tooltip = $"{snapshot.AccountRole} · {snapshot.BusinessUnitName} · balance {Money(snapshot.Balance)} · {snapshot.BindingStatus} · address {snapshot.AccountAddress.Value} · {snapshot.CurrentBusinessObjectIds.Count} BO(s) · {snapshot.ProcessedTriggerCount} trigger(s) · {snapshot.FailedActionCount} failed",
                             IsSelected = SnapshotNodeId(snapshot) == SelectedId || snapshot.SnapshotId == SelectedId,
                             DataTestId = $"simulation-run-account-node-{snapshot.AccountRole}"
                         }))
@@ -231,6 +214,7 @@
                     Text = businessUnit.DisplayName,
                     Icon = businessUnit.Kind == BusinessUnitKind.RevenueCenter ? "trending_up" : businessUnit.Kind == BusinessUnitKind.CostCenter ? "payments" : "business",
                     BadgeText = businessUnit.Kind.ToString(),
+                    Tooltip = $"{businessUnit.DisplayName} · {businessUnit.Kind} · {businessUnit.Path} · {businessUnit.Status} · {businessUnit.CurrencyCode ?? "project currency"}",
                     Children = children,
                     IsExpanded = expandedNodeIds.Contains(businessUnit.BusinessUnitId.Value),
                     IsSelected = businessUnit.BusinessUnitId.Value == SelectedId,
@@ -242,6 +226,7 @@
     private Task SelectNode(string nodeId)
     {
         selectedNodeId = nodeId;
+        EnsureSelectedAncestryExpanded();
         return Task.CompletedTask;
     }
 
@@ -258,8 +243,18 @@
     private static string SnapshotNodeId(SimulationBusinessUnitAccountSnapshot snapshot)
         => $"snapshot:{snapshot.SnapshotId}";
 
-    private static string Money(Amount amount)
-        => amount.Value.ToString("USD #,0;USD (#,0)", CultureInfo.InvariantCulture);
+    private void EnsureSelectedAncestryExpanded()
+    {
+        BusinessUnitId? currentId = SelectedSnapshot?.BusinessUnitId ?? SelectedBusinessUnit?.BusinessUnitId;
+        while (currentId is not null)
+        {
+            expandedNodeIds.Add(currentId.Value.Value);
+            currentId = Project.BusinessUnits.FirstOrDefault(unit => unit.BusinessUnitId == currentId.Value)?.ParentBusinessUnitId;
+        }
+    }
+
+    private string Money(Amount amount)
+        => amount.Value.ToString($"{Project.Model.BaseCurrencyCode} #,0;{Project.Model.BaseCurrencyCode} (#,0)", CultureInfo.InvariantCulture);
 
     private static string Short(string value)
         => value.Length <= 28 ? value : $"{value[..12]}...{value[^10..]}";

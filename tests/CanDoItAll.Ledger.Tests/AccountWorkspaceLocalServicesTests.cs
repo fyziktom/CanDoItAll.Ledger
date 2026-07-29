@@ -1,10 +1,10 @@
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class AccountWorkspaceLocalServicesTests
 {
@@ -45,7 +45,7 @@ public sealed class AccountWorkspaceLocalServicesTests
         var address = Address.FromPublicKey(Hex.Utf8("bookmark"));
         var seed = AddressDirectorySeed.FromBookmarks(
             "alice",
-            [new EconomyAddressBookmark("Recent receiver", address)]);
+            [new LedgerAddressBookmark("Recent receiver", address)]);
 
         await service.SaveEntryAsync(
             "alice",

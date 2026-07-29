@@ -1,34 +1,34 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Components.Services;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
-public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
+public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContext
 {
     public BusinessObjectOwnershipPlacementComponentTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
     public void DetailsActions_KeepOwnerQrButDoNotExposeOwnershipVerifierScanner()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
 
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, businessObject)
                 .Add(x => x.ViewedAtUtc, workspace.ViewedAtUtc));
 
@@ -42,13 +42,13 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     [Fact]
     public async Task HomeSecuritySurface_StillHostsOwnershipVerificationTool()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
 
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
         IRenderedComponent<MessageSecurityPanel> security =
-            RenderComponent<MessageSecurityPanel>(parameters => parameters
+            Render<MessageSecurityPanel>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(security, "Ownership");
@@ -61,10 +61,17 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     [Fact]
     public async Task HomeBalances_ShowOnlyRealTokenSourcesInsideBalancesCard()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
+        LedgerSpendableOutput tokenSource = Assert.Single(
+            workspace.SpendableOutputsOrEmpty,
+            output => output.Token?.TokenId.Value == "USD-CREDIT"
+                && output.BusinessObject is null);
+        IReadOnlyList<LedgerSpendableOutput> businessObjectBackedSources = workspace.SpendableOutputsOrEmpty
+            .Where(output => output.BusinessObject is not null)
+            .ToArray();
 
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(home, "Balances");
@@ -72,19 +79,66 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
         Assert.Contains("Balances", home.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain(">Token Sources<", home.Markup, StringComparison.Ordinal);
         home.WaitForAssertion(() => Assert.Contains("Source UTXOs", home.Markup, StringComparison.Ordinal));
-        Assert.Contains("tx-token-source", home.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("tx-permission-source", home.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("tx-rule-permission-source", home.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("tx-rule-cashpool", home.Markup, StringComparison.Ordinal);
+        Assert.Contains(
+            FormatCopyableValue(tokenSource.OutPoint.ToString(), startChars: 8, endChars: 6),
+            home.Markup,
+            StringComparison.Ordinal);
+        Assert.All(
+            businessObjectBackedSources,
+            output => Assert.DoesNotContain(
+                FormatCopyableValue(output.OutPoint.ToString(), startChars: 8, endChars: 6),
+                home.Markup,
+                StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task HomeBalances_UsesResponsiveFullWidthLanesWhenSourcesExist()
+    {
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
+                .Add(x => x.Workspace, workspace));
+
+        await ClickTabAsync(home, "Balances");
+
+        var layout = home.Find("[data-testid='cda-balance-layout']");
+        var summary = home.Find("[data-testid='cda-balance-summary-lane']");
+        var sources = home.Find("[data-testid='cda-balance-sources-lane']");
+
+        Assert.Contains("--cda-grid-columns-lg:repeat(2,minmax(0,1fr))", layout.GetAttribute("style"), StringComparison.Ordinal);
+        Assert.Contains("w-full", summary.ClassList);
+        Assert.Contains("min-w-0", summary.ClassList);
+        Assert.Contains("w-full", sources.ClassList);
+        Assert.Equal(2, layout.QuerySelectorAll("table").Length);
+        Assert.Empty(home.FindComponents<FormSection>());
+    }
+
+    [Fact]
+    public async Task HomeBalances_UsesOneLaneWhenNoTokenSourcesExist()
+    {
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace() with
+        {
+            SpendableOutputs = []
+        };
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
+                .Add(x => x.Workspace, workspace));
+
+        await ClickTabAsync(home, "Balances");
+
+        var layout = home.Find("[data-testid='cda-balance-layout']");
+        Assert.Contains("--cda-grid-columns-lg:repeat(1,minmax(0,1fr))", layout.GetAttribute("style"), StringComparison.Ordinal);
+        Assert.Single(layout.QuerySelectorAll("table"));
+        Assert.Empty(home.FindAll("[data-testid='cda-balance-sources-lane']"));
     }
 
     [Fact]
     public async Task HomeWorkspace_RendersRequestedTabOrderAndPanels()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
 
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         var tabs = home.FindAll("[role='tab']");
@@ -95,7 +149,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             tab => Assert.Contains("Balances", tab.TextContent, StringComparison.Ordinal),
             tab => Assert.Contains("Commerce", tab.TextContent, StringComparison.Ordinal),
             tab => Assert.Contains("Transactions history", tab.TextContent, StringComparison.Ordinal));
-        Assert.NotEmpty(home.FindAll("[data-testid='cda-vef-account-analytics']"));
+        Assert.NotEmpty(home.FindAll("[data-testid='cda-account-analytics']"));
 
         await ClickTabAsync(home, "Balances");
         home.WaitForAssertion(() => Assert.Contains("Source UTXOs", home.Markup, StringComparison.Ordinal));
@@ -110,10 +164,10 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
     [Fact]
     public void HomeActionGroup_RendersVisibleShortLabels()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
 
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            RenderComponent<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         AssertActionLabel(home, "cda-action-send", "Send");
@@ -141,11 +195,16 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : TestContext
             .ClickAsync(new MouseEventArgs());
 
     private static void AssertActionLabel(
-        IRenderedComponent<EconomyAccountWorkspace> home,
+        IRenderedComponent<LedgerAccountWorkspace> home,
         string testId,
         string expectedLabel)
     {
         string label = home.Find($"[data-testid='{testId}'] .rz-button-text").TextContent.Trim();
         Assert.Equal(expectedLabel, label);
     }
+
+    private static string FormatCopyableValue(string value, int startChars, int endChars)
+        => value.Length <= startChars + endChars + 3
+            ? value
+            : $"{value[..startChars]}...{value[^endChars..]}";
 }

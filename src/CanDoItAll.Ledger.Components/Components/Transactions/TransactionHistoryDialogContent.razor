@@ -1,0 +1,278 @@
+@namespace CanDoItAll.Ledger.Components
+
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch" data-testid="tx-history-dialog">
+    <Toolbar>
+        <ToolbarRow>
+            <CompactStatStrip>
+                <CompactStat Label="Total" Value="@Transactions.Count.ToString()" />
+                <CompactStat Label="Visible" Value="@FilteredTransactions.Count.ToString()" Tone="info" />
+                <Cluster Gap="LayoutGap.Tiny" Wrap="FlexWrap.NoWrap">
+                    <CompactStat Text="@AccountLabel" TooltipText="@(AccountAddress?.Value ?? "Current account")" />
+                    @if (AccountAddress is not null)
+                    {
+                        <CopyButton Value="@AccountAddress.Value.Value"
+                                    DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                    Size="CopyButtonSize.Small"
+                                    AriaLabel="Copy account address" />
+                    }
+                </Cluster>
+                <CompactStat Label="Newest" Value="@NewestLabel" />
+            </CompactStatStrip>
+        </ToolbarRow>
+
+    <Grid ColumnsLg="3" Gap="LayoutGap.Small" AlignItems="AlignItems.End">
+        <FormField Text="Search">
+            <TextBox @bind-Value="search" Immediate="true" Placeholder="Search tx id, address, kind..." aria-label="Search transactions" />
+        </FormField>
+
+        <FormField Text="Kind">
+            <DropDown TValue="string"
+                      Data="KindOptions"
+                      TextProperty="Text"
+                      ValueProperty="Value"
+                      Value="@selectedKind"
+                      ValueChanged="@(value => selectedKind = value ?? AllFilter)"
+                      Placeholder="All kinds"
+                      aria-label="Filter transaction kind" />
+        </FormField>
+
+        <FormField Text="Status">
+            <DropDown TValue="string"
+                      Data="StatusOptions"
+                      TextProperty="Text"
+                      ValueProperty="Value"
+                      Value="@selectedStatus"
+                      ValueChanged="@(value => selectedStatus = value ?? AllFilter)"
+                      Placeholder="All statuses"
+                      aria-label="Filter transaction status" />
+        </FormField>
+    </Grid>
+    </Toolbar>
+
+    @if (FilteredTransactions.Count == 0)
+    {
+        <EmptyState Eyebrow="Transactions" Title="No matching transactions" Description="Adjust the search text or filters to show ledger activity." />
+    }
+    else
+    {
+        <DataGrid TItem="LedgerTransactionSummary"
+                  Data="@FilteredTransactions"
+                  Caption="Transaction history"
+                  EmptyText="No matching transactions."
+                  RowSelect="OpenDetailsAsync"
+                  data-testid="tx-history-grid">
+            <Columns>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Tx id">
+                    <Template Context="transaction">
+                        <div data-testid="tx-history-row"
+                             @onclick:stopPropagation="true"
+                             @onkeydown:stopPropagation="true">
+                            <CopyableMonoValue Value="@transaction.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction id" />
+                        </div>
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Route">
+                    <Template Context="transaction">
+                        <div @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+                                <span class="block max-w-sm truncate"
+                                      title="@FormatRawRoute(transaction)">
+                                    @FormatDisplayRoute(transaction)
+                                </span>
+                                <CopyButton Value="@FormatRawRoute(transaction)"
+                                            DisplayMode="CopyButtonDisplayMode.IconOnly"
+                                            Size="CopyButtonSize.ExtraSmall"
+                                            AriaLabel="Copy transaction route" />
+                            </Cluster>
+                        </div>
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Kind">
+                    <Template Context="transaction">@TransactionUiPresentation.KindLabel(transaction.Kind)</Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Status">
+                    <Template Context="transaction">
+                        <StatusBadge Text="@transaction.Status.ToString()" Tone="@TransactionUiPresentation.StatusTone(transaction.Status)" NoWrap="true" />
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Inputs">
+                    <Template Context="transaction">@transaction.Inputs.Count</Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Outputs">
+                    <Template Context="transaction">@transaction.Outputs.Count</Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Data">
+                    <Template Context="transaction">@(transaction.Data is null ? "None" : TransactionUiPresentation.DataTypeLabel(transaction.Data.ItemType))</Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Created">
+                    <Template Context="transaction">
+                        <time datetime="@transaction.Timestamp.ToString("O")"
+                              title="@transaction.Timestamp.ToString("O")">
+                            @TransactionUiPresentation.FormatLocalTimestampWithSeconds(transaction.Timestamp)
+                        </time>
+                    </Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="LedgerTransactionSummary" Title="Actions">
+                    <Template Context="transaction">
+                        <div @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
+                            <Button Text="Details" Icon="info" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="@(() => OpenDetailsAsync(transaction))" />
+                        </div>
+                    </Template>
+                </DataGridColumn>
+            </Columns>
+        </DataGrid>
+    }
+</Stack>
+
+@code {
+    private const string AllFilter = "__all";
+    private string search = string.Empty;
+    private string selectedKind = AllFilter;
+    private string selectedStatus = AllFilter;
+
+    [Parameter]
+    public IReadOnlyList<LedgerTransactionSummary> Transactions { get; set; } = [];
+
+    [Parameter]
+    public Address? AccountAddress { get; set; }
+
+    [Parameter]
+    public string AccountName { get; set; } = "Current account";
+
+    [Parameter]
+    public IReadOnlyList<LedgerAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<LedgerTransactionSummary> TransactionDetailsRequested { get; set; }
+
+    private IReadOnlyList<FilterOption> KindOptions
+        => new[] { new FilterOption(AllFilter, "All") }
+            .Concat(Transactions
+                .Select(transaction => transaction.Kind)
+                .Distinct()
+                .OrderBy(kind => kind.ToString(), StringComparer.OrdinalIgnoreCase)
+                .Select(kind => new FilterOption(kind.ToString(), TransactionUiPresentation.KindLabel(kind))))
+            .ToArray();
+
+    private IReadOnlyList<FilterOption> StatusOptions
+        => FilterOptions(Transactions.Select(transaction => transaction.Status.ToString()));
+
+    private IReadOnlyList<LedgerTransactionSummary> FilteredTransactions
+        => LedgerTransactionOrdering
+            .NewestFirst(Transactions.Where(MatchesFilters))
+            .ToArray();
+
+    private string NewestLabel
+        => LedgerTransactionOrdering.Newest(Transactions) is not { } newest
+            ? "none"
+            : TransactionUiPresentation.FormatLocalTimestamp(newest.Timestamp);
+
+    private string AccountLabel
+        => AccountAddress is null
+            ? "Account current"
+            : $"Account {AccountName}";
+
+    private IReadOnlyDictionary<string, string> AddressNames
+        => DirectoryEntries
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.DisplayName))
+            .Select(entry => new KeyValuePair<string, string>(entry.Address, entry.DisplayName))
+            .Concat(Bookmarks
+                .Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.Name))
+                .Select(bookmark => new KeyValuePair<string, string>(bookmark.Address.Value, bookmark.Name)))
+            .GroupBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Value.Trim(),
+                StringComparer.OrdinalIgnoreCase);
+
+    private Task OpenDetailsAsync(LedgerTransactionSummary transaction)
+        => TransactionDetailsRequested.InvokeAsync(transaction);
+
+    private bool MatchesFilters(LedgerTransactionSummary transaction)
+    {
+        if (selectedKind != AllFilter && !transaction.Kind.ToString().Equals(selectedKind, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (selectedStatus != AllFilter && !transaction.Status.ToString().Equals(selectedStatus, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return true;
+        }
+
+        string probe = string.Join(
+            ' ',
+            transaction.TxId.Value,
+            transaction.Kind,
+            TransactionUiPresentation.KindLabel(transaction.Kind),
+            transaction.Status,
+            FormatDisplayRoute(transaction),
+            FormatRawRoute(transaction),
+            transaction.Inputs.Count,
+            transaction.Outputs.Count,
+            transaction.Data is null
+                ? "none"
+                : TransactionUiPresentation.DataTypeLabel(transaction.Data.ItemType));
+
+        return probe.Contains(search, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IReadOnlyList<FilterOption> FilterOptions(IEnumerable<string> values)
+        => new[] { new FilterOption(AllFilter, "All") }
+            .Concat(values
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                .Select(value => new FilterOption(value, value)))
+            .ToArray();
+
+    private string FormatDisplayRoute(LedgerTransactionSummary transaction)
+    {
+        string inputs = transaction.InputAddresses.Count == 0
+            ? "genesis/mint"
+            : string.Join(", ", transaction.InputAddresses.Select(DisplayAddress));
+        string outputs = transaction.OutputAddresses.Count == 0
+            ? "none"
+            : string.Join(", ", transaction.OutputAddresses.Select(DisplayAddress));
+
+        return $"{inputs} \u2192 {outputs}";
+    }
+
+    private static string FormatRawRoute(LedgerTransactionSummary transaction)
+    {
+        string inputs = transaction.InputAddresses.Count == 0
+            ? "genesis/mint"
+            : string.Join(", ", transaction.InputAddresses.Select(address => address.Value));
+        string outputs = transaction.OutputAddresses.Count == 0
+            ? "none"
+            : string.Join(", ", transaction.OutputAddresses.Select(address => address.Value));
+
+        return $"{inputs} \u2192 {outputs}";
+    }
+
+    private string DisplayAddress(Address address)
+    {
+        string shortened = ShortAddress(address.Value);
+        if (AccountAddress is not null
+            && address.Value.Equals(AccountAddress.Value.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{AccountName} ({shortened})";
+        }
+
+        return AddressNames.TryGetValue(address.Value, out string? name)
+            ? $"{name} ({shortened})"
+            : shortened;
+    }
+
+    private static string ShortAddress(string value)
+        => value.Length <= 18 ? value : $"{value[..10]}...{value[^6..]}";
+
+    private sealed record FilterOption(string Value, string Text);
+}

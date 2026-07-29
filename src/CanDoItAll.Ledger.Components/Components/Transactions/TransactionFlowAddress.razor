@@ -1,0 +1,35 @@
+@namespace CanDoItAll.Ledger.Components
+
+<Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap" Class="min-w-0">
+    <TextBlock TextStyle="TextStyle.Caption" Value="@DirectionLabel" />
+    @if (DirectoryEntry is not null)
+    {
+        <StatusBadge Text="@DirectoryEntry.DisplayName"
+                     Tone="@(DirectoryEntry.Kind == AddressDirectoryEntryKind.Own ? "info" : "neutral")"
+                     NoWrap="true" />
+    }
+    <CopyableMonoValue Value="@Address.Value"
+                       StartChars="8"
+                       EndChars="6"
+                       AriaLabel="@CopyAriaLabel" />
+</Cluster>
+
+@code {
+    [Parameter, EditorRequired]
+    public Address Address { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+
+    [Parameter]
+    public string DirectionLabel { get; set; } = "Address";
+
+    private AddressDirectoryEntry? DirectoryEntry
+        => DirectoryEntries.FirstOrDefault(entry =>
+            string.Equals(entry.Address, Address.Value, StringComparison.OrdinalIgnoreCase));
+
+    private string CopyAriaLabel
+        => DirectoryEntry is null
+            ? $"Copy {DirectionLabel.ToLowerInvariant()} address"
+            : $"Copy {DirectoryEntry.DisplayName} address";
+}

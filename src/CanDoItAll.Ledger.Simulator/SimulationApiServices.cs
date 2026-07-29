@@ -2,7 +2,7 @@ using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace CanDoItAll.Economy.Simulator;
+namespace CanDoItAll.Ledger.Simulator;
 
 public interface ISimulationProjectWorkspaceService
 {
@@ -89,20 +89,20 @@ public sealed class SimulationFunctionCatalogService : ISimulationFunctionCatalo
             Function("Project workspace", "SimulationProjectImportExportService", "CreateManifest", "Create deterministic project export manifest.", "SimulationProjectExportManifest", "projects", "Implemented", "SimulationProjectServices.cs", "Audit trail", "Hashes model, BUs, rules, inputs, and run setups."),
             Function("Project workspace", "SimulationProjectImportExportService", "PreviewImport", "Read and validate imported project manifest JSON.", "SimulationProjectImportPreview", "projects", "Implemented", "SimulationProjectServices.cs", "Data quality", "Returns schema warnings and validation errors."),
             Function("Project workspace", "SimulationProjectImportExportService", "BuildDeterministicRunSetupHash", "Hash semantic run setup inputs.", "Hash string", "projects", "Implemented", "SimulationProjectServices.cs", "Controls", "Ignores UI speed but includes scenario semantics."),
-            Function("Scenario templates", "EconomyScenarioTemplateCatalog", "GetScenarios", "List S1/S2/S3 baseline scenarios and the VEF assembly-native financial plan.", "ScenarioBusinessModelState", "scenario-templates", "Implemented", "EconomyScenarioTemplateCatalog.cs", "Planning and unit economics", "SaaS/services, bakery, hardware engineering, and VEFramework assembly scenarios."),
-            Function("Scenario templates", "EconomyScenarioEventCompiler", "Compile", "Compile business model assumptions, dated workbook schedules, and expected totals into economic events.", "EconomyScenarioEventCompileResult", "scenarios", "Implemented", "EconomyScenarioEventCompiler.cs", "Profitability, working capital", "Creates revenue, cash receipt, COGS, payroll, CapEx, approval-gated financial schedule, depreciation, and opex events."),
-            Function("Scenario execution", "EconomyProjectionService", "BuildProjection", "Project cash flow, KPIs, and deficit issues from economic events.", "EconomyProjection", "analysis", "Implemented", "EconomySimulatorEngine.cs", "Liquidity, profitability", "Splits planned, committed, actual, and simulated cash flows."),
-            Function("Scenario execution", "EconomyScenarioRunner", "RunAsync", "Run a scenario request and produce run/result BO drafts.", "ScenarioRunResult", "scenarios", "Implemented", "EconomySimulatorEngine.cs", "Scenario control", "Requires non-null scenario id and validates horizon."),
-            Function("Actuals and calibration", "ActualTrackingService", "ValidateActualEntry", "Validate actual operational events before calibration.", "ActualEconomicEntryState", "analysis", "Implemented", "EconomySimulatorEngine.cs", "Actual-vs-plan", "Rejects scenario-tagged actuals and invalid statuses."),
-            Function("Actuals and calibration", "EconomyCalibrationService", "RecommendAssumptionUpdate", "Recommend assumption updates from planned vs actual metrics.", "CalibrationRecommendationState", "analysis", "Implemented", "EconomySimulatorEngine.cs", "Forecast governance", "Produces confidence and evidence links."),
+            Function("Scenario templates", "LedgerScenarioTemplateCatalog", "GetScenarios", "List S1/S2/S3 baseline scenarios and the reference assembly-native financial plan.", "ScenarioBusinessModelState", "scenario-templates", "Implemented", "LedgerScenarioTemplateCatalog.cs", "Planning and unit economics", "SaaS/services, bakery, hardware engineering, and reference assembly scenarios."),
+            Function("Scenario templates", "LedgerScenarioEventCompiler", "Compile", "Compile business model assumptions, dated workbook schedules, and expected totals into economic events.", "LedgerScenarioEventCompileResult", "scenarios", "Implemented", "LedgerScenarioEventCompiler.cs", "Profitability, working capital", "Creates revenue, cash receipt, COGS, payroll, CapEx, approval-gated financial schedule, depreciation, and opex events."),
+            Function("Scenario execution", "LedgerProjectionService", "BuildProjection", "Project cash flow, KPIs, and deficit issues from economic events.", "LedgerProjection", "analysis", "Implemented", "LedgerSimulatorEngine.cs", "Liquidity, profitability", "Splits planned, committed, actual, and simulated cash flows."),
+            Function("Scenario execution", "LedgerScenarioRunner", "RunAsync", "Run a scenario request and produce run/result BO drafts.", "ScenarioRunResult", "scenarios", "Implemented", "LedgerSimulatorEngine.cs", "Scenario control", "Requires non-null scenario id and validates horizon."),
+            Function("Actuals and calibration", "ActualTrackingService", "ValidateActualEntry", "Validate actual operational events before calibration.", "ActualEconomicEntryState", "analysis", "Implemented", "LedgerSimulatorEngine.cs", "Actual-vs-plan", "Rejects scenario-tagged actuals and invalid statuses."),
+            Function("Actuals and calibration", "LedgerCalibrationService", "RecommendAssumptionUpdate", "Recommend assumption updates from planned vs actual metrics.", "CalibrationRecommendationState", "analysis", "Implemented", "LedgerSimulatorEngine.cs", "Forecast governance", "Produces confidence and evidence links."),
             Function("Run lifecycle", "InMemorySimulationRunLifecycleService", "StartRun", "Start a project run from a setup in automatic or manual stepping mode.", "SimulationRunCommandResult", "runs", "Implemented", "SimulationRunLifecycleServices.cs", "Operational control", "Automatic runs materialize to the configured horizon; manual runs wait at step 1."),
             Function("Run lifecycle", "InMemorySimulationRunLifecycleService", "StepRun", "Select, move previous, or move next on a run timeline.", "SimulationRunCommandResult", "runs", "Implemented", "SimulationRunLifecycleServices.cs", "Operational control", "Backward movement loads existing snapshots; forward movement materializes missing steps."),
             Function("Run lifecycle", "InMemorySimulationRunLifecycleService", "ApplyIntervention", "Apply a BO-backed manual-run intervention and invalidate future snapshots.", "SimulationRunInterventionCommandResult", "runs", "Implemented", "SimulationRunLifecycleServices.cs", "Operational control, controls", "Demand shocks and capacity-expansion requests are stored as runtime intervention BOs before future manual steps are materialized."),
             Function("Run lifecycle", "InMemorySimulationRunLifecycleService", "ApplyCommand", "Pause, resume, stop, or restart a run.", "SimulationRunCommandResult", "runs", "Implemented", "SimulationRunLifecycleServices.cs", "Operational control", "Invalid commands return visible validation errors."),
             Function("Run lifecycle", "InMemorySimulationRunLifecycleService", "ListRuns/GetRun", "List run registry records and selected run state.", "SimulationRunConsoleState", "runs", "Implemented", "SimulationRunLifecycleServices.cs", "Reporting", "Preserves failed and warning run visibility."),
             Function("Run observation", "SimulationRunObservationService", "BuildObservation", "Build run observation state from result, graphs, account snapshots, and rule evidence.", "SimulationRunObservationState", "runs", "Implemented", "SimulationProjectServices.cs", "Reporting, controls", "Includes output hashes, artifacts, graph rows, issues, BOs, and rule evidence."),
-            Function("Rule automation", "EconomySimulatorCommonRuleFactory", "Create*Rule", "Create common CFO-control account rules.", "AccountRuleDefinition", "metadata", "Implemented", "EconomySimulatorRuleAutomation.cs", "Controls and governance", "Cashpool, reserve, purchase, payable, receivable, settlement, and CapEx rules."),
-            Function("Rule automation", "EconomySimulatorScenarioRulePackCatalog", "CreateRulePack", "Create scenario-specific rule process packs for S1/S2/S3/VEF.", "EconomySimulatorScenarioRulePack", "scenario-templates", "Implemented", "EconomySimulatorRuleAutomation.cs", "Controls and risk", "Maps rules to BUs, trigger object types, approval limits, and control purposes."),
+            Function("Rule automation", "LedgerSimulatorCommonRuleFactory", "Create*Rule", "Create common CFO-control account rules.", "AccountRuleDefinition", "metadata", "Implemented", "LedgerSimulatorRuleAutomation.cs", "Controls and governance", "Cashpool, reserve, purchase, payable, receivable, settlement, and CapEx rules."),
+            Function("Rule automation", "LedgerSimulatorScenarioRulePackCatalog", "CreateRulePack", "Create scenario-specific rule process packs for each configured template.", "LedgerSimulatorScenarioRulePack", "scenario-templates", "Implemented", "LedgerSimulatorRuleAutomation.cs", "Controls and risk", "Maps rules to BUs, trigger object types, approval limits, and control purposes."),
             Function("Finance analysis", "SimulationFinanceAnalysisService", "Build", "Derive CFO analysis snapshot from a run console state.", "SimulationFinanceAnalysisSnapshot", "runs", "New API support", "SimulationApiServices.cs", "CFO analysis", "Packages liquidity, cash flow, controls, risk, KPI, source-map, and data-quality lenses."),
             Function("Finance analysis", "SimulationPeriodSummaryService", "Build", "Build quarter or year management summary from run graph outputs.", "SimulationPeriodSummarySnapshot", "runs", "New API support", "SimulationApiServices.cs", "Management reporting", "Aggregates cash flow, income, expenses, capital headroom, profit, and distribution slices."),
             Function("API metadata", "SimulationFunctionCatalogService", "GetCatalog", "Expose function/API/CFO coverage metadata.", "SimulatorFunctionCatalog", "metadata", "New API support", "SimulationApiServices.cs", "Governance", "Used by API clients and workbook mapping.")
@@ -114,8 +114,8 @@ public sealed class SimulationFunctionCatalogService : ISimulationFunctionCatalo
             Endpoint("Metadata", "GET", "/api/simulator/metadata/function-map", "Return function, endpoint, and CFO coverage catalog.", "ISimulationFunctionCatalogService", "SimulatorFunctionCatalog", "Governance", "Implemented"),
             Endpoint("Metadata", "GET", "/api/simulator/metadata/endpoints", "Return endpoint map only.", "ISimulationFunctionCatalogService", "SimulatorApiEndpointMapItem[]", "Governance", "Implemented"),
             Endpoint("Metadata", "GET", "/api/simulator/metadata/cfo-coverage", "Return CFO coverage checklist.", "ISimulationFunctionCatalogService", "SimulatorCfoCoverageItem[]", "Data quality", "Implemented"),
-            Endpoint("Templates", "GET", "/api/simulator/templates", "List simulator BO, rule, schedule, and model templates with tags and dependencies.", "IEconomySimulatorTemplateProvider", "EconomySimulatorTemplateState[]", "Settings catalogue", "Implemented"),
-            Endpoint("Templates", "GET", "/api/simulator/templates/{templateId}", "Read one simulator template including required templates, BOs, rules, parameters, and tags.", "IEconomySimulatorTemplateProvider", "EconomySimulatorTemplateState", "Settings catalogue", "Implemented"),
+            Endpoint("Templates", "GET", "/api/simulator/templates", "List simulator BO, rule, schedule, and model templates with tags and dependencies.", "ILedgerSimulatorTemplateProvider", "LedgerSimulatorTemplateState[]", "Settings catalogue", "Implemented"),
+            Endpoint("Templates", "GET", "/api/simulator/templates/{templateId}", "Read one simulator template including required templates, BOs, rules, parameters, and tags.", "ILedgerSimulatorTemplateProvider", "LedgerSimulatorTemplateState", "Settings catalogue", "Implemented"),
             Endpoint("Projects", "GET", "/api/simulator/projects", "List simulator project summaries.", "ISimulationProjectWorkspaceService", "SimulationProjectSummary[]", "Planning context", "Implemented"),
             Endpoint("Projects", "GET", "/api/simulator/projects/{projectId}", "Read a project state.", "ISimulationProjectWorkspaceService", "SimulationProjectState", "BU accountability", "Implemented"),
             Endpoint("Projects", "PUT", "/api/simulator/projects/{projectId}", "Upsert a project state after validation.", "ISimulationProjectWorkspaceService, ISimulationProjectValidationService", "SimulationProjectUpsertResponse", "Data quality", "Implemented"),
@@ -124,12 +124,12 @@ public sealed class SimulationFunctionCatalogService : ISimulationFunctionCatalo
             Endpoint("Projects", "POST", "/api/simulator/projects/import/preview", "Preview imported project JSON.", "ISimulationProjectImportExportService", "SimulationProjectImportPreview", "Data quality", "Implemented"),
             Endpoint("Projects", "POST", "/api/simulator/projects/import", "Import and store a valid project manifest.", "ISimulationProjectImportExportService, ISimulationProjectWorkspaceService", "SimulationProjectImportApiResponse", "Data quality", "Implemented"),
             Endpoint("Projects", "POST", "/api/simulator/projects/{projectId}/runs", "Start a run for a stored project/setup.", "ISimulationRunLifecycleService", "SimulationRunStartApiResponse", "Operational control", "Implemented"),
-            Endpoint("Scenario templates", "GET", "/api/simulator/scenario-templates", "List baseline scenario template summaries.", "IEconomyScenarioTemplateCatalog", "SimulationScenarioTemplateSummary[]", "Planning and unit economics", "Implemented"),
-            Endpoint("Scenario templates", "GET", "/api/simulator/scenario-templates/{scenarioCode}", "Read a scenario business model.", "IEconomyScenarioTemplateCatalog", "ScenarioBusinessModelState", "Planning and unit economics", "Implemented"),
-            Endpoint("Scenario templates", "GET", "/api/simulator/scenario-templates/{scenarioCode}/rule-pack", "Read scenario rule pack.", "EconomySimulatorScenarioRulePackCatalog", "EconomySimulatorScenarioRulePack", "Controls", "Implemented"),
-            Endpoint("Scenario templates", "GET", "/api/simulator/scenario-templates/{scenarioCode}/financial-schedules", "Read planned financial schedules, simulator periods, approvals, and timeline amounts for a scenario.", "IEconomyScenarioTemplateCatalog", "ScenarioFinancialScheduleState[]", "Planning and governance", "Implemented"),
-            Endpoint("Scenarios", "POST", "/api/simulator/scenarios/compile", "Compile a named scenario into economic events.", "IEconomyScenarioEventCompiler", "EconomyScenarioEventCompileResult", "Profitability, working capital", "Implemented"),
-            Endpoint("Scenarios", "POST", "/api/simulator/scenarios/run", "Run an explicit scenario request.", "IEconomyScenarioRunner", "ScenarioRunResult", "Liquidity", "Implemented"),
+            Endpoint("Scenario templates", "GET", "/api/simulator/scenario-templates", "List baseline scenario template summaries.", "ILedgerScenarioTemplateCatalog", "SimulationScenarioTemplateSummary[]", "Planning and unit economics", "Implemented"),
+            Endpoint("Scenario templates", "GET", "/api/simulator/scenario-templates/{scenarioCode}", "Read a scenario business model.", "ILedgerScenarioTemplateCatalog", "ScenarioBusinessModelState", "Planning and unit economics", "Implemented"),
+            Endpoint("Scenario templates", "GET", "/api/simulator/scenario-templates/{scenarioCode}/rule-pack", "Read scenario rule pack.", "LedgerSimulatorScenarioRulePackCatalog", "LedgerSimulatorScenarioRulePack", "Controls", "Implemented"),
+            Endpoint("Scenario templates", "GET", "/api/simulator/scenario-templates/{scenarioCode}/financial-schedules", "Read planned financial schedules, simulator periods, approvals, and timeline amounts for a scenario.", "ILedgerScenarioTemplateCatalog", "ScenarioFinancialScheduleState[]", "Planning and governance", "Implemented"),
+            Endpoint("Scenarios", "POST", "/api/simulator/scenarios/compile", "Compile a named scenario into economic events.", "ILedgerScenarioEventCompiler", "LedgerScenarioEventCompileResult", "Profitability, working capital", "Implemented"),
+            Endpoint("Scenarios", "POST", "/api/simulator/scenarios/run", "Run an explicit scenario request.", "ILedgerScenarioRunner", "ScenarioRunResult", "Liquidity", "Implemented"),
             Endpoint("Runs", "GET", "/api/simulator/runs", "List run registry records.", "ISimulationRunLifecycleService", "SimulationRunRegistryRecord[]", "Reporting", "Implemented"),
             Endpoint("Runs", "GET", "/api/simulator/runs/{runId}", "Read run console state.", "ISimulationRunLifecycleService", "SimulationRunConsoleState", "Reporting", "Implemented"),
             Endpoint("Runs", "POST", "/api/simulator/runs/{runId}/commands", "Apply lifecycle command.", "ISimulationRunLifecycleService", "SimulationRunCommandApiResponse", "Operational control", "Implemented"),
@@ -139,10 +139,10 @@ public sealed class SimulationFunctionCatalogService : ISimulationFunctionCatalo
             Endpoint("Runs", "GET", "/api/simulator/runs/{runId}/analysis/finance", "Read CFO finance analysis snapshot.", "ISimulationFinanceAnalysisService", "SimulationFinanceAnalysisSnapshot", "CFO review", "Implemented"),
             Endpoint("Runs", "GET", "/api/simulator/runs/{runId}/analysis/period-summary", "Read quarter/year management summary.", "ISimulationPeriodSummaryService", "SimulationPeriodSummarySnapshot", "Management reporting", "Implemented"),
             Endpoint("Runs", "GET", "/api/simulator/runs/{runId}/analysis/source-map", "Read KPI/source map coverage.", "ISimulationRunLifecycleService", "SimulationOutputSourceRef[]", "Data lineage", "Implemented"),
-            Endpoint("Runs", "GET", "/api/simulator/runs/{runId}/graphs", "Read run graph data.", "ISimulationRunLifecycleService", "EconomyGraphData[]", "Reporting", "Implemented"),
-            Endpoint("Analysis", "POST", "/api/simulator/analysis/projection", "Build cash-flow projection from events.", "IEconomyProjectionService", "EconomyProjection", "Liquidity", "Implemented"),
+            Endpoint("Runs", "GET", "/api/simulator/runs/{runId}/graphs", "Read run graph data.", "ISimulationRunLifecycleService", "LedgerGraphData[]", "Reporting", "Implemented"),
+            Endpoint("Analysis", "POST", "/api/simulator/analysis/projection", "Build cash-flow projection from events.", "ILedgerProjectionService", "LedgerProjection", "Liquidity", "Implemented"),
             Endpoint("Analysis", "POST", "/api/simulator/analysis/actuals/validate", "Validate actual economic entry.", "IActualTrackingService", "ActualEconomicEntryState", "Actual-vs-plan", "Implemented"),
-            Endpoint("Analysis", "POST", "/api/simulator/analysis/calibration/recommend", "Recommend assumption update.", "IEconomyCalibrationService", "CalibrationRecommendationState", "Forecast governance", "Implemented")
+            Endpoint("Analysis", "POST", "/api/simulator/analysis/calibration/recommend", "Recommend assumption update.", "ILedgerCalibrationService", "CalibrationRecommendationState", "Forecast governance", "Implemented")
         ];
 
     private static IReadOnlyList<SimulatorCfoCoverageItem> CreateCfoCoverage()
@@ -151,10 +151,10 @@ public sealed class SimulationFunctionCatalogService : ISimulationFunctionCatalo
             Coverage("Liquidity and runway", "Opening/current/minimum cash, deficit date, reserve floor, run status.", "Project model, account snapshots, issues, run registry.", "/runs/{runId}/analysis/finance", "Implemented", "Treasury and insolvency decisions need professional review in real companies."),
             Coverage("Profitability and cash flow", "Revenue, expense, COGS, payroll, CapEx, depreciation, net cash flow.", "Scenario compiler, projections, graph totals.", "/analysis/projection; /runs/{runId}/graphs; /runs/{runId}/analysis/period-summary", "Implemented", "Accounting policy and revenue recognition are generic simulator assumptions."),
             Coverage("Working capital", "Collection delays, supplier terms, AR/AP follow-up, cash receipts.", "Financial inputs, scenario event dates, rule processes.", "/projects; /scenario-templates; /runs/{runId}/analysis/finance", "Implemented", "Entity-specific payment terms and credit risk need user data."),
-            Coverage("Capital allocation", "CapEx plans, approval rules, tooling/equipment assumptions, and VEF scheduled investment/expense requests.", "Scenario templates, planned financial schedules, and CapEx rule packs.", "/scenario-templates/{scenarioCode}; /scenario-templates/{scenarioCode}/financial-schedules; /scenario-templates/{scenarioCode}/rule-pack", "Implemented", "NPV/IRR hurdle-rate models are not part of this API scope."),
+            Coverage("Capital allocation", "CapEx plans, approval rules, tooling/equipment assumptions, and reference-plan investment/expense requests.", "Scenario templates, planned financial schedules, and CapEx rule packs.", "/scenario-templates/{scenarioCode}; /scenario-templates/{scenarioCode}/financial-schedules; /scenario-templates/{scenarioCode}/rule-pack", "Implemented", "NPV/IRR hurdle-rate models are not part of this API scope."),
             Coverage("Treasury, debt, and cash pooling", "Cash pool, reserve guard, external settlement, liquidity facility rules.", "Rule automation and output sources.", "/metadata/function-map; /scenario-templates/{scenarioCode}/rule-pack", "Partial", "Debt covenants and cross-border cash pooling require legal/tax review."),
             Coverage("Group and BU accountability", "Business units, account bindings, source owners, BU snapshots.", "SimulationProjectState and run observation.", "/projects/{projectId}; /runs/{runId}/observation", "Implemented", "Legal entity boundaries are not a substitute for statutory consolidation."),
-            Coverage("Controls and governance", "Rule evidence, approval-gated planned schedule BOs, failed/skipped/processed actions, validation messages, runtime intervention BOs.", "Rule evidence, project validation, source map, manual run interventions, VEF schedule approvals.", "/scenario-templates/{scenarioCode}/financial-schedules; /runs/{runId}/analysis/finance; /runs/{runId}/interventions", "Implemented", "Controls reduce risk but do not replace audit or approvals policy."),
+            Coverage("Controls and governance", "Rule evidence, approval-gated planned schedule BOs, failed/skipped/processed actions, validation messages, runtime intervention BOs.", "Rule evidence, project validation, source map, manual run interventions, and schedule approvals.", "/scenario-templates/{scenarioCode}/financial-schedules; /runs/{runId}/analysis/finance; /runs/{runId}/interventions", "Implemented", "Controls reduce risk but do not replace audit or approvals policy."),
             Coverage("Risk and externalities", "Run issues, failed runs, warning counts, external clearing warnings.", "Run issues/events/top issues.", "/runs/{runId}; /runs/{runId}/analysis/finance", "Implemented", "Environmental, regulatory, and insurance costs are model inputs until provider rules are added."),
             Coverage("Management reporting", "KPI snapshots, graph totals, output hashes, artifacts, quarter/year summaries.", "Run console state, observation, and graph-derived period summary.", "/runs/{runId}/observation; /runs/{runId}/graphs; /runs/{runId}/analysis/period-summary", "Implemented", "Board packs still need narrative context and management judgement."),
             Coverage("Data quality", "Storage mode, sample/in-memory flags, validation messages, source-map coverage.", "Project summary, validation, artifacts, output sources.", "/runs/{runId}/analysis/finance; /metadata/cfo-coverage", "Implemented", "Sample data must not be treated as production forecast evidence.")
@@ -313,7 +313,7 @@ public sealed class SimulationFinanceAnalysisService(ITimeProvider timeProvider)
         string collectionDelay = FormatInput(run, SimulationFinancialInputKind.CollectionDelayDays);
         string supplierTerms = FormatInput(run, SimulationFinancialInputKind.SupplierPaymentTermDays);
         int ruleCount = run.Project.BusinessObjectDefinitions.Count(definition => definition.RuleDefinition is not null);
-        int interventionCount = run.Project.BusinessObjectDefinitions.Count(definition => definition.ObjectType == EconomySimulatorObjectTypes.RuntimeIntervention);
+        int interventionCount = run.Project.BusinessObjectDefinitions.Count(definition => definition.ObjectType == LedgerSimulatorObjectTypes.RuntimeIntervention);
         int failedActionCount = run.Observation.AccountSnapshots.Sum(snapshot => snapshot.FailedActionCount);
         int skippedActionCount = run.Observation.AccountSnapshots.Sum(snapshot => snapshot.SkippedActionCount);
 
@@ -373,9 +373,9 @@ public static class SimulationPeriodSummaryCalculator
         SimulationRunConsoleState run,
         SimulationPeriodSummaryGranularity granularity)
     {
-        IReadOnlyList<EconomyGraphPoint> cashPoints = PointsFor(run, ScenarioGraphMetric.CashFlow);
-        IReadOnlyList<EconomyGraphPoint> revenuePoints = PointsFor(run, ScenarioGraphMetric.Revenue);
-        IReadOnlyList<EconomyGraphPoint> expensePoints = PointsFor(run, ScenarioGraphMetric.Expense);
+        IReadOnlyList<LedgerGraphPoint> cashPoints = PointsFor(run, ScenarioGraphMetric.CashFlow);
+        IReadOnlyList<LedgerGraphPoint> revenuePoints = PointsFor(run, ScenarioGraphMetric.Revenue);
+        IReadOnlyList<LedgerGraphPoint> expensePoints = PointsFor(run, ScenarioGraphMetric.Expense);
         decimal minimumCashFloor = ResolveMinimumCashFloor(run);
         decimal openingCash = ResolveOpeningCash(run, cashPoints);
         IReadOnlyList<SimulationPeriodSummaryPeriod> periods = BuildPeriods(
@@ -412,9 +412,9 @@ public static class SimulationPeriodSummaryCalculator
     private static IReadOnlyList<SimulationPeriodSummaryPeriod> BuildPeriods(
         SimulationRunConsoleState run,
         SimulationPeriodSummaryGranularity granularity,
-        IReadOnlyList<EconomyGraphPoint> cashPoints,
-        IReadOnlyList<EconomyGraphPoint> revenuePoints,
-        IReadOnlyList<EconomyGraphPoint> expensePoints,
+        IReadOnlyList<LedgerGraphPoint> cashPoints,
+        IReadOnlyList<LedgerGraphPoint> revenuePoints,
+        IReadOnlyList<LedgerGraphPoint> expensePoints,
         decimal openingCash,
         decimal minimumCashFloor)
     {
@@ -433,9 +433,9 @@ public static class SimulationPeriodSummaryCalculator
         foreach (DateOnly periodStart in periodStarts)
         {
             DateOnly periodEnd = PeriodEndFor(periodStart, granularity, summaryEnd);
-            IReadOnlyList<EconomyGraphPoint> periodCash = PointsInPeriod(cashPoints, periodStart, periodEnd);
-            IReadOnlyList<EconomyGraphPoint> periodRevenue = PointsInPeriod(revenuePoints, periodStart, periodEnd);
-            IReadOnlyList<EconomyGraphPoint> periodExpense = PointsInPeriod(expensePoints, periodStart, periodEnd);
+            IReadOnlyList<LedgerGraphPoint> periodCash = PointsInPeriod(cashPoints, periodStart, periodEnd);
+            IReadOnlyList<LedgerGraphPoint> periodRevenue = PointsInPeriod(revenuePoints, periodStart, periodEnd);
+            IReadOnlyList<LedgerGraphPoint> periodExpense = PointsInPeriod(expensePoints, periodStart, periodEnd);
             decimal cashInflow = periodCash.Sum(Inflow);
             decimal cashOutflow = periodCash.Sum(Outflow);
             decimal cashFlow = cashInflow - cashOutflow;
@@ -465,7 +465,7 @@ public static class SimulationPeriodSummaryCalculator
     }
 
     private static IReadOnlyList<SimulationPeriodSummaryDistributionSlice> BuildDistribution(
-        IReadOnlyList<EconomyGraphPoint> points,
+        IReadOnlyList<LedgerGraphPoint> points,
         bool income)
     {
         decimal totalNonCashIncome = points.Sum(point => point.NonCashIncome);
@@ -497,7 +497,7 @@ public static class SimulationPeriodSummaryCalculator
             .ToArray();
     }
 
-    private static IReadOnlyList<EconomyGraphPoint> PointsFor(SimulationRunConsoleState run, ScenarioGraphMetric metric)
+    private static IReadOnlyList<LedgerGraphPoint> PointsFor(SimulationRunConsoleState run, ScenarioGraphMetric metric)
         => run.Observation.Graphs
             .Where(graph => graph.Filter.Metric == metric)
             .SelectMany(graph => graph.Series.SelectMany(series => series.Points))
@@ -506,8 +506,8 @@ public static class SimulationPeriodSummaryCalculator
             .ThenBy(point => point.CategoryCode, StringComparer.Ordinal)
             .ToArray();
 
-    private static IReadOnlyList<EconomyGraphPoint> PointsInPeriod(
-        IReadOnlyList<EconomyGraphPoint> points,
+    private static IReadOnlyList<LedgerGraphPoint> PointsInPeriod(
+        IReadOnlyList<LedgerGraphPoint> points,
         DateOnly periodStart,
         DateOnly periodEnd)
         => points
@@ -516,9 +516,9 @@ public static class SimulationPeriodSummaryCalculator
 
     private static DateOnly ResolveSummaryEnd(
         SimulationRunConsoleState run,
-        IReadOnlyList<EconomyGraphPoint> cashPoints,
-        IReadOnlyList<EconomyGraphPoint> revenuePoints,
-        IReadOnlyList<EconomyGraphPoint> expensePoints)
+        IReadOnlyList<LedgerGraphPoint> cashPoints,
+        IReadOnlyList<LedgerGraphPoint> revenuePoints,
+        IReadOnlyList<LedgerGraphPoint> expensePoints)
     {
         DateOnly latestPointDate = cashPoints
             .Concat(revenuePoints)
@@ -529,7 +529,7 @@ public static class SimulationPeriodSummaryCalculator
         return latestPointDate > run.Run.CurrentDate ? latestPointDate : run.Run.CurrentDate;
     }
 
-    private static decimal ResolveOpeningCash(SimulationRunConsoleState run, IReadOnlyList<EconomyGraphPoint> cashPoints)
+    private static decimal ResolveOpeningCash(SimulationRunConsoleState run, IReadOnlyList<LedgerGraphPoint> cashPoints)
     {
         if (TryReadDecimal(run.Project.Metadata, "openingCash", out decimal openingCash))
         {
@@ -577,19 +577,19 @@ public static class SimulationPeriodSummaryCalculator
         return false;
     }
 
-    private static decimal IncomeValue(IReadOnlyList<EconomyGraphPoint> points)
+    private static decimal IncomeValue(IReadOnlyList<LedgerGraphPoint> points)
     {
         decimal nonCashIncome = points.Sum(point => point.NonCashIncome);
         return nonCashIncome > 0m ? nonCashIncome : points.Sum(Inflow);
     }
 
-    private static decimal ExpenseValue(IReadOnlyList<EconomyGraphPoint> points)
+    private static decimal ExpenseValue(IReadOnlyList<LedgerGraphPoint> points)
         => points.Sum(point => Outflow(point) + point.NonCashExpense);
 
-    private static decimal Inflow(EconomyGraphPoint point)
+    private static decimal Inflow(LedgerGraphPoint point)
         => point.PlannedInflow + point.CommittedInflow + point.ActualInflow + point.SimulatedInflow;
 
-    private static decimal Outflow(EconomyGraphPoint point)
+    private static decimal Outflow(LedgerGraphPoint point)
         => point.PlannedOutflow + point.CommittedOutflow + point.ActualOutflow + point.SimulatedOutflow;
 
     private static DateOnly PeriodStartFor(DateOnly date, SimulationPeriodSummaryGranularity granularity)
@@ -624,7 +624,7 @@ public static class SimulationPeriodSummaryCalculator
 
 public static class SimulationApiServiceCollectionExtensions
 {
-    public static IServiceCollection AddEconomySimulatorApi(this IServiceCollection services)
+    public static IServiceCollection AddLedgerSimulatorApi(this IServiceCollection services)
     {
         services.TryAddSingleton<ISimulationProjectWorkspaceService, InMemorySimulationProjectWorkspaceService>();
         services.TryAddSingleton<ISimulationFunctionCatalogService, SimulationFunctionCatalogService>();

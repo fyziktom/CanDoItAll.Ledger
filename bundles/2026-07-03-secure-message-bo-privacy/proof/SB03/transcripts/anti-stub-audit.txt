@@ -1,6 +1,0 @@
-Command: rg -n "EncryptedDataItem|CipherTextHash|DecryptAttachmentAsync|ValidateCipherTextHash" src/CanDoItAll.Economy.BusinessObjects tests/CanDoItAll.Ledger.Tests
-Output:
-Invariant: SB03-ENCRYPTED-ATTACHMENT-LOCATOR
-Audit found encrypted attachment locator fields, decrypt path, ciphertext hash validation, and tests.
-No stub-only path found for attachment locator privacy.
-ExitCode: 0

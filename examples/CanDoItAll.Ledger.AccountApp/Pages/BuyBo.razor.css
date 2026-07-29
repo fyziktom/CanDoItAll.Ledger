@@ -1,0 +1,14 @@
+.buy-bo-page {
+    box-sizing: border-box;
+    margin-inline: auto;
+    max-width: 90rem;
+    min-width: 0;
+    padding: 1.25rem;
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .buy-bo-page {
+        padding: 0.75rem;
+    }
+}

@@ -58,7 +58,7 @@ The driver sends a bearer token before falling back to an API key. Local auth-of
 
 ### Blazor Component UI
 
-Generic ledger applications can reference `CanDoItAll.Economy.Components` to compose account, transaction, business-object, analytics, and node-admin surfaces without taking a dependency on the VENFT demo.
+Generic ledger applications can reference `CanDoItAll.Economy.Components` to compose account, transaction, business-object, analytics, and node-admin surfaces without taking a dependency on a legacy demo shell.
 
 Host applications should register the shared UI services and chart wrapper before rendering Economy components:
 

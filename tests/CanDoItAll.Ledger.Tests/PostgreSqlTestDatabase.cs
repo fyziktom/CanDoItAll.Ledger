@@ -1,6 +1,6 @@
 using Npgsql;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 internal static class PostgreSqlTestDatabase
 {
@@ -9,7 +9,7 @@ internal static class PostgreSqlTestDatabase
         var builder = new NpgsqlConnectionStringBuilder(baseConnectionString);
 
         string baseName = string.IsNullOrWhiteSpace(builder.Database)
-            ? "candoitall_economy_test"
+            ? "candoitall_ledger_test"
             : builder.Database;
         builder.Database = $"{Normalize(baseName, 12)}_{Normalize(suffix, 16)}_{Guid.NewGuid():N}";
         return builder.ConnectionString;

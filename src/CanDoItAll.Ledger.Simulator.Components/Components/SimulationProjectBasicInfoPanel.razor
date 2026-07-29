@@ -1,118 +1,108 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
-<Stack GapScale="LayoutGap.Large" data-testid="simulation-basic-info-tab">
-    <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
-        <SectionCard Title="Status" Description="Current project lifecycle state.">
-            <TextBlock TextStyle="TextStyle.H4" Value="@Project.Summary.Status.ToString()" />
-            <SmallText Text="@($"{Project.Summary.IssueCount} open issue(s)")" />
-        </SectionCard>
-        <SectionCard Title="Currency" Description="Base reporting currency.">
-            <TextBlock TextStyle="TextStyle.H4" Value="@Project.Summary.BaseCurrencyCode" />
-            <SmallText Text="@Project.Model.CalendarCode" />
-        </SectionCard>
-        <SectionCard Title="Planning window" Description="Modeled project horizon.">
-            <TextBlock TextStyle="TextStyle.H4" Value="@($"{FormatDate(Project.Summary.PlanningStartDate)}")" />
-            <SmallText Text="@($"to {FormatDate(Project.Summary.PlanningEndDate)}")" />
-        </SectionCard>
-        <SectionCard Title="Storage" Description="Project registry mode.">
-            <TextBlock TextStyle="TextStyle.H4" Value="@Project.Summary.StorageMode.ToString()" />
-            <SmallText Text="@($"Updated {Project.Summary.UpdatedAtUtc:yyyy-MM-dd HH:mm} UTC")" />
-        </SectionCard>
-    </Grid>
-
-    <Grid ColumnTemplateLg="minmax(0,1.4fr) minmax(18rem,0.8fr)"
-          Gap="LayoutGap.Large">
-        <Stack GapScale="LayoutGap.Large">
-            <FormSection Title="Project identity" Description="Simulator-owned project metadata used by the rail, editor tabs, import/export, and run observation.">
-                <FormRow Split="true">
-                    <FormField Text="Project id">
-                        <TextBox Value="@Project.Summary.ProjectId" ReadOnly="true" />
-                    </FormField>
-                    <FormField Text="Display name">
-                        <TextBox Value="@Project.Summary.DisplayName" ReadOnly="true" />
-                    </FormField>
-                    <FormField Text="Schema version">
-                        <TextBox Value="@Project.Model.SchemaVersion" ReadOnly="true" />
-                    </FormField>
-                    <FormField Text="Calendar">
-                        <TextBox Value="@Project.Model.CalendarCode" ReadOnly="true" />
-                    </FormField>
-                </FormRow>
-            </FormSection>
-
-            <FormSection Title="Scenario defaults" Description="Default rules and core business units for generated run requests.">
-                <FormRow Split="true">
-                    <FormField Text="Default tax rule set">
-                        <TextBox Value="@(Project.Model.DefaultTaxRuleSetId ?? "not configured")" ReadOnly="true" />
-                    </FormField>
-                    <FormField Text="Default payroll rule set">
-                        <TextBox Value="@(Project.Model.DefaultPayrollRuleSetId ?? "not configured")" ReadOnly="true" />
-                    </FormField>
-                    <FormField Text="Treasury BU">
-                        <TextBox Value="@Project.Model.TreasuryBusinessUnitId.Value" ReadOnly="true" />
-                    </FormField>
-                    <FormField Text="External clearing BU">
-                        <TextBox Value="@Project.Model.ExternalClearingBusinessUnitId.Value" ReadOnly="true" />
-                    </FormField>
-                </FormRow>
-            </FormSection>
-
-            <FormSection Title="Metadata" Description="Project-level assumptions and tags stored with the simulator project aggregate.">
-                <DataGrid TItem="KeyValuePair<string, string>" Data="MetadataRows">
-                    <DataGridColumn TItem="KeyValuePair<string, string>" Property="Key" Title="Key" />
-                    <DataGridColumn TItem="KeyValuePair<string, string>" Property="Value" Title="Value" />
-                </DataGrid>
-            </FormSection>
+<Stack GapScale="LayoutGap.Medium" data-testid="simulation-basic-info-tab">
+    <Split Breakpoint="LayoutBreakpoint.Md"
+           AlignItems="AlignItems.Center"
+           JustifyContent="JustifyContent.SpaceBetween"
+           Gap="LayoutGap.Medium"
+           Wrap="FlexWrap.Wrap">
+        <Stack GapScale="LayoutGap.Tiny">
+            <TextBlock TextStyle="TextStyle.H4" Value="Project settings" />
+            <SmallText Text="@Project.Summary.ProjectId" />
         </Stack>
+        <CompactStatStrip>
+            <CompactStat Label="Schema" Value="@Project.Model.SchemaVersion" />
+            <CompactStat Label="Calendar" Value="@Project.Model.CalendarCode" />
+            <CompactStat Label="Storage" Value="@Project.Summary.StorageMode.ToString()" />
+            <CompactStat Label="Updated" Value="@Project.Summary.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)" />
+        </CompactStatStrip>
+    </Split>
 
-        <WorkspacePanel Tone="WorkspacePanelTone.Ghost">
+    <Grid ColumnTemplateLg="minmax(18rem,0.75fr) minmax(0,1.25fr)" Gap="LayoutGap.Medium">
+        <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-4" aria-labelledby="scenario-defaults-title">
             <Stack GapScale="LayoutGap.Medium">
-                <Stack GapScale="LayoutGap.Tiny">
-                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Validation summary" />
-                    <TextBlock TextStyle="TextStyle.H4" Value="@ValidationTitle" />
-                    <SmallText Text="Messages are stored on the project state and expanded by validator services." />
-                </Stack>
-
-                <div class="space-y-2">
-                    @foreach (SimulationProjectValidationMessage message in Project.ValidationMessages)
-                    {
-                        <div class="rounded-md border border-slate-200 bg-white p-3">
-                            <Cluster Gap="LayoutGap.Small">
-                                <StatusBadge Text="@message.Severity.ToString()" Tone="@SeverityTone(message.Severity)" />
-                                <MonoText Text="@message.Code" />
-                            </Cluster>
-                            <SmallText Text="@message.Message" />
-                        </div>
-                    }
+                <div>
+                    <TextBlock TextStyle="TextStyle.Subtitle1" Value="Scenario defaults" id="scenario-defaults-title" />
+                    <SmallText Text="Inherited by new run setups unless explicitly overridden." />
                 </div>
+                <dl class="grid min-w-0 grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
+                    @Fact("Currency", Project.Model.BaseCurrencyCode)
+                    @Fact("Planning start", FormatDate(Project.Summary.PlanningStartDate))
+                    @Fact("Planning end", FormatDate(Project.Summary.PlanningEndDate))
+                    @Fact("Treasury BU", BusinessUnitName(Project.Model.TreasuryBusinessUnitId))
+                    @Fact("External clearing", BusinessUnitName(Project.Model.ExternalClearingBusinessUnitId))
+                    @Fact("Tax rules", Project.Model.DefaultTaxRuleSetId ?? "Not configured")
+                    @Fact("Payroll rules", Project.Model.DefaultPayrollRuleSetId ?? "Not configured")
+                    @Fact("Open issues", Project.Summary.IssueCount.ToString(CultureInfo.InvariantCulture))
+                </dl>
             </Stack>
-        </WorkspacePanel>
+        </section>
+
+        <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-4" aria-labelledby="metadata-title">
+            <Stack GapScale="LayoutGap.Medium">
+                <div>
+                    <TextBlock TextStyle="TextStyle.Subtitle1" Value="Metadata and assumptions" id="metadata-title" />
+                    <SmallText Text="Duplicate keys use assumption, model, then project precedence." />
+                </div>
+                <DataGrid TItem="MetadataRow" Data="MetadataRows">
+                    <DataGridColumn TItem="MetadataRow" Property="Key" Title="Key" />
+                    <DataGridColumn TItem="MetadataRow" Property="Value" Title="Value" />
+                    <DataGridColumn TItem="MetadataRow" Property="Source" Title="Source" />
+                </DataGrid>
+            </Stack>
+        </section>
     </Grid>
+
+    <ValidationList Messages="Project.ValidationMessages" />
 </Stack>
 
 @code {
     [Parameter, EditorRequired]
     public SimulationProjectState Project { get; set; } = default!;
 
-    private IReadOnlyList<KeyValuePair<string, string>> MetadataRows => Project.Metadata
-        .Concat(Project.Model.Metadata)
-        .Concat(Project.Model.Assumptions)
-        .OrderBy(x => x.Key, StringComparer.Ordinal)
-        .ToArray();
-
-    private string ValidationTitle => Project.ValidationMessages.Count == 0
-        ? "No messages"
-        : $"{Project.ValidationMessages.Count} message(s)";
-
-    private static string SeverityTone(SimulationValidationSeverity severity)
-        => severity switch
+    private IReadOnlyList<MetadataRow> MetadataRows
+    {
+        get
         {
-            SimulationValidationSeverity.Error => "danger",
-            SimulationValidationSeverity.Warning => "warning",
-            _ => "info"
-        };
+            Dictionary<string, MetadataRow> rows = new(StringComparer.Ordinal);
+            Merge(Project.Metadata, "Project");
+            Merge(Project.Model.Metadata, "Model");
+            Merge(Project.Model.Assumptions, "Assumption");
+            return rows.Values.OrderBy(row => row.Key, StringComparer.Ordinal).ToArray();
+
+            void Merge(IReadOnlyDictionary<string, string> values, string source)
+            {
+                foreach ((string key, string value) in values)
+                {
+                    rows[key] = new MetadataRow(key, value, source);
+                }
+            }
+        }
+    }
+
+    private string BusinessUnitName(BusinessUnitId id)
+        => Project.BusinessUnits.FirstOrDefault(unit => unit.BusinessUnitId == id)?.DisplayName ?? id.Value;
+
+    private static RenderFragment Fact(string label, string value) => builder =>
+    {
+        int sequence = 0;
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "min-w-0 border-b border-slate-100 pb-2");
+        builder.OpenElement(sequence++, "dt");
+        builder.AddAttribute(sequence++, "class", "text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-500");
+        builder.AddContent(sequence++, label);
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "dd");
+        builder.AddAttribute(sequence++, "class", "mt-1 truncate text-sm font-semibold text-slate-900");
+        builder.AddAttribute(sequence++, "title", value);
+        builder.AddContent(sequence++, value);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
 
     private static string FormatDate(DateOnly value)
         => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private sealed record MetadataRow(string Key, string Value, string Source);
 }

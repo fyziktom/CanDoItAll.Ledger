@@ -1,0 +1,81 @@
+@namespace CanDoItAll.Ledger.Components
+
+@if (Typed is null)
+{
+    <MediaBusinessObjectRenderer Object="Object"
+                                 Mode="Mode"
+                                 ViewedAtUtc="ViewedAtUtc"
+                                 Descriptor="Descriptor" />
+}
+else if (Mode == BusinessObjectRenderMode.Summary)
+{
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Typed.Name" />
+        <TextBlock TextStyle="TextStyle.Caption">@Typed.Definition.DisplayName / @Typed.ObjectType</TextBlock>
+        <Cluster Gap="LayoutGap.Small">
+            <StatusBadge Tone="info" Text="@Typed.Definition.Family" />
+            <StatusBadge Tone="neutral" Text="@Typed.Operation.ToString()" />
+        </Cluster>
+    </Stack>
+}
+else
+{
+    <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+        <Toolbar>
+            <ToolbarRow>
+                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                    <TextBlock TextStyle="TextStyle.Subtitle1" Value="@Typed.Name" />
+                    @if (!string.IsNullOrWhiteSpace(Typed.Description))
+                    {
+                        <TextBlock TextStyle="TextStyle.Body2" Value="@Typed.Description" />
+                    }
+                </Stack>
+                <ToolbarActions>
+                    <CompactStatStrip>
+                        <CompactStat Label="renderer" Value="@Descriptor.DisplayName" />
+                        <CompactStat Label="family" Value="@Typed.Definition.Family" Tone="info" />
+                        <CompactStat Label="type" Value="@Typed.ObjectType" />
+                        <CompactStat Label="operation" Value="@Typed.Operation.ToString()" />
+                    </CompactStatStrip>
+                </ToolbarActions>
+            </ToolbarRow>
+        </Toolbar>
+
+        @if (Typed.Facts.Count > 0)
+        {
+            <CompactStatStrip>
+            @foreach (BusinessObjectDisplayFact fact in Typed.Facts)
+            {
+                    <CompactStat Label="@fact.Label" Value="@fact.Value" />
+            }
+            </CompactStatStrip>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Typed.Text)
+            && !Typed.Text.Equals(Typed.Description, StringComparison.Ordinal))
+        {
+            <SurfaceCard Soft="true">
+                <TextBlock TextStyle="TextStyle.Body2" Value="@Typed.Text" />
+            </SurfaceCard>
+        }
+
+        <BusinessObjectRendererMediaDetails Media="@Typed" />
+    </Stack>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IBusinessObjectView Object { get; set; } = default!;
+
+    [Parameter]
+    public BusinessObjectRenderMode Mode { get; set; } = BusinessObjectRenderMode.Detail;
+
+    [Parameter]
+    public DateTimeOffset? ViewedAtUtc { get; set; }
+
+    [Parameter, EditorRequired]
+    public BusinessObjectRendererDescriptor Descriptor { get; set; } = default!;
+
+    private ITypedBusinessObjectView? Typed
+        => Object as ITypedBusinessObjectView;
+}

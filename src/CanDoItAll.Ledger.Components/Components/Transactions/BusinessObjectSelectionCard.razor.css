@@ -1,0 +1,18 @@
+.cda-transaction-bo-picker-card__preview-media ::deep .cda-bo-data-preview {
+    aspect-ratio: auto;
+    height: 100%;
+}
+
+.cda-transaction-bo-picker-card__button ::deep .cda-transaction-bo-picker-card__title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cda-transaction-bo-picker-card__button ::deep .cda-transaction-bo-picker-card__description {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}

@@ -1,17 +1,15 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
-@using System.Net
 
-<div class="cda-sim-period-summary" data-testid="simulation-period-summary-panel">
+<Stack GapScale="LayoutGap.Medium" data-testid="simulation-period-summary-panel">
     <Split Breakpoint="LayoutBreakpoint.Lg"
            AlignItems="AlignItems.Start"
            JustifyContent="JustifyContent.SpaceBetween"
            Gap="LayoutGap.Medium"
            Wrap="FlexWrap.Wrap">
         <Stack GapScale="LayoutGap.Tiny">
-            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Management summary" />
-            <TextBlock TextStyle="TextStyle.H3" Value="@($"{GranularityLabel} view")" />
-            <SmallText Text="@($"{FormatDate(Summary.PeriodStart)} to {FormatDate(Summary.PeriodEnd)}")" />
+            <TextBlock TextStyle="TextStyle.H4" Value="@($"{GranularityLabel} management summary")" />
+            <SmallText Text="@($"{FormatDate(Summary.PeriodStart)}–{FormatDate(Summary.PeriodEnd)} · {Summary.CurrencyCode}")" />
         </Stack>
         <Cluster Gap="LayoutGap.Small">
             <Button Text="Quarter"
@@ -29,129 +27,60 @@
         </Cluster>
     </Split>
 
-    <div class="cda-sim-summary-kpis">
-        <section class="cda-sim-kpi-tile">
-            <span>Cash flow</span>
-            <strong>@Money(Summary.TotalCashFlow)</strong>
-            <small>@Summary.Periods.Count period(s)</small>
-        </section>
-        <section class="cda-sim-kpi-tile">
-            <span>Income</span>
-            <strong>@Money(Summary.TotalIncome)</strong>
-            <small>@($"{Summary.IncomeDistribution.Count} category(s)")</small>
-        </section>
-        <section class="cda-sim-kpi-tile">
-            <span>Expenses</span>
-            <strong>@Money(Summary.TotalExpenses)</strong>
-            <small>@($"{Summary.ExpenseDistribution.Count} category(s)")</small>
-        </section>
-        <section class="cda-sim-kpi-tile">
-            <span>Profit</span>
-            <strong>@Money(Summary.TotalProfit)</strong>
-            <small class="@TrendClass(Summary.TotalProfit)">@ProfitTone</small>
-        </section>
-        <section class="cda-sim-kpi-tile">
-            <span>Own capital</span>
-            <strong>@Money(Summary.EndingOwnCapital)</strong>
-            <small>Ending cash funded</small>
-        </section>
-        <section class="cda-sim-kpi-tile">
-            <span>External capital</span>
-            <strong>@Money(Summary.EndingExternalCapital)</strong>
-            <small>@($"Floor {Money(Summary.MinimumCashFloor)}")</small>
-        </section>
-    </div>
+    <SummaryTiles ColumnsSm="2" ColumnsMd="3" ColumnsXl="6" GapScale="LayoutGap.Small">
+        <SummaryTile Label="Cash flow" Value="@Money(Summary.TotalCashFlow)" HelperText="@($"{Summary.Periods.Count} period(s)")" Tone="info" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="Income" Value="@Money(Summary.TotalIncome)" HelperText="@($"{Summary.IncomeDistribution.Count} category(s)")" Tone="success" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="Expenses" Value="@Money(Summary.TotalExpenses)" HelperText="@($"{Summary.ExpenseDistribution.Count} category(s)")" Tone="warning" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="Profit" Value="@Money(Summary.TotalProfit)" HelperText="@ProfitTone" Tone="@ProfitStatusTone" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="Own capital" Value="@Money(Summary.EndingOwnCapital)" HelperText="Ending cash funded" Tone="secondary" Compact="true" ShowHelperTextAsTooltip="true" />
+        <SummaryTile Label="External capital" Value="@Money(Summary.EndingExternalCapital)" HelperText="@($"Floor {Money(Summary.MinimumCashFloor)}")" Compact="true" ShowHelperTextAsTooltip="true" />
+    </SummaryTiles>
 
-    <section class="cda-sim-panel cda-sim-summary-chart" data-testid="simulation-period-summary-trend">
-        <PanelHeading Title="@($"{GranularityLabel} CFO trend")" LinkText="@($"{Summary.Periods.Count} period(s)")" />
-        @if (Summary.Periods.Count == 0)
-        {
-            <EmptyState Eyebrow="Summary" Title="No period data" Description="Run the simulation to build period summary rows." />
-        }
-        else
-        {
-            <svg class="cda-sim-summary-trend-svg"
-                 viewBox="0 0 @ChartWidth @ChartHeight"
-                 role="img"
-                 aria-label="@($"{GranularityLabel} cash flow, income, expenses, profit, own capital, and external capital trend")">
-                @foreach (TrendGridLine line in TrendGridLines)
-                {
-                    <line x1="@ChartLeft" y1="@FormatNumber(line.Y)" x2="@ChartRight" y2="@FormatNumber(line.Y)" class="cda-sim-summary-gridline" />
-                    @SvgText(8, line.Y + 4, CompactMoney(line.Value), "cda-sim-summary-axis-label")
-                }
+    <CdaChart Title="@($"{GranularityLabel} CFO trend")"
+              Description="@($"{Summary.Periods.Count} period(s) in {Summary.CurrencyCode}")"
+              AriaLabel="@($"{GranularityLabel} cash flow, income, expenses, profit, own capital, and external capital trend")"
+              Series="@TrendChartSeries"
+              Options="@TrendChartOptions"
+              Height="250"
+              EmptyText="Run the simulation to build period summary rows."
+              data-testid="simulation-period-summary-trend" />
 
-                <line x1="@ChartLeft" y1="@ChartBottom" x2="@ChartRight" y2="@ChartBottom" class="cda-sim-summary-axis" />
-                <line x1="@ChartLeft" y1="@ChartTop" x2="@ChartLeft" y2="@ChartBottom" class="cda-sim-summary-axis" />
-                <line x1="@ChartLeft" y1="@FormatNumber(TrendY(0m))" x2="@ChartRight" y2="@FormatNumber(TrendY(0m))" class="cda-sim-summary-zero-line" />
-
-                @foreach (TrendLine series in TrendLines)
-                {
-                    <polyline points="@TrendPoints(series.Values)" class="cda-sim-summary-trend-line" stroke="@series.Color" />
-                    @foreach (TrendPoint point in TrendPointMarkers(series.Values))
-                    {
-                        <circle cx="@FormatNumber(point.X)" cy="@FormatNumber(point.Y)" r="3.5" fill="@series.Color" />
-                    }
-                }
-
-                @foreach (TrendAxisLabel label in TrendAxisLabels)
-                {
-                    @SvgText(label.X, 268, label.Text, "cda-sim-summary-axis-label cda-sim-summary-axis-label--x", "middle")
-                }
-            </svg>
-            <div class="cda-sim-summary-chart-legend">
-                @foreach (TrendLine series in TrendLines)
-                {
-                    <span><i style="@($"background:{series.Color}")"></i>@series.Name</span>
-                }
-            </div>
-        }
-    </section>
-
-    <div class="cda-sim-summary-distribution-grid">
+    <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
         @DistributionChart("Income distribution", Summary.TotalIncome, Summary.IncomeDistribution, "simulation-period-summary-income")
         @DistributionChart("Expense distribution", Summary.TotalExpenses, Summary.ExpenseDistribution, "simulation-period-summary-expense")
-    </div>
+    </Grid>
 
-    <section class="cda-sim-panel" data-testid="simulation-period-summary-table">
-        <PanelHeading Title="@($"{GranularityLabel} rows")" LinkText="@($"{Summary.CurrencyCode} values")" />
-        <table class="cda-sim-table">
-            <thead>
-                <tr>
-                    <th>Period</th>
-                    <th>Cash flow</th>
-                    <th>Income</th>
-                    <th>Expenses</th>
-                    <th>Profit</th>
-                    <th>Own capital</th>
-                    <th>External capital</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (SimulationPeriodSummaryPeriod period in Summary.Periods)
-                {
-                    <tr>
-                        <td data-label="Period">@period.DisplayName</td>
-                        <td data-label="Cash flow">@Money(period.CashFlow)</td>
-                        <td data-label="Income">@Money(period.Income)</td>
-                        <td data-label="Expenses">@Money(period.Expenses)</td>
-                        <td data-label="Profit" class="@TrendClass(period.Profit)">@Money(period.Profit)</td>
-                        <td data-label="Own capital">@Money(period.OwnCapital)</td>
-                        <td data-label="External capital">@Money(period.ExternalCapital)</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </section>
-</div>
+    <PanelCard data-testid="simulation-period-summary-table">
+        <Stack GapScale="LayoutGap.Medium">
+            <PanelHeading Title="@($"{GranularityLabel} rows")" LinkText="@($"{Summary.CurrencyCode} values")" />
+            <DataGrid TItem="SimulationPeriodSummaryPeriod"
+                      Data="Summary.Periods"
+                      Caption="@($"{GranularityLabel} simulation period summary")">
+                <DataGridColumn TItem="SimulationPeriodSummaryPeriod" Property="DisplayName" Title="Period" />
+                <DataGridColumn TItem="SimulationPeriodSummaryPeriod" Title="Cash flow">
+                    <Template Context="period"><TextBlock Value="@Money(period.CashFlow)" /></Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="SimulationPeriodSummaryPeriod" Title="Income">
+                    <Template Context="period"><TextBlock Value="@Money(period.Income)" /></Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="SimulationPeriodSummaryPeriod" Title="Expenses">
+                    <Template Context="period"><TextBlock Value="@Money(period.Expenses)" /></Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="SimulationPeriodSummaryPeriod" Title="Profit">
+                    <Template Context="period"><StatusBadge Text="@Money(period.Profit)" Tone="@ProfitToneFor(period.Profit)" /></Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="SimulationPeriodSummaryPeriod" Title="Own capital">
+                    <Template Context="period"><TextBlock Value="@Money(period.OwnCapital)" /></Template>
+                </DataGridColumn>
+                <DataGridColumn TItem="SimulationPeriodSummaryPeriod" Title="External capital">
+                    <Template Context="period"><TextBlock Value="@Money(period.ExternalCapital)" /></Template>
+                </DataGridColumn>
+            </DataGrid>
+        </Stack>
+    </PanelCard>
+</Stack>
 
 @code {
-    private const double ChartWidth = 720d;
-    private const double ChartHeight = 280d;
-    private const double ChartLeft = 70d;
-    private const double ChartRight = 700d;
-    private const double ChartTop = 20d;
-    private const double ChartBottom = 238d;
-
     private static readonly IReadOnlyList<string> TrendPalette =
     [
         "#2563eb",
@@ -178,7 +107,7 @@
     [Parameter]
     public SimulationRunConsoleState? Run { get; set; }
 
-    private SimulationRunConsoleState CurrentRun => Run ?? EconomySimulatorSampleData.CreateRunConsole().SelectedRun;
+    private SimulationRunConsoleState CurrentRun => Run ?? LedgerSimulatorSampleData.CreateRunConsole().SelectedRun;
 
     private SimulationPeriodSummarySnapshot Summary => SimulationPeriodSummaryCalculator.Build(CurrentRun, selectedGranularity);
 
@@ -186,98 +115,57 @@
 
     private string ProfitTone => Summary.TotalProfit < 0m ? "Loss" : "Positive";
 
-    private IReadOnlyList<TrendLine> TrendLines
-        =>
-        [
-            new("Cash flow", Summary.Periods.Select(period => period.CashFlow).ToArray(), TrendPalette[0]),
-            new("Income", Summary.Periods.Select(period => period.Income).ToArray(), TrendPalette[1]),
-            new("Expenses", Summary.Periods.Select(period => period.Expenses).ToArray(), TrendPalette[2]),
-            new("Profit", Summary.Periods.Select(period => period.Profit).ToArray(), TrendPalette[3]),
-            new("Own capital", Summary.Periods.Select(period => period.OwnCapital).ToArray(), TrendPalette[4]),
-            new("External capital", Summary.Periods.Select(period => period.ExternalCapital).ToArray(), TrendPalette[5])
-        ];
+    private string ProfitStatusTone => ProfitToneFor(Summary.TotalProfit);
 
-    private decimal TrendMin
+    private IReadOnlyList<CdaChartSeries> TrendChartSeries =>
+    [
+        TrendSeries("Cash flow", period => period.CashFlow, TrendPalette[0]),
+        TrendSeries("Income", period => period.Income, TrendPalette[1]),
+        TrendSeries("Expenses", period => period.Expenses, TrendPalette[2]),
+        TrendSeries("Profit", period => period.Profit, TrendPalette[3]),
+        TrendSeries("Own capital", period => period.OwnCapital, TrendPalette[4]),
+        TrendSeries("External capital", period => period.ExternalCapital, TrendPalette[5])
+    ];
+
+    private CdaChartOptions TrendChartOptions => new()
     {
-        get
-        {
-            decimal min = TrendLines.SelectMany(line => line.Values).DefaultIfEmpty(0m).Min();
-            decimal max = TrendLines.SelectMany(line => line.Values).DefaultIfEmpty(0m).Max();
-            decimal padding = Math.Max(Math.Abs(max - min) * 0.08m, 1m);
-            return min - padding;
-        }
-    }
+        Type = CdaChartType.Line,
+        XAxisType = CdaChartAxisType.Category,
+        Curve = CdaChartCurve.Straight,
+        Unit = Summary.CurrencyCode,
+        YAxisTitle = $"Value ({Summary.CurrencyCode})",
+        ShowToolbar = false,
+        EnableZoom = false,
+        LegendPosition = CdaChartLegendPosition.Bottom,
+        Animate = true,
+        StrokeWidth = 3,
+        Palette = TrendPalette
+    };
 
-    private decimal TrendMax
+    private static readonly CdaChartOptions DistributionChartOptions = new()
     {
-        get
-        {
-            decimal min = TrendLines.SelectMany(line => line.Values).DefaultIfEmpty(0m).Min();
-            decimal max = TrendLines.SelectMany(line => line.Values).DefaultIfEmpty(0m).Max();
-            decimal padding = Math.Max(Math.Abs(max - min) * 0.08m, 1m);
-            return max + padding;
-        }
-    }
-
-    private IReadOnlyList<TrendGridLine> TrendGridLines
-        => Enumerable.Range(0, 5)
-            .Select(index =>
-            {
-                decimal value = TrendMax - ((TrendMax - TrendMin) * index / 4m);
-                return new TrendGridLine(value, TrendY(value));
-            })
-            .ToArray();
-
-    private IReadOnlyList<TrendAxisLabel> TrendAxisLabels
-        => Summary.Periods
-            .Select((period, index) => new TrendAxisLabel(period.DisplayName, TrendX(index, Summary.Periods.Count)))
-            .ToArray();
+        Type = CdaChartType.Donut,
+        XAxisType = CdaChartAxisType.Category,
+        ShowDataLabels = true,
+        ShowToolbar = false,
+        EnableZoom = false,
+        LegendPosition = CdaChartLegendPosition.Bottom,
+        Palette = DistributionPalette
+    };
 
     private RenderFragment DistributionChart(
         string title,
         decimal total,
         IReadOnlyList<SimulationPeriodSummaryDistributionSlice> slices,
         string testId)
-        => @<section class="cda-sim-panel cda-sim-donut-panel" data-testid="@testId">
-            <PanelHeading Title="@title" LinkText="@($"{Money(total)} total")" />
-            @if (slices.Count == 0)
-            {
-                <EmptyState Eyebrow="Distribution" Title="No values" Description="This run has no values in the selected period." />
-            }
-            else
-            {
-                <div class="cda-sim-donut-layout">
-                    <svg class="cda-sim-donut-svg" viewBox="0 0 180 180" role="img" aria-label="@title">
-                        <circle cx="90" cy="90" r="62" class="cda-sim-donut-track" pathLength="100" />
-                        @foreach (DonutSegment segment in DonutSegments(slices))
-                        {
-                            <circle cx="90"
-                                    cy="90"
-                                    r="62"
-                                    class="cda-sim-donut-segment"
-                                    pathLength="100"
-                                    stroke="@segment.Color"
-                                    stroke-dasharray="@DonutDashArray(segment.Percent)"
-                                    stroke-dashoffset="@FormatNumber(-segment.Offset)"
-                                    transform="rotate(-90 90 90)" />
-                        }
-                        @SvgText(90, 85, Money(total), "cda-sim-donut-total", "middle")
-                        @SvgText(90, 104, Summary.CurrencyCode, "cda-sim-donut-caption", "middle")
-                    </svg>
-                    <div class="cda-sim-donut-legend">
-                        @foreach (DonutSegment segment in DonutSegments(slices))
-                        {
-                            <div class="cda-sim-donut-legend-row">
-                                <i style="@($"background:{segment.Color}")"></i>
-                                <span>@segment.Slice.DisplayName</span>
-                                <strong>@($"{segment.Percent:0.#}%")</strong>
-                                <small>@Money(segment.Slice.Amount)</small>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-        </section>;
+        => @<CdaChart Title="@title"
+                       Description="@($"{Money(total)} total")"
+                       AriaLabel="@($"{title} in {Summary.CurrencyCode}")"
+                       Series="@DistributionSeries(slices)"
+                       Options="@DistributionChartOptions"
+                       Height="220"
+                       EmptyText="This run has no values in the selected period."
+                       data-testid="@testId" />;
 
     private void SelectGranularity(SimulationPeriodSummaryGranularity granularity)
     {
@@ -290,55 +178,36 @@
     private Variant GranularityVariant(SimulationPeriodSummaryGranularity granularity)
         => selectedGranularity == granularity ? Variant.Filled : Variant.Outlined;
 
-    private string TrendPoints(IReadOnlyList<decimal> values)
-        => string.Join(
-            " ",
-            values.Select((value, index) => $"{FormatNumber(TrendX(index, values.Count))},{FormatNumber(TrendY(value))}"));
-
-    private IReadOnlyList<TrendPoint> TrendPointMarkers(IReadOnlyList<decimal> values)
-        => values.Select((value, index) => new TrendPoint(TrendX(index, values.Count), TrendY(value))).ToArray();
-
-    private static double TrendX(int index, int count)
-    {
-        if (count <= 1)
+    private CdaChartSeries TrendSeries(
+        string name,
+        Func<SimulationPeriodSummaryPeriod, decimal> valueSelector,
+        string color)
+        => new()
         {
-            return ChartLeft;
-        }
+            Name = name,
+            Type = CdaChartType.Line,
+            Color = color,
+            Points = Summary.Periods
+                .Select(period => new CdaChartPoint(period.DisplayName, valueSelector(period), color))
+                .ToArray()
+        };
 
-        double availableWidth = ChartRight - ChartLeft;
-        return ChartLeft + (availableWidth * index / (count - 1));
-    }
-
-    private double TrendY(decimal value)
-    {
-        decimal range = TrendMax - TrendMin;
-        if (range <= 0m)
-        {
-            return ChartBottom;
-        }
-
-        decimal normalized = (value - TrendMin) / range;
-        return ChartBottom - ((double)normalized * (ChartBottom - ChartTop));
-    }
-
-    private IReadOnlyList<DonutSegment> DonutSegments(IReadOnlyList<SimulationPeriodSummaryDistributionSlice> slices)
-    {
-        var segments = new List<DonutSegment>(slices.Count);
-        decimal offset = 0m;
-
-        for (var index = 0; index < slices.Count; index++)
-        {
-            SimulationPeriodSummaryDistributionSlice slice = slices[index];
-            decimal percent = Math.Clamp(slice.PercentOfTotal, 0m, 100m);
-            segments.Add(new DonutSegment(slice, DistributionPalette[index % DistributionPalette.Count], offset, percent));
-            offset += percent;
-        }
-
-        return segments;
-    }
-
-    private static string DonutDashArray(decimal percent)
-        => $"{FormatNumber(Math.Max(percent - 1.2m, 0.2m))} 100";
+    private static IReadOnlyList<CdaChartSeries> DistributionSeries(
+        IReadOnlyList<SimulationPeriodSummaryDistributionSlice> slices)
+        =>
+        [
+            new CdaChartSeries
+            {
+                Name = "Distribution",
+                Type = CdaChartType.Donut,
+                Points = slices
+                    .Select((slice, index) => new CdaChartPoint(
+                        slice.DisplayName,
+                        slice.Amount,
+                        DistributionPalette[index % DistributionPalette.Count]))
+                    .ToArray()
+            }
+        ];
 
     private string Money(decimal value)
     {
@@ -346,71 +215,9 @@
         return value < 0m ? $"{Summary.CurrencyCode} ({amount})" : $"{Summary.CurrencyCode} {amount}";
     }
 
-    private static string TrendClass(decimal value)
-        => value < 0m ? "cda-sim-trend cda-sim-trend--down" : "cda-sim-trend";
-
-    private string CompactMoney(decimal value)
-    {
-        decimal absolute = Math.Abs(value);
-        string suffix;
-        decimal scaled;
-
-        if (absolute >= 1_000_000m)
-        {
-            scaled = absolute / 1_000_000m;
-            suffix = "m";
-        }
-        else if (absolute >= 1_000m)
-        {
-            scaled = absolute / 1_000m;
-            suffix = "k";
-        }
-        else
-        {
-            scaled = absolute;
-            suffix = string.Empty;
-        }
-
-        string amount = scaled.ToString(scaled >= 10m || suffix.Length == 0 ? "0" : "0.#", CultureInfo.InvariantCulture);
-        return value < 0m ? $"({amount}{suffix})" : $"{amount}{suffix}";
-    }
-
-    private static string FormatNumber(double value)
-        => value.ToString("0.###", CultureInfo.InvariantCulture);
-
-    private static string FormatNumber(decimal value)
-        => value.ToString("0.###", CultureInfo.InvariantCulture);
-
-    private static MarkupString SvgText(
-        double x,
-        double y,
-        string value,
-        string cssClass,
-        string? textAnchor = null)
-    {
-        string anchor = string.IsNullOrWhiteSpace(textAnchor)
-            ? string.Empty
-            : $" text-anchor=\"{WebUtility.HtmlEncode(textAnchor)}\"";
-        string markup = string.Create(
-            CultureInfo.InvariantCulture,
-            $"<text x=\"{FormatNumber(x)}\" y=\"{FormatNumber(y)}\" class=\"{WebUtility.HtmlEncode(cssClass)}\"{anchor}>{WebUtility.HtmlEncode(value)}</text>");
-        return new MarkupString(markup);
-    }
+    private static string ProfitToneFor(decimal value) => value < 0m ? "danger" : "success";
 
     private static string FormatDate(DateOnly value)
         => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    private sealed record TrendLine(string Name, IReadOnlyList<decimal> Values, string Color);
-
-    private sealed record TrendPoint(double X, double Y);
-
-    private sealed record TrendGridLine(decimal Value, double Y);
-
-    private sealed record TrendAxisLabel(string Text, double X);
-
-    private sealed record DonutSegment(
-        SimulationPeriodSummaryDistributionSlice Slice,
-        string Color,
-        decimal Offset,
-        decimal Percent);
 }

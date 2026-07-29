@@ -1,10 +1,10 @@
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectCarrierTokenPolicyTests
 {
@@ -14,14 +14,14 @@ public sealed class BusinessObjectCarrierTokenPolicyTests
     [Fact]
     public void SelectDefaultCarrierToken_PrefersFirstReusableNonMainToken()
     {
-        IReadOnlyList<EconomyTokenOption> options =
+        IReadOnlyList<LedgerTokenOption> options =
         [
-            new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+            new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
             new("unique", "unique", new TokenId("ops.unique"), Amount.FromInt64(1), IsMain: false, UniqueAmount: Amount.FromInt64(1), UniqueUtxoCount: 1, TotalUtxoCount: 1),
             new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, SourceAmount: Amount.FromInt64(9), SourceUtxoCount: 1, TotalUtxoCount: 1)
         ];
 
-        EconomyTokenOption? selected = BusinessObjectCarrierTokenPolicy.SelectDefaultCarrierToken(options);
+        LedgerTokenOption? selected = BusinessObjectCarrierTokenPolicy.SelectDefaultCarrierToken(options);
 
         Assert.NotNull(selected);
         Assert.Equal(OperatingToken, selected!.TokenId);
@@ -42,9 +42,9 @@ public sealed class BusinessObjectCarrierTokenPolicyTests
             Amount.FromInt64(7),
             "{}",
             "bo-commerce://payment/carrier-policy");
-        IReadOnlyList<EconomyTokenOption> options =
+        IReadOnlyList<LedgerTokenOption> options =
         [
-            new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+            new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
             new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, SourceAmount: Amount.FromInt64(9), SourceUtxoCount: 1, TotalUtxoCount: 1)
         ];
 
@@ -70,9 +70,9 @@ public sealed class BusinessObjectCarrierTokenPolicyTests
             Amount.Zero,
             "{}",
             "bo-commerce://receipt/carrier-policy");
-        IReadOnlyList<EconomyTokenOption> options =
+        IReadOnlyList<LedgerTokenOption> options =
         [
-            new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+            new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
             new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, UniqueAmount: Amount.FromInt64(9), UniqueUtxoCount: 9, TotalUtxoCount: 9)
         ];
 
@@ -101,9 +101,9 @@ public sealed class BusinessObjectCarrierTokenPolicyTests
             "bo://explicit",
             TokenId: new TokenId("ops.explicit"),
             TokenAmount: Amount.FromInt64(1));
-        IReadOnlyList<EconomyTokenOption> mainOnly =
+        IReadOnlyList<LedgerTokenOption> mainOnly =
         [
-            new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true)
+            new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true)
         ];
 
         BusinessObjectTransactionDraft unchangedExplicit = BusinessObjectCarrierTokenPolicy.WithDefaultCarrierToken(explicitTokenDraft, mainOnly);

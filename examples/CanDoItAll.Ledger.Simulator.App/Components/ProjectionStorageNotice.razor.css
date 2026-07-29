@@ -1,0 +1,12 @@
+.projection-storage-notice {
+    align-items: center;
+    background: color-mix(in srgb, var(--color-info, #2563eb) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-info, #2563eb) 32%, transparent);
+    border-radius: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    margin-bottom: 0.5rem;
+    padding: 0.4rem 0.7rem;
+}

@@ -1,12 +1,12 @@
 using System.Text.Json;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
 using System.Net;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectDataItemTests
 {
@@ -82,7 +82,7 @@ public sealed class BusinessObjectDataItemTests
             client,
             new HttpIpfsBusinessObjectDataItemUploadOptions(
                 new Uri("http://localhost:5081/ipfs-api/"),
-                "http://localhost:5081/ipfs-api/cat?arg="));
+                "http://localhost:5001/"));
         await using var stream = new MemoryStream([1, 2, 3, 4]);
 
         BusinessObjectDataItem item = await service.SaveToIpfsAsync(
@@ -93,7 +93,7 @@ public sealed class BusinessObjectDataItemTests
         Assert.Equal(BusinessObjectDataItemStorage.Ipfs, item.Storage);
         Assert.Equal(BusinessObjectDataItemType.Image, item.Type);
         Assert.Equal("QmBrowserUpload", item.Hash);
-        Assert.Equal("http://localhost:5081/ipfs-api/cat?arg=QmBrowserUpload", item.Uri?.ToString());
+        Assert.Equal("http://localhost:5001/ipfs/QmBrowserUpload", item.Uri?.ToString());
         Assert.True(item.IsMain);
     }
 
@@ -226,7 +226,7 @@ public sealed class BusinessObjectDataItemTests
             "Short description",
             "Longer body text",
             tags,
-            "VENFT demo",
+            "Ledger demo",
             ImageLink: "http://127.0.0.1:8080/ipfs/QmDemoImage",
             DataItems:
             [

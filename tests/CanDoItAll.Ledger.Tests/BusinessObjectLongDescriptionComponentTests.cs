@@ -1,17 +1,17 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
 using AngleSharp.Dom;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
-public sealed class BusinessObjectLongDescriptionComponentTests : TestContext
+public sealed class BusinessObjectLongDescriptionComponentTests : BunitContext
 {
     private const string ShortDescription = "Short summary shown in cards.";
     private const string LongDescription = "RN-01-SB01 long body: this text must be visible separately from the short summary.";
@@ -20,14 +20,14 @@ public sealed class BusinessObjectLongDescriptionComponentTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
     public void DetailsDialog_RendersLongDescriptionWhenShortDescriptionExists()
     {
         IRenderedComponent<BusinessObjectLedgerDetailsDialogContent> component =
-            RenderComponent<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
+            Render<BusinessObjectLedgerDetailsDialogContent>(parameters => parameters
                 .Add(x => x.Object, CreatePost()));
 
         IElement body = component.Find("[data-testid='cda-bo-long-description']");

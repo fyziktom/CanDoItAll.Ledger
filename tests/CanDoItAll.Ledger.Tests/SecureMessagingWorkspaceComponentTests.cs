@@ -2,18 +2,18 @@ using System.Text;
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
-public sealed class SecureMessagingWorkspaceComponentTests : TestContext
+public sealed class SecureMessagingWorkspaceComponentTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("secure-mail-ledger"));
 
@@ -26,7 +26,7 @@ public sealed class SecureMessagingWorkspaceComponentTests : TestContext
     [Fact]
     public async Task Mailbox_does_not_render_plaintext_until_message_is_opened()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         EcdsaP256KeyPair aliceKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         EcdsaP256KeyPair bobKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         var alice = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "alice", aliceKey.PublicKeyMaterial, aliceKey.PrivateKeyMaterial);
@@ -43,13 +43,13 @@ public sealed class SecureMessagingWorkspaceComponentTests : TestContext
             uploadService: null,
             DateTimeOffset.Parse("2026-07-02T12:00:00Z"),
             CancellationToken.None);
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace() with
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace() with
         {
             Context = Context,
             AccountName = "Bob demo account",
             AccountAlias = "bob",
             Address = bob.Address,
-            AddressBookmarks = [new EconomyAddressBookmark("Alice", alice.Address)],
+            AddressBookmarks = [new LedgerAddressBookmark("Alice", alice.Address)],
             Transactions =
             [
                 new LedgerTransactionSummary(
@@ -67,7 +67,7 @@ public sealed class SecureMessagingWorkspaceComponentTests : TestContext
         };
         var openCalls = 0;
 
-        IRenderedComponent<SecureMessagingWorkspace> component = RenderComponent<SecureMessagingWorkspace>(parameters => parameters
+        IRenderedComponent<SecureMessagingWorkspace> component = Render<SecureMessagingWorkspace>(parameters => parameters
             .Add(x => x.Workspace, workspace)
             .Add(x => x.OpenRequested, (Func<SecureMessageOpenRequest, Task<SecureMessageOpenResult>>)(request =>
             {
@@ -93,7 +93,7 @@ public sealed class SecureMessagingWorkspaceComponentTests : TestContext
     [Fact]
     public async Task Decrypted_image_attachment_renders_as_image_with_download()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         EcdsaP256KeyPair aliceKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         EcdsaP256KeyPair bobKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         var alice = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "alice", aliceKey.PublicKeyMaterial, aliceKey.PrivateKeyMaterial);
@@ -123,13 +123,13 @@ public sealed class SecureMessagingWorkspaceComponentTests : TestContext
             "pixel.png",
             "image/png",
             imageBytes);
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace() with
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace() with
         {
             Context = Context,
             AccountName = "Bob demo account",
             AccountAlias = "bob",
             Address = bob.Address,
-            AddressBookmarks = [new EconomyAddressBookmark("Alice", alice.Address)],
+            AddressBookmarks = [new LedgerAddressBookmark("Alice", alice.Address)],
             Transactions =
             [
                 new LedgerTransactionSummary(
@@ -146,7 +146,7 @@ public sealed class SecureMessagingWorkspaceComponentTests : TestContext
             ]
         };
 
-        IRenderedComponent<SecureMessagingWorkspace> component = RenderComponent<SecureMessagingWorkspace>(parameters => parameters
+        IRenderedComponent<SecureMessagingWorkspace> component = Render<SecureMessagingWorkspace>(parameters => parameters
             .Add(x => x.Workspace, workspace)
             .Add(x => x.OpenRequested, (Func<SecureMessageOpenRequest, Task<SecureMessageOpenResult>>)(_ =>
                 Task.FromResult(SecureMessageOpenResult.Ok("Opened", built.PlainContent))))

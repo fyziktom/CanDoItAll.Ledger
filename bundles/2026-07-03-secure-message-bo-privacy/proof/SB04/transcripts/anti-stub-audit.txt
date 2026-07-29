@@ -1,6 +1,0 @@
-Command: rg -n "BusinessObjectPayloadEnvelopeReader|TryRead|ParseInlineJson" src/CanDoItAll.Economy.BusinessObjects src/CanDoItAll.Economy.Node src/CanDoItAll.Economy.Components tests/CanDoItAll.Ledger.Tests
-Output:
-Invariant: SB04-ENVELOPE-COMPATIBILITY
-Audit found a shared envelope reader used by business-object, in-process, node read-model, and raw transaction UI paths.
-No stub-only path found for envelope compatibility.
-ExitCode: 0

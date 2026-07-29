@@ -1,0 +1,10 @@
+@page "/Account/AccessDenied"
+@attribute [AllowAnonymous]
+
+<PageTitle>Access denied</PageTitle>
+
+<NodeAuthShell Heading="Access denied" Description="Your account is not authorized to manage this Ledger node.">
+    <SectionCard Title="Access denied" Description="Authorization">
+        <EmptyState Eyebrow="Authorization" Title="Access denied" Description="Your account is not authorized to manage this Ledger node." />
+    </SectionCard>
+</NodeAuthShell>

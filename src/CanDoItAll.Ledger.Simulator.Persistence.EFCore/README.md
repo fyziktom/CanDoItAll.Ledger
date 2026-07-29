@@ -1,7 +1,11 @@
 # CanDoItAll.Ledger.Simulator.Persistence.EFCore
 
-EF Core persistence for the moved BO/project simulator projections.
+Entity Framework Core providers for experimental Simulator projections and
+graph state.
 
-This persistence layer belongs to Ledger because the old simulator runtime is a
-BO/project workspace runtime. The new Economy simple/Smith runtime core must not
-take an EF dependency.
+The providers are registered by the local Simulator host, but the current run
+lifecycle does not write every project, run, and graph through them. Do not
+treat this layer as a production audit store.
+
+Simulator persistence remains separate from confirmed Ledger transaction
+persistence. This project is work in progress and intentionally non-packable.

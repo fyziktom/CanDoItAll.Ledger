@@ -1,0 +1,9 @@
+@inject LedgerSimulatorProjectionPersistenceSelection PersistenceSelection
+
+<aside class="projection-storage-notice" role="note">
+    <TooltipTarget Text="The projection adapter is not yet connected to the run lifecycle; projects, runs, and generated graphs remain in memory."
+                   Position="TooltipPosition.Right"
+                   TabIndex="0">
+        <span>Storage: <strong>@PersistenceSelection.StorageModeName</strong></span>
+    </TooltipTarget>
+</aside>

@@ -1,43 +1,48 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
-<SectionCard Title="Rule logic" Description="@Rule.RuleId">
-    <Stack GapScale="LayoutGap.Medium">
+<section class="min-w-0 rounded-lg border border-slate-200 bg-white @(Compact ? "p-3" : "p-4")" aria-label="Rule logic">
+    <Stack GapScale="@(Compact ? LayoutGap.Small : LayoutGap.Medium)">
+        <Split Breakpoint="LayoutBreakpoint.Md" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+            <TextBlock TextStyle="TextStyle.Subtitle1" Value="Rule logic" />
+            <TooltipTarget Text="@Rule.RuleId" Position="TooltipPosition.Right" TabIndex="0">
+                <MonoText Text="@Rule.RuleId" />
+            </TooltipTarget>
+        </Split>
         @if (ValidationErrors.Count > 0)
         {
-            <FormSection Title="Validation" Description="Rule checks that need attention.">
-                <Stack GapScale="LayoutGap.Small">
+            <Alert AlertStyle="AlertStyle.Warning">
+                <strong>Rule validation</strong>
+                <span>
                     @foreach (string error in ValidationErrors)
                     {
-                        <SmallText Text="@error" />
+                        @error
                     }
-                </Stack>
-            </FormSection>
+                </span>
+            </Alert>
         }
 
-        <FormRow Split="true">
-            <FormField Text="Namespace">
-                <TextBox Value="@Rule.RuleNamespace" ReadOnly="true" />
-            </FormField>
-            <FormField Text="Enabled">
-                <TextBox Value="@Rule.Enabled.ToString(CultureInfo.InvariantCulture)" ReadOnly="true" />
-            </FormField>
-            <FormField Text="Trigger">
-                <TextBox Value="@TriggerText" ReadOnly="true" />
-            </FormField>
-            <FormField Text="Processing">
-                <TextBox Value="@ProcessingText" ReadOnly="true" />
-            </FormField>
-        </FormRow>
+        <CompactStatStrip>
+            <CompactStat Label="Namespace" Value="@Rule.RuleNamespace" Position="TooltipPosition.Right" />
+            <CompactStat Label="Enabled" Value="@(Rule.Enabled ? "Yes" : "No")" Tone="@(Rule.Enabled ? "success" : "warning")" />
+            <CompactStat Label="Trigger" Value="@TriggerText" Position="TooltipPosition.Right" />
+            <CompactStat Label="Processing" Value="@ProcessingText" Position="TooltipPosition.Right" />
+            <CompactStat Label="Conditions" Value="@Rule.Conditions.Count.ToString(CultureInfo.InvariantCulture)" />
+            <CompactStat Label="Actions" Value="@Rule.Actions.Count.ToString(CultureInfo.InvariantCulture)" />
+        </CompactStatStrip>
 
-        <FormSection Title="Conditions" Description="@Rule.Conditions.Count.ToString(CultureInfo.InvariantCulture)">
-            <Stack GapScale="LayoutGap.Small">
+        @if (Rule.Conditions.Count > 0)
+        {
+            <details class="rounded-md border border-slate-200 bg-slate-50 p-2.5">
+                <summary class="cursor-pointer text-sm font-semibold text-slate-800">Conditions (@Rule.Conditions.Count)</summary>
+                <div class="mt-2 space-y-1">
                 @foreach (string condition in Rule.Conditions)
                 {
                     <MonoText Text="@condition" />
                 }
-            </Stack>
-        </FormSection>
+                </div>
+            </details>
+        }
 
         <DataGrid TItem="AccountRuleAction" Data="Rule.Actions">
             <DataGridColumn TItem="AccountRuleAction" Property="Kind" Title="Action" />
@@ -53,7 +58,7 @@
             </DataGridColumn>
         </DataGrid>
     </Stack>
-</SectionCard>
+</section>
 
 @code {
     [Parameter]

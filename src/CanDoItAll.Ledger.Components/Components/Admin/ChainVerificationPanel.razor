@@ -1,0 +1,16 @@
+@namespace CanDoItAll.Ledger.Components
+
+<StatusCheckList Title="Chain verification"
+                 Description="Ledger hash and signature verification state."
+                 Items="Items"
+                 data-testid="cda-chain-verification-panel" />
+
+@code {
+    private static readonly IReadOnlyList<StatusCheckItem> Items =
+    [
+        new() { Label = "Genesis", Status = "Verified", Tone = "success", Complete = true },
+        new() { Label = "Ledger hash chain", Status = "Verified", Tone = "success", Complete = true },
+        new() { Label = "Admin signatures", Status = "Verified", Tone = "success", Complete = true },
+        new() { Label = "Archived transactions", Status = "None", Tone = "neutral", Complete = true }
+    ];
+}

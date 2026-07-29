@@ -1,0 +1,125 @@
+@namespace CanDoItAll.Ledger.Components
+
+<aside class="min-w-0 w-full" data-testid="transaction-context-rail">
+    <Toolbar Class="gap-2! rounded-xl! p-3! shadow-none!">
+        <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="Transaction summary" />
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@ModeLabel" />
+                <Pill Text="@StatusText"
+                      Tone="@(SubmissionEnabled ? PillTone.Ok : PillTone.Label)" />
+            </Cluster>
+
+            @if (!Delegated)
+            {
+                <CompactStatStrip Class="w-full">
+                    <CompactStat Text="@($"Receiver · {ReceiverDisplay}")"
+                                 HelperText="@($"Receiver: {ReceiverValue}")"
+                                 Tone="info" />
+                    <CompactStat Text="@($"Amount · {AmountDisplay}")"
+                                 HelperText="@($"Amount: {AmountDisplay}")"
+                                 Tone="neutral" />
+                </CompactStatStrip>
+            }
+
+            @if (Delegated)
+            {
+                <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                    This operation continues in its specialized guided dialog.
+                </Alert>
+            }
+            else if (ReviewRequired && Validation.IsValid && !SubmissionEnabled)
+            {
+                <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+                    Complete the guided steps and open Review before submitting this transaction.
+                </Alert>
+            }
+            else
+            {
+                <TransactionValidationSummary Validation="Validation" />
+            }
+
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                @if (!Delegated)
+                {
+                    <Button Text="Submit transaction"
+                            Icon="send"
+                            Size="ButtonSize.Small"
+                            Click="SubmitRequested"
+                            Disabled="@(!SubmissionEnabled)"
+                            data-testid="transaction-submit" />
+                    <Button Text="Assemble draft"
+                            Icon="build"
+                            Size="ButtonSize.Small"
+                            ButtonStyle="ButtonStyle.Secondary"
+                            Variant="Variant.Outlined"
+                            Click="AssembleRequested" />
+                }
+                <Button Text="Refresh account"
+                        Icon="refresh"
+                        Size="ButtonSize.Small"
+                        ButtonStyle="ButtonStyle.Secondary"
+                        Variant="Variant.Text"
+                        Click="BroadcastRequested" />
+            </Cluster>
+        </Stack>
+    </Toolbar>
+</aside>
+
+@code {
+    [Parameter, EditorRequired]
+    public string ModeLabel { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Receiver { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Amount { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public TransactionFlowValidation Validation { get; set; } = TransactionFlowValidation.Valid;
+
+    [Parameter]
+    public bool Delegated { get; set; }
+
+    [Parameter]
+    public bool ReviewRequired { get; set; }
+
+    [Parameter]
+    public bool SubmissionEnabled { get; set; }
+
+    [Parameter]
+    public EventCallback SubmitRequested { get; set; }
+
+    [Parameter]
+    public EventCallback AssembleRequested { get; set; }
+
+    [Parameter]
+    public EventCallback BroadcastRequested { get; set; }
+
+    private string StatusText
+        => Delegated
+            ? "Guided dialog"
+            : !Validation.IsValid
+            ? $"{RequiredCount} required"
+            : ReviewRequired && !SubmissionEnabled
+                ? "Review required"
+                : "Ready";
+
+    private int RequiredCount
+        => Validation.Errors
+            .Select(issue => issue.Message)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+
+    private string ReceiverValue
+        => string.IsNullOrWhiteSpace(Receiver) ? "Not set" : Receiver;
+
+    private string ReceiverDisplay
+        => ReceiverValue.Length > 20
+            ? $"{ReceiverValue[..10]}…{ReceiverValue[^6..]}"
+            : ReceiverValue;
+
+    private string AmountDisplay
+        => string.IsNullOrWhiteSpace(Amount) ? "Not set" : Amount;
+}

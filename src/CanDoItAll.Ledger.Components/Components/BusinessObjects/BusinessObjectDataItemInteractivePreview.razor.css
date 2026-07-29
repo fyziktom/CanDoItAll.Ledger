@@ -1,0 +1,148 @@
+.cda-bo-preview-stage {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid #d8dee7;
+    border-radius: 0.35rem;
+    background: #ffffff;
+}
+
+.cda-bo-preview-stage__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.72rem 0.85rem;
+    border-bottom: 1px solid #e2e7ee;
+    background: #f7f8fb;
+}
+
+.cda-bo-preview-stage__toolbar > div:first-child {
+    display: grid;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.cda-bo-preview-stage__toolbar strong,
+.cda-bo-preview-stage__toolbar span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cda-bo-preview-stage__toolbar strong {
+    color: #1f2735;
+    font-size: 0.98rem;
+}
+
+.cda-bo-preview-stage__toolbar span {
+    color: #667285;
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.cda-bo-preview-stage__canvas {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: #f3f6fa;
+}
+
+.cda-bo-preview-stage__canvas.is-draggable {
+    cursor: grab;
+    touch-action: none;
+}
+
+.cda-bo-preview-stage__canvas.is-draggable:active {
+    cursor: grabbing;
+}
+
+.cda-bo-preview-stage__canvas img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    user-select: none;
+    transform-origin: center;
+    transition: transform 120ms ease;
+    will-change: transform;
+}
+
+.cda-bo-preview-stage__canvas iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    background: #ffffff;
+}
+
+.cda-bo-preview-stage__canvas video {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.cda-bo-preview-stage__canvas ::deep .cda-mermaid,
+.cda-bo-preview-stage__canvas ::deep .cda-bo-mermaid-preview {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.65rem;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+.cda-bo-preview-stage__canvas ::deep .cda-mermaid {
+    padding: 0.85rem;
+}
+
+.cda-bo-preview-stage__canvas ::deep .cda-mermaid__header {
+    align-items: center;
+    min-height: 0;
+}
+
+.cda-bo-preview-stage__canvas ::deep .cda-mermaid__viewport-shell {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+}
+
+.cda-bo-preview-stage__canvas ::deep .cda-mermaid__viewport {
+    height: 100%;
+    min-height: 0;
+}
+
+.cda-bo-preview-stage__canvas ::deep .cda-mermaid__viewport svg {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.cda-bo-file-preview {
+    display: grid;
+    place-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+    padding: 2rem;
+    color: #536173;
+    text-align: center;
+}
+
+.cda-bo-file-preview .material-icons {
+    color: #98710d;
+    font-size: 3rem;
+}
+
+.cda-bo-file-preview strong,
+.cda-bo-file-preview small {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}

@@ -1,19 +1,16 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 
-<SectionCard Title="Validation" Description="Project validator messages for the selected surface.">
-    @if (Messages.Count == 0)
-    {
-        <Alert AlertStyle="AlertStyle.Success">
-            <strong>No blocking validation messages</strong>
-            <span>The selected simulator project surface is currently clean.</span>
-        </Alert>
-    }
-    else
-    {
+@if (Messages.Count > 0)
+{
+    <section class="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3" aria-label="Validation messages">
         <Stack GapScale="LayoutGap.Small">
+            <Cluster Gap="LayoutGap.Small">
+                <TextBlock TextStyle="TextStyle.Subtitle2" Value="Validation" />
+                <StatusBadge Text="@Messages.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)" Tone="@SummaryTone" />
+            </Cluster>
             @foreach (SimulationProjectValidationMessage message in Messages)
             {
-                <div class="rounded-md border border-slate-200 bg-white p-3">
+                <div class="rounded-md border border-slate-200 bg-white p-2.5">
                     <Cluster Gap="LayoutGap.Small">
                         <StatusBadge Text="@message.Severity.ToString()" Tone="@SeverityTone(message.Severity)" />
                         <MonoText Text="@message.Code" />
@@ -22,12 +19,28 @@
                 </div>
             }
         </Stack>
-    }
-</SectionCard>
+    </section>
+}
+else if (!HideWhenEmpty)
+{
+    <Alert AlertStyle="AlertStyle.Success">
+        <strong>Validated</strong>
+        <span>No blocking messages were reported.</span>
+    </Alert>
+}
 
 @code {
     [Parameter]
     public IReadOnlyList<SimulationProjectValidationMessage> Messages { get; set; } = [];
+
+    [Parameter]
+    public bool HideWhenEmpty { get; set; } = true;
+
+    private string SummaryTone => Messages.Any(message => message.Severity == SimulationValidationSeverity.Error)
+        ? "danger"
+        : Messages.Any(message => message.Severity == SimulationValidationSeverity.Warning)
+            ? "warning"
+            : "info";
 
     private static string SeverityTone(SimulationValidationSeverity severity)
         => severity switch

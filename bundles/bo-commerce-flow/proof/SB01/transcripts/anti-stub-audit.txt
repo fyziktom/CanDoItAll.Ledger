@@ -1,9 +1,0 @@
-COMMAND: rg -n "TODO|NotImplemented|throw new NotImplementedException|bo:post:new-ledger-post|2f9109c552bd0679b84e94a93fbbb9eb51e370436b97ad6c0b3ff840d70ddedb" src\CanDoItAll.Economy.Components\Components\BusinessObjects\BusinessObjectLedgerDetailsDialogContent.razor src\CanDoItAll.Economy.Components\wwwroot\css\economy-components.css tests\CanDoItAll.Ledger.Tests\BusinessObjectLongDescriptionComponentTests.cs
-CWD: C:\repositories\CanDoItAll.Ledger
-START: 2026-06-30T16:15:06.1140404-04:00
-EXPECTED: no matches in changed production/test files
-
-RESULT: no matches
-
-EXIT_CODE: 1
-ExitCode: 0

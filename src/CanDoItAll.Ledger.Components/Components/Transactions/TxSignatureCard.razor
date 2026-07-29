@@ -1,0 +1,15 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-tx-signature-card">
+    <TransactionSignatureList Inputs="@SingleInput"
+                              Description="@($"Input #{Input.InputIndex}")"
+                              TestId="@($"cda-tx-signature-list-{Input.InputIndex}")" />
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public LedgerTransactionInputDetails Input { get; set; } = default!;
+
+    private IReadOnlyList<LedgerTransactionInputDetails> SingleInput
+        => [Input];
+}

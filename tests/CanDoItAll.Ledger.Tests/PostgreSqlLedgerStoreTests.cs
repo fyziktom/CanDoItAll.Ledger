@@ -1,16 +1,16 @@
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Persistence.EFCore;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Persistence.EFCore;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class PostgreSqlLedgerStoreTests
 {
-    private const string TestConnectionEnvironmentVariable = "CANDOITALL_ECONOMY_TEST_CONNECTION";
+    private const string TestConnectionEnvironmentVariable = "CANDOITALL_LEDGER_TEST_CONNECTION";
     private static readonly LedgerId LedgerId = new("default");
     private static readonly Address Treasury = Address.FromPublicKey(Hex.Utf8("treasury-public"));
     private static readonly Address Ops = Address.FromPublicKey(Hex.Utf8("ops-public"));
@@ -19,14 +19,14 @@ public sealed class PostgreSqlLedgerStoreTests
     [Trait("Category", "PostgreSqlProof")]
     public async Task PostgreSqlLedgerStore_ConfirmsTokenTransactionsWithTypedDataAndUtxoState()
     {
-        string databaseName = $"candoitall_economy_test_{Guid.NewGuid():N}";
+        string databaseName = $"candoitall_ledger_test_{Guid.NewGuid():N}";
         string? connectionString = await TryCreateConnectionStringAsync(databaseName);
         if (connectionString is null)
         {
             return;
         }
 
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseNpgsql(connectionString)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -100,7 +100,7 @@ public sealed class PostgreSqlLedgerStoreTests
             Assert.NotNull(storedTransfer);
             Assert.Equal(TransactionDataItemType.AccountSettings, storedTransfer!.Data!.ItemType);
 
-            await using EconomyDbContext verifyDb = await factory.CreateDbContextAsync(CancellationToken.None);
+            await using LedgerDbContext verifyDb = await factory.CreateDbContextAsync(CancellationToken.None);
             Assert.Contains(verifyDb.Transactions, x => x.TxId == transfer.TxId!.Value.Value && x.DataItemType == (int)TransactionDataItemType.AccountSettings);
             Assert.Contains(verifyDb.SpentOutputs, x => x.SpentInTxId == transfer.TxId!.Value.Value && x.Address == Treasury.Value);
             Assert.Contains(verifyDb.UnspentOutputs, x => x.TxId == transfer.TxId!.Value.Value && x.Address == Ops.Value && x.TokenId == "CDA-ACCESS" && x.TokenAmount == 3m);
@@ -116,14 +116,14 @@ public sealed class PostgreSqlLedgerStoreTests
     [Trait("Category", "PostgreSqlProof")]
     public async Task PostgreSqlLedgerStore_ConcurrentDoubleSpendConfirmsOnlyOneTransaction()
     {
-        string databaseName = $"candoitall_economy_test_{Guid.NewGuid():N}";
+        string databaseName = $"candoitall_ledger_test_{Guid.NewGuid():N}";
         string? connectionString = await TryCreateConnectionStringAsync(databaseName);
         if (connectionString is null)
         {
             return;
         }
 
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseNpgsql(connectionString)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -202,14 +202,14 @@ public sealed class PostgreSqlLedgerStoreTests
     [Trait("Category", "PostgreSqlProof")]
     public async Task PostgreSqlLedgerStore_ConcurrentDuplicateTokenMintConfirmsOnlyOneTokenType()
     {
-        string databaseName = $"candoitall_economy_test_{Guid.NewGuid():N}";
+        string databaseName = $"candoitall_ledger_test_{Guid.NewGuid():N}";
         string? connectionString = await TryCreateConnectionStringAsync(databaseName);
         if (connectionString is null)
         {
             return;
         }
 
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseNpgsql(connectionString)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -258,7 +258,7 @@ public sealed class PostgreSqlLedgerStoreTests
             LedgerSubmitResult rejected = Assert.Single(results, x => !x.Accepted);
             Assert.Contains(rejected.Errors, x => x.Code == ValidationErrorCodes.DuplicateTokenType);
 
-            await using EconomyDbContext verifyDb = await factory.CreateDbContextAsync(CancellationToken.None);
+            await using LedgerDbContext verifyDb = await factory.CreateDbContextAsync(CancellationToken.None);
             Assert.Single(verifyDb.LedgerTokenTypes.Where(x => x.TokenId == tokenId.Value));
         }
         finally
@@ -279,8 +279,8 @@ public sealed class PostgreSqlLedgerStoreTests
         {
             Host = "localhost",
             Port = 5432,
-            Username = "cdaeconomy",
-            Password = "cdaeconomy",
+            Username = "cdaledger",
+            Password = "cdaledger",
             Database = databaseName,
             Timeout = 2,
             CommandTimeout = 5
@@ -308,11 +308,11 @@ public sealed class PostgreSqlLedgerStoreTests
         return testConnection.ConnectionString;
     }
 
-    private static async Task<bool> TryResetDatabaseAsync(IDbContextFactory<EconomyDbContext> factory)
+    private static async Task<bool> TryResetDatabaseAsync(IDbContextFactory<LedgerDbContext> factory)
     {
         try
         {
-            await using EconomyDbContext setupDb = await factory.CreateDbContextAsync(CancellationToken.None);
+            await using LedgerDbContext setupDb = await factory.CreateDbContextAsync(CancellationToken.None);
             await setupDb.Database.EnsureDeletedAsync();
             await setupDb.Database.EnsureCreatedAsync();
             return true;
@@ -323,12 +323,12 @@ public sealed class PostgreSqlLedgerStoreTests
         }
     }
 
-    private static async Task TryDeleteDatabaseAsync(IDbContextFactory<EconomyDbContext> factory)
+    private static async Task TryDeleteDatabaseAsync(IDbContextFactory<LedgerDbContext> factory)
     {
         NpgsqlConnection.ClearAllPools();
         try
         {
-            await using EconomyDbContext cleanupDb = await factory.CreateDbContextAsync(CancellationToken.None);
+            await using LedgerDbContext cleanupDb = await factory.CreateDbContextAsync(CancellationToken.None);
             await cleanupDb.Database.EnsureDeletedAsync();
         }
         catch (Exception ex) when (IsPostgreSqlUnavailable(ex))
@@ -355,7 +355,7 @@ public sealed class PostgreSqlLedgerStoreTests
     }
 
     private static LedgerExecutor CreateExecutor(
-        IDbContextFactory<EconomyDbContext> factory,
+        IDbContextFactory<LedgerDbContext> factory,
         ITransactionHasher hasher,
         ITimeProvider timeProvider)
         => new(
@@ -420,12 +420,12 @@ public sealed class PostgreSqlLedgerStoreTests
             => payload.Length > 0 && signature.Length > 0 && publicKeyMaterial.Length > 0;
     }
 
-    private sealed class TestDbContextFactory(DbContextOptions<EconomyDbContext> options) : IDbContextFactory<EconomyDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<LedgerDbContext> options) : IDbContextFactory<LedgerDbContext>
     {
-        public EconomyDbContext CreateDbContext()
+        public LedgerDbContext CreateDbContext()
             => new(options);
 
-        public ValueTask<EconomyDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        public ValueTask<LedgerDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
             => ValueTask.FromResult(CreateDbContext());
     }
 }

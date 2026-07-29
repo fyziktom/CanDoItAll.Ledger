@@ -1,19 +1,19 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
-public sealed class BusinessObjectCreateIdentityTests : TestContext
+public sealed class BusinessObjectCreateIdentityTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("test-ledger"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
@@ -23,90 +23,79 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
-    public void Factory_CreatesValidDistinctIdsForSameTypeAndName()
-    {
-        BusinessObjectId first = BusinessObjectCreateIdFactory.CreateNewObjectId("image", "New Image BO");
-        BusinessObjectId second = BusinessObjectCreateIdFactory.CreateNewObjectId("image", "New Image BO");
-
-        Assert.NotEqual(first, second);
-        Assert.StartsWith("bo:image:new-image-bo:", first.Value, StringComparison.Ordinal);
-        Assert.StartsWith("bo:image:new-image-bo:", second.Value, StringComparison.Ordinal);
-        Assert.True(LedgerValueValidation.IsValidIdentifier(first.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-        Assert.True(LedgerValueValidation.IsValidIdentifier(second.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-    }
-
-    [Fact]
-    public void Factory_StaysInsideLedgerIdentifierLimitsForLongNames()
-    {
-        string longName = string.Join('-', Enumerable.Repeat("Long Image Name", 20));
-
-        BusinessObjectId objectId = BusinessObjectCreateIdFactory.CreateNewObjectId("image", longName);
-
-        Assert.True(objectId.Value.Length <= LedgerValidationLimits.MaxBusinessObjectIdLength);
-        Assert.True(LedgerValueValidation.IsValidIdentifier(objectId.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-        Assert.StartsWith("bo:image:long-image-name", objectId.Value, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Factory_CreatesOpaqueIdsWithoutDisplayNameSegment()
-    {
-        BusinessObjectId first = BusinessObjectCreateIdFactory.CreateOpaqueObjectId("secure-message");
-        BusinessObjectId second = BusinessObjectCreateIdFactory.CreateOpaqueObjectId("secure-message");
-
-        Assert.NotEqual(first, second);
-        Assert.StartsWith("bo:secure-message:", first.Value, StringComparison.Ordinal);
-        Assert.StartsWith("bo:secure-message:", second.Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("hello", first.Value, StringComparison.OrdinalIgnoreCase);
-        Assert.True(LedgerValueValidation.IsValidIdentifier(first.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-        Assert.True(LedgerValueValidation.IsValidIdentifier(second.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
-    }
-
-
-    [Fact]
-    public void ProductionCreateDrafts_DoNotUseNameOnlyOrTimestampOnlyObjectIds()
+    public void ProductionCreateDrafts_DoNotManufacturePublicObjectIds()
     {
         string root = FindRepositoryRoot();
         string wizard = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Components",
             "BusinessObjects",
             "BusinessObjectCreationWizard.razor")).ReplaceLineEndings("\n");
         string wasmAdapter = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Services",
-            "EconomyAccountWorkspaceAdapters.cs")).ReplaceLineEndings("\n");
+            "LedgerAccountWorkspaceAdapters.cs")).ReplaceLineEndings("\n");
         string nodeSession = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Services",
-            "EconomyNodeWorkspaceSession.cs")).ReplaceLineEndings("\n");
+            "LedgerNodeWorkspaceSession.cs")).ReplaceLineEndings("\n");
+        string eventLookup = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CanDoItAll.Ledger.Components",
+            "Services",
+            "BusinessObjectEventLookup.cs")).ReplaceLineEndings("\n");
+        string rawFormatter = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CanDoItAll.Ledger.Components",
+            "Services",
+            "TransactionRawJsonFormatter.cs")).ReplaceLineEndings("\n");
+        string nodeWorkspace = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CanDoItAll.Ledger.Node",
+            "Components",
+            "Shared",
+            "NodeWorkspace.razor")).ReplaceLineEndings("\n");
+        string cli = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CanDoItAll.Ledger.Cli",
+            "Program.cs")).ReplaceLineEndings("\n");
 
-        Assert.DoesNotContain("new BusinessObjectId($\"bo:{selectedObjectType}:{", wizard, StringComparison.Ordinal);
-        Assert.DoesNotContain("new BusinessObjectId($\"bo:account-app:{now:yyyyMMddHHmmss}\")", wasmAdapter, StringComparison.Ordinal);
-        Assert.DoesNotContain("new BusinessObjectId($\"bo:ui-message:{normalizedAccount}:{viewedAt:yyyyMMddHHmmss}\")", nodeSession, StringComparison.Ordinal);
-        Assert.DoesNotContain("new CreateBusinessObjectRequest(\n                    UniqueObjectId(draft.ObjectId)", nodeSession, StringComparison.Ordinal);
-
-        Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(selectedObjectType, payload.Name)", wizard, StringComparison.Ordinal);
-        Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(\"account-app\", \"account app message\")", wasmAdapter, StringComparison.Ordinal);
-        Assert.Contains("BusinessObjectCreateIdFactory.CreateOpaqueObjectId(\"secure-message\")", wasmAdapter, StringComparison.Ordinal);
-        Assert.Contains("BusinessObjectCreateIdFactory.CreateNewObjectId(\"ui-message\", $\"Message from {normalizedAccount}\")", nodeSession, StringComparison.Ordinal);
-        Assert.Contains("new CreateBusinessObjectRequest(\n                    draft.ObjectId", wasmAdapter, StringComparison.Ordinal);
-        Assert.Contains("new CreateBusinessObjectRequest(\n                    draft.ObjectId", nodeSession, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateNewObjectId", wizard, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateNewObjectId", wasmAdapter, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateOpaqueObjectId", wasmAdapter, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateNewObjectId", nodeSession, StringComparison.Ordinal);
+        Assert.DoesNotContain("UniqueObjectId(", wasmAdapter, StringComparison.Ordinal);
+        Assert.DoesNotContain("UniqueObjectId(", nodeSession, StringComparison.Ordinal);
+        Assert.DoesNotContain("new CreateBusinessObjectRequest(\n                    draft.ObjectId", wasmAdapter, StringComparison.Ordinal);
+        Assert.DoesNotContain("new CreateBusinessObjectRequest(\n                    draft.ObjectId", nodeSession, StringComparison.Ordinal);
         Assert.Contains("draft.OwnerAddress,\n                    draft.MainAmount", wasmAdapter, StringComparison.Ordinal);
         Assert.Contains("draft.OwnerAddress,\n                    draft.MainAmount", nodeSession, StringComparison.Ordinal);
+        Assert.Contains("directObjectId.IsCanonicalOutPointId()", wasmAdapter, StringComparison.Ordinal);
+        Assert.Contains("requestedObjectId.IsCanonicalOutPointId()", eventLookup, StringComparison.Ordinal);
+        Assert.Contains("BusinessObjectId.FromOutPoint(input.PreviousOutPoint)", rawFormatter, StringComparison.Ordinal);
+        Assert.Contains("BusinessObjectId.FromOutPoint(transactionId, output.OutputIndex)", rawFormatter, StringComparison.Ordinal);
+        Assert.DoesNotContain("businessObject.ObjectId", rawFormatter, StringComparison.Ordinal);
+        Assert.DoesNotContain("mintForm.BusinessObjectId", nodeWorkspace, StringComparison.Ordinal);
+        Assert.DoesNotContain("Text=\"Business object id\"", nodeWorkspace, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetOptional(\"business-object-id\")", cli, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Wizard_StagesDistinctCreateIdsForRepeatedSameNameWithoutChangingPayload()
+    public async Task Wizard_StagesPendingIdentityForRepeatedSameNameWithoutChangingPayload()
     {
         var stagedDrafts = new List<BusinessObjectTransactionDraft>();
         BusinessObjectCreationWizardModel model = new(
@@ -120,7 +109,7 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
             null);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, CreateWorkspace())
                 .Add(
@@ -140,11 +129,10 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
         await stageButton.ClickAsync(new MouseEventArgs());
 
         Assert.Equal(2, stagedDrafts.Count);
-        Assert.NotEqual(stagedDrafts[0].ObjectId, stagedDrafts[1].ObjectId);
         Assert.All(stagedDrafts, draft =>
         {
-            Assert.StartsWith("bo:image:new-image-bo:", draft.ObjectId.Value, StringComparison.Ordinal);
-            Assert.True(LedgerValueValidation.IsValidIdentifier(draft.ObjectId.Value, LedgerValidationLimits.MaxBusinessObjectIdLength));
+            Assert.Equal(default(BusinessObjectId), draft.ObjectId);
+            Assert.DoesNotContain("bo:", draft.ExternalRef, StringComparison.OrdinalIgnoreCase);
 
             BusinessObjectMediaPayload payload = BusinessObjectPayloadBuilder.ParseMediaPayload(draft.StateJson, "fallback");
             Assert.Equal("New Image BO", payload.Name);
@@ -162,8 +150,9 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
             new Dictionary<TokenId, Amount>(),
             UtxoCount: 0,
             ViewedAtUtc);
+        BusinessObjectId existingObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('c', 64)), 0);
         BusinessObjectTransactionDraft draft = new(
-            new BusinessObjectId("bo:post:draft"),
+            existingObjectId,
             "post",
             "1.0",
             Alice,
@@ -174,7 +163,7 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
             "{}",
             string.Empty);
         BusinessObjectEditorModel editor = new(
-            new BusinessObjectId("bo:post:draft"),
+            existingObjectId,
             "post",
             "1.0",
             Alice,
@@ -186,9 +175,9 @@ public sealed class BusinessObjectCreateIdentityTests : TestContext
             Context,
             Alice,
             balance,
-            [new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
+            [new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
             [],
-            [new EconomyAddressBookmark("Alice", Alice)],
+            [new LedgerAddressBookmark("Alice", Alice)],
             [],
             [],
             [],

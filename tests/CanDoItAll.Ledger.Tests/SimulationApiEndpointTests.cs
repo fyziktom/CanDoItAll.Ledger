@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Sockets;
-using CanDoItAll.Economy.Simulator;
-using CanDoItAll.Economy.Simulator.Components.Samples;
+using CanDoItAll.Ledger.Simulator;
+using CanDoItAll.Ledger.Simulator.Components.Samples;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class SimulationApiEndpointTests
 {
@@ -35,7 +35,7 @@ public sealed class SimulationApiEndpointTests
     [Fact]
     public void FinanceAnalysis_UsesRunStateAndCfoLenses()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService lifecycle = CreateLifecycleService();
         SimulationRunConsoleState run = lifecycle.EnsureProjectRuns(project)[0];
 
@@ -54,7 +54,7 @@ public sealed class SimulationApiEndpointTests
     [Fact]
     public void PeriodSummary_UsesGraphOutputsForQuarterAndYearViews()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService lifecycle = CreateLifecycleService();
         SimulationRunConsoleState run = lifecycle.EnsureProjectRuns(project)[0];
         var service = new SimulationPeriodSummaryService();
@@ -81,12 +81,12 @@ public sealed class SimulationApiEndpointTests
         int port = GetFreeTcpPort();
         WebApplicationBuilder builder = WebApplication.CreateBuilder([]);
         builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
-        builder.Services.AddEconomySimulator();
+        builder.Services.AddLedgerSimulator();
 
         await using WebApplication app = builder.Build();
-        app.MapEconomySimulatorApi();
+        app.MapLedgerSimulatorApi();
 
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         app.Services.GetRequiredService<ISimulationProjectWorkspaceService>()
             .UpsertProject(project, DateTimeOffset.Parse("2026-05-14T12:00:00Z"));
 
@@ -118,11 +118,11 @@ public sealed class SimulationApiEndpointTests
         Assert.Contains(vefSchedules!, schedule => schedule.Metadata.TryGetValue("assemblySource", out string? source) && source == "vef-financial-plan-assembly");
         Assert.DoesNotContain(vefSchedules!, schedule => schedule.Metadata.ContainsKey("sourceWorkbook"));
 
-        EconomySimulatorTemplateState[]? templates = await httpClient.GetFromJsonAsync<EconomySimulatorTemplateState[]>(
+        LedgerSimulatorTemplateState[]? templates = await httpClient.GetFromJsonAsync<LedgerSimulatorTemplateState[]>(
             "api/simulator/templates",
             CancellationToken.None);
         Assert.NotNull(templates);
-        EconomySimulatorTemplateState plannedExpense = Assert.Single(templates!, template => template.TemplateId == "financial.planned-expense-request.v1");
+        LedgerSimulatorTemplateState plannedExpense = Assert.Single(templates!, template => template.TemplateId == "financial.planned-expense-request.v1");
         Assert.Contains("planned-expense", plannedExpense.Metadata["tags"], StringComparison.Ordinal);
         Assert.Contains("rule.purchase-approval.v1", plannedExpense.Metadata["requiresTemplates"], StringComparison.Ordinal);
 
@@ -179,7 +179,7 @@ public sealed class SimulationApiEndpointTests
         Assert.NotNull(s1Start?.Run);
         Assert.Contains(s1Start!.Run!.Kpis, kpi => kpi.Code == "revenue");
         Assert.Contains(s1Start.Run.Kpis, kpi => kpi.Code == "serviceHours");
-        EconomyGraphData s1RevenueGraph = Assert.Single(s1Start.Run.Observation.Graphs, graph => graph.Filter.Metric == ScenarioGraphMetric.Revenue);
+        LedgerGraphData s1RevenueGraph = Assert.Single(s1Start.Run.Observation.Graphs, graph => graph.Filter.Metric == ScenarioGraphMetric.Revenue);
         Assert.True(s1RevenueGraph.Totals["nonCashIncome"] > 0m);
         Assert.DoesNotContain(s1Start.Run.Kpis, kpi => kpi.Code == "realGdp");
 
@@ -191,7 +191,7 @@ public sealed class SimulationApiEndpointTests
         SimulationRunStepApiResponse? s1Next = await s1NextResponse.Content.ReadFromJsonAsync<SimulationRunStepApiResponse>(CancellationToken.None);
         Assert.NotNull(s1Next?.Run);
         Assert.NotEqual(s1Start.Run.Run.OutputHash, s1Next!.Run!.Run.OutputHash);
-        EconomyGraphData s1NextCashGraph = Assert.Single(s1Next.Run.Observation.Graphs, graph => graph.Filter.Metric == ScenarioGraphMetric.CashFlow);
+        LedgerGraphData s1NextCashGraph = Assert.Single(s1Next.Run.Observation.Graphs, graph => graph.Filter.Metric == ScenarioGraphMetric.CashFlow);
         Assert.True(s1NextCashGraph.Totals["rowCount"] > s1RevenueGraph.Totals["rowCount"]);
 
         using HttpResponseMessage s1InterventionResponse = await httpClient.PostAsJsonAsync(
@@ -208,7 +208,7 @@ public sealed class SimulationApiEndpointTests
         SimulationRunInterventionApiResponse? s1Intervention = await s1InterventionResponse.Content.ReadFromJsonAsync<SimulationRunInterventionApiResponse>(CancellationToken.None);
         Assert.NotNull(s1Intervention?.Run);
         Assert.NotNull(s1Intervention!.Intervention);
-        Assert.Contains(s1Intervention.Run!.Project.BusinessObjectDefinitions, definition => definition.ObjectType == EconomySimulatorObjectTypes.RuntimeIntervention);
+        Assert.Contains(s1Intervention.Run!.Project.BusinessObjectDefinitions, definition => definition.ObjectType == LedgerSimulatorObjectTypes.RuntimeIntervention);
         Assert.Equal(2, s1Intervention.Run.Run.AvailableStep);
 
         using HttpResponseMessage s1InterventionStepResponse = await httpClient.PostAsJsonAsync(
@@ -253,11 +253,24 @@ public sealed class SimulationApiEndpointTests
 
     private static InMemorySimulationRunLifecycleService CreateLifecycleService()
     {
-        var serializer = new EconomySimulatorJsonSerializer();
+        var serializer = new LedgerSimulatorJsonSerializer();
         var validation = new SimulationProjectValidationService();
         var importExport = new SimulationProjectImportExportService(serializer, validation);
         var observation = new SimulationRunObservationService(serializer);
-        return new InMemorySimulationRunLifecycleService(validation, importExport, observation, serializer, new FixedTimeProvider(DateTimeOffset.Parse("2026-05-14T12:00:00Z")));
+        var scenarioCatalog = new LedgerScenarioTemplateCatalog();
+        var scenarioMaterializer = new LedgerScenarioRunMaterializer(
+            scenarioCatalog,
+            new LedgerScenarioEventCompiler(serializer),
+            new LedgerProjectionService(),
+            serializer);
+        return new InMemorySimulationRunLifecycleService(
+            validation,
+            importExport,
+            observation,
+            serializer,
+            new FixedTimeProvider(DateTimeOffset.Parse("2026-05-14T12:00:00Z")),
+            scenarioCatalog,
+            scenarioMaterializer);
     }
 
     private static int GetFreeTcpPort()

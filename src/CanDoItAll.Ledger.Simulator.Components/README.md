@@ -1,7 +1,12 @@
 # CanDoItAll.Ledger.Simulator.Components
 
-BO/project simulator UI moved from Economy.
+Reusable UI for the experimental project-finance Simulator.
 
-The components are part of the Ledger BO simulator landing zone, not the Economy
-simple/Smith observer host. Temporary `CanDoItAll.Economy.Simulator.Components`
-namespaces remain only for SB02 compatibility.
+The components cover project editing, planned events, scenario runs,
+interventions, charts, issues, actual-entry preparation, and reconciliation
+views.
+
+The screens present exploratory models and projections. They are not
+authoritative accounting, forecasting, tax, legal, compliance, economic, or
+investment evidence. This project is work in progress and intentionally
+non-packable.

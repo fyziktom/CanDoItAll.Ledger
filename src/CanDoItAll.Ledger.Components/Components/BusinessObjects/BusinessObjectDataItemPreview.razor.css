@@ -1,0 +1,72 @@
+.cda-bo-data-preview {
+    aspect-ratio: 4 / 3;
+    display: grid;
+    min-width: 0;
+    overflow: hidden;
+    place-items: center;
+    background: var(--cad-color-surface-soft);
+    border: 1px solid var(--cad-color-border-soft);
+    border-radius: var(--cad-radius-control);
+}
+
+.cda-bo-data-preview--large {
+    aspect-ratio: 16 / 10;
+}
+
+.cda-bo-data-preview--thumbnail {
+    height: 3.25rem;
+    aspect-ratio: 16 / 10;
+}
+
+.cda-bo-data-preview--thumbnail .cda-bo-file-preview {
+    gap: 0;
+    padding: 0.25rem;
+}
+
+.cda-bo-data-preview--thumbnail .cda-bo-file-preview ::deep .cda-material-icon {
+    font-size: 1.25rem;
+}
+
+.cda-bo-data-preview--thumbnail .cda-bo-file-preview ::deep .cda-text-block {
+    display: none;
+}
+
+.cda-bo-data-preview--flush {
+    border: 0;
+    border-radius: 0;
+}
+
+.cda-bo-data-preview img,
+.cda-bo-data-preview video {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.cda-bo-data-preview img {
+    object-fit: cover;
+}
+
+.cda-bo-data-preview video {
+    background: #111827;
+    object-fit: contain;
+}
+
+.cda-bo-data-preview audio {
+    width: min(100%, 18rem);
+}
+
+.cda-bo-file-preview {
+    display: grid;
+    height: 100%;
+    width: 100%;
+    gap: var(--cad-space-2, 0.5rem);
+    place-items: center;
+    color: var(--cad-color-text-muted);
+    padding: var(--cad-space-3, 0.75rem);
+    text-align: center;
+}
+
+.cda-bo-file-preview--audio {
+    align-content: center;
+}

@@ -1,0 +1,204 @@
+.cda-bo-gallery-card {
+    height: 27rem;
+    max-height: 27rem;
+    min-width: 0;
+}
+
+.cda-bo-gallery-card--compact {
+    height: 22rem;
+    max-height: 22rem;
+}
+
+.cda-bo-gallery-card ::deep .cda-bo-gallery-surface {
+    display: grid;
+    grid-template-rows: 9.5rem minmax(0, 1fr);
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+}
+
+.cda-bo-gallery-card--compact ::deep .cda-bo-gallery-surface {
+    grid-template-rows: 7rem minmax(0, 1fr);
+}
+
+.cda-bo-gallery-preview {
+    position: relative;
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border-bottom: 1px solid var(--cad-color-border-soft);
+    background: var(--cad-color-surface-soft);
+}
+
+.cda-bo-gallery-preview__action {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+}
+
+.cda-bo-gallery-preview__action:focus-visible {
+    outline: 2px solid var(--cad-color-accent, #0ea5e9);
+    outline-offset: -2px;
+}
+
+.cda-bo-gallery-preview ::deep .cda-bo-data-preview {
+    height: 100%;
+    aspect-ratio: auto;
+}
+
+.cda-bo-gallery-fallback {
+    display: grid;
+    height: 100%;
+    width: 100%;
+    align-content: center;
+    justify-items: center;
+    gap: 0.5rem;
+    color: var(--cad-color-text-muted);
+}
+
+.cda-bo-gallery-fallback__icon {
+    display: grid;
+    width: 4rem;
+    height: 4rem;
+    place-items: center;
+    border: 1px solid var(--cad-color-border-soft);
+    border-radius: 1rem;
+    background: var(--cad-color-surface);
+    box-shadow: 0 0.5rem 1.25rem rgb(15 23 42 / 0.08);
+}
+
+.cda-bo-gallery-fallback__icon ::deep .cda-material-icon {
+    font-size: 1.75rem;
+}
+
+.cda-bo-gallery-card ::deep .cda-bo-gallery-body {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0.75rem;
+}
+
+.cda-bo-gallery-title,
+.cda-bo-gallery-description {
+    display: -webkit-box;
+    min-width: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+}
+
+.cda-bo-gallery-title {
+    -webkit-line-clamp: 2;
+}
+
+.cda-bo-gallery-description {
+    -webkit-line-clamp: 2;
+}
+
+.cda-bo-gallery-card--compact .cda-bo-gallery-description {
+    -webkit-line-clamp: 1;
+}
+
+.cda-bo-gallery-operation {
+    display: inline-grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border: 1px solid var(--cad-color-border-soft);
+    border-radius: 999px;
+}
+
+.cda-bo-gallery-operation ::deep .cda-material-icon {
+    font-size: 1rem;
+}
+
+.cda-bo-gallery-operation--create {
+    color: #047857;
+    background: color-mix(in srgb, #10b981 14%, var(--cad-color-surface));
+}
+
+.cda-bo-gallery-operation--update {
+    color: #0369a1;
+    background: color-mix(in srgb, #38bdf8 16%, var(--cad-color-surface));
+}
+
+.cda-bo-gallery-operation--transfer {
+    color: #6d28d9;
+    background: color-mix(in srgb, #8b5cf6 14%, var(--cad-color-surface));
+}
+
+.cda-bo-gallery-operation--close {
+    color: #b45309;
+    background: color-mix(in srgb, #f59e0b 15%, var(--cad-color-surface));
+}
+
+.cda-bo-gallery-card ::deep .cda-bo-gallery-tags {
+    max-height: 2.4rem;
+    overflow: hidden;
+}
+
+.cda-bo-gallery-card ::deep .cda-bo-gallery-tag,
+.cda-bo-gallery-card ::deep .cda-bo-gallery-type {
+    gap: 0.2rem;
+    padding: 0.125rem 0.35rem;
+    font-size: 0.625rem;
+    line-height: 1;
+}
+
+.cda-bo-gallery-footer {
+    display: grid;
+    min-width: 0;
+    flex: 0 0 auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: auto;
+    padding-top: 0.25rem;
+}
+
+.cda-bo-gallery-card ::deep .cda-bo-gallery-txid {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.125rem;
+}
+
+.cda-bo-gallery-card ::deep .cda-bo-gallery-txid .cda-text-block--mono {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--cad-color-text-muted);
+    font-size: 0.625rem;
+    line-height: 1rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cda-bo-gallery-time {
+    color: var(--cad-color-text-muted);
+    font-size: 0.625rem;
+    line-height: 1rem;
+    white-space: nowrap;
+}
+
+::deep .cda-bo-gallery-info {
+    min-width: 1.75rem;
+    min-height: 1.75rem;
+    padding: 0.25rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .cda-bo-gallery-preview ::deep img {
+        transition: transform 160ms ease;
+    }
+
+    .cda-bo-gallery-preview:hover ::deep img {
+        transform: scale(1.025);
+    }
+}

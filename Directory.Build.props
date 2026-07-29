@@ -4,6 +4,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <Deterministic>true</Deterministic>
-    <CanDoItAllComponentsPackageVersion>0.1.0</CanDoItAllComponentsPackageVersion>
+    <CanDoItAllComponentsPackageVersion>0.1.15</CanDoItAllComponentsPackageVersion>
+    <CanDoItAllIpfsPackageVersion>0.1.16</CanDoItAllIpfsPackageVersion>
+    <Authors Condition="'$(Authors)' == ''">fyziktom</Authors>
+    <Copyright Condition="'$(Copyright)' == ''">Copyright (c) 2026 fyziktom</Copyright>
+    <PackageProjectUrl Condition="'$(PackageProjectUrl)' == ''">https://aicandoitall.com</PackageProjectUrl>
+    <RepositoryUrl Condition="'$(RepositoryUrl)' == ''">https://github.com/fyziktom/CanDoItAll.Ledger</RepositoryUrl>
+    <RepositoryType Condition="'$(RepositoryType)' == ''">git</RepositoryType>
+    <PublishRepositoryUrl Condition="'$(PublishRepositoryUrl)' == ''">true</PublishRepositoryUrl>
+    <PackageLicenseFile Condition="'$(PackageLicenseExpression)' == '' and '$(PackageLicenseFile)' == ''">LICENSE</PackageLicenseFile>
+    <PackageReadmeFile Condition="'$(PackageReadmeFile)' == ''">README.md</PackageReadmeFile>
   </PropertyGroup>
 </Project>

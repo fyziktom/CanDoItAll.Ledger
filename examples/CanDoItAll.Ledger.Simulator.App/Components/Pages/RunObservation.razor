@@ -1,7 +1,7 @@
 @page "/run-observation"
 @page "/runs"
 @page "/runs/{RunId}"
-@inject IConfiguration Configuration
+@inject LedgerSimulatorProjectionPersistenceSelection PersistenceSelection
 @inject ISimulationRunLifecycleService RunLifecycle
 @inject ISimulationProjectWorkspaceService Workspace
 @inject NavigationManager Navigation
@@ -9,13 +9,14 @@
 
 <PageTitle>Simulation Runs</PageTitle>
 
-<EconomySimulatorAppShell ActivePage="runs">
+<LedgerSimulatorAppShell ActivePage="runs">
+    <ProjectionStorageNotice />
     <SimulationRunObservationPage ConsoleViewModel="ViewModel"
                                   RunSelected="SelectRunAsync"
                                   CommandRequested="ApplyCommandAsync"
                                   StepRequested="ApplyStepAsync"
                                   InterventionRequested="ApplyInterventionAsync" />
-</EconomySimulatorAppShell>
+</LedgerSimulatorAppShell>
 
 @code {
     [Parameter]
@@ -23,50 +24,78 @@
 
     private IReadOnlyList<SimulationProjectValidationMessage> commandMessages = [];
     private CancellationTokenSource? refreshLoopCancellation;
+    private SimulationRunConsoleViewModel? viewModel;
+    private string? loadedRunId;
+    private bool viewModelInitialized;
+    private IReadOnlyList<SimulationRunRegistryRevision> observedRunRevisions = [];
 
-    private SimulationRunConsoleViewModel ViewModel
+    private SimulationRunConsoleViewModel ViewModel => viewModel ??= BuildViewModel();
+
+    protected override void OnParametersSet()
     {
-        get
+        string? requestedRunId = NormalizeRequestedRunId();
+        if (!viewModelInitialized || !string.Equals(loadedRunId, requestedRunId, StringComparison.Ordinal))
         {
-            string storageMode = Configuration["EconomySimulator:StorageMode"] ?? "InMemory";
-            string? requestedRunId = string.IsNullOrWhiteSpace(RunId) ? null : Uri.UnescapeDataString(RunId);
-            SimulationRunConsoleState? requestedRun = requestedRunId is null ? null : RunLifecycle.GetRun(requestedRunId);
-            IReadOnlyList<SimulationProjectState> projects = LoadWorkspaceProjects(storageMode, requestedRun?.Project).ToArray();
-            foreach (SimulationProjectState project in projects)
-            {
-                RunLifecycle.EnsureProjectRuns(project);
-            }
-
-            IReadOnlyList<SimulationRunConsoleState> runs = RunLifecycle.ListRuns()
-                .Select(record => RunLifecycle.GetRun(record.RunId))
-                .Where(run => run is not null)
-                .Cast<SimulationRunConsoleState>()
-                .OrderByDescending(run => run.Run.StartedAtUtc)
-                .ToArray();
-
-            if (requestedRun is not null && runs.All(run => !string.Equals(run.Run.RunId, requestedRun.Run.RunId, StringComparison.Ordinal)))
-            {
-                runs = [requestedRun, .. runs];
-            }
-
-            if (runs.Count == 0)
-            {
-                SimulationRunConsoleViewModel sample = EconomySimulatorSampleData.CreateRunConsole();
-                return sample with { CommandMessages = commandMessages };
-            }
-
-            SimulationRunConsoleState selected = requestedRunId is null
-                ? runs[0]
-                : requestedRun ?? runs.FirstOrDefault(run => string.Equals(run.Run.RunId, requestedRunId, StringComparison.Ordinal)) ?? runs[0];
-
-            return new SimulationRunConsoleViewModel(projects.Select(project => project.Summary).ToArray(), runs, selected, commandMessages);
+            loadedRunId = requestedRunId;
+            viewModelInitialized = true;
+            ReloadViewModel();
         }
     }
 
-    protected override void OnInitialized()
+    private SimulationRunConsoleViewModel BuildViewModel()
     {
-        refreshLoopCancellation = new CancellationTokenSource();
-        _ = RefreshLiveRunsAsync(refreshLoopCancellation.Token);
+        string projectionStorageMode = PersistenceSelection.StorageModeName;
+        string? requestedRunId = NormalizeRequestedRunId();
+        SimulationRunConsoleState? requestedRun = requestedRunId is null ? null : RunLifecycle.GetRun(requestedRunId);
+        IReadOnlyList<SimulationProjectState> projects = LoadWorkspaceProjects(projectionStorageMode, requestedRun?.Project).ToArray();
+        foreach (SimulationProjectState project in projects)
+        {
+            RunLifecycle.EnsureProjectRuns(project);
+        }
+
+        IReadOnlyList<SimulationRunConsoleState> runs = RunLifecycle.ListRuns()
+            .Select(record => RunLifecycle.GetRun(record.RunId))
+            .Where(run => run is not null)
+            .Cast<SimulationRunConsoleState>()
+            .OrderByDescending(run => run.Run.StartedAtUtc)
+            .ToArray();
+
+        if (requestedRun is not null && runs.All(run => !string.Equals(run.Run.RunId, requestedRun.Run.RunId, StringComparison.Ordinal)))
+        {
+            runs = [requestedRun, .. runs];
+        }
+
+        if (runs.Count == 0)
+        {
+            SimulationRunConsoleViewModel sample = LedgerSimulatorSampleData.CreateRunConsole();
+            return sample with { CommandMessages = commandMessages };
+        }
+
+        SimulationRunConsoleState selected = requestedRunId is null
+            ? runs[0]
+            : requestedRun ?? runs.FirstOrDefault(run => string.Equals(run.Run.RunId, requestedRunId, StringComparison.Ordinal)) ?? runs[0];
+
+        return new SimulationRunConsoleViewModel(projects.Select(project => project.Summary).ToArray(), runs, selected, commandMessages);
+    }
+
+    private string? NormalizeRequestedRunId()
+        => string.IsNullOrWhiteSpace(RunId) ? null : Uri.UnescapeDataString(RunId);
+
+    private void ReloadViewModel()
+    {
+        viewModel = BuildViewModel();
+        observedRunRevisions = SimulationRunRegistryRevision.Capture(viewModel.Runs.Select(run => run.Run));
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && refreshLoopCancellation is null)
+        {
+            refreshLoopCancellation = new CancellationTokenSource();
+            _ = RefreshLiveRunsAsync(refreshLoopCancellation.Token);
+        }
+
+        return Task.CompletedTask;
     }
 
     private Task SelectRunAsync(string runId)
@@ -79,6 +108,7 @@
     {
         SimulationRunCommandResult result = RunLifecycle.ApplyCommand(ViewModel.SelectedRun.Run.RunId, command);
         commandMessages = result.Messages;
+        ReloadViewModel();
         if (result.Succeeded && !string.IsNullOrWhiteSpace(result.RunId))
         {
             Navigation.NavigateTo($"/runs/{Uri.EscapeDataString(result.RunId)}");
@@ -91,6 +121,7 @@
     {
         SimulationRunCommandResult result = RunLifecycle.StepRun(ViewModel.SelectedRun.Run.RunId, request.Step, request.TargetStep);
         commandMessages = result.Messages;
+        ReloadViewModel();
         if (result.Succeeded && !string.IsNullOrWhiteSpace(result.RunId))
         {
             Navigation.NavigateTo($"/runs/{Uri.EscapeDataString(result.RunId)}");
@@ -103,6 +134,7 @@
     {
         SimulationRunInterventionCommandResult result = RunLifecycle.ApplyIntervention(ViewModel.SelectedRun.Run.RunId, request);
         commandMessages = result.Command.Messages;
+        ReloadViewModel();
         if (result.Command.Succeeded && !string.IsNullOrWhiteSpace(result.Command.RunId))
         {
             Navigation.NavigateTo($"/runs/{Uri.EscapeDataString(result.Command.RunId)}");
@@ -111,7 +143,9 @@
         return Task.CompletedTask;
     }
 
-    private IEnumerable<SimulationProjectState> LoadWorkspaceProjects(string storageMode, SimulationProjectState? requestedProject)
+    private IEnumerable<SimulationProjectState> LoadWorkspaceProjects(
+        string projectionStorageMode,
+        SimulationProjectState? requestedProject)
     {
         var projects = Workspace.ListProjects()
             .Select(project => Workspace.GetProject(project.ProjectId))
@@ -126,7 +160,7 @@
 
         if (projects.Count == 0)
         {
-            projects.Add(EconomySimulatorSampleData.CreateProjectManagement(storageMode).SelectedProject);
+            projects.Add(LedgerSimulatorSampleData.CreateProjectManagement(projectionStorageMode).SelectedProject);
         }
 
         return projects;
@@ -139,9 +173,14 @@
         {
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
-                if (ViewModel.Runs.Any(run => run.Run.Status is SimulationRunLifecycleStatus.Queued or SimulationRunLifecycleStatus.Running or SimulationRunLifecycleStatus.Paused))
+                IReadOnlyList<SimulationRunRegistryRevision> currentRunRevisions = SimulationRunRegistryRevision.Capture(RunLifecycle.ListRuns());
+                if (!observedRunRevisions.SequenceEqual(currentRunRevisions))
                 {
-                    await InvokeAsync(StateHasChanged);
+                    await InvokeAsync(() =>
+                    {
+                        ReloadViewModel();
+                        StateHasChanged();
+                    });
                 }
             }
         }

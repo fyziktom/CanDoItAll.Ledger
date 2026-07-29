@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Ledger.BusinessObjects</AssemblyName>
+    <RootNamespace>CanDoItAll.Ledger.BusinessObjects</RootNamespace>
+    <Description>Account, business-object, rule, commerce, secure-messaging, and transaction-building services for CanDoItAll Ledger.</Description>
+    <PackageTags>candoitall;ledger;business-objects;accounts;transactions;finance</PackageTags>
+    <EnableBusinessObjectIpfsStorage Condition="'$(EnableBusinessObjectIpfsStorage)' == '' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(TargetPlatformIdentifier)' == 'browser')">false</EnableBusinessObjectIpfsStorage>
+    <EnableBusinessObjectIpfsStorage Condition="'$(EnableBusinessObjectIpfsStorage)' == ''">true</EnableBusinessObjectIpfsStorage>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(EnableBusinessObjectIpfsStorage)' == 'true'">
+    <DefineConstants>$(DefineConstants);BUSINESS_OBJECT_IPFS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Ledger.Core\CanDoItAll.Ledger.Core.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Cryptography\CanDoItAll.Ledger.Cryptography.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Engine\CanDoItAll.Ledger.Engine.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,14 @@
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <SurfaceCard Soft="true" role="status">
+        <StatusBadge Text="@Message" Tone="@Tone" />
+    </SurfaceCard>
+}
+
+@code {
+    [Parameter]
+    public string? Message { get; set; }
+
+    [Parameter]
+    public string Tone { get; set; } = "warning";
+}

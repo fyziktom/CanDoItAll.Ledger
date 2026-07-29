@@ -1,6 +1,0 @@
-Command: Select-String -SimpleMatch 'Text="Verify ownership"' in BusinessObjectLedgerDetailsDialogContent.razor; exit 1 if present for SB01-HOME-ONLY
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-StartTimeUtc: 2026-07-04T22:42:33.4975929Z
-ExitCode: 1
-Output:
-SB01-HOME-ONLY failing-first: BO details still exposes Verify ownership scanner action.

@@ -1,0 +1,740 @@
+@namespace CanDoItAll.Ledger.Components
+@using System.Text.Json
+@inject DialogService DialogService
+@inject NotificationService Notifications
+@inject IBusinessObjectVerificationService VerificationService
+
+<Stack GapScale="LayoutGap.Medium" data-testid="message-security-panel">
+    <Tabs Variant="TabsVariant.ModalCompact"
+          BorderMode="TabsBorderMode.Soft"
+          OverflowMode="TabsOverflowMode.Scroll"
+          PanelOverflowMode="TabsPanelOverflowMode.Visible"
+          AriaLabel="Message security sections">
+        <TabsItem Text="Signatures" Icon="verified">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                <SectionCard Title="Sign message" Description="Sign plaintext with the active account key.">
+                    <Stack GapScale="LayoutGap.Medium">
+                        <FormField Text="Message to sign">
+                            <TextArea Value="@signMessage"
+                                      ValueChanged="@((string value) => signMessage = value)"
+                                      Rows="6"
+                                      data-testid="message-security-sign-message" />
+                        </FormField>
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                            <PageHeaderActionButton Icon="draw"
+                                                    Label="Sign message"
+                                                    TooltipText="Sign message with the active account"
+                                                    ButtonStyle="ButtonStyle.Secondary"
+                                                    Disabled="@(!CanUseSecurity)"
+                                                    IsBusy="@signing"
+                                                    Click="SignAsync"
+                                                    TestId="message-security-sign-button" />
+                            <PageHeaderActionButton Icon="content_copy"
+                                                    Label="Use as verification message"
+                                                    TooltipText="Copy signing message into verification"
+                                                    Variant="Variant.Outlined"
+                                                    Disabled="@string.IsNullOrWhiteSpace(signMessage)"
+                                                    Click="UseSignMessageForVerification"
+                                                    TestId="message-security-use-sign-message" />
+                        </Cluster>
+                    </Stack>
+                </SectionCard>
+
+                <SectionCard Title="Verify signature" Description="Verify signature JSON against its original plaintext.">
+                    <Stack GapScale="LayoutGap.Medium">
+                        <FormField Text="Verification message">
+                            <TextArea Value="@verifyMessage"
+                                      ValueChanged="@((string value) => verifyMessage = value)"
+                                      Rows="5"
+                                      data-testid="message-security-verify-message" />
+                        </FormField>
+                        <FormField Text="Signature JSON">
+                            <TextArea Value="@signatureJson"
+                                      ValueChanged="@((string value) => signatureJson = value)"
+                                      Rows="7"
+                                      data-testid="message-security-signature-json" />
+                        </FormField>
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                            <PageHeaderActionButton Icon="verified"
+                                                    Label="Verify signature"
+                                                    TooltipText="Verify signature JSON"
+                                                    Variant="Variant.Outlined"
+                                                    Disabled="@(!CanUseSecurity)"
+                                                    IsBusy="@verifying"
+                                                    Click="VerifyAsync"
+                                                    TestId="message-security-verify-button" />
+                        </Cluster>
+                        @if (!string.IsNullOrWhiteSpace(verifyStatus))
+                        {
+                            <Alert AlertStyle="@verifyAlertStyle" data-testid="message-security-verify-status">
+                                @verifyStatus
+                            </Alert>
+                        }
+                    </Stack>
+                </SectionCard>
+            </Grid>
+        </TabsItem>
+
+        <TabsItem Text="Encryption" Icon="lock">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                <SectionCard Title="Encrypt for receiver" Description="Encrypt plaintext for another account.">
+                    <Stack GapScale="LayoutGap.Medium">
+                        <FormField Text="Receiver account">
+                            <TextBox Value="@receiverAccount"
+                                     ValueChanged="@((string value) => receiverAccount = value)"
+                                     data-testid="message-security-receiver" />
+                        </FormField>
+                        <FormField Text="Message to encrypt">
+                            <TextArea Value="@encryptMessage"
+                                      ValueChanged="@((string value) => encryptMessage = value)"
+                                      Rows="7"
+                                      data-testid="message-security-encrypt-message" />
+                        </FormField>
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                            <PageHeaderActionButton Icon="lock"
+                                                    Label="Encrypt"
+                                                    TooltipText="Encrypt for receiver"
+                                                    ButtonStyle="ButtonStyle.Secondary"
+                                                    Disabled="@(!CanUseSecurity)"
+                                                    IsBusy="@encrypting"
+                                                    Click="EncryptAsync"
+                                                    TestId="message-security-encrypt-button" />
+                        </Cluster>
+                    </Stack>
+                </SectionCard>
+
+                <SectionCard Title="Decrypt here" Description="Open encrypted message JSON with the active account.">
+                    <Stack GapScale="LayoutGap.Medium">
+                        <FormField Text="Encrypted message JSON">
+                            <TextArea Value="@encryptedJson"
+                                      ValueChanged="@((string value) => encryptedJson = value)"
+                                      Rows="7"
+                                      data-testid="message-security-encrypted-json" />
+                        </FormField>
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                            <PageHeaderActionButton Icon="lock_open"
+                                                    Label="Decrypt"
+                                                    TooltipText="Decrypt message JSON"
+                                                    Variant="Variant.Outlined"
+                                                    Disabled="@(!CanUseSecurity)"
+                                                    IsBusy="@decrypting"
+                                                    Click="DecryptAsync"
+                                                    TestId="message-security-decrypt-button" />
+                        </Cluster>
+                        <FormField Text="Decrypted plaintext">
+                            <TextArea Value="@decryptedPlainText"
+                                      ReadOnly="true"
+                                      Rows="4"
+                                      data-testid="message-security-decrypted-plain" />
+                        </FormField>
+                        @if (!string.IsNullOrWhiteSpace(encryptionStatus))
+                        {
+                            <Alert AlertStyle="@encryptionAlertStyle" data-testid="message-security-encryption-status">
+                                @encryptionStatus
+                            </Alert>
+                        }
+                    </Stack>
+                </SectionCard>
+            </Grid>
+        </TabsItem>
+
+        <TabsItem Text="Ownership" Icon="fact_check">
+            <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+                <SectionCard Title="Scan or paste payload" Description="Load an ownership payload from QR or pasted text.">
+                    <Stack GapScale="LayoutGap.Medium">
+                        <FormField Text="Ownership payload">
+                            <TextArea Value="@ownershipPayload"
+                                      ValueChanged="@((string value) => ownershipPayload = value)"
+                                      Rows="13"
+                                      Placeholder="Scan a BO ownership QR code or paste a ticket ownership payload."
+                                      data-testid="message-security-ownership-payload" />
+                        </FormField>
+                        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                            <QrScanButton Label="Scan ownership QR"
+                                          TooltipText="Scan ownership QR with camera or paste text"
+                                          EnableCamera="true"
+                                          Scanned="ApplyOwnershipScanAsync"
+                                          TestId="message-security-ownership-scan" />
+                            <PageHeaderActionButton Icon="fact_check"
+                                                    Label="Verify ownership"
+                                                    TooltipText="Verify scanned ownership payload"
+                                                    ButtonStyle="ButtonStyle.Secondary"
+                                                    IsBusy="@ownershipBusy"
+                                                    Disabled="@string.IsNullOrWhiteSpace(ownershipPayload)"
+                                                    Click="VerifyOwnershipAsync"
+                                                    TestId="message-security-ownership-verify" />
+                            <PageHeaderActionButton Icon="backspace"
+                                                    Label="Clear"
+                                                    TooltipText="Clear ownership verification"
+                                                    Variant="Variant.Outlined"
+                                                    Click="ClearOwnershipAsync"
+                                                    TestId="message-security-ownership-clear" />
+                        </Cluster>
+                    </Stack>
+                </SectionCard>
+
+                <SectionCard Title="Verification result" Description="Review signature, ownership flow, and resolved business-object evidence.">
+                    <Stack GapScale="LayoutGap.Medium">
+                        @if (string.IsNullOrWhiteSpace(ownershipStatus))
+                        {
+                            <EmptyState Title="No ownership result"
+                                        Description="Scan or paste an ownership QR payload to verify it against the loaded workspace." />
+                        }
+                        else
+                        {
+                            <Alert AlertStyle="@ownershipAlertStyle" data-testid="message-security-ownership-status">
+                                @ownershipStatus
+                            </Alert>
+                        }
+
+                        @if (ownershipSignatureResult is not null)
+                        {
+                            <SummaryTile Label="Signature" Value="@ownershipSignatureResult.Summary" Tone="info" />
+                        }
+
+                        @if (ownershipFlowResult is not null)
+                        {
+                            <Stack GapScale="LayoutGap.Small">
+                                @foreach (VerificationStepResult step in ownershipFlowResult.Steps)
+                                {
+                                    <SurfaceCard Soft="true">
+                                        <Split Breakpoint="LayoutBreakpoint.None"
+                                               Gap="LayoutGap.Small"
+                                               AlignItems="AlignItems.Center"
+                                               JustifyContent="JustifyContent.SpaceBetween"
+                                               Wrap="FlexWrap.Wrap">
+                                            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@step.Label" />
+                                                <SmallText Text="@step.Summary" />
+                                            </Stack>
+                                            <StatusBadge Text="@step.Status.ToString()" Tone="@StepTone(step)" />
+                                        </Split>
+                                    </SurfaceCard>
+                                }
+                            </Stack>
+                        }
+
+                        @if (OwnershipFacts.Count > 0)
+                        {
+                            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                                @foreach (OwnershipFact fact in OwnershipFacts)
+                                {
+                                    <SummaryTile Label="@fact.Label" Value="@fact.Value" Compact="true" />
+                                }
+                            </SummaryTiles>
+                        }
+
+                        @if (ownershipObject is not null)
+                        {
+                            <BusinessObjectGalleryCard Item="ownershipObject"
+                                                       Workspace="Workspace"
+                                                       OpenRequested="@(_ => OpenOwnershipDetailsAsync())"
+                                                       Compact="true"
+                                                       TestId="message-security-ownership-bo-card" />
+                        }
+                    </Stack>
+                </SectionCard>
+            </Grid>
+        </TabsItem>
+    </Tabs>
+</Stack>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    [Parameter]
+    public Func<MessageSecuritySignRequest, Task<MessageSecurityActionResult>>? SignRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityVerifyRequest, Task<MessageSecurityActionResult>>? VerifyRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityEncryptRequest, Task<MessageSecurityActionResult>>? EncryptRequested { get; set; }
+
+    [Parameter]
+    public Func<MessageSecurityDecryptRequest, Task<MessageSecurityActionResult>>? DecryptRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<IBusinessObjectView> SendRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<IBusinessObjectView> SetPriceRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> EditRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<TxId> TransactionDetailsRequested { get; set; }
+
+    [Parameter]
+    public Func<BusinessObjectTicketVerificationRequest, Task<BusinessObjectTicketVerificationResult>>? TicketVerificationRequested { get; set; }
+
+    [Parameter]
+    public Func<BusinessObjectTicketUseRequest, Task<LedgerTransactionExecutionResult>>? TicketUseRequested { get; set; }
+
+    private string signMessage = "Hello Bob, this is Alice signing a ledger-side message.";
+    private string verifyMessage = "Hello Bob, this is Alice signing a ledger-side message.";
+    private string signatureJson = string.Empty;
+    private string receiverAccount = "bob";
+    private string encryptMessage = "Encrypted hello from Alice to Bob.";
+    private string encryptedJson = string.Empty;
+    private string decryptedPlainText = string.Empty;
+    private string ownershipPayload = string.Empty;
+    private string? ownershipStatus;
+    private string? ownershipTicketMessage;
+    private string? ownershipTicketExpiresUtc;
+    private string? verifyStatus;
+    private string? encryptionStatus;
+    private AlertStyle verifyAlertStyle = AlertStyle.Info;
+    private AlertStyle encryptionAlertStyle = AlertStyle.Info;
+    private AlertStyle ownershipAlertStyle = AlertStyle.Info;
+    private VerificationFlowResult? ownershipFlowResult;
+    private MessageSecurityActionResult? ownershipSignatureResult;
+    private IBusinessObjectView? ownershipObject;
+    private bool signing;
+    private bool verifying;
+    private bool encrypting;
+    private bool decrypting;
+    private bool ownershipBusy;
+    private string? lastWorkspaceAlias;
+
+    private bool CanUseSecurity
+        => SignRequested is not null
+            && VerifyRequested is not null
+            && EncryptRequested is not null
+            && DecryptRequested is not null;
+
+    private IReadOnlyList<OwnershipFact> OwnershipFacts
+    {
+        get
+        {
+            if (ownershipObject is null)
+            {
+                return [];
+            }
+
+            var facts = new List<OwnershipFact>
+            {
+                new("Object id", ownershipObject.ObjectId.Value, Wide: true),
+                new("Owner", ownershipObject.OwnerAddress.Value, Wide: true),
+                new("Outpoint", ownershipObject.CurrentOutPoint.ToString(), Wide: true)
+            };
+
+            if (BusinessObjectTicketVerification.IsTicketObject(ownershipObject.ObjectType))
+            {
+                bool used = BusinessObjectTicketVerification.StateHasUsedFlag(ownershipObject.StateJson);
+                facts.Add(new("Ticket used", used ? "true" : "false"));
+                facts.Add(new("Used at", TicketField(ownershipObject, BusinessObjectTicketVerification.UsedAtField)));
+                if (!string.IsNullOrWhiteSpace(ownershipTicketExpiresUtc))
+                {
+                    facts.Add(new("Expires UTC", ownershipTicketExpiresUtc));
+                }
+            }
+
+            return facts;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        string alias = Workspace.AccountAlias ?? Workspace.AccountName;
+        if (string.Equals(lastWorkspaceAlias, alias, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        lastWorkspaceAlias = alias;
+        receiverAccount = string.Equals(alias, "alice", StringComparison.OrdinalIgnoreCase)
+            ? "bob"
+            : "alice";
+    }
+
+    private Task UseSignMessageForVerification()
+    {
+        verifyMessage = signMessage;
+        return Task.CompletedTask;
+    }
+
+    private async Task SignAsync()
+    {
+        if (SignRequested is null)
+        {
+            return;
+        }
+
+        signing = true;
+        try
+        {
+            MessageSecurityActionResult result = await SignRequested(new MessageSecuritySignRequest(CurrentAccountAlias, signMessage));
+            signatureJson = result.PayloadJson ?? signatureJson;
+            verifyMessage = signMessage;
+            verifyStatus = result.Summary;
+            verifyAlertStyle = result.Success ? AlertStyle.Success : AlertStyle.Danger;
+            Notify(result, "Message signed");
+        }
+        finally
+        {
+            signing = false;
+        }
+    }
+
+    private async Task VerifyAsync()
+    {
+        if (VerifyRequested is null)
+        {
+            return;
+        }
+
+        verifying = true;
+        try
+        {
+            MessageSecurityActionResult result = await VerifyRequested(
+                new MessageSecurityVerifyRequest(CurrentAccountAlias, verifyMessage, signatureJson));
+            verifyStatus = result.Summary;
+            verifyAlertStyle = result.Success ? AlertStyle.Success : AlertStyle.Danger;
+            Notify(result, result.Success ? "Signature valid" : "Signature invalid");
+        }
+        finally
+        {
+            verifying = false;
+        }
+    }
+
+    private async Task EncryptAsync()
+    {
+        if (EncryptRequested is null)
+        {
+            return;
+        }
+
+        encrypting = true;
+        try
+        {
+            MessageSecurityActionResult result = await EncryptRequested(
+                new MessageSecurityEncryptRequest(CurrentAccountAlias, receiverAccount, encryptMessage));
+            encryptedJson = result.PayloadJson ?? encryptedJson;
+            decryptedPlainText = string.Empty;
+            encryptionStatus = result.Summary;
+            encryptionAlertStyle = result.Success ? AlertStyle.Success : AlertStyle.Danger;
+            Notify(result, "Message encrypted");
+        }
+        finally
+        {
+            encrypting = false;
+        }
+    }
+
+    private async Task DecryptAsync()
+    {
+        if (DecryptRequested is null)
+        {
+            return;
+        }
+
+        decrypting = true;
+        try
+        {
+            MessageSecurityActionResult result = await DecryptRequested(
+                new MessageSecurityDecryptRequest(CurrentAccountAlias, encryptedJson));
+            decryptedPlainText = result.PlainText ?? decryptedPlainText;
+            encryptionStatus = result.Summary;
+            encryptionAlertStyle = result.Success ? AlertStyle.Success : AlertStyle.Danger;
+            Notify(result, result.Success ? "Message decrypted" : "Decrypt failed");
+        }
+        finally
+        {
+            decrypting = false;
+        }
+    }
+
+    private Task ApplyOwnershipScanAsync(QrScanResult scan)
+    {
+        if (!scan.IsValid)
+        {
+            Notifications.Warning("QR scan ignored", scan.Error ?? "The scanned payload is not valid.", position: NotificationPosition.BottomCenter);
+            return Task.CompletedTask;
+        }
+
+        ownershipPayload = scan.Text;
+        ResetOwnershipResult();
+        return Task.CompletedTask;
+    }
+
+    private async Task VerifyOwnershipAsync()
+    {
+        string payload = ownershipPayload.Trim();
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            ownershipStatus = "Paste or scan an ownership payload first.";
+            ownershipAlertStyle = AlertStyle.Warning;
+            return;
+        }
+
+        ownershipBusy = true;
+        try
+        {
+            ResetOwnershipResult();
+            string? objectId = ExtractObjectId(payload);
+            ownershipObject = FindObjectById(objectId);
+            bool ranOwnershipCheck = false;
+            bool ranSignatureCheck = false;
+
+            if (ownershipObject is not null && LooksLikePlainOwnershipJson(payload))
+            {
+                ownershipFlowResult = VerificationService.VerifyOwnershipPayload(payload, ownershipObject);
+                ranOwnershipCheck = true;
+            }
+
+            if (TrySplitTicketSignedPayload(payload, out string message, out string ticketSignatureJson))
+            {
+                ownershipTicketMessage = message;
+                ownershipTicketExpiresUtc = ExtractLineValue(message, "ExpiresUtc");
+                objectId ??= ExtractLineValue(message, "ObjectId");
+                ownershipObject ??= FindObjectById(objectId);
+
+                if (VerifyRequested is not null)
+                {
+                    ownershipSignatureResult = await VerifyRequested(new MessageSecurityVerifyRequest(
+                        CurrentAccountAlias,
+                        message,
+                        ticketSignatureJson));
+                    ranSignatureCheck = true;
+                }
+            }
+
+            if (ownershipObject is null)
+            {
+                ownershipStatus = string.IsNullOrWhiteSpace(objectId)
+                    ? "The ownership payload does not include an object id that can be loaded."
+                    : $"Object {objectId} is not loaded in the current workspace snapshot.";
+                ownershipAlertStyle = AlertStyle.Warning;
+                Notifications.Warning("Ownership object not loaded", ownershipStatus, position: NotificationPosition.BottomCenter);
+                return;
+            }
+
+            bool success = ownershipFlowResult?.Success == true || ownershipSignatureResult?.Success == true;
+            if (!ranOwnershipCheck && !ranSignatureCheck)
+            {
+                ownershipStatus = "Payload was loaded, but no supported ownership verifier matched it.";
+                ownershipAlertStyle = AlertStyle.Warning;
+                return;
+            }
+
+            ownershipStatus = BuildOwnershipStatus(success);
+            ownershipAlertStyle = success ? AlertStyle.Success : AlertStyle.Danger;
+            if (success)
+            {
+                Notifications.Success("Ownership verified", ownershipStatus, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                Notifications.Warning("Ownership verification failed", ownershipStatus, position: NotificationPosition.BottomCenter);
+            }
+        }
+        finally
+        {
+            ownershipBusy = false;
+        }
+    }
+
+    private Task ClearOwnershipAsync()
+    {
+        ownershipPayload = string.Empty;
+        ResetOwnershipResult();
+        return Task.CompletedTask;
+    }
+
+    private Task OpenOwnershipDetailsAsync()
+        => ownershipObject is null
+            ? Task.CompletedTask
+            : DialogService.OpenAsync<BusinessObjectLedgerDetailsDialogContent>(
+                $"{DisplayName(ownershipObject)} - Details",
+                new Dictionary<string, object?>
+                {
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = ownershipObject,
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc,
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.Workspace)] = Workspace,
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.SendRequested)] = SendRequested,
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.SetPriceRequested)] = SetPriceRequested,
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.EditRequested)] = EditRequested,
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested,
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.TicketVerificationRequested)] = TicketVerificationRequested,
+                    [nameof(BusinessObjectLedgerDetailsDialogContent.TicketUseRequested)] = TicketUseRequested
+                },
+                new DialogOptions
+                {
+                    Size = ModalSize.Full,
+                    DenseChrome = true,
+                    CloseOnBackdrop = false,
+                    Class = "cda-ledger-dialog",
+                    TestId = "cda-bo-details-dialog"
+                });
+
+    private string BuildOwnershipStatus(bool success)
+    {
+        if (BusinessObjectTicketVerification.IsTicketObject(ownershipObject?.ObjectType))
+        {
+            bool used = BusinessObjectTicketVerification.StateHasUsedFlag(ownershipObject?.StateJson);
+            string usedPart = used
+                ? $" Ticket is already used at {TicketField(ownershipObject!, BusinessObjectTicketVerification.UsedAtField)}."
+                : " Ticket is not marked as used.";
+            return success
+                ? $"Ticket ownership verification passed.{usedPart}"
+                : $"Ticket ownership verification failed.{usedPart}";
+        }
+
+        return success
+            ? "BusinessObject ownership verification passed."
+            : "BusinessObject ownership verification failed.";
+    }
+
+    private void ResetOwnershipResult()
+    {
+        ownershipStatus = null;
+        ownershipTicketMessage = null;
+        ownershipTicketExpiresUtc = null;
+        ownershipFlowResult = null;
+        ownershipSignatureResult = null;
+        ownershipObject = null;
+        ownershipAlertStyle = AlertStyle.Info;
+    }
+
+    private IBusinessObjectView? FindObjectById(string? objectId)
+        => string.IsNullOrWhiteSpace(objectId)
+            ? null
+            : Workspace.BusinessObjects.FirstOrDefault(item =>
+                item.ObjectId.Value.Equals(objectId.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private static bool LooksLikePlainOwnershipJson(string payload)
+    {
+        if (!payload.TrimStart().StartsWith('{'))
+        {
+            return false;
+        }
+
+        return ExtractJsonString(payload, "format")?.Equals("candoitall-bo-ownership-v1", StringComparison.OrdinalIgnoreCase) == true
+            || ExtractJsonString(payload, "objectId") is not null;
+    }
+
+    private static string? ExtractObjectId(string payload)
+        => ExtractJsonString(payload, "objectId", "ObjectId")
+            ?? ExtractLineValue(payload, "ObjectId");
+
+    private static string? ExtractJsonString(string payload, params string[] names)
+    {
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(payload);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            foreach (string name in names)
+            {
+                if (document.RootElement.TryGetProperty(name, out JsonElement element)
+                    && element.ValueKind == JsonValueKind.String)
+                {
+                    return element.GetString();
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    private static bool TrySplitTicketSignedPayload(string payload, out string message, out string ticketSignatureJson)
+    {
+        message = string.Empty;
+        ticketSignatureJson = string.Empty;
+        int jsonStart = payload.IndexOf('{');
+        if (jsonStart <= 0)
+        {
+            return false;
+        }
+
+        message = payload[..jsonStart].Trim();
+        ticketSignatureJson = payload[jsonStart..].Trim();
+        return message.Contains("ObjectId:", StringComparison.OrdinalIgnoreCase)
+            && message.Contains("CanDoItAll Ledger ticket ownership verification", StringComparison.OrdinalIgnoreCase)
+            && ticketSignatureJson.StartsWith('{');
+    }
+
+    private static string? ExtractLineValue(string payload, string label)
+    {
+        foreach (string line in payload.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            int separator = line.IndexOf(':');
+            if (separator <= 0)
+            {
+                continue;
+            }
+
+            string key = line[..separator].Trim();
+            if (key.Equals(label, StringComparison.OrdinalIgnoreCase))
+            {
+                return line[(separator + 1)..].Trim();
+            }
+        }
+
+        return null;
+    }
+
+    private string CurrentAccountAlias
+        => string.IsNullOrWhiteSpace(Workspace.AccountAlias)
+            ? Workspace.AccountName
+            : Workspace.AccountAlias;
+
+    private void Notify(MessageSecurityActionResult result, string title)
+    {
+        if (result.Success)
+        {
+            Notifications.Success(title, result.Summary, position: NotificationPosition.BottomCenter);
+        }
+        else
+        {
+            Notifications.Error(title, result.Summary, position: NotificationPosition.BottomCenter);
+        }
+    }
+
+    private static string StepTone(VerificationStepResult step)
+        => step.Status switch
+        {
+            VerificationStepStatus.Passed => "success",
+            VerificationStepStatus.Warning => "warning",
+            VerificationStepStatus.Failed => "danger",
+            _ => "neutral"
+        };
+
+    private static BusinessObjectMediaPayload? PayloadFor(IBusinessObjectView item)
+        => BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload)
+            ? payload
+            : null;
+
+    private static string DisplayName(IBusinessObjectView item)
+    {
+        if (item is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name))
+        {
+            return media.Name;
+        }
+
+        BusinessObjectMediaPayload? payload = PayloadFor(item);
+        return string.IsNullOrWhiteSpace(payload?.Name)
+            ? item.ObjectId.Value
+            : payload.Name;
+    }
+
+    private static string TicketField(IBusinessObjectView item, string key)
+        => PayloadFor(item)?.Fields is not null
+            && PayloadFor(item)!.Fields!.TryGetValue(key, out string? value)
+            && !string.IsNullOrWhiteSpace(value)
+                ? value
+                : "none";
+
+    private sealed record OwnershipFact(string Label, string Value, bool Wide = false);
+}

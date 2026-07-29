@@ -1,19 +1,19 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
-public sealed class BusinessObjectTicketMintingComponentTests : TestContext
+public sealed class BusinessObjectTicketMintingComponentTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("ticket-test"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-ticket-public"));
@@ -25,7 +25,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             new Dictionary<string, string>(StringComparer.Ordinal));
 
         IRenderedComponent<BusinessObjectEventPickerDialogContent> component =
-            RenderComponent<BusinessObjectEventPickerDialogContent>(parameters => parameters
+            Render<BusinessObjectEventPickerDialogContent>(parameters => parameters
                 .Add(x => x.Events, [eventObject, postObject]));
 
         Assert.Single(component.FindAll("[data-testid='cda-event-picker-event']"));
@@ -81,7 +81,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             null);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace));
 
@@ -105,7 +105,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             null);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -143,7 +143,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
         BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -188,12 +188,12 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             ],
             bookmarks:
             [
-                new EconomyAddressBookmark("Bob", Bob)
+                new LedgerAddressBookmark("Bob", Bob)
             ]);
         BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -208,8 +208,8 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
 
         component.Find("[data-testid='cda-ticket-multimint-enabled']").Change(true);
         component.Find("[data-testid='cda-ticket-multimint-count']").Input("5");
-        component.Find("[data-testid='cda-ticket-multimint-recipient-mode']").Change("subaccount");
-        component.Find("[data-testid='cda-ticket-multimint-subaccount']").Change(SubAccount.Value);
+        SelectDropDownOption(component, "cda-ticket-multimint-recipient-mode", "Subaccount");
+        SelectDropDownOption(component, "cda-ticket-multimint-subaccount", "Ticket desk");
         await ClickButtonAsync(component, "Next");
         await ClickButtonAsync(component, "Stage BO Transaction");
 
@@ -221,9 +221,12 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             Assert.Equal(SubAccount, draft.OwnerAddress);
             Assert.Equal(SubAccount, draft.ReceiverAddress);
             Assert.Equal(SubAccount, draft.PaymentReceiverAddress);
-            Assert.StartsWith("bo:ticket:new-ticket-", draft.ObjectId.Value, StringComparison.Ordinal);
+            Assert.Equal(default, draft.ObjectId);
         });
-        Assert.Equal(5, batch.Drafts.Select(draft => draft.ObjectId).Distinct().Count());
+        Assert.Equal(5, batch.Drafts.Select(draft => draft.ExternalRef).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(
+            Enumerable.Range(0, 5),
+            Enumerable.Range(0, 5).Select(index => batch.CorrelationFor(index).DraftIndex));
         Assert.Equal(
             ["ticket-001", "ticket-002", "ticket-003", "ticket-004", "ticket-005"],
             batch.Drafts
@@ -236,11 +239,11 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
     public async Task TicketWizard_MultimintManualSingleRecipientRepeatsByCount()
     {
         var stagedBatches = new List<BusinessObjectBatchTransactionRequest>();
-        BusinessObjectWorkspaceModel workspace = CreateWorkspace(bookmarks: [new EconomyAddressBookmark("Bob", Bob)]);
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(bookmarks: [new LedgerAddressBookmark("Bob", Bob)]);
         BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
-            RenderComponent<BusinessObjectCreationWizard>(parameters => parameters
+            Render<BusinessObjectCreationWizard>(parameters => parameters
                 .Add(x => x.Model, model)
                 .Add(x => x.Workspace, workspace)
                 .Add(
@@ -255,7 +258,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
 
         component.Find("[data-testid='cda-ticket-multimint-enabled']").Change(true);
         component.Find("[data-testid='cda-ticket-multimint-count']").Input("3");
-        component.Find("[data-testid='cda-ticket-multimint-recipient-mode']").Change("manual");
+        SelectDropDownOption(component, "cda-ticket-multimint-recipient-mode", "Recipient list");
         component.Find("[data-testid='cda-ticket-multimint-recipient-list']").Input(Bob.Value);
         await ClickButtonAsync(component, "Next");
         await ClickButtonAsync(component, "Stage BO Transaction");
@@ -263,6 +266,8 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
         BusinessObjectBatchTransactionRequest batch = Assert.Single(stagedBatches);
         Assert.Equal(3, batch.Drafts.Count);
         Assert.All(batch.Drafts, draft => Assert.Equal(Bob, draft.OwnerAddress));
+        Assert.All(batch.Drafts, draft => Assert.Equal(default, draft.ObjectId));
+        Assert.Equal(3, batch.Drafts.Select(draft => draft.ExternalRef).Distinct(StringComparer.Ordinal).Count());
     }
 
     private static ITypedBusinessObjectView CreateEvent(string name)
@@ -293,7 +298,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             [],
             fields);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(payload);
-        var objectId = new BusinessObjectId($"bo:{objectType}:{BusinessObjectCreateIdFactory.NormalizeName(name)}");
+        var objectId = new BusinessObjectId($"bo:{objectType}:{BusinessObjectDisplaySlug.Normalize(name)}");
 
         return new GenericTypedBusinessObjectView(
             Context,
@@ -304,7 +309,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             Alice,
             BusinessObjectOperation.Create,
             new HashHex(new string('7', 64)),
-            new OutPoint(new TxId($"tx-{objectType}-{BusinessObjectCreateIdFactory.NormalizeName(name)}"), 0),
+            new OutPoint(new TxId($"tx-{objectType}-{BusinessObjectDisplaySlug.Normalize(name)}"), 0),
             stateJson,
             $"ledger://{objectId.Value}",
             TransactionDataItemType.BusinessObject,
@@ -341,10 +346,23 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
         await button.ClickAsync(new MouseEventArgs());
     }
 
+    private static void SelectDropDownOption(
+        IRenderedComponent<BusinessObjectCreationWizard> component,
+        string testId,
+        string optionText)
+    {
+        IElement select = component.Find($"[data-testid='{testId}']");
+        IElement option = select.QuerySelectorAll("option")
+            .Single(item => item.TextContent.Contains(optionText, StringComparison.Ordinal));
+        string optionKey = Assert.IsType<string>(option.GetAttribute("value"));
+
+        select.Change(optionKey);
+    }
+
     private static BusinessObjectWorkspaceModel CreateWorkspace(
         IReadOnlyList<IBusinessObjectView>? businessObjects = null,
         IReadOnlyList<BusinessObjectSubAccountSummary>? subAccounts = null,
-        IReadOnlyList<EconomyAddressBookmark>? bookmarks = null)
+        IReadOnlyList<LedgerAddressBookmark>? bookmarks = null)
     {
         businessObjects ??= [];
         subAccounts ??= [];
@@ -380,7 +398,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : TestContext
             Context,
             Alice,
             balance,
-            [new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
+            [new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
             [],
             bookmarks,
             businessObjects,

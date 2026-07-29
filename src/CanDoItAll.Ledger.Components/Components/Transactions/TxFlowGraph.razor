@@ -1,0 +1,18 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-tx-flow-graph">
+    <TransactionInputOutputFlow Inputs="Inputs"
+                                Outputs="Outputs"
+                                DirectoryEntries="DirectoryEntries" />
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerTransactionInputDetails> Inputs { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<LedgerTransactionOutputDetails> Outputs { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+}

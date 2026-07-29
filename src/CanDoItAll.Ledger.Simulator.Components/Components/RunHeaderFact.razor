@@ -1,20 +1,21 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 
-<div class="cda-sim-run-fact">
-    <span>@Label</span>
-    @if (!string.IsNullOrWhiteSpace(BadgeTone))
-    {
-        <StatusBadge Text="@Value" Tone="@BadgeTone" />
-    }
-    else if (Monospace)
-    {
-        <MonoText Text="@Value" />
-    }
-    else
-    {
-        <strong>@Value</strong>
-    }
-</div>
+<MetricCard Label="@Label">
+    <ValueContent>
+        @if (!string.IsNullOrWhiteSpace(BadgeTone))
+        {
+            <StatusBadge Text="@Value" Tone="@BadgeTone" />
+        }
+        else if (Monospace)
+        {
+            <MonoText Text="@Value" />
+        }
+        else
+        {
+            @Value
+        }
+    </ValueContent>
+</MetricCard>
 
 @code {
     [Parameter, EditorRequired]
@@ -28,4 +29,5 @@
 
     [Parameter]
     public string? BadgeTone { get; set; }
+
 }

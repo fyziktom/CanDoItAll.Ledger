@@ -1,0 +1,179 @@
+@namespace CanDoItAll.Ledger.Components
+@inject DialogService DialogService
+@inject NotificationService Notifications
+@inject IAccountAppSettingsBackupService BackupService
+
+<Stack GapScale="LayoutGap.Small"
+       AlignItems="AlignItems.Stretch"
+       Class="w-full min-w-0"
+       data-testid="cda-settings-backup-dialog">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Small">
+            <SectionCard Title="Export"
+                         Description="Exported settings include tag counters, tag color metadata, address favorites, user tags, and safe profile summaries.">
+                <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                    <Button Text="Create export"
+                            Icon="download"
+                            ButtonStyle="ButtonStyle.Secondary"
+                            Size="ButtonSize.Small"
+                            Click="ExportAsync"
+                            data-testid="cda-settings-backup-export" />
+                    <TextArea Value="@exportJson"
+                              ValueChanged="@(value => exportJson = value ?? string.Empty)"
+                              Rows="14"
+                              Placeholder="Export JSON appears here."
+                              aria-label="Settings export JSON" />
+                </Stack>
+            </SectionCard>
+
+            <SectionCard Title="Import"
+                         Description="Preview a backup, choose the sections to restore, and resolve existing values explicitly.">
+                <Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch">
+                    <TextArea Value="@importJson"
+                              ValueChanged="@(value => importJson = value ?? string.Empty)"
+                              Rows="8"
+                              Placeholder="Paste settings backup JSON."
+                              aria-label="Settings import JSON" />
+
+                    <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+                        <Button Text="Preview"
+                                Icon="visibility"
+                                Variant="Variant.Outlined"
+                                ButtonStyle="ButtonStyle.Secondary"
+                                Size="ButtonSize.Small"
+                                Click="PreviewAsync"
+                                data-testid="cda-settings-backup-preview" />
+                        <Button Text="Import selected"
+                                Icon="restore"
+                                ButtonStyle="ButtonStyle.Secondary"
+                                Size="ButtonSize.Small"
+                                Disabled="@(!CanImport)"
+                                Click="ImportAsync"
+                                data-testid="cda-settings-backup-import" />
+                    </Cluster>
+
+                    <FormField Text="Conflict strategy">
+                        <DropDown TValue="SettingsImportConflictStrategy"
+                                  Data="StrategyOptions"
+                                  TextProperty="Text"
+                                  ValueProperty="Value"
+                                  Value="@strategy"
+                                  ValueChanged="@((SettingsImportConflictStrategy value) => strategy = value)"
+                                  aria-label="Import conflict strategy" />
+                    </FormField>
+
+                    <Stack GapScale="LayoutGap.Small">
+                        @foreach (SettingsBackupSection section in AllSections)
+                        {
+                            <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <CheckBox TValue="bool"
+                                          Value="@selectedSections.Contains(section)"
+                                          ValueChanged="@((bool value) => ToggleSection(section, value))" />
+                                <span>@SectionLabel(section)</span>
+                            </label>
+                        }
+                    </Stack>
+
+                    @if (preview is not null)
+                    {
+                        <Alert AlertStyle="@(preview.IsValid ? AlertStyle.Success : AlertStyle.Danger)" Variant="Variant.Outlined">
+                            <strong>@(preview.IsValid ? "Import preview ready" : "Import preview failed")</strong>
+                            <span>@preview.Summary @(preview.Error ?? string.Empty)</span>
+                        </Alert>
+                    }
+                </Stack>
+            </SectionCard>
+        </Grid>
+    <Cluster JustifyContent="JustifyContent.End"
+             Gap="LayoutGap.Small"
+             Class="border-t border-slate-200 pt-3">
+        <Button Text="Close"
+                Icon="close"
+                Variant="Variant.Outlined"
+                ButtonStyle="ButtonStyle.Light"
+                Size="ButtonSize.Small"
+                Click="CloseAsync" />
+    </Cluster>
+</Stack>
+
+@code {
+    private static readonly SettingsBackupSection[] AllSections =
+    [
+        SettingsBackupSection.TagUsage,
+        SettingsBackupSection.AddressDirectory,
+        SettingsBackupSection.UiPreferences
+    ];
+
+    private static readonly StrategyOption[] StrategyOptions =
+    [
+        new(SettingsImportConflictStrategy.Merge, "Merge"),
+        new(SettingsImportConflictStrategy.ReplaceSection, "Replace section"),
+        new(SettingsImportConflictStrategy.SkipExisting, "Skip existing")
+    ];
+
+    private string exportJson = string.Empty;
+    private string importJson = string.Empty;
+    private SettingsBackupPreview? preview;
+    private SettingsImportConflictStrategy strategy = SettingsImportConflictStrategy.Merge;
+    private HashSet<SettingsBackupSection> selectedSections = AllSections.ToHashSet();
+
+    [Parameter, EditorRequired]
+    public string AccountScope { get; set; } = "default";
+
+    private bool CanImport => preview?.IsValid == true && selectedSections.Count > 0;
+
+    private async Task ExportAsync()
+    {
+        exportJson = await BackupService.ExportAsync(AccountScope);
+        importJson = exportJson;
+        preview = await BackupService.PreviewImportAsync(importJson);
+        Notifications.Success("Settings exported", "Browser-local settings backup is ready.", position: NotificationPosition.BottomCenter);
+    }
+
+    private async Task PreviewAsync()
+    {
+        preview = await BackupService.PreviewImportAsync(importJson);
+        selectedSections = preview.Sections.Count == 0
+            ? []
+            : preview.Sections.ToHashSet();
+    }
+
+    private async Task ImportAsync()
+    {
+        SettingsBackupImportResult result = await BackupService.ImportAsync(AccountScope, importJson, selectedSections, strategy);
+        if (result.Success)
+        {
+            Notifications.Success("Settings imported", result.Summary, position: NotificationPosition.BottomCenter);
+            preview = await BackupService.PreviewImportAsync(importJson);
+        }
+        else
+        {
+            Notifications.Error("Settings import failed", result.Summary, position: NotificationPosition.BottomCenter);
+        }
+    }
+
+    private void ToggleSection(SettingsBackupSection section, bool selected)
+    {
+        if (selected)
+        {
+            selectedSections.Add(section);
+        }
+        else
+        {
+            selectedSections.Remove(section);
+        }
+    }
+
+    private static string SectionLabel(SettingsBackupSection section)
+        => section switch
+        {
+            SettingsBackupSection.TagUsage => "Tag usage and colors",
+            SettingsBackupSection.AddressDirectory => "Address directory",
+            SettingsBackupSection.UiPreferences => "UI preferences",
+            _ => section.ToString()
+        };
+
+    private Task CloseAsync()
+        => DialogService.CloseAsync();
+
+    private sealed record StrategyOption(SettingsImportConflictStrategy Value, string Text);
+}

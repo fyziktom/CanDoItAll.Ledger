@@ -1,0 +1,11 @@
+@page "/Account/LoginWith2fa"
+@attribute [AllowAnonymous]
+
+<PageTitle>Two-factor required</PageTitle>
+
+<NodeAuthShell Heading="Two-factor required" Description="Use the account management authenticator setup before continuing.">
+    <SectionCard Title="Two-factor sign-in" Description="Authentication">
+        <EmptyState Eyebrow="Authentication" Title="Two-factor sign-in is required" Description="Use the account management authenticator setup before continuing." />
+        <Button Text="Authenticator setup" Icon="security" Href="/Account/Manage/EnableAuthenticator" />
+    </SectionCard>
+</NodeAuthShell>

@@ -1,81 +1,185 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
-<div class="cda-sim-split-grid" data-testid="simulation-planned-financial-schedules-tab">
-    <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
-        <Stack FillHeight="true" GapScale="LayoutGap.Medium">
-            <Split Breakpoint="LayoutBreakpoint.None"
-                   AlignItems="AlignItems.Center"
-                   JustifyContent="JustifyContent.SpaceBetween"
-                   Gap="LayoutGap.Small">
-                <Stack GapScale="LayoutGap.Tiny">
-                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Planned schedule tree" />
-                    <TextBlock TextStyle="TextStyle.H4" Value="@Schedules.Count.ToString(CultureInfo.InvariantCulture)" />
-                </Stack>
+<ListDetailShell Dense="true"
+                 ListPaneWidth="17rem"
+                 ListPaneClass="min-h-[28rem]"
+                 DetailPaneClass="min-h-[28rem]"
+                 data-testid="simulation-planned-financial-schedules-tab">
+    <ListHeader>
+        <ListPanelHeader Title="Financial schedules"
+                         Count="@ScheduleCountText"
+                         HelpText="Revenue, funding, payroll, expense, CapEx, reserve, and custom schedules are grouped by BU. Use the queue for approval-gated outflows."
+                         Dense="true" />
+    </ListHeader>
+    <ListContent>
+        <Stack GapScale="LayoutGap.Small" Class="w-full min-w-0">
+            <TextBox Value="@scheduleSearch"
+                     ValueChanged="@(value => scheduleSearch = value ?? string.Empty)"
+                     Immediate="true"
+                     Placeholder="Search schedules..."
+                     aria-label="Search financial schedules" />
+            <Cluster Gap="LayoutGap.Small">
                 <StatusBadge Text="@ApprovalCountText" Tone="info" />
-            </Split>
-
-            @if (Schedules.Count == 0)
+                @if (invalidScheduleCount > 0)
+                {
+                    <StatusBadge Text="@($"{invalidScheduleCount} invalid")" Tone="danger" />
+                }
+            </Cluster>
+            @if (FilteredSchedules.Count == 0)
             {
-                <SectionCard Title="No schedules" Description="This project does not contain planned financial schedule BO definitions." />
+                <Alert AlertStyle="AlertStyle.Info">
+                    <strong>No matching schedules</strong>
+                    <span>Clear the search or choose another project.</span>
+                </Alert>
             }
             else
             {
-                <TreeView Items="ScheduleNodes"
-                          Style="TreeViewStyle.Workbench"
-                          AriaLabel="Planned financial schedule hierarchy"
-                          OnSelect="SelectNode"
-                          OnToggle="ToggleNode" />
+                <div class="max-h-[36rem] min-h-0 w-full min-w-0 overflow-y-auto pr-1">
+                    <TreeView Items="ScheduleNodes"
+                              Style="TreeViewStyle.Workbench"
+                              AriaLabel="Financial schedule hierarchy"
+                              OnSelect="SelectNode"
+                              OnToggle="ToggleNode" />
+                </div>
             }
         </Stack>
-    </WorkspacePanel>
-
-    <WorkspacePanel Class="min-h-0 overflow-auto">
-        <Stack GapScale="LayoutGap.Large">
+    </ListContent>
+    <DetailHeader>
+        @if (SelectedSchedule is not null)
+        {
             <Split Breakpoint="LayoutBreakpoint.Md"
-                   AlignItems="AlignItems.Start"
+                   AlignItems="AlignItems.Center"
                    JustifyContent="JustifyContent.SpaceBetween"
                    Gap="LayoutGap.Medium"
                    Wrap="FlexWrap.Wrap">
                 <Stack GapScale="LayoutGap.Tiny">
-                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Approval timeline" />
-                    <TextBlock TextStyle="TextStyle.H3" Value="@TimelineTotalText" />
-                    <SmallText Text="Approval-gated expense and investment schedule amounts by economic month." />
+                    <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSchedule.DisplayName" />
+                    <SmallText Text="@BusinessUnitName(SelectedSchedule.BusinessUnitId)" />
                 </Stack>
                 <Cluster Gap="LayoutGap.Small">
-                    <StatusBadge Text="@($"{TimelineRows.Count} item(s)")" Tone="info" />
-                    <StatusBadge Text="@Project.Model.BaseCurrencyCode" Tone="muted" />
+                    <StatusBadge Text="@SelectedSchedule.Kind.ToString()" Tone="muted" />
+                    <StatusBadge Text="@ApprovalText(SelectedSchedule)" Tone="@ApprovalTone(ApprovalText(SelectedSchedule))" />
+                    <StatusBadge Text="@($"{Project.Model.BaseCurrencyCode} {FormatAmount(ScheduleTotal(SelectedSchedule))}")" Tone="info" />
                 </Cluster>
             </Split>
+        }
+    </DetailHeader>
+    <DetailContent>
+        <Tabs Variant="TabsVariant.WorkspaceTertiary"
+              OverflowMode="TabsOverflowMode.Scroll"
+              RenderMode="TabRenderMode.Client"
+              SelectedIndex="@selectedScheduleViewIndex"
+              SelectedIndexChanged="@(index => selectedScheduleViewIndex = index)"
+              AriaLabel="Financial schedule workspace">
+            <TabsItem Text="Schedule" Icon="event_note">
+                @if (SelectedSchedule is not null)
+                {
+                    <Stack GapScale="LayoutGap.Medium">
+                        <CompactStatStrip>
+                            <CompactStat Label="Business unit" Value="@BusinessUnitName(SelectedSchedule.BusinessUnitId)" Position="TooltipPosition.Right" />
+                            <CompactStat Label="Kind" Value="@SelectedSchedule.Kind.ToString()" Position="TooltipPosition.Right" />
+                            <CompactStat Label="Section" Value="@SelectedSchedule.Section.ToString()" Position="TooltipPosition.Right" />
+                            <CompactStat Label="Periods" Value="@SelectedSchedule.Amounts.Count.ToString(CultureInfo.InvariantCulture)" Position="TooltipPosition.Right" />
+                            <CompactStat Label="Approval" Value="@ApprovalText(SelectedSchedule)" Position="TooltipPosition.Right" Tone="info" />
+                            <CompactStat Label="Total" Value="@($"{Project.Model.BaseCurrencyCode} {FormatAmount(ScheduleTotal(SelectedSchedule))}")" Position="TooltipPosition.Right" />
+                        </CompactStatStrip>
 
-            @if (SelectedSchedule is not null)
-            {
-                <FormSection Title="Selected planned expense" Description="@SelectedSchedule.ScheduleId">
-                    <FormRow Split="true">
-                        <FormField Text="Business unit">
-                            <TextBox Value="@BusinessUnitName(SelectedSchedule.BusinessUnitId)" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Kind">
-                            <TextBox Value="@SelectedSchedule.Kind.ToString()" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Section">
-                            <TextBox Value="@SelectedSchedule.Section.ToString()" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Approval">
-                            <TextBox Value="@ApprovalText(SelectedSchedule)" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Plan source">
-                            <TextBox Value="@PlanSourceText(SelectedSchedule)" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Total">
-                            <TextBox Value="@FormatAmount(ScheduleTotal(SelectedSchedule))" ReadOnly="true" />
-                        </FormField>
-                    </FormRow>
-                </FormSection>
-            }
+                        <TooltipTarget Position="TooltipPosition.Right" TriggerClass="min-w-0" TabIndex="0">
+                            <ChildContent>
+                                <div class="flex min-w-0 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                                    <span class="text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-500">Details</span>
+                                    <MonoText Text="@SelectedSchedule.ScheduleId" />
+                                </div>
+                            </ChildContent>
+                            <TooltipContent>
+                                <Stack GapScale="LayoutGap.Tiny">
+                                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="@SelectedSchedule.DisplayName" />
+                                    <SmallText Text="@($"ID: {SelectedSchedule.ScheduleId}")" />
+                                    <SmallText Text="@($"Source: {PlanSourceText(SelectedSchedule)}")" />
+                                    <SmallText Text="@($"Approval: {ApprovalText(SelectedSchedule)}")" />
+                                </Stack>
+                            </TooltipContent>
+                        </TooltipTarget>
 
-            <SectionCard Title="Timeline" Description="BU-owned planned expenses waiting for their scheduled month after approval.">
-                <DataGrid TItem="FinancialScheduleTimelineRow" Data="TimelineRows" AllowPaging="true" PageSize="12" data-testid="simulation-planned-expense-timeline">
+                        <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-labelledby="scheduled-amounts-title">
+                            <Stack GapScale="LayoutGap.Small">
+                                <TextBlock TextStyle="TextStyle.Subtitle1" Value="Scheduled amounts" id="scheduled-amounts-title" />
+                                <DataGrid TItem="ScenarioFinancialScheduleAmountState" Data="SelectedSchedule.Amounts" AllowPaging="true" PageSize="10">
+                                    <DataGridColumn TItem="ScenarioFinancialScheduleAmountState" Title="Month">
+                                        <Template Context="amount">
+                                            <SmallText Text="@amount.EconomicDate.ToString("yyyy-MM", CultureInfo.InvariantCulture)" />
+                                        </Template>
+                                    </DataGridColumn>
+                                    <DataGridColumn TItem="ScenarioFinancialScheduleAmountState" Title="Amount">
+                                        <Template Context="amount">
+                                            <TextBlock Value="@($"{Project.Model.BaseCurrencyCode} {FormatAmount(amount.Amount.Value)}")" />
+                                        </Template>
+                                    </DataGridColumn>
+                                </DataGrid>
+                            </Stack>
+                        </section>
+                    </Stack>
+                }
+            </TabsItem>
+            <TabsItem Text="Approval queue" Icon="approval" BadgeText="@FilteredTimelineRows.Count.ToString(CultureInfo.InvariantCulture)">
+                <Stack GapScale="LayoutGap.Medium">
+                    <Grid ColumnTemplate="repeat(auto-fit, minmax(10rem, 1fr))" Gap="LayoutGap.Small">
+                        <TextBox Value="@queueSearch"
+                                 ValueChanged="@(value => queueSearch = value ?? string.Empty)"
+                                 Immediate="true"
+                                 Placeholder="Search queue..."
+                                 aria-label="Search approval queue" />
+                        <DropDown TValue="string"
+                                  Data="QueueBusinessUnitOptions"
+                                  TextProperty="Text"
+                                  ValueProperty="Value"
+                                  Placeholder="All business units"
+                                  AllowClear="true"
+                                  Value="@selectedQueueBusinessUnit"
+                                  ValueChanged="@(value => selectedQueueBusinessUnit = value)"
+                                  aria-label="Filter queue by business unit" />
+                        <DropDown TValue="string"
+                                  Data="QueueApprovalOptions"
+                                  Placeholder="All approval states"
+                                  AllowClear="true"
+                                  Value="@selectedQueueApproval"
+                                  ValueChanged="@(value => selectedQueueApproval = value)"
+                                  aria-label="Filter queue by approval state" />
+                        <label class="min-w-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            From
+                            <input type="date"
+                                   class="mt-1 min-h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-normal normal-case tracking-normal text-slate-900"
+                                   min="@FormatDate(Project.Summary.PlanningStartDate)"
+                                   max="@FormatDate(Project.Summary.PlanningEndDate)"
+                                   value="@queueFromDate"
+                                   @onchange="OnQueueFromChanged" />
+                        </label>
+                        <label class="min-w-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            To
+                            <input type="date"
+                                   class="mt-1 min-h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-normal normal-case tracking-normal text-slate-900"
+                                   min="@FormatDate(Project.Summary.PlanningStartDate)"
+                                   max="@FormatDate(Project.Summary.PlanningEndDate)"
+                                   value="@queueToDate"
+                                   @onchange="OnQueueToChanged" />
+                        </label>
+                    </Grid>
+
+                    @if (QueueDateRangeError is { } queueDateRangeError)
+                    {
+                        <Alert AlertStyle="AlertStyle.Warning">
+                            <strong>Check date range</strong>
+                            <span>@queueDateRangeError</span>
+                        </Alert>
+                    }
+
+                    <CompactStatStrip>
+                        <CompactStat Label="Periods" Value="@FilteredTimelineRows.Count.ToString(CultureInfo.InvariantCulture)" />
+                        <CompactStat Label="Total" Value="@($"{Project.Model.BaseCurrencyCode} {FormatAmount(FilteredTimelineRows.Sum(row => row.Amount))}")" Tone="info" />
+                    </CompactStatStrip>
+
+                    <DataGrid TItem="FinancialScheduleTimelineRow" Data="FilteredTimelineRows" AllowPaging="true" PageSize="10" data-testid="simulation-planned-expense-timeline">
                     <DataGridColumn TItem="FinancialScheduleTimelineRow" Title="Date">
                         <Template Context="row">
                             <SmallText Text="@row.Date.ToString("yyyy-MM", CultureInfo.InvariantCulture)" />
@@ -84,71 +188,68 @@
                     <DataGridColumn TItem="FinancialScheduleTimelineRow" Property="BusinessUnit" Title="BU" />
                     <DataGridColumn TItem="FinancialScheduleTimelineRow" Title="Schedule">
                         <Template Context="row">
-                            <button type="button"
-                                    class="text-left text-sm font-semibold text-sky-700 hover:text-sky-900"
-                                    data-testid="@($"simulation-planned-expense-row-{row.ScheduleId}")"
-                                    @onclick="@(() => SelectSchedule(row.ScheduleId))">
-                                @row.Schedule
-                            </button>
+                            <Button Text="@row.Schedule"
+                                    ButtonStyle="ButtonStyle.Info"
+                                    Variant="Variant.Text"
+                                    Size="ButtonSize.Small"
+                                    Click="@(() => SelectSchedule(row.ScheduleId))"
+                                    data-testid="@($"simulation-planned-expense-row-{row.ScheduleId}")" />
                         </Template>
                     </DataGridColumn>
                     <DataGridColumn TItem="FinancialScheduleTimelineRow" Title="Amount">
                         <Template Context="row">
-                            <TextBlock Value="@FormatAmount(row.Amount)" />
+                            <TextBlock Value="@($"{Project.Model.BaseCurrencyCode} {FormatAmount(row.Amount)}")" />
                         </Template>
                     </DataGridColumn>
                     <DataGridColumn TItem="FinancialScheduleTimelineRow" Title="Approval">
                         <Template Context="row">
-                            <StatusBadge Text="@TimelineApprovalLabel(row.ApprovalStatus)" Tone="@ApprovalTone(row.ApprovalStatus)" />
+                            <TooltipTarget Text="@($"{row.ApprovalStatus} · scope {row.ApprovalScope}")" Position="TooltipPosition.Right" TabIndex="0">
+                                <StatusBadge Text="@TimelineApprovalLabel(row.ApprovalStatus)" Tone="@ApprovalTone(row.ApprovalStatus)" />
+                            </TooltipTarget>
                         </Template>
                     </DataGridColumn>
-                    <DataGridColumn TItem="FinancialScheduleTimelineRow" Property="PeriodCode" Title="Period" />
-                </DataGrid>
-            </SectionCard>
-
-            @if (SelectedSchedule is not null)
-            {
-                <SectionCard Title="Scheduled amounts" Description="Assembly-native monthly plan values for the selected BO.">
-                    <DataGrid TItem="ScenarioFinancialScheduleAmountState" Data="SelectedSchedule.Amounts" AllowPaging="true" PageSize="8">
-                        <DataGridColumn TItem="ScenarioFinancialScheduleAmountState" Title="Date">
-                            <Template Context="amount">
-                                <SmallText Text="@amount.EconomicDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" />
-                            </Template>
-                        </DataGridColumn>
-                        <DataGridColumn TItem="ScenarioFinancialScheduleAmountState" Title="Amount">
-                            <Template Context="amount">
-                                <TextBlock Value="@FormatAmount(amount.Amount.Value)" />
-                            </Template>
-                        </DataGridColumn>
-                        <DataGridColumn TItem="ScenarioFinancialScheduleAmountState" Property="PeriodCode" Title="Period" />
                     </DataGrid>
-                </SectionCard>
-            }
-        </Stack>
-    </WorkspacePanel>
-</div>
+                </Stack>
+            </TabsItem>
+        </Tabs>
+    </DetailContent>
+</ListDetailShell>
 
 @code {
-    private static readonly IEconomySimulatorJsonSerializer Serializer = new EconomySimulatorJsonSerializer();
+    private static readonly ILedgerSimulatorJsonSerializer Serializer = new LedgerSimulatorJsonSerializer();
     private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);
+    private IReadOnlyList<ScenarioFinancialScheduleState> schedules = [];
     private string? selectedNodeId;
+    private string renderedProjectKey = string.Empty;
+    private string scheduleSearch = string.Empty;
+    private string queueSearch = string.Empty;
+    private string? selectedQueueBusinessUnit;
+    private string? selectedQueueApproval;
+    private string queueFromDate = string.Empty;
+    private string queueToDate = string.Empty;
+    private int invalidScheduleCount;
+    private int selectedScheduleViewIndex;
 
     [Parameter]
     public SimulationProjectState Project { get; set; } = default!;
 
-    private IReadOnlyList<ScenarioFinancialScheduleState> Schedules
-        => Project.BusinessObjectDefinitions
-            .Where(definition => definition.ObjectType == EconomySimulatorObjectTypes.PlannedFinancialSchedule)
-            .Select(definition => TryDeserialize(definition.StateJson))
-            .Where(schedule => schedule is not null)
-            .Cast<ScenarioFinancialScheduleState>()
-            .OrderBy(schedule => BusinessUnitName(schedule.BusinessUnitId), StringComparer.Ordinal)
-            .ThenBy(schedule => schedule.Metadata.GetValueOrDefault("uiGroup"), StringComparer.Ordinal)
-            .ThenBy(schedule => schedule.DisplayName, StringComparer.Ordinal)
-            .ToArray();
+    private IReadOnlyList<ScenarioFinancialScheduleState> Schedules => schedules;
+
+    private IReadOnlyList<ScenarioFinancialScheduleState> FilteredSchedules => string.IsNullOrWhiteSpace(scheduleSearch)
+        ? Schedules
+        : Schedules.Where(schedule => schedule.DisplayName.Contains(scheduleSearch, StringComparison.OrdinalIgnoreCase)
+            || schedule.ScheduleId.Contains(scheduleSearch, StringComparison.OrdinalIgnoreCase)
+            || schedule.Kind.ToString().Contains(scheduleSearch, StringComparison.OrdinalIgnoreCase)
+            || BusinessUnitName(schedule.BusinessUnitId).Contains(scheduleSearch, StringComparison.OrdinalIgnoreCase)
+            || schedule.Metadata.Values.Any(value => value.Contains(scheduleSearch, StringComparison.OrdinalIgnoreCase)))
+        .ToArray();
+
+    private string ScheduleCountText => FilteredSchedules.Count == Schedules.Count
+        ? Schedules.Count.ToString(CultureInfo.InvariantCulture)
+        : $"{FilteredSchedules.Count}/{Schedules.Count}";
 
     private IReadOnlyList<TreeViewNode> ScheduleNodes
-        => Schedules
+        => FilteredSchedules
             .GroupBy(schedule => schedule.BusinessUnitId)
             .OrderBy(group => BusinessUnitName(group.Key), StringComparer.Ordinal)
             .Select(group => new TreeViewNode
@@ -157,7 +258,8 @@
                 Text = BusinessUnitName(group.Key),
                 Icon = "account_tree",
                 BadgeText = group.Count().ToString(CultureInfo.InvariantCulture),
-                IsExpanded = expandedNodeIds.Contains($"bu:{group.Key.Value}"),
+                Tooltip = $"{BusinessUnitName(group.Key)} · business unit {group.Key.Value} · {group.Count()} scheduled item(s)",
+                IsExpanded = !string.IsNullOrWhiteSpace(scheduleSearch) || expandedNodeIds.Contains($"bu:{group.Key.Value}"),
                 Children = group
                     .GroupBy(schedule => schedule.Metadata.GetValueOrDefault("uiGroup", "schedule"), StringComparer.Ordinal)
                     .OrderBy(scheduleGroup => scheduleGroup.Key, StringComparer.Ordinal)
@@ -167,7 +269,8 @@
                         Text = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(scheduleGroup.Key.Replace('-', ' ')),
                         Icon = GroupIcon(scheduleGroup.Key),
                         BadgeText = scheduleGroup.Count().ToString(CultureInfo.InvariantCulture),
-                        IsExpanded = expandedNodeIds.Contains($"group:{group.Key.Value}:{scheduleGroup.Key}"),
+                        Tooltip = $"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(scheduleGroup.Key.Replace('-', ' '))} · {BusinessUnitName(group.Key)} · {scheduleGroup.Count()} scheduled item(s)",
+                        IsExpanded = !string.IsNullOrWhiteSpace(scheduleSearch) || expandedNodeIds.Contains($"group:{group.Key.Value}:{scheduleGroup.Key}"),
                         Children = scheduleGroup
                             .OrderBy(schedule => schedule.DisplayName, StringComparer.Ordinal)
                             .Select(schedule => new TreeViewNode
@@ -176,6 +279,7 @@
                                 Text = schedule.DisplayName,
                                 Icon = ScheduleIcon(schedule),
                                 BadgeText = schedule.RequiresApproval ? ApprovalText(schedule) : schedule.Kind.ToString(),
+                                Tooltip = ScheduleTooltip(schedule),
                                 IsSelected = schedule.ScheduleId == SelectedId,
                                 DataTestId = $"simulation-financial-schedule-node-{schedule.ScheduleId}"
                             })
@@ -198,6 +302,7 @@
             .Where(IsTimelineSchedule)
             .SelectMany(schedule => schedule.Amounts.Select(amount => new FinancialScheduleTimelineRow(
                 amount.EconomicDate,
+                schedule.BusinessUnitId.Value,
                 BusinessUnitName(schedule.BusinessUnitId),
                 schedule.DisplayName,
                 amount.Amount.Value,
@@ -211,14 +316,60 @@
             .ThenBy(row => row.Schedule, StringComparer.Ordinal)
             .ToArray();
 
-    private string TimelineTotalText => FormatAmount(TimelineRows.Sum(row => row.Amount));
+    private IReadOnlyList<FinancialScheduleTimelineRow> FilteredTimelineRows => TimelineRows
+        .Where(row => string.IsNullOrWhiteSpace(queueSearch)
+            || row.Schedule.Contains(queueSearch, StringComparison.OrdinalIgnoreCase)
+            || row.BusinessUnit.Contains(queueSearch, StringComparison.OrdinalIgnoreCase)
+            || row.Kind.Contains(queueSearch, StringComparison.OrdinalIgnoreCase))
+        .Where(row => string.IsNullOrWhiteSpace(selectedQueueBusinessUnit)
+            || string.Equals(row.BusinessUnitId, selectedQueueBusinessUnit, StringComparison.Ordinal))
+        .Where(row => string.IsNullOrWhiteSpace(selectedQueueApproval)
+            || string.Equals(row.ApprovalStatus, selectedQueueApproval, StringComparison.Ordinal))
+        .Where(row => !TryParseDate(queueFromDate, out DateOnly fromDate) || row.Date >= fromDate)
+        .Where(row => !TryParseDate(queueToDate, out DateOnly toDate) || row.Date <= toDate)
+        .ToArray();
 
-    private string ApprovalCountText => $"{Schedules.Count(schedule => schedule.RequiresApproval).ToString(CultureInfo.InvariantCulture)} approval(s)";
+    private IReadOnlyList<QueueBusinessUnitOption> QueueBusinessUnitOptions => TimelineRows
+        .GroupBy(row => row.BusinessUnitId, StringComparer.Ordinal)
+        .Select(group => new QueueBusinessUnitOption(group.Key, group.First().BusinessUnit))
+        .OrderBy(option => option.Text, StringComparer.Ordinal)
+        .ToArray();
+
+    private string? QueueDateRangeError => TryParseDate(queueFromDate, out DateOnly fromDate)
+        && TryParseDate(queueToDate, out DateOnly toDate)
+        && fromDate > toDate
+            ? "The From date must be on or before the To date."
+            : null;
+
+    private IReadOnlyList<string> QueueApprovalOptions => TimelineRows
+        .Select(row => row.ApprovalStatus)
+        .Distinct(StringComparer.Ordinal)
+        .Order(StringComparer.Ordinal)
+        .ToArray();
+
+    private string ApprovalCountText => $"{Schedules.Count(schedule => schedule.RequiresApproval).ToString(CultureInfo.InvariantCulture)} gated";
 
     protected override void OnParametersSet()
     {
-        expandedNodeIds.Add("bu:" + (Project.BusinessUnits.FirstOrDefault()?.BusinessUnitId.Value ?? string.Empty));
-        selectedNodeId ??= Schedules.FirstOrDefault(schedule => schedule.RequiresApproval)?.ScheduleId;
+        string projectKey = $"{Project.Summary.ProjectId}:{Project.Summary.UpdatedAtUtc.UtcTicks}";
+        if (string.Equals(renderedProjectKey, projectKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        renderedProjectKey = projectKey;
+        LoadSchedules();
+        expandedNodeIds.Clear();
+        selectedNodeId = Schedules.FirstOrDefault(schedule => schedule.RequiresApproval)?.ScheduleId
+            ?? Schedules.FirstOrDefault()?.ScheduleId;
+        RevealSelectedSchedule();
+        scheduleSearch = string.Empty;
+        queueSearch = string.Empty;
+        selectedQueueBusinessUnit = null;
+        selectedQueueApproval = null;
+        queueFromDate = string.Empty;
+        queueToDate = string.Empty;
+        selectedScheduleViewIndex = 0;
     }
 
     private Task SelectNode(string nodeId)
@@ -226,6 +377,7 @@
         if (Schedules.Any(schedule => schedule.ScheduleId == nodeId))
         {
             selectedNodeId = nodeId;
+            RevealSelectedSchedule();
         }
         else if (!expandedNodeIds.Add(nodeId))
         {
@@ -240,6 +392,8 @@
         if (Schedules.Any(schedule => string.Equals(schedule.ScheduleId, scheduleId, StringComparison.Ordinal)))
         {
             selectedNodeId = scheduleId;
+            RevealSelectedSchedule();
+            selectedScheduleViewIndex = 0;
         }
     }
 
@@ -252,6 +406,51 @@
 
         return Task.CompletedTask;
     }
+
+    private void LoadSchedules()
+    {
+        List<ScenarioFinancialScheduleState> loaded = [];
+        invalidScheduleCount = 0;
+        foreach (SimulationBusinessObjectDefinitionState definition in Project.BusinessObjectDefinitions
+                     .Where(definition => definition.ObjectType == LedgerSimulatorObjectTypes.PlannedFinancialSchedule))
+        {
+            ScenarioFinancialScheduleState? schedule = TryDeserialize(definition.StateJson);
+            if (schedule is null)
+            {
+                invalidScheduleCount++;
+                continue;
+            }
+
+            loaded.Add(schedule);
+        }
+
+        schedules = loaded
+            .OrderBy(schedule => BusinessUnitName(schedule.BusinessUnitId), StringComparer.Ordinal)
+            .ThenBy(schedule => schedule.Metadata.GetValueOrDefault("uiGroup"), StringComparer.Ordinal)
+            .ThenBy(schedule => schedule.DisplayName, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private void RevealSelectedSchedule()
+    {
+        if (SelectedSchedule is null)
+        {
+            return;
+        }
+
+        string group = SelectedSchedule.Metadata.GetValueOrDefault("uiGroup", "schedule");
+        expandedNodeIds.Add($"bu:{SelectedSchedule.BusinessUnitId.Value}");
+        expandedNodeIds.Add($"group:{SelectedSchedule.BusinessUnitId.Value}:{group}");
+    }
+
+    private void OnQueueFromChanged(ChangeEventArgs args)
+        => queueFromDate = Convert.ToString(args.Value, CultureInfo.InvariantCulture) ?? string.Empty;
+
+    private void OnQueueToChanged(ChangeEventArgs args)
+        => queueToDate = Convert.ToString(args.Value, CultureInfo.InvariantCulture) ?? string.Empty;
+
+    private static bool TryParseDate(string value, out DateOnly date)
+        => DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
 
     private static ScenarioFinancialScheduleState? TryDeserialize(string json)
     {
@@ -279,6 +478,9 @@
 
     private static decimal ScheduleTotal(ScenarioFinancialScheduleState schedule)
         => schedule.Amounts.Sum(amount => amount.Amount.Value);
+
+    private string ScheduleTooltip(ScenarioFinancialScheduleState schedule)
+        => $"{schedule.DisplayName} · {schedule.ScheduleId} · BU {BusinessUnitName(schedule.BusinessUnitId)} · {schedule.Kind} · {schedule.Section} · approval {ApprovalText(schedule)} · source {PlanSourceText(schedule)} · total {FormatAmount(ScheduleTotal(schedule))} {Project.Model.BaseCurrencyCode}";
 
     private string PlanSourceText(ScenarioFinancialScheduleState schedule)
     {
@@ -318,6 +520,9 @@
     private static string FormatAmount(decimal amount)
         => amount.ToString("#,0.##", CultureInfo.InvariantCulture);
 
+    private static string FormatDate(DateOnly date)
+        => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
     private static string GroupIcon(string group)
         => group switch
         {
@@ -341,6 +546,7 @@
 
     private sealed record FinancialScheduleTimelineRow(
         DateOnly Date,
+        string BusinessUnitId,
         string BusinessUnit,
         string Schedule,
         decimal Amount,
@@ -349,4 +555,6 @@
         string ApprovalScope,
         string PeriodCode,
         string ScheduleId);
+
+    private sealed record QueueBusinessUnitOption(string Value, string Text);
 }

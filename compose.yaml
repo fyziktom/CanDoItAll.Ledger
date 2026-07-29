@@ -1,0 +1,206 @@
+name: ${COMPOSE_PROJECT_NAME:-candoitall-ledger}
+
+x-dotnet-build: &dotnet-build
+  context: .
+
+x-bounded-logging: &bounded-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-accountapp: &accountapp
+  image: ${ACCOUNTAPP_IMAGE:-candoitall-ledger-accountapp:dev}
+  build:
+    <<: *dotnet-build
+    dockerfile: docker/accountapp/Dockerfile
+  depends_on:
+    node:
+      condition: service_healthy
+  networks:
+    - frontend
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  healthcheck:
+    test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/"]
+    start_period: 10s
+    interval: 10s
+    timeout: 5s
+    retries: 12
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  mem_limit: ${ACCOUNTAPP_MEMORY_LIMIT:-256m}
+  cpus: ${ACCOUNTAPP_CPU_LIMIT:-0.50}
+  pids_limit: ${ACCOUNTAPP_PID_LIMIT:-128}
+  restart: "no"
+  logging: *bounded-logging
+
+services:
+  postgres:
+    image: postgres:${POSTGRES_IMAGE_TAG:-16-alpine}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-candoitall_ledger}
+      POSTGRES_USER: ${POSTGRES_USER:-candoitall}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env or pass --env-file}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\" -t 15 && psql -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\" -c 'select 1' >/dev/null"]
+      start_period: 30s
+      interval: 10s
+      timeout: 15s
+      retries: 20
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-1g}
+    cpus: ${POSTGRES_CPU_LIMIT:-1.0}
+    pids_limit: ${POSTGRES_PID_LIMIT:-256}
+    stop_grace_period: 2m
+    restart: "no"
+    logging: *bounded-logging
+
+  node:
+    image: ${LEDGER_NODE_IMAGE:-candoitall-ledger-node:dev}
+    build:
+      <<: *dotnet-build
+      dockerfile: docker/node/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      Ledger__Persistence__Provider: PostgreSql
+      Ledger__Persistence__SchemaManagementMode: Migrate
+      Ledger__PostgreSql__ConnectionString: ${LEDGER_POSTGRES_CONNECTION_STRING:?Set LEDGER_POSTGRES_CONNECTION_STRING in .env or pass --env-file}
+      Ledger__PostgreSql__EnableRetryOnFailure: "true"
+      Ledger__Treasury__AdminMainAmount: "1000000000000"
+      Ledger__Api__EnableRateLimiting: "false"
+      Ledger__Api__AllowLedgerReset: "true"
+      Ledger__Auth__Ui__Mode: Disabled
+      Ledger__Hosting__UseForwardedHeaders: "true"
+      Ledger__Auth__DataProtection__KeyRingPath: /var/lib/candoitall-ledger/dpkeys
+    ports:
+      - "${CDA_BIND_ADDRESS:-127.0.0.1}:${LEDGER_NODE_PORT:-8080}:8080"
+    volumes:
+      - node-dpkeys:/var/lib/candoitall-ledger/dpkeys
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8080/api/v1/health"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 18
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${LEDGER_NODE_MEMORY_LIMIT:-1g}
+    cpus: ${LEDGER_NODE_CPU_LIMIT:-1.0}
+    pids_limit: ${LEDGER_NODE_PID_LIMIT:-256}
+    stop_grace_period: 30s
+    restart: "no"
+    logging: *bounded-logging
+
+  demo-seeder:
+    image: ${DEMO_SEEDER_IMAGE:-candoitall-ledger-demo-seeder:dev}
+    build:
+      <<: *dotnet-build
+      dockerfile: docker/seeder/Dockerfile
+    depends_on:
+      node:
+        condition: service_healthy
+    profiles:
+      - seed
+    environment:
+      CANDOITALL_LEDGER_NODE_URL: http://node:8080/
+      CANDOITALL_LEDGER_DEMO_KEY_SET: accountapp-demo
+      CANDOITALL_LEDGER_DEMO_LEDGER_ID: default
+      CANDOITALL_LEDGER_DEMO_TOKEN_ID: bo.posts
+      CANDOITALL_LEDGER_DEMO_ALICE_MAIN_AMOUNT: "100000"
+      CANDOITALL_LEDGER_DEMO_BOB_MAIN_AMOUNT: "1000"
+      CANDOITALL_LEDGER_DEMO_ALICE_TOKEN_SUPPLY: "100000000"
+      CANDOITALL_LEDGER_DEMO_BOB_TOKEN_AMOUNT: "1000"
+      CANDOITALL_LEDGER_ACCOUNT_BACKUP_PASSWORD: ${LEDGER_ACCOUNT_BACKUP_PASSWORD}
+      CANDOITALL_LEDGER_TEST_KEY_ROOT: /var/lib/candoitall-ledger-demo/keys
+    volumes:
+      - type: bind
+        source: ./docker/demo-keys
+        target: /var/lib/candoitall-ledger-demo/keys
+        bind:
+          create_host_path: false
+    networks:
+      - frontend
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${DEMO_SEEDER_MEMORY_LIMIT:-512m}
+    cpus: ${DEMO_SEEDER_CPU_LIMIT:-1.0}
+    pids_limit: ${DEMO_SEEDER_PID_LIMIT:-128}
+    restart: "no"
+    logging: *bounded-logging
+
+  accountapp:
+    <<: *accountapp
+    environment:
+      ACCOUNT_APP_NODE_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_PORT:-5081}/
+      ACCOUNT_APP_LEDGER_ID: default
+      ACCOUNT_APP_SCENARIO_ID: __null__
+      ACCOUNT_APP_VAULT_ID: account-app-default
+      ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Browser account
+      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "false"
+      ACCOUNT_APP_IPFS_API_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_PORT:-5081}/ipfs-api/
+      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
+      ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
+    ports:
+      - "${CDA_BIND_ADDRESS:-127.0.0.1}:${ACCOUNTAPP_PORT:-5081}:8080"
+
+  accountapp-bob:
+    <<: *accountapp
+    profiles:
+      - multi-account
+    environment:
+      ACCOUNT_APP_NODE_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_BOB_PORT:-5082}/
+      ACCOUNT_APP_LEDGER_ID: default
+      ACCOUNT_APP_SCENARIO_ID: __null__
+      ACCOUNT_APP_VAULT_ID: accountapp-bob
+      ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Bob account
+      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "false"
+      ACCOUNT_APP_IPFS_API_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_BOB_PORT:-5082}/ipfs-api/
+      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
+      ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
+    ports:
+      - "${CDA_BIND_ADDRESS:-127.0.0.1}:${ACCOUNTAPP_BOB_PORT:-5082}:8080"
+
+  accountapp-lab:
+    <<: *accountapp
+    profiles:
+      - multi-account
+    environment:
+      ACCOUNT_APP_NODE_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_LAB_PORT:-5083}/
+      ACCOUNT_APP_LEDGER_ID: default
+      ACCOUNT_APP_SCENARIO_ID: __null__
+      ACCOUNT_APP_VAULT_ID: accountapp-lab
+      ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Scratch account
+      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "false"
+      ACCOUNT_APP_IPFS_API_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_LAB_PORT:-5083}/ipfs-api/
+      ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
+      ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
+    ports:
+      - "${CDA_BIND_ADDRESS:-127.0.0.1}:${ACCOUNTAPP_LAB_PORT:-5083}:8080"
+
+volumes:
+  postgres-data:
+  node-dpkeys:
+
+networks:
+  frontend:
+  backend:
+    internal: true

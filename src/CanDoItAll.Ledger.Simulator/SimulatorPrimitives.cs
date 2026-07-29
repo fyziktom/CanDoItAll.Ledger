@@ -3,7 +3,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace CanDoItAll.Economy.Simulator;
+namespace CanDoItAll.Ledger.Simulator;
 
 public readonly record struct ScenarioId(string Value)
 {
@@ -25,7 +25,7 @@ public readonly record struct TokenId(string Value)
     public override string ToString() => Value;
 }
 
-public readonly record struct BusinessObjectId(string Value)
+public readonly record struct SimulationObjectReference(string Value)
 {
     public override string ToString() => Value;
 }
@@ -215,7 +215,6 @@ public enum TransactionDataItemType
 }
 
 public sealed record CreateBusinessObjectRequest(
-    BusinessObjectId ObjectId,
     string ObjectType,
     string StateJson,
     string SchemaVersion = "1.0",
@@ -247,7 +246,7 @@ public sealed record SimulatorSubmitResult(
 
 public sealed record AccountRuleExecutionResult(
     string RuleId,
-    BusinessObjectId? TriggerObjectId,
+    SimulationObjectReference? TriggerObjectReference,
     AccountRuleActionKind ActionKind,
     AccountRuleExecutionStatus Status,
     TxId? TxId,

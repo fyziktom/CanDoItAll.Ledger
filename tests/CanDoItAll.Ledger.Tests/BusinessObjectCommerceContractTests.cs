@@ -1,19 +1,19 @@
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectCommerceContractTests
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("default"));
     private static readonly Address Alice = Address.FromPublicKey(Hex.Utf8("alice-public"));
     private static readonly Address Bob = Address.FromPublicKey(Hex.Utf8("bob-public"));
-    private static readonly BusinessObjectId TargetObjectId = new("bo:post:commerce-target");
-    private static readonly BusinessObjectId PaymentObjectId = new("bo:payment:commerce-payment");
+    private static readonly BusinessObjectId TargetObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('a', 64)), 0);
+    private static readonly BusinessObjectId PaymentObjectId = BusinessObjectId.FromOutPoint(new TxId(new string('b', 64)), 0);
     private static readonly DateTimeOffset ListedAtUtc = DateTimeOffset.Parse("2026-06-30T10:00:00Z");
 
     [Fact]
@@ -61,26 +61,24 @@ public sealed class BusinessObjectCommerceContractTests
     [Fact]
     public void CommerceRecords_BuildTypedPaymentPurchaseAndReceiptPayloads()
     {
-        BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
-            PaymentObjectId,
+        BusinessObjectPaymentRecord paymentDraft = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
             Bob,
             Alice,
             TargetObjectId,
             targetVersion: 2,
-            targetOutPoint: new OutPoint(new TxId("target-tx"), 0),
+            targetOutPoint: TargetObjectId.RequireOutPoint(),
             Amount.FromInt64(25),
             BusinessObjectSaleMode.Original,
-            new TxId("payment-tx"),
+            PaymentObjectId.RequireOutPoint().TxId,
             ListedAtUtc);
+        BusinessObjectPaymentRecord payment = paymentDraft with { PaymentObjectId = PaymentObjectId.Value };
         BusinessObjectPurchaseRecord purchase = BusinessObjectCommercePayloadBuilder.CreatePurchaseRecord(
-            BusinessObjectCommercePayloadBuilder.CreatePurchaseObjectId(PaymentObjectId),
             payment,
             ListedAtUtc.AddMinutes(1));
         BusinessObjectReceiptRecord receipt = BusinessObjectCommercePayloadBuilder.CreateReceiptRecord(
-            BusinessObjectCommercePayloadBuilder.CreateReceiptObjectId(PaymentObjectId),
             payment,
             deliveredObjectId: TargetObjectId,
-            dispatchTxId: new TxId("dispatch-tx"),
+            dispatchTxId: new TxId(new string('c', 64)),
             issuedAtUtc: ListedAtUtc.AddMinutes(2));
 
         Assert.True(BusinessObjectCommerceValidator.ValidatePaymentRecord(payment).IsValid);
@@ -96,24 +94,65 @@ public sealed class BusinessObjectCommerceContractTests
         Assert.Equal(TargetObjectId.Value, paymentPayload.Fields["targetObjectId"]);
         Assert.Equal(TargetObjectId.Value, purchasePayload.Fields!["targetObjectId"]);
         Assert.Equal(PaymentObjectId.Value, receiptPayload.Fields!["paymentObjectId"]);
+        Assert.False(paymentPayload.Fields.ContainsKey("paymentObjectId"));
+        Assert.False(purchasePayload.Fields.ContainsKey("orderNumber"));
+        Assert.False(receiptPayload.Fields.ContainsKey("receiptNumber"));
 
         BusinessObjectMediaPayload parsedPayment = BusinessObjectPayloadBuilder.ParseMediaPayload(
             BusinessObjectPayloadBuilder.Serialize(paymentPayload),
             "payment");
-        Assert.Equal(PaymentObjectId.Value, parsedPayment.Commerce?.Payment?.PaymentObjectId);
+        Assert.True(string.IsNullOrWhiteSpace(parsedPayment.Commerce?.Payment?.PaymentObjectId));
         Assert.Equal(Bob.Value, parsedPayment.Commerce?.Payment?.BuyerAddress);
         Assert.Equal(TargetObjectId.Value, parsedPayment.Commerce?.Payment?.TargetObjectId);
     }
 
     [Fact]
-    public void DerivedCommerceObjectIds_AreDeterministicAndBounded()
+    public void CommerceReferences_RejectNamedOrMalformedBusinessObjectIds()
     {
-        BusinessObjectId firstCloneId = BusinessObjectCommercePayloadBuilder.CreateCloneObjectId(TargetObjectId, PaymentObjectId);
-        BusinessObjectId secondCloneId = BusinessObjectCommercePayloadBuilder.CreateCloneObjectId(TargetObjectId, PaymentObjectId);
+        BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
+            Bob,
+            Alice,
+            TargetObjectId,
+            targetVersion: 1,
+            targetOutPoint: TargetObjectId.RequireOutPoint(),
+            Amount.FromInt64(5),
+            BusinessObjectSaleMode.Original,
+            paymentTxId: null,
+            ListedAtUtc);
 
-        Assert.Equal(firstCloneId, secondCloneId);
-        Assert.StartsWith("bo:clone:", firstCloneId.Value, StringComparison.Ordinal);
-        Assert.True(firstCloneId.Value.Length <= LedgerValidationLimits.MaxBusinessObjectIdLength);
+        BusinessObjectCommerceValidationResult namedTarget = BusinessObjectCommerceValidator.ValidatePaymentRecord(
+            payment with { TargetObjectId = "bo:post:user-name", TargetOutPoint = "bo:post:user-name" });
+        BusinessObjectCommerceValidationResult malformedLink = BusinessObjectCommerceValidator.ValidatePaymentRecord(
+            payment with { ReceiptObjectId = "receipt-by-name" });
+
+        Assert.False(namedTarget.IsValid);
+        Assert.Contains(namedTarget.Errors, error => error.Contains("canonical BusinessObject UTXO id", StringComparison.Ordinal));
+        Assert.False(malformedLink.IsValid);
+        Assert.Contains(malformedLink.Errors, error => error.Contains("canonical BusinessObject UTXO id", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task CommerceCaster_BindsSelfIdentityFromConfirmedOutputOnly()
+    {
+        BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
+            Bob,
+            Alice,
+            TargetObjectId,
+            targetVersion: 2,
+            targetOutPoint: TargetObjectId.RequireOutPoint(),
+            Amount.FromInt64(25),
+            BusinessObjectSaleMode.Original,
+            PaymentObjectId.RequireOutPoint().TxId,
+            ListedAtUtc);
+        string stateJson = BusinessObjectPayloadBuilder.Serialize(
+            BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
+        var caster = new CommerceBusinessObjectCaster(new ManualTimeProvider(ListedAtUtc));
+
+        IBusinessObjectView view = await caster.CastAsync(CreateSource("payment", stateJson), CancellationToken.None);
+
+        ICommerceBusinessObjectView commerce = Assert.IsAssignableFrom<ICommerceBusinessObjectView>(view);
+        Assert.Equal(PaymentObjectId.Value, commerce.Commerce.Payment?.PaymentObjectId);
+        Assert.DoesNotContain("paymentObjectId", stateJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -126,15 +165,14 @@ public sealed class BusinessObjectCommerceContractTests
             .BuildServiceProvider();
         IBusinessObjectCastRegistry registry = provider.GetRequiredService<IBusinessObjectCastRegistry>();
         BusinessObjectPaymentRecord payment = BusinessObjectCommercePayloadBuilder.CreatePaymentRecord(
-            PaymentObjectId,
             Bob,
             Alice,
             TargetObjectId,
             targetVersion: 2,
-            targetOutPoint: new OutPoint(new TxId("target-tx"), 0),
+            targetOutPoint: TargetObjectId.RequireOutPoint(),
             Amount.FromInt64(25),
             BusinessObjectSaleMode.Original,
-            new TxId("payment-tx"),
+            PaymentObjectId.RequireOutPoint().TxId,
             ListedAtUtc);
         string stateJson = BusinessObjectPayloadBuilder.Serialize(
             BusinessObjectCommercePayloadBuilder.CreatePaymentPayload(payment));
@@ -159,7 +197,7 @@ public sealed class BusinessObjectCommerceContractTests
             Alice,
             BusinessObjectOperation.Create,
             new HashHex(new string('a', 64)),
-            new OutPoint(new TxId("tx1"), 0),
+            PaymentObjectId.RequireOutPoint(),
             stateJson,
             null,
             TransactionDataItemType.BusinessObject,

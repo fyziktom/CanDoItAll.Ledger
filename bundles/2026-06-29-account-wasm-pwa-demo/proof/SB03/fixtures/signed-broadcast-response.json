@@ -1,8 +1,0 @@
-{
-  "accepted": true,
-  "txId": {
-    "value": "tx-submitted"
-  },
-  "ledgerSequence": 42,
-  "errors": []
-}

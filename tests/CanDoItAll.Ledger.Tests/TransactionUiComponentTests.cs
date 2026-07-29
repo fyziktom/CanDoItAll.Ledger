@@ -1,16 +1,18 @@
 using Bunit;
 using AngleSharp.Dom;
+using System.Globalization;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
 using Microsoft.AspNetCore.Components.Web;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
-public sealed class TransactionUiComponentTests : TestContext
+public sealed class TransactionUiComponentTests : BunitContext
 {
     private static readonly LedgerAccountContext Context = new(new LedgerId("ui-ledger"));
     private static readonly Address Alice = new("cdia1alice");
@@ -26,7 +28,7 @@ public sealed class TransactionUiComponentTests : TestContext
     public void HistoryDialog_orders_transactions_by_ledger_sequence_newest_first()
     {
         DateTimeOffset sameTimestamp = DateTimeOffset.Parse("2026-07-03T12:00:00Z");
-        IRenderedComponent<TransactionHistoryDialogContent> component = RenderComponent<TransactionHistoryDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionHistoryDialogContent> component = Render<TransactionHistoryDialogContent>(parameters => parameters
             .Add(x => x.AccountAddress, Bob)
             .Add(x => x.Transactions,
             [
@@ -36,11 +38,95 @@ public sealed class TransactionUiComponentTests : TestContext
             ]));
 
         IReadOnlyList<AngleSharp.Dom.IElement> rows = component.FindAll("[data-testid='tx-history-row']");
+        string[] headers = component.FindAll("[data-testid='tx-history-grid'] th")
+            .Select(header => header.TextContent.Trim())
+            .ToArray();
+        IElement grid = component.Find("[data-testid='tx-history-grid']");
 
         Assert.Equal(3, rows.Count);
+        Assert.Equal(["Tx id", "Route", "Kind", "Status", "Inputs", "Outputs", "Data", "Created", "Actions"], headers);
+        Assert.Contains("overflow-x-auto", grid.ClassList);
+        Assert.All(grid.QuerySelectorAll("tbody tr"), row => Assert.Equal("0", row.GetAttribute("tabindex")));
         Assert.Contains("tx-newest-message", rows[0].TextContent, StringComparison.Ordinal);
         Assert.Contains("tx-middle", rows[1].TextContent, StringComparison.Ordinal);
         Assert.Contains("tx-oldest", rows[2].TextContent, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task HistoryDialog_grid_preserves_row_and_details_actions_without_copy_bubbling()
+    {
+        LedgerTransactionSummary transaction = CreateSummary(
+            "tx-action",
+            DateTimeOffset.Parse("2026-07-03T12:00:00Z"),
+            4);
+        var requested = new List<LedgerTransactionSummary>();
+        IRenderedComponent<TransactionHistoryDialogContent> component = Render<TransactionHistoryDialogContent>(parameters => parameters
+            .Add(x => x.Transactions, [transaction])
+            .Add(x => x.TransactionDetailsRequested, item => requested.Add(item)));
+
+        await component.Find("[data-testid='tx-history-row'] button").ClickAsync(new MouseEventArgs());
+        Assert.Empty(requested);
+
+        await component.Find("[data-testid='tx-history-grid'] tbody tr").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
+        Assert.Equal([transaction], requested);
+
+        requested.Clear();
+        IElement detailsButton = component.FindAll("button")
+            .Single(button => button.TextContent.Contains("Details", StringComparison.Ordinal));
+        await detailsButton.ClickAsync(new MouseEventArgs());
+        Assert.Equal([transaction], requested);
+    }
+
+    [Fact]
+    public void HistoryDialog_prefers_saved_directory_names_and_keeps_short_addresses_visible()
+    {
+        LedgerTransactionSummary transaction = CreateSummary(
+            "tx-address-labels",
+            DateTimeOffset.Parse("2026-07-03T12:00:00Z"),
+            8);
+        IRenderedComponent<TransactionHistoryDialogContent> component = Render<TransactionHistoryDialogContent>(parameters => parameters
+            .Add(x => x.Transactions, [transaction])
+            .Add(x => x.AccountAddress, Alice)
+            .Add(x => x.AccountName, "Alice account")
+            .Add(x => x.Bookmarks, [new LedgerAddressBookmark("Bob seed", Bob)])
+            .Add(x => x.DirectoryEntries,
+            [
+                new AddressDirectoryEntry(
+                    Bob.Value,
+                    "Bob saved contact",
+                    AddressDirectoryEntryKind.External,
+                    Favorite: true)
+            ]));
+
+        string route = component.FindAll("[data-testid='tx-history-grid'] tbody td")[1].TextContent;
+
+        Assert.Contains("Alice account (cdia1alice)", route, StringComparison.Ordinal);
+        Assert.Contains("Bob saved contact (cdia1bob)", route, StringComparison.Ordinal);
+        Assert.DoesNotContain("Bob seed", route, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HistoryDialog_humanizes_labels_and_formats_offsets_in_local_time()
+    {
+        DateTimeOffset timestamp = DateTimeOffset.Parse("2026-07-16T00:30:45+05:45");
+        LedgerTransactionSummary transaction = CreateSummary(
+            "tx-local-time",
+            timestamp,
+            9,
+            CreateMessageData());
+        IRenderedComponent<TransactionHistoryDialogContent> component = Render<TransactionHistoryDialogContent>(parameters => parameters
+            .Add(x => x.Transactions, [transaction]));
+
+        IReadOnlyList<IElement> cells = component.FindAll("[data-testid='tx-history-grid'] tbody td");
+        IElement? time = cells[7].QuerySelector("time");
+
+        Assert.Equal("Business object", cells[2].TextContent.Trim());
+        Assert.Equal("Business object", cells[6].TextContent.Trim());
+        Assert.NotNull(time);
+        Assert.Equal(timestamp.ToString("O"), time.GetAttribute("datetime"));
+        Assert.Equal(
+            timestamp.ToLocalTime().ToString("dd MMM yyyy · HH:mm:ss", CultureInfo.InvariantCulture),
+            time.TextContent.Trim());
     }
 
     [Fact]
@@ -53,7 +139,7 @@ public sealed class TransactionUiComponentTests : TestContext
             new HashHex("2222222222222222222222222222222222222222222222222222222222222222"),
             [0x01, 0x02, 0x03],
             [0x04, 0x05, 0x06]);
-        var details = new EconomyTransactionDetailsModel(
+        var details = new LedgerTransactionDetailsModel(
             new TxId("tx-raw-message"),
             new HashHex("3333333333333333333333333333333333333333333333333333333333333333"),
             TransactionKind.BusinessObject,
@@ -62,7 +148,7 @@ public sealed class TransactionUiComponentTests : TestContext
             DateTimeOffset.Parse("2026-07-03T13:15:00Z"),
             CreateMessageData(),
             [
-                new EconomyTransactionInputDetails(
+                new LedgerTransactionInputDetails(
                     0,
                     new OutPoint(new TxId("tx-prev"), 1),
                     Alice,
@@ -74,13 +160,12 @@ public sealed class TransactionUiComponentTests : TestContext
                     new OutPointKey(new HashHex("4444444444444444444444444444444444444444444444444444444444444444")))
             ],
             [
-                new EconomyTransactionOutputDetails(
+                new LedgerTransactionOutputDetails(
                     0,
                     Bob,
                     Amount.FromDecimal(1.5m),
                     null,
-                    new BusinessObjectRef(
-                        new BusinessObjectId("bo:secure-message:1"),
+                    new LedgerTransactionBusinessObjectDetails(
                         1,
                         BusinessObjectOperation.Create,
                         new HashHex("5555555555555555555555555555555555555555555555555555555555555555")),
@@ -88,7 +173,7 @@ public sealed class TransactionUiComponentTests : TestContext
             ],
             LedgerSequence: 12,
             LedgerEntryHash: new HashHex("7777777777777777777777777777777777777777777777777777777777777777"));
-        IRenderedComponent<TransactionDetailsDialogContent> component = RenderComponent<TransactionDetailsDialogContent>(parameters => parameters
+        IRenderedComponent<TransactionDetailsDialogContent> component = Render<TransactionDetailsDialogContent>(parameters => parameters
             .Add(x => x.Details, details));
 
         AngleSharp.Dom.IElement rawTab = component.FindAll("button")
@@ -103,6 +188,8 @@ public sealed class TransactionUiComponentTests : TestContext
         Assert.Contains("\"vout\":", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"signature\": \"010203\"", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"publicKey\": \"040506\"", rawJson, StringComparison.Ordinal);
+        Assert.Contains("\"objectId\": \"tx-raw-message:0\"", rawJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("bo:secure-message:1", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"objectType\": \"secure-message\"", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"stateJson\": {", rawJson, StringComparison.Ordinal);
         Assert.Contains("\"format\": \"candoitall-secure-message-v1\"", rawJson, StringComparison.Ordinal);
@@ -114,7 +201,7 @@ public sealed class TransactionUiComponentTests : TestContext
     [Fact]
     public void PayloadViewer_formats_inline_json_without_escaped_nested_strings()
     {
-        IRenderedComponent<TxDataPayloadViewer> component = RenderComponent<TxDataPayloadViewer>(parameters => parameters
+        IRenderedComponent<TxDataPayloadViewer> component = Render<TxDataPayloadViewer>(parameters => parameters
             .Add(x => x.Data, CreateMessageData()));
 
         string payloadJson = component.Find("[data-testid='tx-payload-inline-json']").TextContent;
@@ -129,7 +216,7 @@ public sealed class TransactionUiComponentTests : TestContext
     [Fact]
     public void TransactionComposerShell_RendersUtxoMergeWithOnlyPlainSpendableInputs()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         LedgerSpendableOutput extraPlain = CreateSpendableOutput("tx-extra-plain", 2, Amount.FromDecimal(3.5m), workspace.Address);
         BusinessObjectTransactionDraft draft = workspace.TransactionDraft with
         {
@@ -142,17 +229,18 @@ public sealed class TransactionUiComponentTests : TestContext
             ]
         };
 
-        IRenderedComponent<TransactionComposerShell> component = RenderComponent<TransactionComposerShell>(parameters => parameters
+        IRenderedComponent<TransactionComposerShell> component = Render<TransactionComposerShell>(parameters => parameters
             .Add(x => x.Draft, draft)
             .Add(x => x.TokenOptions, workspace.TokenOptions)
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
             .Add(x => x.SpendableOutputs, workspace.SpendableOutputsOrEmpty.Append(extraPlain).ToArray()));
 
-        IReadOnlyList<IElement> rows = component.FindAll("[data-testid='cda-merge-utxo-selector-row']");
+        component.Find("[data-testid='transaction-mode-UtxoMerge']").Click();
 
-        Assert.Equal(2, rows.Count);
-        Assert.Contains("2 selected", component.Markup, StringComparison.Ordinal);
-        Assert.Contains("Combine selected plain UTXOs into one output.", component.Markup, StringComparison.Ordinal);
+        Assert.Empty(component.FindAll("[data-testid='cda-merge-utxo-selector-row']"));
+        Assert.Contains("2 selected", component.Find("[data-testid='cda-merge-utxo-selector']").TextContent, StringComparison.Ordinal);
+        Assert.Contains("Change selection", component.Find("[data-testid='cda-merge-utxo-selector']").TextContent, StringComparison.Ordinal);
+        Assert.Contains("Combine two or more plain main-currency outputs.", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-token-source", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-permission-source", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("tx-rule-permission-source", component.Markup, StringComparison.Ordinal);
@@ -161,10 +249,10 @@ public sealed class TransactionUiComponentTests : TestContext
     [Fact]
     public async Task TransactionUtxoSplitForm_AppliesEqualOutputPlanToDraft()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         BusinessObjectTransactionDraft? captured = null;
 
-        IRenderedComponent<TransactionUtxoSplitForm> component = RenderComponent<TransactionUtxoSplitForm>(parameters => parameters
+        IRenderedComponent<TransactionUtxoSplitForm> component = Render<TransactionUtxoSplitForm>(parameters => parameters
             .Add(x => x.Draft, workspace.TransactionDraft with { SelectedMode = BusinessObjectTransactionMode.UtxoSplit })
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
             .Add(x => x.SpendableOutputs, workspace.SpendableOutputsOrEmpty)
@@ -188,13 +276,13 @@ public sealed class TransactionUiComponentTests : TestContext
     [Fact]
     public void TransactionSendForm_UpdatesReusablePaymentDraftFields()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         BusinessObjectTransactionDraft current = workspace.TransactionDraft with
         {
             SelectedMode = BusinessObjectTransactionMode.MainPayment
         };
 
-        IRenderedComponent<TransactionSendForm> component = RenderComponent<TransactionSendForm>(parameters => parameters
+        IRenderedComponent<TransactionSendForm> component = Render<TransactionSendForm>(parameters => parameters
             .Add(x => x.Draft, current)
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
             .Add(x => x.DraftChanged, draft => current = draft));
@@ -202,7 +290,7 @@ public sealed class TransactionUiComponentTests : TestContext
         component.Find("[data-testid='cda-send-payment-amount']").Input("12.25");
         Assert.Equal("12.25", current.PaymentAmount.ToString());
 
-        component.SetParametersAndRender(parameters => parameters
+        component.Render(parameters => parameters
             .Add(x => x.Draft, current)
             .Add(x => x.Bookmarks, workspace.AddressBookmarks)
             .Add(x => x.DraftChanged, draft => current = draft));

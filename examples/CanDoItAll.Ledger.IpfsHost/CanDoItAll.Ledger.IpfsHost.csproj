@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Ledger.IpfsHost</AssemblyName>
+    <RootNamespace>CanDoItAll.Ledger.IpfsHost</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CanDoItAll.IPFS.Engine" />
+  </ItemGroup>
+</Project>

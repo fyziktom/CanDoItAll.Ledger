@@ -1,11 +1,11 @@
 using System.Security.Cryptography;
 using System.Text;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BrowserCryptoVaultTests
 {
@@ -15,11 +15,11 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Browser_safe_address_codec_matches_core_address_derivation()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         EcdsaP256KeyPair keyPair = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
 
-        Address address = await EconomyAddressCodec.FromPublicKeyAsync(keyPair.PublicKeyMaterial, driver, CancellationToken.None);
-        HashHex publicKeyHash = await EconomyAddressCodec.CalculatePublicKeyHashAsync(keyPair.PublicKeyMaterial, driver, CancellationToken.None);
+        Address address = await LedgerAddressCodec.FromPublicKeyAsync(keyPair.PublicKeyMaterial, driver, CancellationToken.None);
+        HashHex publicKeyHash = await LedgerAddressCodec.CalculatePublicKeyHashAsync(keyPair.PublicKeyMaterial, driver, CancellationToken.None);
 
         Assert.Equal(Address.FromPublicKey(keyPair.PublicKeyMaterial), address);
         Assert.Equal(Address.CalculatePublicKeyHash(keyPair.PublicKeyMaterial), publicKeyHash);
@@ -28,7 +28,7 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Dotnet_driver_uses_webcrypto_compatible_p256_signatures()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         EcdsaP256KeyPair keyPair = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         byte[] payload = Encoding.UTF8.GetBytes("transaction payload hash");
 
@@ -42,7 +42,7 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Dotnet_driver_encrypts_and_decrypts_aes_gcm_payloads()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         byte[] salt = await driver.GetRandomBytesAsync(16, CancellationToken.None);
         byte[] nonce = await driver.GetRandomBytesAsync(12, CancellationToken.None);
         byte[] key = await driver.Pbkdf2Sha256Async(Encoding.UTF8.GetBytes(Password), salt, 10_000, 32, CancellationToken.None);
@@ -59,7 +59,7 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Dotnet_driver_derives_ecdh_p256_shared_key_compatible_with_message_cipher()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         EcdsaP256KeyPair alice = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         EcdsaP256KeyPair bob = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
 
@@ -84,13 +84,13 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Account_message_security_driver_path_encrypts_and_decrypts()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         EcdsaP256KeyPair aliceKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         EcdsaP256KeyPair bobKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         var alice = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "alice", aliceKey.PublicKeyMaterial, aliceKey.PrivateKeyMaterial);
         var bob = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "bob", bobKey.PublicKeyMaterial, bobKey.PrivateKeyMaterial);
 
-        EconomyEncryptedMessage encrypted = await AccountMessageSecurity.EncryptMessageAsync(
+        LedgerEncryptedMessage encrypted = await AccountMessageSecurity.EncryptMessageAsync(
             alice,
             "private browser-compatible hello",
             bob.Address,
@@ -111,7 +111,7 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Account_vault_creates_encrypted_record_and_unlocks_private_key()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         var store = new InMemoryAccountVaultStore();
         var vault = new AccountVaultService(driver, store);
 
@@ -131,7 +131,7 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Account_vault_rejects_wrong_password()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         var store = new InMemoryAccountVaultStore();
         var vault = new AccountVaultService(driver, store);
         await vault.CreateAsync(new AccountVaultCreateRequest(VaultId, Password), CancellationToken.None);
@@ -143,7 +143,7 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Account_vault_rejects_tampered_ciphertext()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         var store = new InMemoryAccountVaultStore();
         var vault = new AccountVaultService(driver, store);
         await vault.CreateAsync(new AccountVaultCreateRequest(VaultId, Password), CancellationToken.None);
@@ -159,7 +159,7 @@ public sealed class BrowserCryptoVaultTests
     [Fact]
     public async Task Account_vault_delete_removes_stored_record()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         var store = new InMemoryAccountVaultStore();
         var vault = new AccountVaultService(driver, store);
         await vault.CreateAsync(new AccountVaultCreateRequest(VaultId, Password), CancellationToken.None);

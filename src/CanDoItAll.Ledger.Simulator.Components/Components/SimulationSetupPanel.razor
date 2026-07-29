@@ -1,159 +1,187 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
-<div class="cda-sim-split-grid" data-testid="simulation-setup-tab">
-    <WorkspacePanel Tone="WorkspacePanelTone.Ghost" Class="min-h-0 overflow-hidden">
-        <Stack FillHeight="true" GapScale="LayoutGap.Medium">
-            <Split Breakpoint="LayoutBreakpoint.None"
-                   AlignItems="AlignItems.Center"
-                   JustifyContent="JustifyContent.SpaceBetween"
-                   Gap="LayoutGap.Small">
-                <Stack GapScale="LayoutGap.Tiny">
-                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="Run setups" />
-                    <TextBlock TextStyle="TextStyle.H4" Value="@Project.RunSetups.Count.ToString(CultureInfo.InvariantCulture)" />
-                </Stack>
-                <Button Text="Add setup" Icon="add" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" />
-            </Split>
-
-            <Stack GapScale="LayoutGap.Small">
+<ListDetailShell Dense="true"
+                 ListPaneWidth="16rem"
+                 ListPaneClass="min-h-[26rem]"
+                 DetailPaneClass="min-h-[26rem]"
+                 data-testid="simulation-setup-tab">
+    <ListHeader>
+        <ListPanelHeader Title="Run setups"
+                         Count="@Project.RunSetups.Count.ToString(CultureInfo.InvariantCulture)"
+                         HelpText="A setup inherits the project horizon and scope, then fixes cadence, seed, rules, and overrides for a reproducible run."
+                         Dense="true" />
+    </ListHeader>
+    <ListContent>
+        @if (Project.RunSetups.Count == 0)
+        {
+            <Alert AlertStyle="AlertStyle.Info">
+                <strong>No run setup</strong>
+                <span>Import a setup before starting this project.</span>
+            </Alert>
+        }
+        else
+        {
+            <Stack GapScale="LayoutGap.Tiny">
                 @foreach (SimulationRunSetupState setup in Project.RunSetups.OrderBy(x => x.SetupId, StringComparer.Ordinal))
                 {
-                    bool selected = string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal);
-                    <button type="button"
-                            class="@ResolveSetupButtonClass(selected)"
-                            data-testid="@($"simulation-run-setup-{setup.SetupId}")"
-                            @onclick="@(() => SelectSetup(setup.SetupId))">
-                        <span class="flex min-w-0 flex-col items-start gap-1 text-left">
-                            <span class="max-w-full truncate text-sm font-semibold text-slate-950">@setup.ScenarioName</span>
-                            <span class="max-w-full truncate text-xs text-slate-500">@setup.SetupId</span>
-                            <span class="text-xs text-slate-500">@FormatDate(setup.HorizonStartDate) to @FormatDate(setup.HorizonEndDate)</span>
-                        </span>
-                        <span class="flex flex-col items-end gap-1 text-xs">
-                            <StatusBadge Text="@setup.StepPeriod.ToString()" Tone="info" />
-                            <span>@setup.StepCount step(s)</span>
-                        </span>
-                    </button>
+                    bool selected = string.Equals(setup.SetupId, EffectiveSetupId, StringComparison.Ordinal);
+                    <SelectionListItem IsSelected="@selected"
+                                       Dense="true"
+                                       Title="@setup.ScenarioName"
+                                       Meta="@setup.SetupId"
+                                       Summary="@($"{FormatDate(setup.HorizonStartDate)}–{FormatDate(setup.HorizonEndDate)}")"
+                                       DataTestId="@($"simulation-run-setup-{setup.SetupId}")"
+                                       OnSelect="@(() => SelectSetup(setup.SetupId))">
+                        <Status>
+                            <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.End">
+                                <StatusBadge Text="@setup.StepPeriod.ToString()" Tone="info" />
+                                <SmallText Text="@($"{setup.StepCount} steps")" />
+                            </Stack>
+                        </Status>
+                    </SelectionListItem>
                 }
             </Stack>
-
-            <SectionCard Title="Step periods" Description="Supported deterministic run periods.">
-                <Cluster Gap="LayoutGap.Small">
-                    @foreach (SimulationRunStepPeriod period in Enum.GetValues<SimulationRunStepPeriod>())
-                    {
-                        <StatusBadge Text="@period.ToString()" Tone="@(SelectedSetup?.StepPeriod == period ? "info" : "secondary")" />
-                    }
-                </Cluster>
-            </SectionCard>
-        </Stack>
-    </WorkspacePanel>
-
-    <WorkspacePanel Class="min-h-0 overflow-auto">
+        }
+    </ListContent>
+    <DetailHeader>
         @if (SelectedSetup is not null)
         {
-            <Stack GapScale="LayoutGap.Large" data-testid="simulation-selected-setup-detail">
-                <Split Breakpoint="LayoutBreakpoint.Lg"
-                       AlignItems="AlignItems.Start"
-                       JustifyContent="JustifyContent.SpaceBetween"
-                       Gap="LayoutGap.Medium"
-                       Wrap="FlexWrap.Wrap">
-                    <Stack GapScale="LayoutGap.Tiny">
-                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="@SelectedSetup.ScenarioId.Value" />
-                        <TextBlock TextStyle="TextStyle.H3" Value="@SelectedSetup.ScenarioName" />
-                        <SmallText Text="@SelectedSetup.SetupId" />
+            <Split Breakpoint="LayoutBreakpoint.Md"
+                   AlignItems="AlignItems.Center"
+                   JustifyContent="JustifyContent.SpaceBetween"
+                   Gap="LayoutGap.Medium"
+                   Wrap="FlexWrap.Wrap">
+                <Stack GapScale="LayoutGap.Tiny">
+                    <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSetup.ScenarioName" />
+                    <SmallText Text="@SelectedSetup.SetupId" />
+                </Stack>
+                <Cluster Gap="LayoutGap.Small">
+                    <StatusBadge Text="@(SelectedSetup.RuleExecutionEnabled ? "Rules on" : "Rules off")"
+                                 Tone="@(SelectedSetup.RuleExecutionEnabled ? "success" : "warning")" />
+                    <Button Text="Run"
+                            Icon="play_arrow"
+                            Size="ButtonSize.Small"
+                            Click="@RunSelectedSetupAsync"
+                            data-testid="simulation-setup-run" />
+                </Cluster>
+            </Split>
+        }
+    </DetailHeader>
+    <DetailContent>
+        @if (SelectedSetup is not null)
+        {
+            <Stack GapScale="LayoutGap.Medium" data-testid="simulation-selected-setup-detail">
+                <CompactStatStrip>
+                    <CompactStat Label="Cadence" Value="@SelectedSetup.StepPeriod.ToString()" HelperText="Simulation clock cadence" Position="TooltipPosition.Right" Tone="info" />
+                    <CompactStat Label="Steps" Value="@SelectedSetup.StepCount.ToString(CultureInfo.InvariantCulture)" HelperText="Derived run length" Position="TooltipPosition.Right" />
+                    <CompactStat Label="Starts" Value="@FormatDate(SelectedSetup.HorizonStartDate)" HelperText="Project horizon default" Position="TooltipPosition.Right" />
+                    <CompactStat Label="Ends" Value="@FormatDate(SelectedSetup.HorizonEndDate)" HelperText="Project horizon default" Position="TooltipPosition.Right" />
+                    <CompactStat Label="UI speed" Value="@SelectedSetup.UiSpeed.ToString()" HelperText="Excluded from deterministic output hashes" Position="TooltipPosition.Right" />
+                    <CompactStat Label="Seed" Value="@SelectedSetup.Seed.ToString(CultureInfo.InvariantCulture)" HelperText="Reproducibility input" Position="TooltipPosition.Right" />
+                </CompactStatStrip>
+
+                <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-labelledby="run-identity-title">
+                    <Stack GapScale="LayoutGap.Small">
+                        <TextBlock TextStyle="TextStyle.Subtitle1" Value="Run identity" id="run-identity-title" />
+                        <dl class="grid min-w-0 grid-cols-1 gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+                            @Fact("Scenario id", SelectedSetup.ScenarioId.Value)
+                            @Fact("Scenario name", SelectedSetup.ScenarioName)
+                            @Fact("Business units", IncludedBusinessUnits.Count.ToString(CultureInfo.InvariantCulture))
+                            @Fact("Templates", SelectedSetup.IncludedTemplateIds.Count.ToString(CultureInfo.InvariantCulture))
+                        </dl>
+                        <TooltipTarget Text="@DeterministicHash" Position="TooltipPosition.Right" TriggerClass="min-w-0" TabIndex="0">
+                            <div class="flex min-w-0 items-center gap-2 rounded-md bg-slate-50 px-2.5 py-2">
+                                <span class="text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-500">Hash</span>
+                                <MonoText Text="@Short(DeterministicHash)" />
+                            </div>
+                        </TooltipTarget>
                     </Stack>
-                    <Cluster Gap="LayoutGap.Small">
-                        <StatusBadge Text="@(SelectedSetup.RuleExecutionEnabled ? "Rules on" : "Rules off")" Tone="@(SelectedSetup.RuleExecutionEnabled ? "success" : "warning")" />
-                        <Button Text="Preview run" Icon="preview" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Small" />
-                        <Button Text="Run" Icon="play_arrow" Size="ButtonSize.Small" Click="@RunSelectedSetupAsync" data-testid="simulation-setup-run" />
-                    </Cluster>
-                </Split>
+                </section>
 
-                <Grid ColumnsLg="4" Gap="LayoutGap.Medium">
-                    <SectionCard Title="Step period" Description="Simulation clock cadence.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSetup.StepPeriod.ToString()" />
-                    </SectionCard>
-                    <SectionCard Title="Length" Description="Run step count.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSetup.StepCount.ToString(CultureInfo.InvariantCulture)" />
-                    </SectionCard>
-                    <SectionCard Title="UI speed" Description="Excluded from output hashes.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSetup.UiSpeed.ToString()" />
-                    </SectionCard>
-                    <SectionCard Title="Seed" Description="Reproducibility input.">
-                        <TextBlock TextStyle="TextStyle.H4" Value="@SelectedSetup.Seed.ToString(CultureInfo.InvariantCulture)" />
-                    </SectionCard>
-                </Grid>
-
-                <FormSection Title="Run identity" Description="Scenario identifiers, horizon, and deterministic setup hash.">
-                    <FormRow Split="true">
-                        <FormField Text="Scenario id">
-                            <TextBox Value="@SelectedSetup.ScenarioId.Value" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Scenario name">
-                            <TextBox Value="@SelectedSetup.ScenarioName" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Horizon start">
-                            <TextBox Value="@FormatDate(SelectedSetup.HorizonStartDate)" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Horizon end">
-                            <TextBox Value="@FormatDate(SelectedSetup.HorizonEndDate)" ReadOnly="true" />
-                        </FormField>
-                        <FormField Text="Deterministic hash">
-                            <TextBox Value="@DeterministicHash" ReadOnly="true" />
-                        </FormField>
-                    </FormRow>
-                </FormSection>
-
-                <Grid ColumnTemplateLg="minmax(0,1fr) minmax(0,1fr)" Gap="LayoutGap.Large">
-                    <FormSection Title="Included BUs" Description="Business unit scope for the run request.">
-                        <DataGrid TItem="BusinessUnitState" Data="IncludedBusinessUnits">
-                            <DataGridColumn TItem="BusinessUnitState" Property="DisplayName" Title="Name" />
-                            <DataGridColumn TItem="BusinessUnitState" Title="Kind">
-                                <Template Context="businessUnit">
-                                    <StatusBadge Text="@businessUnit.Kind.ToString()" Tone="info" />
-                                </Template>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="BusinessUnitState" Property="Path" Title="Path" />
-                        </DataGrid>
-                    </FormSection>
-
-                    <FormSection Title="Included templates" Description="Template ids materialized into the run scope.">
+                <details class="rounded-lg border border-slate-200 bg-white p-3">
+                    <summary class="cursor-pointer text-sm font-semibold text-slate-900">
+                        Scope and templates (@IncludedBusinessUnits.Count BUs · @SelectedSetup.IncludedTemplateIds.Count templates)
+                    </summary>
+                    <Grid ColumnsLg="2" Gap="LayoutGap.Medium" Class="mt-3">
+                    <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-labelledby="included-bus-title">
                         <Stack GapScale="LayoutGap.Small">
+                            <TextBlock TextStyle="TextStyle.Subtitle1" Value="Included business units" id="included-bus-title" />
+                            <DataGrid TItem="BusinessUnitState" Data="IncludedBusinessUnits">
+                                <DataGridColumn TItem="BusinessUnitState" Property="DisplayName" Title="Name" />
+                                <DataGridColumn TItem="BusinessUnitState" Title="Kind">
+                                    <Template Context="businessUnit">
+                                        <StatusBadge Text="@businessUnit.Kind.ToString()" Tone="info" />
+                                    </Template>
+                                </DataGridColumn>
+                                <DataGridColumn TItem="BusinessUnitState" Property="Path" Title="Path" />
+                            </DataGrid>
+                        </Stack>
+                    </section>
+
+                    <section class="min-w-0 rounded-lg border border-slate-200 bg-white p-3" aria-labelledby="included-templates-title">
+                        <Stack GapScale="LayoutGap.Small">
+                            <TextBlock TextStyle="TextStyle.Subtitle1" Value="Included templates" id="included-templates-title" />
                             @foreach (string templateId in SelectedSetup.IncludedTemplateIds)
                             {
-                                <div class="rounded-md border border-slate-200 bg-white p-3">
-                                    <MonoText Text="@templateId" />
-                                </div>
+                                <TooltipTarget Text="@templateId" Position="TooltipPosition.Right" TriggerClass="min-w-0" TabIndex="0">
+                                    <div class="truncate rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm">
+                                        <MonoText Text="@templateId" />
+                                    </div>
+                                </TooltipTarget>
                             }
                         </Stack>
-                    </FormSection>
-                </Grid>
+                    </section>
+                    </Grid>
+                </details>
 
-                <FormSection Title="Assumption overrides" Description="Overrides are serialized with the setup and included in deterministic hashes.">
-                    <DataGrid TItem="KeyValuePair<string, string>" Data="OverrideRows">
-                        <DataGridColumn TItem="KeyValuePair<string, string>" Property="Key" Title="Assumption" />
-                        <DataGridColumn TItem="KeyValuePair<string, string>" Property="Value" Title="Value" />
-                    </DataGrid>
-                </FormSection>
+                @if (OverrideRows.Count > 0)
+                {
+                    <details class="rounded-lg border border-slate-200 bg-white p-3">
+                        <summary class="cursor-pointer text-sm font-semibold text-slate-900">Assumption overrides (@OverrideRows.Count)</summary>
+                        <div class="mt-3">
+                            <DataGrid TItem="KeyValuePair<string, string>" Data="OverrideRows">
+                                <DataGridColumn TItem="KeyValuePair<string, string>" Property="Key" Title="Assumption" />
+                                <DataGridColumn TItem="KeyValuePair<string, string>" Property="Value" Title="Value" />
+                            </DataGrid>
+                        </div>
+                    </details>
+                }
 
                 <ValidationList Messages="SetupValidationMessages" />
             </Stack>
         }
-    </WorkspacePanel>
-</div>
+        else
+        {
+            <Alert AlertStyle="AlertStyle.Info">
+                <strong>Select a run setup</strong>
+                <span>Choose a scenario configuration from the list.</span>
+            </Alert>
+        }
+    </DetailContent>
+</ListDetailShell>
 
 @code {
-    private readonly ISimulationProjectImportExportService importExport = new SimulationProjectImportExportService(new EconomySimulatorJsonSerializer(), new SimulationProjectValidationService());
     private string? selectedSetupId;
 
     [Parameter, EditorRequired]
     public SimulationProjectState Project { get; set; } = default!;
 
+    [Parameter, EditorRequired]
+    public ISimulationProjectImportExportService ImportExportService { get; set; } = default!;
+
     [Parameter]
     public EventCallback<SimulationProjectRunRequest> RunRequested { get; set; }
 
-    private string SelectedSetupId => selectedSetupId ?? Project.RunSetups.FirstOrDefault()?.SetupId ?? string.Empty;
+    [Parameter]
+    public string? SelectedSetupId { get; set; }
 
-    private SimulationRunSetupState? SelectedSetup => Project.RunSetups.FirstOrDefault(setup => string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal));
+    [Parameter]
+    public EventCallback<string?> SelectedSetupIdChanged { get; set; }
+
+    private string EffectiveSetupId => selectedSetupId ?? Project.RunSetups.FirstOrDefault()?.SetupId ?? string.Empty;
+
+    private SimulationRunSetupState? SelectedSetup => Project.RunSetups.FirstOrDefault(setup => string.Equals(setup.SetupId, EffectiveSetupId, StringComparison.Ordinal));
 
     private IReadOnlyList<BusinessUnitState> IncludedBusinessUnits => SelectedSetup is null
         ? []
@@ -169,27 +197,49 @@
 
     private string DeterministicHash => SelectedSetup is null
         ? string.Empty
-        : importExport.BuildDeterministicRunSetupHash(Project, SelectedSetup);
+        : ImportExportService.BuildDeterministicRunSetupHash(Project, SelectedSetup);
 
     protected override void OnParametersSet()
     {
-        selectedSetupId ??= Project.RunSetups.FirstOrDefault()?.SetupId;
+        if (Project.RunSetups.Any(setup => string.Equals(setup.SetupId, SelectedSetupId, StringComparison.Ordinal)))
+        {
+            selectedSetupId = SelectedSetupId;
+        }
+        else if (Project.RunSetups.All(setup => !string.Equals(setup.SetupId, selectedSetupId, StringComparison.Ordinal)))
+        {
+            selectedSetupId = Project.RunSetups.FirstOrDefault()?.SetupId;
+        }
     }
 
-    private void SelectSetup(string setupId)
+    private async Task SelectSetup(string setupId)
     {
         selectedSetupId = setupId;
+        await SelectedSetupIdChanged.InvokeAsync(setupId);
     }
 
     private Task RunSelectedSetupAsync()
-        => RunRequested.InvokeAsync(new SimulationProjectRunRequest(Project, SelectedSetup?.SetupId));
+        => RunRequested.InvokeAsync(new SimulationProjectRunRequest(Project, SelectedSetup?.SetupId, SimulationRunMode.Automatic));
 
     private static string FormatDate(DateOnly value)
         => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    private static string ResolveSetupButtonClass(bool selected)
-        => string.Join(' ', [
-            "flex w-full min-w-0 items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition",
-            selected ? "border-sky-300 bg-sky-50" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-        ]);
+    private static string Short(string value)
+        => value.Length <= 30 ? value : $"{value[..14]}...{value[^12..]}";
+
+    private static RenderFragment Fact(string label, string value) => builder =>
+    {
+        int sequence = 0;
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "min-w-0");
+        builder.OpenElement(sequence++, "dt");
+        builder.AddAttribute(sequence++, "class", "text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-slate-500");
+        builder.AddContent(sequence++, label);
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "dd");
+        builder.AddAttribute(sequence++, "class", "mt-0.5 truncate text-sm font-semibold text-slate-900");
+        builder.AddAttribute(sequence++, "title", value);
+        builder.AddContent(sequence++, value);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
 }
