@@ -3,6 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CanDoItAll.Ledger.BusinessObjects</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.BusinessObjects</RootNamespace>
+    <Description>Account, business-object, rule, commerce, secure-messaging, and transaction-building services for CanDoItAll Ledger.</Description>
+    <PackageTags>candoitall;ledger;business-objects;accounts;transactions;finance</PackageTags>
     <EnableBusinessObjectIpfsStorage Condition="'$(EnableBusinessObjectIpfsStorage)' == '' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(TargetPlatformIdentifier)' == 'browser')">false</EnableBusinessObjectIpfsStorage>
     <EnableBusinessObjectIpfsStorage Condition="'$(EnableBusinessObjectIpfsStorage)' == ''">true</EnableBusinessObjectIpfsStorage>
   </PropertyGroup>

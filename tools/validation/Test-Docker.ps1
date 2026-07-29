@@ -11,14 +11,12 @@ param(
     [ValidateRange(1, 3600)]
     [int]$WaitTimeoutSeconds = 300,
 
-    [ValidateRange(1, 65535)]
-    [int]$NodePort = 8080,
+    [ValidateRange(0, 65535)]
+    [int]$NodePort = 0,
 
-    [ValidateRange(1, 65535)]
-    [int]$AlicePort = 5081,
-
-    [ValidateRange(1, 65535)]
-    [int]$BobPort = 5082
+    [ValidateRange(0, 65535)]
+    [Alias('AlicePort')]
+    [int]$AccountAppPort = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -69,10 +67,22 @@ $services = @(& $docker.Source @composeArguments config --services)
 if ($LASTEXITCODE -ne 0) {
     throw "Compose service discovery failed with exit code $LASTEXITCODE."
 }
-$requiredServices = @('postgres', 'node', 'accountapp-alice', 'accountapp-bob', 'accountapp-lab')
+$requiredServices = @('postgres', 'node', 'accountapp')
 $missingServices = @($requiredServices | Where-Object { $services -notcontains $_ })
 if ($missingServices.Count -gt 0) {
     throw "Compose is missing required services: $($missingServices -join ', ')."
+}
+
+$resolvedConfigJson = (& $docker.Source @composeArguments config --format json) -join [Environment]::NewLine
+if ($LASTEXITCODE -ne 0) {
+    throw "Compose JSON resolution failed with exit code $LASTEXITCODE."
+}
+$resolvedConfig = $resolvedConfigJson | ConvertFrom-Json
+$expectedAccountAppNodeBaseUri =
+    $resolvedConfig.services.accountapp.environment.ACCOUNT_APP_NODE_BASE_URI
+if (([string]::IsNullOrWhiteSpace($expectedAccountAppNodeBaseUri)) -or
+    (-not [Uri]::IsWellFormedUriString($expectedAccountAppNodeBaseUri, [UriKind]::Absolute))) {
+    throw 'AccountApp must have an absolute browser-visible ACCOUNT_APP_NODE_BASE_URI.'
 }
 
 $sharedInfoCandidates = @(
@@ -87,20 +97,23 @@ foreach ($candidate in $sharedInfoCandidates) {
         break
     }
 }
-if (-not $sharedValidator) {
-    throw 'CanDoItAll.SharedInfo Docker validation was not found.'
+$sharedValidationApplied = $false
+if ($sharedValidator) {
+    $sharedArguments = @{
+        RepositoryPath = $repositoryRoot
+        ComposeFile = $composePaths
+        RequireDocker = $true
+        WarningsAsErrors = $true
+    }
+    if ($envPath) {
+        $sharedArguments.EnvFile = $envPath
+    }
+    & $sharedValidator @sharedArguments
+    $sharedValidationApplied = $true
 }
-
-$sharedArguments = @{
-    RepositoryPath = $repositoryRoot
-    ComposeFile = $composePaths
-    RequireDocker = $true
-    WarningsAsErrors = $true
+else {
+    Write-Host 'CanDoItAll.SharedInfo is unavailable; continuing with repository-owned Compose and Dockerfile validation.'
 }
-if ($envPath) {
-    $sharedArguments.EnvFile = $envPath
-}
-& $sharedValidator @sharedArguments
 
 if ($RunBuildChecks) {
     # Keep the repository-owned check Compose-aware so it validates every
@@ -116,6 +129,7 @@ if (-not $Smoke) {
         Repository = $repositoryRoot
         ComposeFiles = $composePaths
         Services = $services
+        SharedConventions = $sharedValidationApplied
         BuildChecks = [bool]$RunBuildChecks
         Smoke = $false
         Result = 'PASS'
@@ -139,15 +153,55 @@ try {
         throw "Compose smoke startup failed with exit code $LASTEXITCODE."
     }
 
+    function Resolve-PublishedPort([string]$Service, [int]$ContainerPort) {
+        $published = @(& $docker.Source @composeArguments -p $projectName port $Service $ContainerPort)
+        if ($LASTEXITCODE -ne 0 -or $published.Count -eq 0) {
+            throw "Unable to resolve the published port for '${Service}:$ContainerPort'."
+        }
+
+        $match = [regex]::Match($published[-1], ':(?<port>\d+)$')
+        if (-not $match.Success) {
+            throw "Docker returned an unrecognized published endpoint for '${Service}:$ContainerPort': $($published[-1])."
+        }
+
+        return [int]$match.Groups['port'].Value
+    }
+
+    $effectiveNodePort = if ($NodePort -gt 0) {
+        $NodePort
+    }
+    else {
+        Resolve-PublishedPort -Service 'node' -ContainerPort 8080
+    }
+    $effectiveAccountAppPort = if ($AccountAppPort -gt 0) {
+        $AccountAppPort
+    }
+    else {
+        Resolve-PublishedPort -Service 'accountapp' -ContainerPort 8080
+    }
+
     foreach ($uri in @(
-            "http://127.0.0.1:$NodePort/api/v1/health",
-            "http://127.0.0.1:$AlicePort/",
-            "http://127.0.0.1:$BobPort/"
+            "http://127.0.0.1:$effectiveNodePort/api/v1/health",
+            "http://127.0.0.1:$effectiveAccountAppPort/",
+            "http://127.0.0.1:$effectiveAccountAppPort/api/v1/health"
         )) {
         $response = Invoke-WebRequest -UseBasicParsing -Uri $uri -TimeoutSec 30
         if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 400) {
             throw "HTTP smoke failed for '$uri' with status $($response.StatusCode)."
         }
+    }
+
+    $accountAppOrigin = "http://127.0.0.1:$effectiveAccountAppPort"
+    $runtimeConfiguration =
+        Invoke-RestMethod -Uri "$accountAppOrigin/appsettings.json" -TimeoutSec 30
+    if ($runtimeConfiguration.AccountApp.NodeBaseUri -ne $expectedAccountAppNodeBaseUri) {
+        throw "AccountApp runtime NodeBaseUri '$($runtimeConfiguration.AccountApp.NodeBaseUri)' does not match resolved Compose value '$expectedAccountAppNodeBaseUri'."
+    }
+
+    $serviceWorker =
+        Invoke-WebRequest -UseBasicParsing -Uri "$accountAppOrigin/service-worker.js" -TimeoutSec 30
+    if (-not $serviceWorker.Content.Contains('appsettings(?:\.[^/]+)?\.json$')) {
+        throw 'Published AccountApp service worker does not exclude runtime appsettings from its offline integrity cache.'
     }
 
     & $docker.Source @composeArguments -p $projectName ps --all
@@ -168,6 +222,7 @@ finally {
     Repository = $repositoryRoot
     ComposeFiles = $composePaths
     Services = $services
+    SharedConventions = $sharedValidationApplied
     BuildChecks = [bool]$RunBuildChecks
     Smoke = $true
     ProjectName = $projectName

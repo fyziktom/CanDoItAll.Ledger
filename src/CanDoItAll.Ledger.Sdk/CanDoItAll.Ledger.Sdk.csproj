@@ -3,6 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CanDoItAll.Ledger.Sdk</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Sdk</RootNamespace>
+    <Description>Typed node client and dependency-injection integration for CanDoItAll Ledger account and transaction workflows.</Description>
+    <PackageTags>candoitall;ledger;sdk;client;transactions;finance</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CanDoItAll.Ledger.BusinessObjects\CanDoItAll.Ledger.BusinessObjects.csproj" />

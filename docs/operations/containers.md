@@ -1,8 +1,9 @@
 # Local Containers
 
-The canonical development stack is `compose.yaml`. It builds the Ledger node,
-three static AccountApp instances, and an optional DemoSeeder. PostgreSQL 16
-runs only on the internal backend network.
+The canonical development stack is `compose.yaml`. Its default graph builds
+the PostgreSQL-backed Ledger node and one static AccountApp. Additional
+AccountApps and the DemoSeeder are opt-in profiles. PostgreSQL 16 runs only on
+the internal backend network.
 
 ## Configuration
 
@@ -21,12 +22,16 @@ Default loopback endpoints:
 | Service | URL |
 | --- | --- |
 | Ledger node | `http://127.0.0.1:8080` |
-| Alice AccountApp | `http://127.0.0.1:5081` |
-| Bob AccountApp | `http://127.0.0.1:5082` |
-| Lab AccountApp | `http://127.0.0.1:5083` |
+| AccountApp | `http://127.0.0.1:5081` |
 
 PostgreSQL is not published to the host. Containers use the `postgres` service
 name and port 5432. AccountApps proxy `/api/` to the `node` service.
+`CDA_PUBLIC_HOST` must match the hostname opened in the browser; its default
+`127.0.0.1` matches the endpoints above.
+
+The Node has no SQLite ledger-state provider. Compose uses PostgreSQL because
+it is the supported durable provider. The EF Core InMemory and direct
+in-memory stores remain test/disposable options only.
 
 ## Validate And Start
 
@@ -38,14 +43,27 @@ docker compose --env-file .env ps --all
 ```
 
 The node healthcheck calls `/api/v1/health`; AccountApp healthchecks load their
-Nginx root. Readiness-aware dependencies prevent the node from starting before
-PostgreSQL is healthy and prevent AccountApps or the Seeder from starting
-before the node is ready.
+Nginx root. Health-based startup ordering prevents the node from starting
+before PostgreSQL is healthy and prevents AccountApps or the Seeder from
+starting before Node liveness succeeds. Use `/api/v1/health/readiness` when a
+deployment gate must also prove dependencies and Ledger verification.
+
+Start two additional browser origins when multi-account testing is needed:
+
+```powershell
+docker compose --env-file .env --profile multi-account up -d --wait
+```
+
+They publish ports `5082` and `5083`. Each port has a separate browser
+IndexedDB boundary.
 
 `Test-Docker.ps1 -RunBuildChecks` validates every service and profile through
 the resolved Compose build model. Application Dockerfiles restore published
 CanDoItAll dependencies from NuGet.org and do not require sibling repository
 build contexts.
+
+For account creation, funding, backup, and import, follow
+[Node And AccountApp First Setup](../getting-started/node-and-account-app.md).
 
 ## Seed A Disposable Development Ledger
 
@@ -53,11 +71,13 @@ The optional Seeder writes development account keys and backups to the ignored
 `docker/demo-keys` host-exchange directory:
 
 ```powershell
-docker compose --env-file .env --profile seed run --rm demo-seeder
+.\scripts\seed-demo.ps1 -EnvFile .env
 ```
 
 Those files contain sensitive local key material. Do not commit, share, or use
-them outside an explicitly disposable development ledger.
+them outside an explicitly disposable development ledger. On a native Linux or
+macOS Docker engine, the wrapper runs the Seeder with the host UID and GID so
+the non-root container can write the bind-mounted exchange directory.
 
 ## Data Classes
 

@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: cdaledger
+          POSTGRES_PASSWORD: cdaledger
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cdaledger -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore CanDoItAll.Ledger.slnx --configfile NuGet.config
+
+      - name: Build
+        run: >-
+          dotnet build CanDoItAll.Ledger.slnx
+          --configuration Release
+          --no-restore
+          -p:ContinuousIntegrationBuild=true
+          -p:GeneratePackageOnBuild=false
+
+      - name: Run unit and integration tests
+        run: >-
+          dotnet test tests/CanDoItAll.Ledger.Tests/CanDoItAll.Ledger.Tests.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+          --logger "console;verbosity=normal"
+
+  containers:
+    name: Build and smoke containers
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Node image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/node/Dockerfile
+          load: true
+          pull: true
+          push: false
+          tags: candoitall-ledger-node:dev
+          cache-from: type=gha,scope=ledger-node
+          cache-to: type=gha,mode=max,scope=ledger-node
+
+      - name: Build AccountApp image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/accountapp/Dockerfile
+          load: true
+          pull: true
+          push: false
+          tags: candoitall-ledger-accountapp:dev
+          cache-from: type=gha,scope=ledger-accountapp
+          cache-to: type=gha,mode=max,scope=ledger-accountapp
+
+      - name: Validate Compose model
+        run: docker compose --env-file .env.example config --quiet
+
+      - name: Run repository Docker validation
+        shell: pwsh
+        run: >-
+          ./tools/validation/Test-Docker.ps1
+          -EnvFile .env.example
+          -RunBuildChecks
+
+      - name: Start PostgreSQL, Node, and AccountApp
+        run: >-
+          docker compose
+          --env-file .env.example
+          -p "candoitall-ledger-ci-${{ github.run_id }}-${{ github.run_attempt }}"
+          up -d --no-build --wait --wait-timeout 300
+          postgres node accountapp
+
+      - name: Smoke Node and AccountApp
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health
+          curl --fail --silent --show-error http://127.0.0.1:5081/ > /dev/null
+          curl --fail --silent --show-error http://127.0.0.1:5081/api/v1/health
+          curl --fail --silent --show-error http://127.0.0.1:5081/appsettings.json \
+            | grep --fixed-strings '"NodeBaseUri": "http://127.0.0.1:5081/"'
+          curl --fail --silent --show-error http://127.0.0.1:5081/service-worker.js \
+            | grep --fixed-strings 'appsettings(?:\.[^/]+)?\.json$'
+
+      - name: Show container status
+        if: always()
+        run: >-
+          docker compose
+          --env-file .env.example
+          -p "candoitall-ledger-ci-${{ github.run_id }}-${{ github.run_attempt }}"
+          ps --all
+
+      - name: Tear down disposable stack
+        if: always()
+        run: >-
+          docker compose
+          --env-file .env.example
+          -p "candoitall-ledger-ci-${{ github.run_id }}-${{ github.run_attempt }}"
+          down --volumes --remove-orphans

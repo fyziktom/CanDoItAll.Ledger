@@ -1,5 +1,10 @@
 # CanDoItAll.Ledger
 
+[![CI](https://github.com/fyziktom/CanDoItAll.Ledger/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/fyziktom/CanDoItAll.Ledger/actions/workflows/ci.yml)
+[![SDK version](https://img.shields.io/nuget/v/CanDoItAll.Ledger.Sdk.svg?logo=nuget&label=SDK)](https://www.nuget.org/packages/CanDoItAll.Ledger.Sdk)
+[![SDK downloads](https://img.shields.io/nuget/dt/CanDoItAll.Ledger.Sdk.svg?logo=nuget&label=SDK%20downloads)](https://www.nuget.org/packages/CanDoItAll.Ledger.Sdk)
+[![Components version](https://img.shields.io/nuget/v/CanDoItAll.Ledger.Components.svg?logo=nuget&label=Components)](https://www.nuget.org/packages/CanDoItAll.Ledger.Components)
+[![Components downloads](https://img.shields.io/nuget/dt/CanDoItAll.Ledger.Components.svg?logo=nuget&label=Components%20downloads)](https://www.nuget.org/packages/CanDoItAll.Ledger.Components)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/download/dotnet/10.0)
 [![License](https://img.shields.io/badge/license-MIT--derived%20with%20website%20link-blue.svg)](LICENSE)
 
@@ -71,14 +76,18 @@ dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj `
 ```
 
 The repository-owned validation lane also checks product identity, dependency
-boundaries through the test suite, and Docker conventions:
+boundaries through the test suite, plus the resolved Compose model and
+Dockerfile build checks:
 
 ```powershell
 .\tools\validation\Test-LedgerIdentity.ps1 -RunNegativeFixture
 .\scripts\build.ps1
 .\scripts\test.ps1
-.\tools\validation\Test-Docker.ps1 -EnvFile .env.example
+.\tools\validation\Test-Docker.ps1 -EnvFile .env.example -RunBuildChecks
 ```
+
+When `CanDoItAll.SharedInfo` is available, the Docker validator also applies
+the ecosystem-wide convention gate.
 
 ## Run A Local Node
 
@@ -87,6 +96,10 @@ The smallest interactive host is the Ledger node:
 ```powershell
 dotnet run --project src\CanDoItAll.Ledger.Node\CanDoItAll.Ledger.Node.csproj
 ```
+
+For the complete PostgreSQL Node, AccountApp, account creation/import, and
+first-driver flow, use
+[Node And AccountApp First Setup](docs/getting-started/node-and-account-app.md).
 
 For guided transaction scenarios without external services:
 
@@ -106,9 +119,14 @@ docker compose --env-file .env config --quiet
 docker compose --env-file .env up -d --build --wait --wait-timeout 300
 ```
 
-The stack exposes the Ledger node at `http://127.0.0.1:8080` and AccountApps on
-ports `5081`, `5082`, and `5083`. PostgreSQL remains on the internal network.
-Normal teardown preserves the database and node Data Protection volumes:
+The default stack exposes the Ledger node at `http://127.0.0.1:8080` and one
+AccountApp at `http://127.0.0.1:5081`. PostgreSQL remains on the internal
+network. Additional AccountApps are available through the `multi-account`
+profile.
+
+The Node has no SQLite ledger-state provider. The Docker path uses PostgreSQL;
+in-memory providers remain for tests and disposable local runs. Normal teardown
+preserves the database and node Data Protection volumes:
 
 ```powershell
 docker compose --env-file .env down --remove-orphans
@@ -144,9 +162,14 @@ Ledger runtime, SDK, persistence, cryptography, rules, storage, business-object,
 and component libraries. `CanDoItAll.Ledger.Simulation.*` and
 `CanDoItAll.Ledger.Simulator*` remain non-packable while their contracts evolve.
 
+Each NuGet embeds the README owned by its project. The package build also runs
+the solution build and Ledger test suite before packing.
+
 ## Documentation
 
 - [Documentation index](docs/README.md)
+- [Node and AccountApp first setup](docs/getting-started/node-and-account-app.md)
+- [SDK and driver integration](docs/development/sdk-and-drivers.md)
 - [Product vision](docs/architecture/product-vision.md)
 - [Runtime architecture](docs/architecture/ledger-runtime.md)
 - [Ecosystem role and boundaries](docs/architecture/repository-boundaries.md)

@@ -5,13 +5,13 @@ json_escape() {
     printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
-: "${ACCOUNT_APP_NODE_BASE_URI:=http://localhost:5081/}"
+: "${ACCOUNT_APP_NODE_BASE_URI:=http://127.0.0.1:5081/}"
 : "${ACCOUNT_APP_API_BASE_PATH:=api/v1}"
 : "${ACCOUNT_APP_LEDGER_ID:=default}"
 : "${ACCOUNT_APP_VAULT_ID:=account-app-default}"
 : "${ACCOUNT_APP_DEFAULT_ACCOUNT_NAME:=Browser account}"
 : "${ACCOUNT_APP_ENABLE_IPFS_UPLOADS:=false}"
-: "${ACCOUNT_APP_IPFS_API_BASE_URI:=http://localhost:5081/ipfs-api/}"
+: "${ACCOUNT_APP_IPFS_API_BASE_URI:=http://127.0.0.1:5081/ipfs-api/}"
 : "${ACCOUNT_APP_IPFS_GATEWAY_BASE_URI:=http://localhost:5001/}"
 : "${ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI:=http://localhost:5093/api/files/content}"
 

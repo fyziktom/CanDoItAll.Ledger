@@ -3,6 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CanDoItAll.Ledger.Components</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Components</RootNamespace>
+    <Description>Reusable Blazor components and workspaces for ledger accounts, transactions, business objects, analytics, and node operations.</Description>
+    <PackageTags>candoitall;ledger;blazor;components;accounts;finance</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

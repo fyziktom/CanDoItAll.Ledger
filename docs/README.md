@@ -4,6 +4,14 @@ CanDoItAll.Ledger provides auditable financial-state and transaction
 infrastructure for agents, projects, and finance-oriented applications in the
 CanDoItAll ecosystem.
 
+## Start Here
+
+- [Node and AccountApp first setup](getting-started/node-and-account-app.md)
+  starts the PostgreSQL Node and browser account client, then creates, funds, or
+  imports an account.
+- [SDK and driver integration](development/sdk-and-drivers.md) connects .NET
+  and raw HTTP clients to the versioned Node API.
+
 ## Product And Architecture
 
 - [Product vision](architecture/product-vision.md) explains the problem the

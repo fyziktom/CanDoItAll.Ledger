@@ -7,6 +7,25 @@ through the Data Protection APIs.
 They are not Ledger account private keys, transaction-signing keys, database
 credentials, or transaction history.
 
+## Local Node
+
+For a local Node that uses cookie authentication, set:
+
+```text
+Ledger:Auth:DataProtection:KeyRingPath=artifacts/dataprotection/node
+```
+
+The ignored `artifacts/` tree keeps generated key files outside source and
+package inputs. The Node creates a key ring when it first needs one. To
+regenerate keys for a disposable local host, stop the Node, remove only that
+exact directory, and start it again.
+
+Regeneration invalidates cookies, antiforgery tokens, and other values protected
+by the old ring. It does not alter Ledger transactions or account signing keys.
+Production key rings require durable access-controlled storage and a reviewed
+at-rest protection mechanism; repository artifacts are for local development
+only.
+
 ## Local Simulator
 
 `CanDoItAll.Ledger.Simulator.App` stores its generated key ring under:

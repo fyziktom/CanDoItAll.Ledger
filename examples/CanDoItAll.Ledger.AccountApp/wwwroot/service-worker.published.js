@@ -9,7 +9,13 @@ self.addEventListener('fetch', event => event.respondWith(onFetch(event)));
 const cacheNamePrefix = 'offline-cache-';
 const cacheName = `${cacheNamePrefix}${self.assetsManifest.version}`;
 const offlineAssetsInclude = [ /\.dll$/, /\.pdb$/, /\.wasm/, /\.html/, /\.js$/, /\.json$/, /\.css$/, /\.woff$/, /\.png$/, /\.jpe?g$/, /\.gif$/, /\.ico$/, /\.blat$/, /\.dat$/, /\.webmanifest$/ ];
-const offlineAssetsExclude = [ /^service-worker\.js$/ ];
+// appsettings.json is generated from container environment variables at
+// startup. It must stay network-only because its published integrity hash no
+// longer matches after that rewrite and its values may change between runs.
+const offlineAssetsExclude = [
+    /^service-worker\.js$/,
+    /(^|\/)appsettings(?:\.[^/]+)?\.json$/
+];
 
 // Replace with your base path if you are hosting on a subfolder. Ensure there is a trailing '/'.
 const base = "/";

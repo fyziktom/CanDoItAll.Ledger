@@ -127,7 +127,7 @@ services:
       CANDOITALL_LEDGER_DEMO_BOB_MAIN_AMOUNT: "1000"
       CANDOITALL_LEDGER_DEMO_ALICE_TOKEN_SUPPLY: "100000000"
       CANDOITALL_LEDGER_DEMO_BOB_TOKEN_AMOUNT: "1000"
-      CANDOITALL_LEDGER_ACCOUNT_BACKUP_PASSWORD: ${LEDGER_ACCOUNT_BACKUP_PASSWORD:?Set LEDGER_ACCOUNT_BACKUP_PASSWORD in .env or pass --env-file}
+      CANDOITALL_LEDGER_ACCOUNT_BACKUP_PASSWORD: ${LEDGER_ACCOUNT_BACKUP_PASSWORD}
       CANDOITALL_LEDGER_TEST_KEY_ROOT: /var/lib/candoitall-ledger-demo/keys
     volumes:
       - type: bind
@@ -147,31 +147,33 @@ services:
     restart: "no"
     logging: *bounded-logging
 
-  accountapp-alice:
+  accountapp:
     <<: *accountapp
     environment:
-      ACCOUNT_APP_NODE_BASE_URI: http://localhost:${ACCOUNTAPP_ALICE_PORT:-5081}/
+      ACCOUNT_APP_NODE_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_PORT:-5081}/
       ACCOUNT_APP_LEDGER_ID: default
       ACCOUNT_APP_SCENARIO_ID: __null__
-      ACCOUNT_APP_VAULT_ID: accountapp-alice
-      ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Alice import test
-      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
-      ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:${ACCOUNTAPP_ALICE_PORT:-5081}/ipfs-api/
+      ACCOUNT_APP_VAULT_ID: account-app-default
+      ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Browser account
+      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "false"
+      ACCOUNT_APP_IPFS_API_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_PORT:-5081}/ipfs-api/
       ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
       ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
     ports:
-      - "${CDA_BIND_ADDRESS:-127.0.0.1}:${ACCOUNTAPP_ALICE_PORT:-5081}:8080"
+      - "${CDA_BIND_ADDRESS:-127.0.0.1}:${ACCOUNTAPP_PORT:-5081}:8080"
 
   accountapp-bob:
     <<: *accountapp
+    profiles:
+      - multi-account
     environment:
-      ACCOUNT_APP_NODE_BASE_URI: http://localhost:${ACCOUNTAPP_BOB_PORT:-5082}/
+      ACCOUNT_APP_NODE_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_BOB_PORT:-5082}/
       ACCOUNT_APP_LEDGER_ID: default
       ACCOUNT_APP_SCENARIO_ID: __null__
       ACCOUNT_APP_VAULT_ID: accountapp-bob
-      ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Bob import test
-      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
-      ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:${ACCOUNTAPP_BOB_PORT:-5082}/ipfs-api/
+      ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Bob account
+      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "false"
+      ACCOUNT_APP_IPFS_API_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_BOB_PORT:-5082}/ipfs-api/
       ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
       ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
     ports:
@@ -179,14 +181,16 @@ services:
 
   accountapp-lab:
     <<: *accountapp
+    profiles:
+      - multi-account
     environment:
-      ACCOUNT_APP_NODE_BASE_URI: http://localhost:${ACCOUNTAPP_LAB_PORT:-5083}/
+      ACCOUNT_APP_NODE_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_LAB_PORT:-5083}/
       ACCOUNT_APP_LEDGER_ID: default
       ACCOUNT_APP_SCENARIO_ID: __null__
       ACCOUNT_APP_VAULT_ID: accountapp-lab
       ACCOUNT_APP_DEFAULT_ACCOUNT_NAME: Scratch account
-      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "true"
-      ACCOUNT_APP_IPFS_API_BASE_URI: http://localhost:${ACCOUNTAPP_LAB_PORT:-5083}/ipfs-api/
+      ACCOUNT_APP_ENABLE_IPFS_UPLOADS: "false"
+      ACCOUNT_APP_IPFS_API_BASE_URI: http://${CDA_PUBLIC_HOST:-127.0.0.1}:${ACCOUNTAPP_LAB_PORT:-5083}/ipfs-api/
       ACCOUNT_APP_IPFS_GATEWAY_BASE_URI: http://localhost:5001/
       ACCOUNT_APP_IPFS_CONTENT_ENDPOINT_URI: http://localhost:5093/api/files/content
     ports:
