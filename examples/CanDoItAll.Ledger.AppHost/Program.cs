@@ -32,26 +32,18 @@ if (usePostgreSql)
         .WithEnvironment("Ledger__PostgreSql__ConnectionString", ledgerDatabase);
 }
 
-IResourceBuilder<ProjectResource> ipfsNode = builder.AddProject<Projects.CanDoItAll_IPFS_Engine>("ipfs-node")
+IResourceBuilder<ProjectResource> ipfsNode = builder.AddProject<Projects.CanDoItAll_Ledger_IpfsHost>("ipfs-node")
     .WithEnvironment("IPFS_NODE_API_URL", "http://127.0.0.1:5001")
     .WithEnvironment("IpfsHttpHost__Passphrase", "candoitall-ledger-dev")
     .WithEnvironment("IpfsHttpHost__RequireAuthentication", "false")
     .WithEnvironment("IpfsHttpHost__AllowAnyOrigin", "true")
     .WithHttpEndpoint(port: 5001, targetPort: 5001, name: "ipfs-api", isProxied: false);
 
-IResourceBuilder<ProjectResource> ipfsGateway = builder.AddProject<Projects.CanDoItAll_IPFS_NodeControl>("ipfs-gateway")
-    .WithEnvironment("ASPNETCORE_URLS", "http://127.0.0.1:5093")
-    .WithEnvironment("NodeSettingsDefaults__BaseUrl", "http://127.0.0.1:5001/")
-    .WithEnvironment("GatewayPublishing__Mode", "Preview")
-    .WithHttpEndpoint(port: 5093, targetPort: 5093, name: "ipfs-gateway", isProxied: false)
-    .WaitFor(ipfsNode);
-
 builder.AddProject<Projects.CanDoItAll_Ledger_Components_Demo>("bo-demo")
     .WithEnvironment("BusinessObjects__IpfsApiUrl", "http://127.0.0.1:5001")
-    .WithEnvironment("BusinessObjects__IpfsGatewayUrl", "http://127.0.0.1:5093")
+    .WithEnvironment("BusinessObjects__IpfsGatewayUrl", "http://127.0.0.1:5001")
     .WaitFor(ledgerNode)
-    .WaitFor(ipfsNode)
-    .WaitFor(ipfsGateway);
+    .WaitFor(ipfsNode);
 
 WriteStartupBanner(builder.Configuration, usePostgreSql, dcpProxyPath);
 await builder.Build().RunAsync();
@@ -69,7 +61,7 @@ static void WriteStartupBanner(IConfiguration configuration, bool usePostgreSql,
     Console.WriteLine($"Ledger persistence: {persistenceMode}");
     Console.WriteLine($"DCP TLS: {dcpCertificateMode}");
     Console.WriteLine($"DCP proxy: {dcpProxyPath ?? "default Aspire DCP"}");
-    Console.WriteLine("Resources: bo-demo, ledger-node, ipfs-node, ipfs-gateway.");
+    Console.WriteLine("Resources: bo-demo, ledger-node, ipfs-node.");
     Console.WriteLine("Use the Aspire dashboard Resources page to open service endpoints.");
 }
 

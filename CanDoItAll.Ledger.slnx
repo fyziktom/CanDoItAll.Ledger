@@ -5,6 +5,7 @@
     <Project Path="examples/CanDoItAll.Ledger.AccountApp/CanDoItAll.Ledger.AccountApp.csproj" />
     <Project Path="examples/CanDoItAll.Ledger.Components.Demo/CanDoItAll.Ledger.Components.Demo.csproj" />
     <Project Path="examples/CanDoItAll.Ledger.ConsoleDemo/CanDoItAll.Ledger.ConsoleDemo.csproj" />
+    <Project Path="examples/CanDoItAll.Ledger.IpfsHost/CanDoItAll.Ledger.IpfsHost.csproj" />
     <Project Path="examples/CanDoItAll.Ledger.Simulator.App/CanDoItAll.Ledger.Simulator.App.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -34,12 +35,4 @@
   <Folder Name="/tools/">
     <Project Path="tools/CanDoItAll.Ledger.DemoSeeder/CanDoItAll.Ledger.DemoSeeder.csproj" />
   </Folder>
-  <Project Path="../CanDoItAll.Components/src/CanDoItAll.Components.BaseLib/CanDoItAll.Components.BaseLib.csproj" />
-  <Project Path="../CanDoItAll.Components/src/CanDoItAll.Components.Common/CanDoItAll.Components.Common.csproj" />
-  <Project Path="../CanDoItAll.Components/src/CanDoItAll.Components.OverlayLib/CanDoItAll.Components.OverlayLib.csproj" />
-  <Project Path="../CanDoItAll.Components/src/CanDoItAll.Components.WebGlLib/CanDoItAll.Components.WebGlLib.csproj" />
-  <Project Path="../CanDoItAll.Components/src/CanDoItAll.Components.WebGlRunLib/CanDoItAll.Components.WebGlRunLib.csproj" />
-  <Project Path="../CanDoItAll.IPFS/src/CanDoItAll.IPFS.Client/CanDoItAll.IPFS.Client.csproj" />
-  <Project Path="../CanDoItAll.IPFS/src/CanDoItAll.IPFS.Engine/CanDoItAll.IPFS.Engine.csproj" />
-  <Project Path="../CanDoItAll.IPFS/src/CanDoItAll.IPFS.NodeControl/CanDoItAll.IPFS.NodeControl.csproj" />
 </Solution>

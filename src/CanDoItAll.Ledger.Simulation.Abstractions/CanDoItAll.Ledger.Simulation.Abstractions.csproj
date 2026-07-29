@@ -3,5 +3,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CanDoItAll.Ledger.Simulation.Abstractions</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Simulation.Abstractions</RootNamespace>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 </Project>

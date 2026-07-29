@@ -3,6 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CanDoItAll.Ledger.Simulator.Persistence.EFCore</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Simulator.Persistence.EFCore</RootNamespace>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,14 @@
+<Project>
+  <ItemGroup Condition="'$(PackageLicenseFile)' == 'LICENSE'">
+    <None Include="$(MSBuildThisFileDirectory)LICENSE"
+          Pack="true"
+          PackagePath="\"
+          Link="LICENSE" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PackageReadmeFile)' == 'README.md'">
+    <None Include="$(MSBuildThisFileDirectory)README.md"
+          Pack="true"
+          PackagePath="\"
+          Link="README.md" />
+  </ItemGroup>
+</Project>

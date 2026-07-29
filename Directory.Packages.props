@@ -12,6 +12,7 @@
     <PackageVersion Include="CanDoItAll.Components.Charts" Version="$(CanDoItAllComponentsPackageVersion)" />
     <PackageVersion Include="CanDoItAll.Components.Mermaid" Version="$(CanDoItAllComponentsPackageVersion)" />
     <PackageVersion Include="CanDoItAll.Components.QRCode" Version="$(CanDoItAllComponentsPackageVersion)" />
+    <PackageVersion Include="CanDoItAll.IPFS.Engine" Version="$(CanDoItAllIpfsPackageVersion)" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.10" />

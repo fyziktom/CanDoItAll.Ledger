@@ -2,10 +2,6 @@ name: ${COMPOSE_PROJECT_NAME:-candoitall-ledger}
 
 x-dotnet-build: &dotnet-build
   context: .
-  additional_contexts:
-    candoitall-components: ../CanDoItAll.Components
-  args:
-    CDA_COMPONENTS_PACKAGE_VERSION: ${CDA_COMPONENTS_PACKAGE_VERSION:-0.1.4}
 
 x-bounded-logging: &bounded-logging
   driver: local

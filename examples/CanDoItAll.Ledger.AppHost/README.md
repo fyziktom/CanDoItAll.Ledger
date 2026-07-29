@@ -1,6 +1,8 @@
 # CanDoItAll Ledger AppHost
 
-The AppHost runs the Ledger demo, IPFS node, and ledger node together.
+The AppHost runs the Ledger demo, IPFS node, and ledger node together. The
+Ledger-owned IPFS host consumes the published `CanDoItAll.IPFS.Engine` package;
+it does not reference the sibling IPFS source repository.
 
 This project uses the Ledger project and configuration identities. It must not
 host the separate Economy simulator lane.
@@ -21,7 +23,7 @@ The PostgreSQL mode requires the secret Aspire parameter
 `ledger-postgres-password`; provide it through the normal Aspire parameter
 configuration or user-secrets mechanism.
 
-The `http` and `https` profiles are available in Visual Studio. Start the AppHost project with either profile; the console prints the Aspire dashboard URL and the dashboard Resources page exposes the demo, ledger node, and IPFS node endpoints.
+The `http` and `https` profiles are available in Visual Studio. Start the AppHost project with either profile; the console prints the Aspire dashboard URL and the dashboard Resources page exposes the demo, ledger node, and IPFS node endpoints. The IPFS engine serves both its API and immutable `/ipfs/...` gateway on port `5001`.
 
 Both launch profiles set `ASPIRE_DCP_USE_DEVELOPER_CERTIFICATE=true` so Aspire's internal DCP control plane uses the trusted ASP.NET developer certificate instead of an ephemeral certificate.
 

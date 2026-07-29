@@ -103,9 +103,8 @@ if ($envPath) {
 & $sharedValidator @sharedArguments
 
 if ($RunBuildChecks) {
-    # The Dockerfiles use a named Components build context. The portable shared
-    # validator invokes `docker build --check` without Compose additional
-    # contexts, so the repository adapter owns this Compose-aware check.
+    # Keep the repository-owned check Compose-aware so it validates every
+    # service/profile against the same resolved build model used by developers.
     & $docker.Source @composeArguments --profile '*' build --check
     if ($LASTEXITCODE -ne 0) {
         throw "Compose-aware Dockerfile checks failed with exit code $LASTEXITCODE."

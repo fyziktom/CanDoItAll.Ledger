@@ -25,12 +25,9 @@
     <ProjectReference Include="..\CanDoItAll.Ledger.Components.Demo\CanDoItAll.Ledger.Components.Demo.csproj"
                       IsAspireProjectResource="true"
                       AspireProjectMetadataTypeName="CanDoItAll_Ledger_Components_Demo" />
-    <ProjectReference Include="..\..\..\CanDoItAll.IPFS\src\CanDoItAll.IPFS.Engine\CanDoItAll.IPFS.Engine.csproj"
+    <ProjectReference Include="..\CanDoItAll.Ledger.IpfsHost\CanDoItAll.Ledger.IpfsHost.csproj"
                       IsAspireProjectResource="true"
-                      AspireProjectMetadataTypeName="CanDoItAll_IPFS_Engine" />
-    <ProjectReference Include="..\..\..\CanDoItAll.IPFS\src\CanDoItAll.IPFS.NodeControl\CanDoItAll.IPFS.NodeControl.csproj"
-                      IsAspireProjectResource="true"
-                      AspireProjectMetadataTypeName="CanDoItAll_IPFS_NodeControl" />
+                      AspireProjectMetadataTypeName="CanDoItAll_Ledger_IpfsHost" />
   </ItemGroup>
 
   <Target Name="CopyDcpProxyToOutput" AfterTargets="Build">

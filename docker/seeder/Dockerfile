@@ -2,17 +2,11 @@
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0.201 AS build
 WORKDIR /src/CanDoItAll.Ledger
-ARG CDA_COMPONENTS_PACKAGE_VERSION=0.1.4
 
 COPY . .
-RUN mkdir -p /src/CanDoItAll/ExternalPackages
 RUN dotnet restore "tools/CanDoItAll.Ledger.DemoSeeder/CanDoItAll.Ledger.DemoSeeder.csproj" \
     /m:1 \
-    /p:EnableBusinessObjectIpfsStorage=false \
-    /p:CanDoItAllPackageBaseVersion="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:CanDoItAllComponentsPackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:Version="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:PackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION"
+    /p:EnableBusinessObjectIpfsStorage=false
 
 FROM build AS publish
 RUN dotnet publish "tools/CanDoItAll.Ledger.DemoSeeder/CanDoItAll.Ledger.DemoSeeder.csproj" \
@@ -21,11 +15,7 @@ RUN dotnet publish "tools/CanDoItAll.Ledger.DemoSeeder/CanDoItAll.Ledger.DemoSee
     /m:1 \
     --output /app/publish \
     /p:UseAppHost=false \
-    /p:EnableBusinessObjectIpfsStorage=false \
-    /p:CanDoItAllPackageBaseVersion="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:CanDoItAllComponentsPackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:Version="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:PackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION"
+    /p:EnableBusinessObjectIpfsStorage=false
 
 FROM mcr.microsoft.com/dotnet/runtime:10.0 AS final
 WORKDIR /app

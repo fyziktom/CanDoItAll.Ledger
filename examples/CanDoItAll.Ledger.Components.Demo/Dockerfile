@@ -2,17 +2,10 @@
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0.201 AS build
 WORKDIR /src/CanDoItAll.Ledger
-ARG CDA_COMPONENTS_PACKAGE_VERSION=0.1.4
 
 COPY . .
-COPY --from=candoitall-components . /src/CanDoItAll.Components
-RUN sh docker/prepare-component-feed.sh "$CDA_COMPONENTS_PACKAGE_VERSION"
 RUN dotnet restore "examples/CanDoItAll.Ledger.Components.Demo/CanDoItAll.Ledger.Components.Demo.csproj" \
-    /m:1 \
-    /p:CanDoItAllPackageBaseVersion="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:CanDoItAllComponentsPackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:Version="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:PackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION"
+    /m:1
 
 FROM build AS publish
 RUN dotnet publish "examples/CanDoItAll.Ledger.Components.Demo/CanDoItAll.Ledger.Components.Demo.csproj" \
@@ -20,11 +13,7 @@ RUN dotnet publish "examples/CanDoItAll.Ledger.Components.Demo/CanDoItAll.Ledger
     --no-restore \
     /m:1 \
     --output /app/publish \
-    /p:UseAppHost=false \
-    /p:CanDoItAllPackageBaseVersion="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:CanDoItAllComponentsPackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:Version="$CDA_COMPONENTS_PACKAGE_VERSION" \
-    /p:PackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION"
+    /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

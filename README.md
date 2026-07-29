@@ -1,5 +1,8 @@
 # CanDoItAll.Ledger
 
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![License](https://img.shields.io/badge/license-MIT--derived%20with%20website%20link-blue.svg)](LICENSE)
+
 CanDoItAll.Ledger owns the transaction runtime, node host, ledger persistence,
 ledger UI, SDK, CLI, demos, and ledger-specific tests separated from the
 `CanDoItAll.Economy` repository.
@@ -86,6 +89,20 @@ docker compose --env-file .env down --remove-orphans
 See `docs/operations/containers.md` and
 `docs/operations/backup-and-restore.md` before resetting or moving durable data.
 
+## Packaging
+
+Build the public Ledger libraries without publishing them:
+
+```powershell
+.\tools\deployment\nugets\Build-NuGets.ps1
+```
+
+The adapter uses an explicit allowlist for the main Ledger runtime, SDK,
+persistence, browser cryptography, and component libraries. All
+`CanDoItAll.Ledger.Simulation.*` and `CanDoItAll.Ledger.Simulator*` projects
+remain buildable and testable, but are non-packable while they are work in
+progress.
+
 ## Documentation
 
 - `docs/README.md` indexes active documentation.
@@ -95,3 +112,11 @@ See `docs/operations/containers.md` and
 - `docs/operations/local-build-test-audit.md` is the validation runbook.
 - `docs/legacy-economy-ledger-docs/README.md` marks imported Economy-era
   material as non-product legacy quarantine.
+
+## License
+
+This repository uses the
+[MIT-Derived License with CanDoItAll Website Link Requirement](LICENSE).
+Redistributions of the software or a substantial portion of it in source or
+binary form must include at least one link to
+[aicandoitall.com](https://aicandoitall.com).

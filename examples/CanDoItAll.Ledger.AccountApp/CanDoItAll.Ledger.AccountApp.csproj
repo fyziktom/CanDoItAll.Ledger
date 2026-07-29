@@ -7,7 +7,6 @@
     <EnableBusinessObjectIpfsStorage>false</EnableBusinessObjectIpfsStorage>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <UseComponentsBaseLibPackage Condition="'$(UseComponentsBaseLibPackage)' == ''">true</UseComponentsBaseLibPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,8 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Components\CanDoItAll.Ledger.Components.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Cryptography.Browser\CanDoItAll.Ledger.Cryptography.Browser.csproj" />
-    <ProjectReference Condition="'$(UseComponentsBaseLibPackage)' != 'true'" Include="..\..\..\CanDoItAll.Components\src\CanDoItAll.Components.BaseLib\CanDoItAll.Components.BaseLib.csproj" />
-    <PackageReference Condition="'$(UseComponentsBaseLibPackage)' == 'true'" Include="CanDoItAll.Components.BaseLib" />
+    <PackageReference Include="CanDoItAll.Components.BaseLib" />
   </ItemGroup>
 
   <ItemGroup>

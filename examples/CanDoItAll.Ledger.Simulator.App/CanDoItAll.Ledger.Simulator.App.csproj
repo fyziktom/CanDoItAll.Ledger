@@ -3,13 +3,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CanDoItAll.Ledger.Simulator.App</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Simulator.App</RootNamespace>
-    <UseComponentsBaseLibPackage Condition="'$(UseComponentsBaseLibPackage)' == ''">true</UseComponentsBaseLibPackage>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(UseComponentsBaseLibPackage)' == 'true'" Include="CanDoItAll.Components.BaseLib" />
+    <PackageReference Include="CanDoItAll.Components.BaseLib" />
     <PackageReference Include="CanDoItAll.Components.Charts" />
-    <ProjectReference Condition="'$(UseComponentsBaseLibPackage)' != 'true'" Include="..\..\..\CanDoItAll.Components\src\CanDoItAll.Components.BaseLib\CanDoItAll.Components.BaseLib.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator.Components\CanDoItAll.Ledger.Simulator.Components.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator.Persistence.EFCore\CanDoItAll.Ledger.Simulator.Persistence.EFCore.csproj" />
   </ItemGroup>
