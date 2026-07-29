@@ -132,6 +132,9 @@ if (-not $NoRestore) {
         -Description 'dotnet restore'
 }
 
+# Some solution roots build BusinessObjects with different
+# EnableBusinessObjectIpfsStorage values. Those graph nodes currently share output
+# directories, so parallel solution builds can race while writing bin/obj artifacts.
 Invoke-DotNetCommand `
     -Arguments (
         @(
@@ -139,6 +142,7 @@ Invoke-DotNetCommand `
             $solutionPath,
             '--configuration', $Configuration,
             '--no-restore',
+            '-maxcpucount:1',
             '-p:ContinuousIntegrationBuild=true',
             '-p:GeneratePackageOnBuild=false'
         ) + $msbuildProperties
