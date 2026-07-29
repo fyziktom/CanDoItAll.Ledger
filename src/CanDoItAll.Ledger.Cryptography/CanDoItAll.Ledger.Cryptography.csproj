@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
     <AssemblyName>CanDoItAll.Ledger.Cryptography</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Cryptography</RootNamespace>
     <Description>Canonical hashing, address derivation, signatures, key vaults, and platform-neutral crypto drivers for CanDoItAll Ledger.</Description>

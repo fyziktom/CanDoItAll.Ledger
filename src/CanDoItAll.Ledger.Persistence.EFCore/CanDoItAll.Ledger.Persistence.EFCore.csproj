@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
     <AssemblyName>CanDoItAll.Ledger.Persistence.EFCore</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Persistence.EFCore</RootNamespace>
     <Description>Provider-neutral EF Core stores, history, projections, snapshots, and schema contracts for CanDoItAll Ledger.</Description>

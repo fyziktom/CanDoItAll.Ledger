@@ -186,8 +186,9 @@ public sealed class PostgreSqlMigrationTests
 
         public async ValueTask DisposeAsync()
         {
+            await Connection.CloseAsync();
+            NpgsqlConnection.ClearPool(Connection);
             await Connection.DisposeAsync();
-            NpgsqlConnection.ClearAllPools();
             await using var admin = new NpgsqlConnection(AdminConnectionString);
             await admin.OpenAsync();
             await using NpgsqlCommand drop = admin.CreateCommand();

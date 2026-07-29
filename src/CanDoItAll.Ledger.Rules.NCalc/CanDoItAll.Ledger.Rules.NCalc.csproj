@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
     <AssemblyName>CanDoItAll.Ledger.Rules.NCalc</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Rules.NCalc</RootNamespace>
     <Description>Invariant-culture NCalc adapter for CanDoItAll Ledger account-rule expressions.</Description>

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
     <RootNamespace>CanDoItAll.Ledger.Cryptography.Browser</RootNamespace>
     <Description>Web Crypto and IndexedDB implementations for browser-based CanDoItAll Ledger accounts.</Description>
     <PackageTags>candoitall;ledger;cryptography;blazor;webassembly;indexeddb</PackageTags>

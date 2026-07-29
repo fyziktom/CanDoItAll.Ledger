@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
     <AssemblyName>CanDoItAll.Ledger.Sdk</AssemblyName>
     <RootNamespace>CanDoItAll.Ledger.Sdk</RootNamespace>
     <Description>Typed node client and dependency-injection integration for CanDoItAll Ledger account and transaction workflows.</Description>

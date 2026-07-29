@@ -12,4 +12,15 @@
           PackagePath="\"
           Link="README.md" />
   </ItemGroup>
+  <PropertyGroup Condition="'$(IsPackable)' == 'true' and '$(PackageIcon)' == '' and Exists('$(MSBuildThisFileDirectory)docs\package-icon.png')">
+    <PackageIcon>package-icon.png</PackageIcon>
+    <_UseRepositoryPackageIcon>true</_UseRepositoryPackageIcon>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(_UseRepositoryPackageIcon)' == 'true'">
+    <None Remove="$(MSBuildThisFileDirectory)docs\package-icon.png" />
+    <None Include="$(MSBuildThisFileDirectory)docs\package-icon.png"
+          Pack="true"
+          PackagePath="\"
+          Link="package-icon.png" />
+  </ItemGroup>
 </Project>

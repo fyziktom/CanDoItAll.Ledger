@@ -61,7 +61,7 @@ public sealed class PostgreSqlLedgerStoreTests
                     new[] { new TransactionOutput(0, Treasury, Amount.Zero, new TokenTransfer(new TokenId("CDA-ACCESS"), Amount.FromInt64(10))) },
                     mintData),
                 CancellationToken.None);
-            Assert.True(mint.Accepted);
+            Assert.True(mint.Accepted, string.Join("; ", mint.Errors));
 
             OutPoint mintedOutPoint = new(mint.TxId!.Value, 0);
             timeProvider.Advance(TimeSpan.FromHours(4));
@@ -87,14 +87,14 @@ public sealed class PostgreSqlLedgerStoreTests
                             0,
                             Ops,
                             Amount.Zero,
-                            new TokenTransfer(new TokenId("CDA-ACCESS"), Amount.FromInt64(3)),
-                            new BusinessObjectRef(new BusinessObjectId("bo_ops_settings"), 1, BusinessObjectOperation.Create, settingsData.DataHash!.Value)),
-                        new TransactionOutput(1, Treasury, Amount.Zero, new TokenTransfer(new TokenId("CDA-ACCESS"), Amount.FromInt64(7)))
+                            new TokenTransfer(new TokenId("CDA-ACCESS"), Amount.FromInt64(1)),
+                            new BusinessObjectRef(new BusinessObjectLineageKey("bo_ops_settings"), 1, BusinessObjectOperation.Create, settingsData.DataHash!.Value)),
+                        new TransactionOutput(1, Treasury, Amount.Zero, new TokenTransfer(new TokenId("CDA-ACCESS"), Amount.FromInt64(9)))
                     },
                     settingsData),
                     hasher),
                 CancellationToken.None);
-            Assert.True(transfer.Accepted);
+            Assert.True(transfer.Accepted, string.Join("; ", transfer.Errors));
 
             LedgerTransaction? storedTransfer = await store.GetTransactionAsync(LedgerId, null, transfer.TxId!.Value, CancellationToken.None);
             Assert.NotNull(storedTransfer);
@@ -103,12 +103,12 @@ public sealed class PostgreSqlLedgerStoreTests
             await using LedgerDbContext verifyDb = await factory.CreateDbContextAsync(CancellationToken.None);
             Assert.Contains(verifyDb.Transactions, x => x.TxId == transfer.TxId!.Value.Value && x.DataItemType == (int)TransactionDataItemType.AccountSettings);
             Assert.Contains(verifyDb.SpentOutputs, x => x.SpentInTxId == transfer.TxId!.Value.Value && x.Address == Treasury.Value);
-            Assert.Contains(verifyDb.UnspentOutputs, x => x.TxId == transfer.TxId!.Value.Value && x.Address == Ops.Value && x.TokenId == "CDA-ACCESS" && x.TokenAmount == 3m);
-            Assert.Contains(verifyDb.UnspentOutputs, x => x.TxId == transfer.TxId!.Value.Value && x.Address == Treasury.Value && x.TokenId == "CDA-ACCESS" && x.TokenAmount == 7m);
+            Assert.Contains(verifyDb.UnspentOutputs, x => x.TxId == transfer.TxId!.Value.Value && x.Address == Ops.Value && x.TokenId == "CDA-ACCESS" && x.TokenAmount == 1m);
+            Assert.Contains(verifyDb.UnspentOutputs, x => x.TxId == transfer.TxId!.Value.Value && x.Address == Treasury.Value && x.TokenId == "CDA-ACCESS" && x.TokenAmount == 9m);
         }
         finally
         {
-            await TryDeleteDatabaseAsync(factory);
+            await TryDeleteDatabaseAsync(factory, connectionString);
         }
     }
 
@@ -194,7 +194,7 @@ public sealed class PostgreSqlLedgerStoreTests
         }
         finally
         {
-            await TryDeleteDatabaseAsync(factory);
+            await TryDeleteDatabaseAsync(factory, connectionString);
         }
     }
 
@@ -248,13 +248,15 @@ public sealed class PostgreSqlLedgerStoreTests
             timeProvider.Advance(TimeSpan.FromMinutes(1));
             LedgerTransaction second = Sign(CreateTokenMint(timeProvider.UtcNow, new OutPoint(genesis.TxId!.Value, 1), tokenId), hasher);
 
-            LedgerExecutor executorA = CreateExecutor(factory, hasher, timeProvider);
-            LedgerExecutor executorB = CreateExecutor(factory, hasher, timeProvider);
+            LedgerExecutor executorA = CreateExecutor(factory, hasher, timeProvider, DisabledTokenCreationPolicy.Instance);
+            LedgerExecutor executorB = CreateExecutor(factory, hasher, timeProvider, DisabledTokenCreationPolicy.Instance);
             LedgerSubmitResult[] results = await Task.WhenAll(
                 executorA.SubmitAsync(first, CancellationToken.None),
                 executorB.SubmitAsync(second, CancellationToken.None));
 
-            Assert.Equal(1, results.Count(x => x.Accepted));
+            Assert.True(
+                results.Count(x => x.Accepted) == 1,
+                string.Join(" | ", results.SelectMany(result => result.Errors).Select(error => $"{error.Code}: {error.Message}")));
             LedgerSubmitResult rejected = Assert.Single(results, x => !x.Accepted);
             Assert.Contains(rejected.Errors, x => x.Code == ValidationErrorCodes.DuplicateTokenType);
 
@@ -263,7 +265,7 @@ public sealed class PostgreSqlLedgerStoreTests
         }
         finally
         {
-            await TryDeleteDatabaseAsync(factory);
+            await TryDeleteDatabaseAsync(factory, connectionString);
         }
     }
 
@@ -272,7 +274,7 @@ public sealed class PostgreSqlLedgerStoreTests
         string? configuredConnectionString = Environment.GetEnvironmentVariable(TestConnectionEnvironmentVariable);
         if (!string.IsNullOrWhiteSpace(configuredConnectionString))
         {
-            return configuredConnectionString;
+            return PostgreSqlTestDatabase.CreateConnectionString(configuredConnectionString, databaseName);
         }
 
         var testConnection = new NpgsqlConnectionStringBuilder
@@ -323,9 +325,12 @@ public sealed class PostgreSqlLedgerStoreTests
         }
     }
 
-    private static async Task TryDeleteDatabaseAsync(IDbContextFactory<LedgerDbContext> factory)
+    private static async Task TryDeleteDatabaseAsync(
+        IDbContextFactory<LedgerDbContext> factory,
+        string connectionString)
     {
-        NpgsqlConnection.ClearAllPools();
+        using var pooledConnection = new NpgsqlConnection(connectionString);
+        NpgsqlConnection.ClearPool(pooledConnection);
         try
         {
             await using LedgerDbContext cleanupDb = await factory.CreateDbContextAsync(CancellationToken.None);
@@ -357,14 +362,16 @@ public sealed class PostgreSqlLedgerStoreTests
     private static LedgerExecutor CreateExecutor(
         IDbContextFactory<LedgerDbContext> factory,
         ITransactionHasher hasher,
-        ITimeProvider timeProvider)
+        ITimeProvider timeProvider,
+        ITokenCreationPolicy? tokenCreationPolicy = null)
         => new(
             new EfLedgerStore(factory, hasher),
             hasher,
             new SignaturePayloadBuilder(hasher),
             new TestAdminSigner(),
             timeProvider,
-            new SignatureProviderRegistry(new ISignatureProvider[] { new TestSignatureProvider() }));
+            new SignatureProviderRegistry(new ISignatureProvider[] { new TestSignatureProvider() }),
+            tokenCreationPolicy);
 
     private static LedgerTransaction CreateTokenMint(DateTimeOffset timestamp, OutPoint source, TokenId tokenId)
         => new(
@@ -375,7 +382,11 @@ public sealed class PostgreSqlLedgerStoreTests
             SigningMode.Independent,
             timestamp,
             new[] { new TransactionInput(0, source, Treasury, SignatureBundle.Empty) },
-            new[] { new TransactionOutput(0, Ops, Amount.Zero, new TokenTransfer(tokenId, Amount.FromInt64(1))) },
+            new[]
+            {
+                new TransactionOutput(0, Ops, Amount.Zero, new TokenTransfer(tokenId, Amount.FromInt64(1))),
+                new TransactionOutput(1, Treasury, Amount.FromInt64(100))
+            },
             null);
 
     private static LedgerTransaction Sign(LedgerTransaction transaction, ITransactionHasher hasher)
