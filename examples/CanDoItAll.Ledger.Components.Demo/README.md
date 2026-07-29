@@ -1,7 +1,19 @@
 # CanDoItAll.Ledger.Components.Demo
 
-Ledger-owned UI demo for imported ledger components.
+Interactive catalog for the reusable Ledger and BusinessObject user-interface
+components.
 
-The demo should exercise ledger, node, transaction, and business-object surfaces only. It is not a simulator evidence host.
+The demo exercises transaction, account, node, ownership, commerce, content,
+and business-object surfaces using the published CanDoItAll component packages.
+It is useful for visual review, integration smoke tests, and component contract
+development.
 
-Validate with build and UI smoke when demo routes or component wiring change.
+Run from the repository root:
+
+```powershell
+dotnet run --project examples\CanDoItAll.Ledger.Components.Demo\CanDoItAll.Ledger.Components.Demo.csproj
+```
+
+Validate both the build and representative browser routes when component
+composition, static assets, or host registration changes. The demo is not a
+source of Ledger correctness or Simulator financial evidence.

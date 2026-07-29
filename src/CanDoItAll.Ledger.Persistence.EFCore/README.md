@@ -1,10 +1,12 @@
 # CanDoItAll.Ledger.Persistence.EFCore
 
-Ledger-owned EF Core persistence for ledger state, projections, and persistence registrations.
+Entity Framework Core persistence for Ledger state, projections, and
+repository registrations.
 
-The project uses the `CanDoItAll.Ledger.Persistence.EFCore` identity. Database
-and migration changes must document provider impact and test both in-memory and
-provider-backed lanes when applicable. Existing `Economy_` relational names are
-stable schema compatibility identifiers, not source namespaces.
+Database and migration changes must document provider impact and test relevant
+in-memory and relational lanes. Existing `Economy_` relational names are frozen
+schema compatibility identifiers; see
+[Persisted Identity Compatibility](../../docs/architecture/namespace-compatibility.md).
 
-Boundary: this project persists ledger data only and must not import separated simulator-lane content.
+This project persists confirmed Ledger data. It must not treat Simulator
+projections as authoritative transaction state.

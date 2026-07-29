@@ -1,7 +1,9 @@
 # CanDoItAll.Ledger.Cli
 
-Ledger-owned command-line driver for transaction, node, and demo operations.
+Command-line driver for Ledger transaction, node, and development operations.
 
-The executable name and namespace are compatibility artifacts from the split. New commands should be Ledger-scoped and documented in active Ledger docs.
+New commands must expose explicit Ledger behavior, preserve machine-readable
+failure results, and avoid bypassing SDK or engine validation.
 
-Validate command changes with build, tests, and at least one local command smoke when behavior changes.
+Validate changes with the solution build, Ledger tests, and at least one local
+command smoke.

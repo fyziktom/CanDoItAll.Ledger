@@ -1,7 +1,10 @@
 # CanDoItAll.Ledger.Simulation.Ledger
 
-Ledger-owned adapter for ledger-backed simulation flows.
+Adapter that projects Ledger snapshots into backend-neutral simulation frames.
 
-This project may use Ledger contracts and SDK behavior. It must not import the separated basic simulator lane, scenario-pack content, browser observer proof, or Ledger simulator hosts.
+The adapter may use canonical Ledger contracts and SDK behavior. It must keep
+confirmed source evidence visible and must not introduce browser, host, or
+scenario-engine dependencies.
 
-Validate with ledger tests and the no-basic-simulator audit before changing adapter behavior.
+This project is experimental and intentionally excluded from public NuGet
+packaging.

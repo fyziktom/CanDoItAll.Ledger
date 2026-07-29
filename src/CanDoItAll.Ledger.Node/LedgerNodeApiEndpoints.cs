@@ -347,7 +347,7 @@ public static partial class LedgerNodeHost
         LogAuthorizationFailure(context, "invalid_api_key");
         return Results.Problem(
             title: "Ledger node authorization failed",
-            detail: "A valid economy node API key is required for this operation.",
+            detail: "A valid Ledger node API key is required for this operation.",
             statusCode: StatusCodes.Status401Unauthorized);
     }
 
@@ -395,7 +395,7 @@ public static partial class LedgerNodeHost
         LogAuthorizationFailure(context, "invalid_jwt_bearer_token");
         return Results.Problem(
             title: "Ledger node authorization failed",
-            detail: "A valid economy node bearer token is required for this operation.",
+            detail: "A valid Ledger node bearer token is required for this operation.",
             statusCode: StatusCodes.Status401Unauthorized);
     }
 
@@ -404,7 +404,7 @@ public static partial class LedgerNodeHost
         LogAuthorizationFailure(context, "unsupported_security_mode");
         return Results.Problem(
             title: "Ledger node authorization failed",
-            detail: $"Unsupported economy node security mode: {mode}.",
+            detail: $"Unsupported Ledger node security mode: {mode}.",
             statusCode: StatusCodes.Status401Unauthorized);
     }
 

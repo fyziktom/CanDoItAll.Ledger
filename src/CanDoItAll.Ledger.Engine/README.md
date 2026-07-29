@@ -1,7 +1,11 @@
 # CanDoItAll.Ledger.Engine
 
-Ledger-owned transaction validation, execution, asset-conservation checks, chain verification, and runtime policies.
+Deterministic transaction validation and execution for CanDoItAll.Ledger.
 
-This is the main ledger runtime layer. It may depend on core contracts and cryptography, but it must not import separated Ledger simulator drivers or scenario-pack content.
+The engine enforces transaction structure, references, signatures, authority,
+account rules, asset conservation, state transitions, replay, and chain
+verification. It depends inward on Core contracts and cryptography while
+remaining independent from hosts, user interfaces, and Simulator drivers.
 
-Validate runtime changes with ledger tests, boundary audits, and node smoke where host behavior is affected.
+Validate changes with the Ledger test suite, transaction golden vectors,
+boundary audits, and node smoke tests when host-visible behavior changes.

@@ -1,8 +1,10 @@
 # CanDoItAll.Ledger.Node
 
-Ledger-owned node host, API endpoints, authentication, application services, and admin shell.
+Ledger node host, HTTP APIs, authentication, application services, health,
+administration, and operator UI.
 
-The node uses the `CanDoItAll.Ledger.Node` identity. It is not a Simulator
-browser host and serves ledger and transaction workflows only.
+The node composes transaction execution, persistence, rules, SDK-facing
+endpoints, and finance-specific components around confirmed Ledger state.
 
-Validate changes with build, ledger tests, no-basic-simulator audit, and a node smoke test when startup or routing changes.
+Validate changes with the solution build, Ledger tests, boundary audit, and a
+node smoke test when startup, authentication, persistence, or routing changes.

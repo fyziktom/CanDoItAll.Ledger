@@ -1,9 +1,11 @@
 # CanDoItAll.Ledger.Sdk
 
-Ledger-owned client facade for node and ledger operations.
+Client-facing facade for Ledger node and transaction operations.
 
-The SDK uses the `CanDoItAll.Ledger.Sdk` identity. New client-facing behavior
-must document public API impact and follow
-`docs/architecture/namespace-compatibility.md`.
+The SDK provides stable application integration over Ledger APIs and contracts.
+New behavior must document public API, transport, authentication, and
+compatibility effects.
 
-Boundary: this SDK talks to Ledger services. It must not become a bridge back into the separated simulator repository.
+The SDK may expose confirmed Ledger facts and commands. It must not hide
+validation failures or reinterpret Simulator projections as accepted
+transactions.

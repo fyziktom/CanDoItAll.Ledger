@@ -1,9 +1,11 @@
 # CanDoItAll.Ledger.Cryptography
 
-Ledger-owned hashing, key, and signature support used by transaction validation and node flows.
+Platform-neutral hashing, key, and signature support used by transaction
+validation and node flows.
 
-The project uses the `CanDoItAll.Ledger.Cryptography` identity. Keep it focused
-on cryptographic drivers and avoid host, persistence, UI, and simulator-lane
-dependencies.
+Keep the project focused on cryptographic contracts and drivers. Host,
+persistence, browser interop, and UI concerns belong in their respective edge
+projects.
 
-Validate with the Ledger test suite and boundary audits before changing signature behavior.
+Validate with the Ledger test suite, golden vectors, and boundary audits before
+changing hash or signature behavior.

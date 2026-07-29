@@ -1,4 +1,4 @@
-# Ledger Simulator Runtime Ownership Inventory
+# Historical Ledger Simulator Runtime Ownership Inventory
 
 Status: completed ownership landing and Ledger namespace migration.
 

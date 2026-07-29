@@ -1,24 +1,42 @@
-# CanDoItAll.Ledger Docs
+# CanDoItAll.Ledger Documentation
 
-This folder contains the active documentation for the Ledger repository.
+CanDoItAll.Ledger provides auditable financial-state and transaction
+infrastructure for agents, projects, and finance-oriented applications in the
+CanDoItAll ecosystem.
 
-## Start Here
+## Product And Architecture
 
-- `architecture/repository-boundaries.md` defines the Economy/Ledger split.
-- `architecture/ledger-runtime.md` summarizes the current runtime modules and dependency direction.
-- `architecture/namespace-compatibility.md` records the completed namespace migration and stable persistence compatibility identifiers.
-- `operations/local-build-test-audit.md` is the local validation runbook.
-- `operations/containers.md` covers the Dockerized node and AccountApps.
-- `operations/backup-and-restore.md` defines PostgreSQL volume recovery.
-- `migration/import-inventory.md` preserves the import and migration inventory.
-- `migration/ledger-simulator-runtime-ownership-inventory.md` records the BO/project simulator landing decision.
+- [Product vision](architecture/product-vision.md) explains the problem the
+  Ledger solves and the product direction.
+- [Runtime architecture](architecture/ledger-runtime.md) describes the trust
+  model, transaction flow, modules, and dependency direction.
+- [Ecosystem role and boundaries](architecture/repository-boundaries.md)
+  defines what the Ledger owns and how it integrates with other CanDoItAll
+  packages and applications.
+- [Persisted identity compatibility](architecture/namespace-compatibility.md)
+  lists identifiers that must remain stable for existing data.
+- [IPFS display URI resolution](architecture/ipfs-display-uri-resolution.md)
+  documents replaceable content-address display strategies.
 
-## Experimental Simulator
+## Financial Simulation
 
-The Ledger BO/project Simulator is work in progress and experimental. Its output
-is not production-grade financial, accounting, forecasting, or economic
-evidence. See the Simulator project and app READMEs for current limitations.
+- [Simulator vision](architecture/ledger-simulator-vision-and-refactoring.md)
+  describes the work-in-progress project-finance modeling and
+  planned-versus-actual direction.
 
-## Legacy Quarantine
+Simulator output is exploratory. It is not authoritative accounting,
+forecasting, tax, legal, compliance, or investment evidence.
 
-`legacy-economy-ledger-docs/` contains copied Economy-era material. It is retained only as migration evidence and must not be treated as current Ledger product documentation.
+## Operations And Security
+
+- [Local build, test, and audit](operations/local-build-test-audit.md)
+- [Local containers](operations/containers.md)
+- [PostgreSQL backup and restore](operations/backup-and-restore.md)
+- [Data Protection key handling](security/data-protection.md)
+
+## Compatibility Assets
+
+- `golden-vectors/transaction-hashes-v1.json` contains transaction hash
+  compatibility vectors used by tests.
+- Historical engineering records are retained outside the active documentation
+  index and do not define current product behavior.

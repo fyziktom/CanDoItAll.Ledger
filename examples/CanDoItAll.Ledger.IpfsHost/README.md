@@ -1,9 +1,8 @@
 # CanDoItAll Ledger IPFS Host
 
-This small executable adapts the published `CanDoItAll.IPFS.Engine` NuGet
-package for the Ledger Aspire AppHost. It keeps Ledger orchestration independent
-from a sibling IPFS source checkout while preserving the engine's HTTP API and
-immutable `/ipfs/...` gateway.
+This small executable hosts the published `CanDoItAll.IPFS.Engine` NuGet
+package for the Ledger Aspire AppHost. It exposes the engine's HTTP API and
+immutable `/ipfs/...` gateway through a normal Aspire project resource.
 
 Run it directly with:
 

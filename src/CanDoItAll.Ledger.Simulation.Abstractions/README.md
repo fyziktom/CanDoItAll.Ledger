@@ -1,7 +1,10 @@
 # CanDoItAll.Ledger.Simulation.Abstractions
 
-Ledger-owned simulation abstractions for ledger-backed flows only.
+Backend-neutral contracts for representing simulation frames derived from
+Ledger-oriented inputs.
 
-This project is allowed while it remains independent from the separated basic simulator lane. If the abstractions become generally reusable, move or rename them through the namespace compatibility plan instead of coupling the two repositories.
+The abstractions remain deliberately small and independent from browser hosts,
+EF providers, and specific scenario engines. They are work in progress and are
+not published as a supported NuGet surface.
 
-Validate with the no-basic-simulator audit and ledger tests.
+Validate changes with the Ledger tests and repository boundary audit.

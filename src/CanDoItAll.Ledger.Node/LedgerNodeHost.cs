@@ -126,7 +126,7 @@ public static partial class LedgerNodeHost
                 .ConfigureAwait(false);
             if (!createRole.Succeeded)
             {
-                throw new InvalidOperationException($"Unable to create economy node administrator role: {FormatIdentityErrors(createRole)}");
+                throw new InvalidOperationException($"Unable to create Ledger node administrator role: {FormatIdentityErrors(createRole)}");
             }
         }
 
@@ -156,7 +156,7 @@ public static partial class LedgerNodeHost
             IdentityResult createUser = await userManager.CreateAsync(user, options.AdminPassword!).ConfigureAwait(false);
             if (!createUser.Succeeded)
             {
-                throw new InvalidOperationException($"Unable to create economy node administrator user: {FormatIdentityErrors(createUser)}");
+                throw new InvalidOperationException($"Unable to create Ledger node administrator user: {FormatIdentityErrors(createUser)}");
             }
         }
         else if (!user.EmailConfirmed)
@@ -165,7 +165,7 @@ public static partial class LedgerNodeHost
             IdentityResult updateUser = await userManager.UpdateAsync(user).ConfigureAwait(false);
             if (!updateUser.Succeeded)
             {
-                throw new InvalidOperationException($"Unable to confirm economy node administrator user: {FormatIdentityErrors(updateUser)}");
+                throw new InvalidOperationException($"Unable to confirm Ledger node administrator user: {FormatIdentityErrors(updateUser)}");
             }
         }
 
@@ -174,7 +174,7 @@ public static partial class LedgerNodeHost
             IdentityResult addRole = await userManager.AddToRoleAsync(user, LedgerNodeAuthPolicies.AdministratorRole).ConfigureAwait(false);
             if (!addRole.Succeeded)
             {
-                throw new InvalidOperationException($"Unable to assign economy node administrator role: {FormatIdentityErrors(addRole)}");
+                throw new InvalidOperationException($"Unable to assign Ledger node administrator role: {FormatIdentityErrors(addRole)}");
             }
         }
     }

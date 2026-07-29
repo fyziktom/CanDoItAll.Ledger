@@ -1,30 +1,46 @@
-# CanDoItAll Ledger AppHost
+# CanDoItAll.Ledger.AppHost
 
-The AppHost runs the Ledger demo, IPFS node, and ledger node together. The
-Ledger-owned IPFS host consumes the published `CanDoItAll.IPFS.Engine` package;
-it does not reference the sibling IPFS source repository.
+.NET Aspire development host for the Ledger node, component demo, and local
+IPFS engine.
 
-This project uses the Ledger project and configuration identities. It must not
-host the separate Economy simulator lane.
+The IPFS resource is a small Ledger composition host that consumes the
+published `CanDoItAll.IPFS.Engine` package and exposes it as a normal Aspire
+project resource.
 
-By default the ledger node uses EF Core InMemory storage:
+## Run
 
-```powershell
-dotnet run --project examples\CanDoItAll.Ledger.AppHost\CanDoItAll.Ledger.AppHost.csproj --launch-profile http
-```
-
-When Docker is available and a PostgreSQL-backed ledger is wanted, opt in:
+The default profile uses in-memory Ledger storage:
 
 ```powershell
-dotnet run --project examples\CanDoItAll.Ledger.AppHost\CanDoItAll.Ledger.AppHost.csproj --launch-profile http -- --Ledger:UsePostgreSql=true
+dotnet run `
+  --project examples\CanDoItAll.Ledger.AppHost\CanDoItAll.Ledger.AppHost.csproj `
+  --launch-profile http
 ```
 
-The PostgreSQL mode requires the secret Aspire parameter
-`ledger-postgres-password`; provide it through the normal Aspire parameter
-configuration or user-secrets mechanism.
+To compose PostgreSQL through Aspire:
 
-The `http` and `https` profiles are available in Visual Studio. Start the AppHost project with either profile; the console prints the Aspire dashboard URL and the dashboard Resources page exposes the demo, ledger node, and IPFS node endpoints. The IPFS engine serves both its API and immutable `/ipfs/...` gateway on port `5001`.
+```powershell
+dotnet run `
+  --project examples\CanDoItAll.Ledger.AppHost\CanDoItAll.Ledger.AppHost.csproj `
+  --launch-profile http `
+  -- --Ledger:UsePostgreSql=true
+```
 
-Both launch profiles set `ASPIRE_DCP_USE_DEVELOPER_CERTIFICATE=true` so Aspire's internal DCP control plane uses the trusted ASP.NET developer certificate instead of an ephemeral certificate.
+PostgreSQL mode requires the secret Aspire parameter
+`ledger-postgres-password`. Supply it through normal Aspire parameter
+configuration or .NET user secrets.
 
-The AppHost also builds and uses a small `dcp-proxy` helper. It forwards all commands to Aspire's packaged DCP executable, and on machines with AVG Web/Mail Shield TLS inspection it adds the local AVG root as the DCP kubeconfig trust anchor. This keeps `dotnet run` and Visual Studio startup working without changing the ledger, demo, or IPFS projects.
+The Aspire dashboard exposes the demo, Ledger node, and IPFS endpoints. The
+IPFS engine serves both its API and immutable `/ipfs/...` gateway on port
+`5001`.
+
+## Local DCP Certificate Handling
+
+The `http` and `https` launch profiles set
+`ASPIRE_DCP_USE_DEVELOPER_CERTIFICATE=true`, allowing Aspire's internal DCP
+control plane to use the trusted ASP.NET developer certificate.
+
+The AppHost also uses the local `dcp-proxy` helper. It forwards commands to
+Aspire's packaged DCP executable and can add the local AVG root as a kubeconfig
+trust anchor on machines where AVG Web/Mail Shield performs TLS inspection.
+This affects only local Aspire control-plane startup.

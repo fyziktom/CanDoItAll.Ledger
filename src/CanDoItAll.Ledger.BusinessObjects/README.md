@@ -1,9 +1,11 @@
 # CanDoItAll.Ledger.BusinessObjects
 
-Ledger-owned business-object transition models and transaction-building helpers.
+Business-object transition models and transaction-building helpers backed by
+Ledger contracts.
 
-The project uses the `CanDoItAll.Ledger.BusinessObjects` identity. It belongs to
-Ledger because these objects are ledger-bound transaction assets, not basic
-simulator entities.
+The project models object identity, ownership, content, lifecycle, commerce,
+permissions, and transaction assembly. Accepted object state changes remain
+traceable to Ledger transactions.
 
-Validate with ledger runtime and SDK tests before changing object transition rules.
+Validate with Ledger runtime, component, and SDK tests before changing object
+transition rules.

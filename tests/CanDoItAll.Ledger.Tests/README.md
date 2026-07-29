@@ -1,11 +1,16 @@
 # CanDoItAll.Ledger.Tests
 
-Ledger test project for transaction validation, storage, SDK, node, demo, and repository-boundary behavior.
+Integration and unit tests for transaction validation, execution, cryptography,
+storage, persistence, SDK, node hosting, components, demos, Simulator behavior,
+and repository boundaries.
 
-Tests in this repository should prove Ledger behavior and the no-basic-simulator boundary. Simulator-lane tests belong in the separated Ledger repository.
-
-Run:
+Run from the repository root:
 
 ```powershell
-dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj -c Release
+dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj `
+  --configuration Release
 ```
+
+Tests must keep confirmed Ledger behavior distinct from Simulator projections
+and preserve transaction, serialization, persistence, and identity
+compatibility contracts.

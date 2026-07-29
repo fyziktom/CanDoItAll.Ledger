@@ -1,15 +1,24 @@
 # CanDoItAll.Ledger.ConsoleDemo
 
-Ledger-owned console demo for transaction and node flows.
+Guided console scenarios for learning and smoke-testing Ledger transactions,
+accounts, keys, business objects, permissions, exports, and messaging.
 
-The demo, CLI, and SDK use Ledger identities. Keep this project focused on
-Ledger workflows.
+Run from the repository root:
 
-Lesson 07 mirrors the working WASM AccountApp transaction semantics:
+```powershell
+dotnet run --project examples\CanDoItAll.Ledger.ConsoleDemo\CanDoItAll.Ledger.ConsoleDemo.csproj
+```
 
-- UTXO split consumes explicitly selected plain main-currency UTXOs and creates requested plain vouts plus positive change.
-- UTXO merge consumes explicitly selected plain main-currency UTXOs and creates exactly one plain vout to self or the selected receiver.
-- BusinessObject outputs are token-carried: one-token carrier on the BO output with zero main amount, while any main currency is represented by separate plain outputs.
-- Permission-holder token minting creates token outputs without minting main currency.
+Lesson 07 mirrors the AccountApp transaction semantics:
 
-Validate with build, tests, and a console smoke when command behavior changes.
+- UTXO split consumes explicitly selected plain main-currency UTXOs and creates
+  requested outputs plus positive change.
+- UTXO merge consumes explicitly selected plain main-currency UTXOs and creates
+  one output for the selected receiver.
+- BusinessObject outputs use a one-token carrier with zero main amount; any
+  main currency is represented by separate plain outputs.
+- Permission-holder minting creates token outputs without minting main
+  currency.
+
+Run the Ledger tests and a console smoke whenever scenario or command behavior
+changes.

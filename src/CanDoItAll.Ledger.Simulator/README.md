@@ -1,25 +1,26 @@
 # CanDoItAll.Ledger.Simulator
 
-Experimental BO/project Simulator runtime for Ledger-owned project workspaces,
-scenario materialization, interventions, projections, reconciliation inputs, and
-development-time observation.
+Experimental project-finance runtime for workspaces, business units, accounts,
+assumptions, planned events, deterministic scenarios, interventions,
+projections, issues, and reconciliation inputs.
 
 ## Status
 
-This project is work in progress and experimental. It is not production-ready,
-and its APIs, storage behavior, domain shape, and UI workflows may change
-without compatibility guarantees.
+This project is work in progress. Its APIs, storage behavior, domain model, and
+user workflows may change without compatibility guarantees. It is intentionally
+excluded from public NuGet packaging.
 
-Simulator output is not authoritative financial, accounting, forecasting, or
-economic evidence. Do not use it for production decisions, regulatory
-reporting, audit conclusions, or claims about the separate Economy simulator.
+Simulator output is not authoritative accounting, forecasting, tax, legal,
+compliance, economic, or investment evidence.
 
-## Boundary
+## Truth Boundary
 
-The runtime uses `CanDoItAll.Ledger.Simulator` identities and may depend on
-Ledger contracts. It must not import Economy simple-account drivers,
-Smith-style experiments, scenario packs, or WebGL observer evidence.
+Planned and simulated values are projections. Confirmed Ledger transactions are
+facts. A future observation adapter will relate them through traceable actuals
+and variances without rewriting either history.
 
 The browser host currently keeps project workspaces, runs, and generated graphs
-in memory. EF Core projection adapters exist, but the active run lifecycle does
+in memory. EF Core projection providers exist, but the active lifecycle does
 not persist all runtime state through them.
+
+See [Project Finance Simulator Vision](../../docs/architecture/ledger-simulator-vision-and-refactoring.md).

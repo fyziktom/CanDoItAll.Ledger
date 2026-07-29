@@ -540,7 +540,7 @@ else
 
     private string LoadingDescription
         => loadError is null
-            ? "The economy demo is loading account keys outside the repo and querying the configured node. If unavailable, it falls back to a seeded development workspace."
+            ? "The component demo is loading account keys outside the repository and querying the configured Ledger node. If unavailable, it falls back to a seeded development workspace."
             : $"{loadError} Falling back to a seeded development workspace when available.";
 
     private async Task<BusinessObjectWorkspaceModel> LoadWorkspaceSnapshotAsync(

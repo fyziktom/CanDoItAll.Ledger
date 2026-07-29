@@ -49,7 +49,7 @@ public sealed class LedgerNodeLedgerClient : ILedgerGateway, ILedgerReadClient, 
 
         if (this.httpClient.BaseAddress is null)
         {
-            throw new ArgumentException("HTTP client must have a BaseAddress pointing at an economy node.", nameof(httpClient));
+            throw new ArgumentException("HTTP client must have a BaseAddress pointing at a Ledger node.", nameof(httpClient));
         }
     }
 

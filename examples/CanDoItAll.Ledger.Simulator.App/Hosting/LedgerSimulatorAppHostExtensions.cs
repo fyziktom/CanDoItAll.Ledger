@@ -12,7 +12,7 @@ internal static class LedgerSimulatorAppHostExtensions
 {
     private const string DataProtectionApplicationName = "CanDoItAll.Ledger.Simulator.App";
     private const string DataProtectionKeyRingPathKey = "DataProtection:KeyRingPath";
-    private const string DefaultDataProtectionKeyRingPath = "DataProtectionKeys";
+    private const string DefaultDataProtectionKeyRingPath = "artifacts/dataprotection/simulator-app";
 
     public static WebApplicationBuilder AddLedgerSimulatorAppHost(this WebApplicationBuilder builder)
     {

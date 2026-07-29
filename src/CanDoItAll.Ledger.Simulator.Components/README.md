@@ -1,11 +1,12 @@
 # CanDoItAll.Ledger.Simulator.Components
 
-Experimental BO/project Simulator UI owned by Ledger.
+Reusable UI for the experimental project-finance Simulator.
 
-This project is work in progress and not production-ready. Its screens and
-projections are development/exploration tools, not authoritative financial,
-accounting, forecasting, or economic evidence.
+The components cover project editing, planned events, scenario runs,
+interventions, charts, issues, actual-entry preparation, and reconciliation
+views.
 
-The components are part of the Ledger BO/project Simulator, not the separate
-Economy simple/Smith observer host. Their namespace and assembly identity is
-`CanDoItAll.Ledger.Simulator.Components`.
+The screens present exploratory models and projections. They are not
+authoritative accounting, forecasting, tax, legal, compliance, economic, or
+investment evidence. This project is work in progress and intentionally
+non-packable.

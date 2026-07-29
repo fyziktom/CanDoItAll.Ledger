@@ -1,7 +1,9 @@
 # CanDoItAll.Ledger.Storage.InMemory
 
-Ledger-owned in-memory storage implementation for local tests, demos, and development runs.
+In-memory implementation of Ledger storage contracts for isolated tests, demos,
+and disposable development runs.
 
-The project should stay small and contract-driven. It must not take dependencies on host, UI, or simulator-lane projects.
+Keep the project small and contract-driven. It must not depend on hosts, user
+interfaces, provider-specific persistence, or Simulator implementations.
 
-Validate with ledger tests and boundary audits after changing storage behavior.
+Validate with Ledger tests and boundary audits after changing storage behavior.

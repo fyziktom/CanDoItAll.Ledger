@@ -1,7 +1,11 @@
 # CanDoItAll.Ledger.Core
 
-Ledger-owned core contracts for transactions, accounts, chain state, storage abstractions, and validation data.
+Core Ledger contracts for accounts, addresses, amounts, assets, transactions,
+chain state, storage abstractions, and validation data.
 
-The namespace is retained temporarily for compatibility after the repository split. New Ledger-only contracts should follow the namespace compatibility plan in `../../docs/architecture/namespace-compatibility.md`.
+This is the innermost product layer. It must remain independent from hosts,
+user interfaces, provider-specific persistence, and experimental Simulator
+implementations.
 
-Boundary: this project must remain independent from host, UI, persistence implementation, and separated simulator-lane projects.
+Public changes require compatibility review and focused transaction hash,
+serialization, validation, and replay tests.

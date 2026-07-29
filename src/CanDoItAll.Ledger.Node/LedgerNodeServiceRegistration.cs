@@ -300,7 +300,7 @@ public static partial class LedgerNodeHost
                 return;
 
             default:
-                throw new InvalidOperationException($"Unsupported economy node auth persistence provider: {options.AuthPersistenceProvider}.");
+                throw new InvalidOperationException($"Unsupported Ledger node auth persistence provider: {options.AuthPersistenceProvider}.");
         }
     }
 

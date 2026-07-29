@@ -1,7 +1,13 @@
 # CanDoItAll.Ledger.Components
 
-Ledger-owned UI components imported during the split.
+Reusable Razor components and UI services for Ledger accounts, transactions,
+node administration, business-object ownership, commerce, content, and SDK
+workflows.
 
-The current namespace is temporary. Components here should support ledger, node, transaction, and business-object workflows only.
+The project consumes shared visual primitives from published
+`CanDoItAll.Components.*` packages. Finance-specific rendering and interaction
+belong here; general-purpose design-system primitives belong in the Components
+packages.
 
-Boundary: shared visual primitives belong in shared component repositories; separated simulator UI stays outside this repository.
+The component library may depend on Ledger and BusinessObject contracts. It
+must not become a transaction execution or persistence layer.
