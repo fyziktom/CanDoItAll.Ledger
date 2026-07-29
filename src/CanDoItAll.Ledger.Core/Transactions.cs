@@ -1,0 +1,77 @@
+using System.Text.Json.Serialization;
+
+namespace CanDoItAll.Ledger.Core;
+
+public sealed record TokenTransfer(TokenId TokenId, Amount Amount);
+
+[method: JsonConstructor]
+public sealed record BusinessObjectRef(
+    [property: JsonPropertyName("objectId")] BusinessObjectLineageKey LineageKey,
+    int Version,
+    BusinessObjectOperation Operation,
+    HashHex DataHash)
+{
+    [Obsolete("The V1/V2 value is an internal lineage key, not a public BusinessObject id. Use the BusinessObjectLineageKey overload.")]
+    public BusinessObjectRef(
+        BusinessObjectId legacyLineageId,
+        int version,
+        BusinessObjectOperation operation,
+        HashHex dataHash)
+        : this(new BusinessObjectLineageKey(legacyLineageId.Value), version, operation, dataHash)
+    {
+    }
+
+    /// <summary>
+    /// Compatibility alias for code that still consumes the V1/V2 field as a BusinessObjectId.
+    /// New code must use <see cref="LineageKey"/> for protocol correlation and derive public
+    /// identity from the output <see cref="OutPoint"/>.
+    /// </summary>
+    [Obsolete("This is an internal lineage compatibility alias, not a public BusinessObject id. Use LineageKey.")]
+    [JsonIgnore]
+    public BusinessObjectId ObjectId => new(LineageKey.Value);
+}
+
+public sealed record TransactionInput(
+    int InputIndex,
+    OutPoint PreviousOutPoint,
+    Address Address,
+    SignatureBundle SignatureBundle,
+    HashHex? SignaturePayloadHash = null);
+
+public sealed record TransactionOutput(
+    int OutputIndex,
+    Address Address,
+    Amount MainAmount,
+    TokenTransfer? Token = null,
+    BusinessObjectRef? BusinessObject = null,
+    HashHex? MetadataHash = null);
+
+public sealed record TransactionData(
+    string? ContentType,
+    HashHex? DataHash,
+    string? InlineJson,
+    string? ExternalRef,
+    TransactionDataItemType ItemType = TransactionDataItemType.Generic);
+
+public sealed record LedgerTransaction(
+    LedgerId LedgerId,
+    ScenarioId? ScenarioId,
+    int Version,
+    TransactionKind Kind,
+    SigningMode SigningMode,
+    DateTimeOffset Timestamp,
+    IReadOnlyList<TransactionInput> Inputs,
+    IReadOnlyList<TransactionOutput> Outputs,
+    TransactionData? Data,
+    TxId? TxId = null,
+    HashHex? TxHash = null,
+    TransactionStatus Status = TransactionStatus.Pending,
+    TokenDefinitionEnvelope? TokenDefinition = null);
+
+public sealed record ConfirmedTransaction(
+    LedgerTransaction Transaction,
+    long LedgerSequence,
+    HashHex PreviousLedgerHash,
+    HashHex LedgerEntryHash,
+    SignatureBundle AdminSignature,
+    DateTimeOffset ConfirmedAt);

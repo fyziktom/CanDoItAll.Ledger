@@ -2,15 +2,15 @@ using Bunit;
 using AngleSharp.Dom;
 using System.Globalization;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
 using Microsoft.AspNetCore.Components.Web;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class TransactionUiComponentTests : BunitContext
 {
@@ -88,7 +88,7 @@ public sealed class TransactionUiComponentTests : BunitContext
             .Add(x => x.Transactions, [transaction])
             .Add(x => x.AccountAddress, Alice)
             .Add(x => x.AccountName, "Alice account")
-            .Add(x => x.Bookmarks, [new EconomyAddressBookmark("Bob seed", Bob)])
+            .Add(x => x.Bookmarks, [new LedgerAddressBookmark("Bob seed", Bob)])
             .Add(x => x.DirectoryEntries,
             [
                 new AddressDirectoryEntry(
@@ -139,7 +139,7 @@ public sealed class TransactionUiComponentTests : BunitContext
             new HashHex("2222222222222222222222222222222222222222222222222222222222222222"),
             [0x01, 0x02, 0x03],
             [0x04, 0x05, 0x06]);
-        var details = new EconomyTransactionDetailsModel(
+        var details = new LedgerTransactionDetailsModel(
             new TxId("tx-raw-message"),
             new HashHex("3333333333333333333333333333333333333333333333333333333333333333"),
             TransactionKind.BusinessObject,
@@ -148,7 +148,7 @@ public sealed class TransactionUiComponentTests : BunitContext
             DateTimeOffset.Parse("2026-07-03T13:15:00Z"),
             CreateMessageData(),
             [
-                new EconomyTransactionInputDetails(
+                new LedgerTransactionInputDetails(
                     0,
                     new OutPoint(new TxId("tx-prev"), 1),
                     Alice,
@@ -160,12 +160,12 @@ public sealed class TransactionUiComponentTests : BunitContext
                     new OutPointKey(new HashHex("4444444444444444444444444444444444444444444444444444444444444444")))
             ],
             [
-                new EconomyTransactionOutputDetails(
+                new LedgerTransactionOutputDetails(
                     0,
                     Bob,
                     Amount.FromDecimal(1.5m),
                     null,
-                    new EconomyTransactionBusinessObjectDetails(
+                    new LedgerTransactionBusinessObjectDetails(
                         1,
                         BusinessObjectOperation.Create,
                         new HashHex("5555555555555555555555555555555555555555555555555555555555555555")),
@@ -216,7 +216,7 @@ public sealed class TransactionUiComponentTests : BunitContext
     [Fact]
     public void TransactionComposerShell_RendersUtxoMergeWithOnlyPlainSpendableInputs()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         LedgerSpendableOutput extraPlain = CreateSpendableOutput("tx-extra-plain", 2, Amount.FromDecimal(3.5m), workspace.Address);
         BusinessObjectTransactionDraft draft = workspace.TransactionDraft with
         {
@@ -249,7 +249,7 @@ public sealed class TransactionUiComponentTests : BunitContext
     [Fact]
     public async Task TransactionUtxoSplitForm_AppliesEqualOutputPlanToDraft()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         BusinessObjectTransactionDraft? captured = null;
 
         IRenderedComponent<TransactionUtxoSplitForm> component = Render<TransactionUtxoSplitForm>(parameters => parameters
@@ -276,7 +276,7 @@ public sealed class TransactionUiComponentTests : BunitContext
     [Fact]
     public void TransactionSendForm_UpdatesReusablePaymentDraftFields()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         BusinessObjectTransactionDraft current = workspace.TransactionDraft with
         {
             SelectedMode = BusinessObjectTransactionMode.MainPayment

@@ -1,0 +1,78 @@
+@namespace CanDoItAll.Ledger.Components
+@inject DialogService DialogService
+
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" Class="h-full min-h-0 w-full" data-testid="utxo-picker-dialog-content">
+    <UtxoSelectionList Outputs="Outputs"
+                       SelectedOutPoints="selected"
+                       SelectedOutPointsChanged="SetSelected"
+                       Label="@Label"
+                       TestId="utxo-picker-list" />
+
+    <StickyActionFooter StatusLabel="Selection" StatusMessage="@ConfirmLabel">
+        <SecondaryActions>
+            <Button Text="Cancel"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Variant="Variant.Outlined"
+                    Click="CancelAsync"
+                    data-testid="utxo-picker-cancel" />
+        </SecondaryActions>
+        <PrimaryActions>
+            <Button Text="@ConfirmLabel"
+                    Icon="check"
+                    Disabled="@(selected.Count < MinimumSelections)"
+                    Click="ConfirmAsync"
+                    data-testid="utxo-picker-confirm" />
+        </PrimaryActions>
+    </StickyActionFooter>
+</Stack>
+
+@code {
+    private IReadOnlyList<OutPoint> selected = [];
+    private bool initialized;
+
+    [Parameter]
+    public string Label { get; set; } = "Select transaction inputs";
+
+    [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> Outputs { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<OutPoint> InitialSelected { get; set; } = [];
+
+    [Parameter]
+    public int MinimumSelections { get; set; } = 1;
+
+    private string ConfirmLabel
+        => selected.Count == 0 ? "Use selection" : $"Use {selected.Count} selected";
+
+    protected override void OnParametersSet()
+    {
+        if (initialized)
+        {
+            return;
+        }
+
+        selected = InitialSelected
+            .Where(IsEligible)
+            .ToArray();
+        initialized = true;
+    }
+
+    private Task SetSelected(IReadOnlyList<OutPoint> value)
+    {
+        selected = value.Where(IsEligible).Distinct().ToArray();
+        return Task.CompletedTask;
+    }
+
+    private bool IsEligible(OutPoint candidate)
+        => Outputs.Any(output => output.OutPoint == candidate
+            && output.BusinessObject is null
+            && output.Token is null);
+
+    private Task ConfirmAsync()
+        => selected.Count < MinimumSelections
+            ? Task.CompletedTask
+            : DialogService.CloseAsync(selected.ToArray());
+
+    private Task CancelAsync() => DialogService.CloseAsync();
+}

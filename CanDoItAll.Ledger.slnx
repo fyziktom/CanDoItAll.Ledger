@@ -1,28 +1,28 @@
 <Solution>
   <Folder Name="/examples/">
-    <Project Path="examples/CanDoItAll.Economy.AppHost.DcpProxy/CanDoItAll.Economy.AppHost.DcpProxy.csproj" />
-    <Project Path="examples/CanDoItAll.Economy.AppHost/CanDoItAll.Economy.AppHost.csproj" />
-    <Project Path="examples/CanDoItAll.Economy.AccountApp/CanDoItAll.Economy.AccountApp.csproj" />
-    <Project Path="examples/CanDoItAll.Economy.Components.Demo/CanDoItAll.Economy.Components.Demo.csproj" />
-    <Project Path="examples/CanDoItAll.Economy.ConsoleDemo/CanDoItAll.Economy.ConsoleDemo.csproj" />
+    <Project Path="examples/CanDoItAll.Ledger.AppHost.DcpProxy/CanDoItAll.Ledger.AppHost.DcpProxy.csproj" />
+    <Project Path="examples/CanDoItAll.Ledger.AppHost/CanDoItAll.Ledger.AppHost.csproj" />
+    <Project Path="examples/CanDoItAll.Ledger.AccountApp/CanDoItAll.Ledger.AccountApp.csproj" />
+    <Project Path="examples/CanDoItAll.Ledger.Components.Demo/CanDoItAll.Ledger.Components.Demo.csproj" />
+    <Project Path="examples/CanDoItAll.Ledger.ConsoleDemo/CanDoItAll.Ledger.ConsoleDemo.csproj" />
     <Project Path="examples/CanDoItAll.Ledger.Simulator.App/CanDoItAll.Ledger.Simulator.App.csproj" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/CanDoItAll.Economy.BusinessObjects/CanDoItAll.Economy.BusinessObjects.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Cli/CanDoItAll.Economy.Cli.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Components/CanDoItAll.Economy.Components.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Core/CanDoItAll.Economy.Core.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Cryptography/CanDoItAll.Economy.Cryptography.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Cryptography.Browser/CanDoItAll.Economy.Cryptography.Browser.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Ledger/CanDoItAll.Economy.Ledger.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Node/CanDoItAll.Economy.Node.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Persistence.EFCore/CanDoItAll.Economy.Persistence.EFCore.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Persistence.PostgreSql/CanDoItAll.Economy.Persistence.PostgreSql.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Rules.NCalc/CanDoItAll.Economy.Rules.NCalc.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Sdk/CanDoItAll.Economy.Sdk.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Simulation.Abstractions/CanDoItAll.Economy.Simulation.Abstractions.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Simulation.Ledger/CanDoItAll.Economy.Simulation.Ledger.csproj" />
-    <Project Path="src/CanDoItAll.Economy.Storage.InMemory/CanDoItAll.Economy.Storage.InMemory.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.BusinessObjects/CanDoItAll.Ledger.BusinessObjects.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Cli/CanDoItAll.Ledger.Cli.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Components/CanDoItAll.Ledger.Components.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Core/CanDoItAll.Ledger.Core.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Cryptography/CanDoItAll.Ledger.Cryptography.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Cryptography.Browser/CanDoItAll.Ledger.Cryptography.Browser.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Engine/CanDoItAll.Ledger.Engine.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Node/CanDoItAll.Ledger.Node.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Persistence.EFCore/CanDoItAll.Ledger.Persistence.EFCore.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Persistence.PostgreSql/CanDoItAll.Ledger.Persistence.PostgreSql.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Rules.NCalc/CanDoItAll.Ledger.Rules.NCalc.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Sdk/CanDoItAll.Ledger.Sdk.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Simulation.Abstractions/CanDoItAll.Ledger.Simulation.Abstractions.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Simulation.Ledger/CanDoItAll.Ledger.Simulation.Ledger.csproj" />
+    <Project Path="src/CanDoItAll.Ledger.Storage.InMemory/CanDoItAll.Ledger.Storage.InMemory.csproj" />
     <Project Path="src/CanDoItAll.Ledger.Repository/CanDoItAll.Ledger.Repository.csproj" />
     <Project Path="src/CanDoItAll.Ledger.Simulator/CanDoItAll.Ledger.Simulator.csproj" />
     <Project Path="src/CanDoItAll.Ledger.Simulator.Components/CanDoItAll.Ledger.Simulator.Components.csproj" />
@@ -32,7 +32,7 @@
     <Project Path="tests/CanDoItAll.Ledger.Tests/CanDoItAll.Ledger.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
-    <Project Path="tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoSeeder.csproj" />
+    <Project Path="tools/CanDoItAll.Ledger.DemoSeeder/CanDoItAll.Ledger.DemoSeeder.csproj" />
   </Folder>
   <Project Path="../CanDoItAll.Components/src/CanDoItAll.Components.BaseLib/CanDoItAll.Components.BaseLib.csproj" />
   <Project Path="../CanDoItAll.Components/src/CanDoItAll.Components.Common/CanDoItAll.Components.Common.csproj" />

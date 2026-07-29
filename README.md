@@ -1,73 +1,97 @@
 # CanDoItAll.Ledger
 
-CanDoItAll.Ledger owns the transaction runtime, node host, ledger persistence, ledger UI, SDK, CLI, demos, and ledger-specific tests that were separated from CanDoItAll.Economy.
+CanDoItAll.Ledger owns the transaction runtime, node host, ledger persistence,
+ledger UI, SDK, CLI, demos, and ledger-specific tests separated from the
+`CanDoItAll.Economy` repository.
 
-CanDoItAll.Economy remains the simple-accounts and Smith experimental repository. Basic account simulation, scenario packs, Smith-like experimental economics, visualization, and WebGL observer evidence stay there. Ledger owns the BO/project simulator host behavior.
+`CanDoItAll.Economy` remains the separate simple-accounts and experimental
+economics repository. Its scenario packs, Smith-style experiments,
+visualization, and WebGL observer evidence do not belong here.
 
 ## Project Map
 
 ```text
-src/CanDoItAll.Economy.Core                    Ledger transaction, chain, account, and storage contracts.
-src/CanDoItAll.Economy.Cryptography            Hashing, key, and signature drivers.
-src/CanDoItAll.Economy.Ledger                  Transaction validation, execution, and chain verification.
-src/CanDoItAll.Economy.BusinessObjects         Ledger-bound object transitions and transaction builders.
-src/CanDoItAll.Economy.Sdk                     Client facade for node and ledger operations.
-src/CanDoItAll.Economy.Node                    Ledger node host, APIs, auth, and admin UI shell.
-src/CanDoItAll.Economy.Persistence.EFCore      EF Core ledger store and projections.
-src/CanDoItAll.Economy.Persistence.PostgreSql  PostgreSQL registration and ledger persistence wiring.
-src/CanDoItAll.Economy.Components              Ledger UI components.
-src/CanDoItAll.Economy.Simulation.Abstractions Ledger-backed simulation contracts only.
-src/CanDoItAll.Economy.Simulation.Ledger       Ledger-backed simulation adapter.
-src/CanDoItAll.Economy.Storage.InMemory        In-memory ledger storage.
-src/CanDoItAll.Economy.Cli                     Ledger command-line driver.
-src/CanDoItAll.Ledger.Repository               Repository-local ledger helper project.
-src/CanDoItAll.Ledger.Simulator                BO/project simulator runtime moved from Economy.
-src/CanDoItAll.Ledger.Simulator.Components     BO/project simulator UI moved from Economy.
-src/CanDoItAll.Ledger.Simulator.Persistence.EFCore
-                                                BO/project simulator projection persistence moved from Economy.
-examples/CanDoItAll.Ledger.Simulator.App       BO/project simulator browser host moved from Economy.
-examples/                                     Ledger demos and AppHost projects.
-tests/CanDoItAll.Ledger.Tests                 Ledger, node, persistence, SDK, and boundary tests.
-tools/CanDoItAll.Economy.DemoSeeder           Demo ledger seeding tool.
+src/CanDoItAll.Ledger.Core                    Transaction, chain, account, and storage contracts
+src/CanDoItAll.Ledger.Cryptography            Hashing, keys, signatures, and crypto drivers
+src/CanDoItAll.Ledger.Engine                  Transaction validation, execution, replay, and chain verification
+src/CanDoItAll.Ledger.BusinessObjects         Ledger-bound object transitions and transaction builders
+src/CanDoItAll.Ledger.Sdk                     Node and ledger client APIs
+src/CanDoItAll.Ledger.Node                    Node host, APIs, auth, and administration UI
+src/CanDoItAll.Ledger.Persistence.EFCore      EF Core stores and projections
+src/CanDoItAll.Ledger.Persistence.PostgreSql  PostgreSQL registration, migrations, and schema checks
+src/CanDoItAll.Ledger.Storage.InMemory        In-memory ledger storage
+src/CanDoItAll.Ledger.Components              Ledger and BusinessObject UI components
+src/CanDoItAll.Ledger.Repository              Repository-local ledger helpers
+src/CanDoItAll.Ledger.Rules.NCalc             NCalc account-rule adapter
+src/CanDoItAll.Ledger.Simulation.Abstractions Ledger-backed simulation contracts
+src/CanDoItAll.Ledger.Simulation.Ledger       Ledger snapshot simulation adapter
+src/CanDoItAll.Ledger.Cli                     Ledger command-line driver
+src/CanDoItAll.Ledger.Simulator*              Experimental BO/project simulator
+examples/                                     AccountApp, AppHost, component, console, and Simulator hosts
+tests/CanDoItAll.Ledger.Tests                 Ledger, node, persistence, UI, SDK, and boundary tests
+tools/CanDoItAll.Ledger.DemoSeeder            Demo-ledger seeding and verification tool
 ```
 
-The `CanDoItAll.Economy.*` names are compatibility namespaces from the physical split. They do not mean the basic simulator moved into this repository.
+The former `CanDoItAll.Economy.Ledger` project is now
+`CanDoItAll.Ledger.Engine`. `Engine` distinguishes its validation/execution
+responsibility from the contract-focused `CanDoItAll.Ledger.Core` project.
 
-## Local Commands
+## Simulator Status
+
+The BO/project Simulator is work in progress and experimental. It is useful for
+development, exploration, and regression testing, but it is not production-ready
+and must not be treated as authoritative financial, accounting, forecasting, or
+economic evidence. Its in-memory workflows and persistence adapters may change
+without compatibility guarantees.
+
+## Local Validation
+
+Run from the repository root:
 
 ```powershell
+.\tools\validation\Test-LedgerIdentity.ps1 -RunNegativeFixture
 .\scripts\build.ps1
 .\scripts\test.ps1
-.\scripts\audit-ledger-repo-does-not-contain-basic-simulator.ps1 -RunNegativeFixture
 .\scripts\audit-ledger-boundaries.ps1
-.\scripts\audit-economy-ledger-split.ps1 -EconomyRoot C:\repositories\CanDoItAll.Economy -LedgerRoot C:\repositories\CanDoItAll.Ledger
 ```
 
-Direct commands:
+The separate two-repository boundary check requires a sibling Economy checkout:
 
 ```powershell
-dotnet build CanDoItAll.Ledger.slnx -c Release -m:1
-dotnet test tests\CanDoItAll.Ledger.Tests\CanDoItAll.Ledger.Tests.csproj -c Release
+.\scripts\audit-economy-ledger-split.ps1 `
+  -EconomyRoot C:\repositories\CanDoItAll.Economy `
+  -LedgerRoot C:\repositories\CanDoItAll.Ledger
 ```
 
-## Documentation Map
+## Containers
 
-- `docs/README.md` is the active Ledger docs index.
-- `docs/architecture/repository-boundaries.md` defines Economy/Ledger ownership boundaries.
-- `docs/architecture/ledger-runtime.md` summarizes the Ledger runtime architecture.
-- `docs/architecture/namespace-compatibility.md` tracks compatibility namespaces, owners, costs, and sunset gates.
-- `docs/operations/local-build-test-audit.md` is the local build, test, and audit runbook.
-- `docs/migration/import-inventory.md` is the migration inventory and compatibility namespace deletion plan.
-- `docs/legacy-economy-ledger-docs/README.md` marks imported Economy-era docs as non-product legacy quarantine.
+Copy `.env.example` to ignored `.env` and replace the password placeholders
+before starting the development stack:
 
-## No-Basic-Simulator Rule
+```powershell
+Copy-Item .env.example .env
+.\tools\validation\Test-Docker.ps1 -EnvFile .env
+docker compose --env-file .env config --quiet
+docker compose --env-file .env up -d --build --wait --wait-timeout 300
+```
 
-Ledger must not reference or copy Economy simple-account drivers, scenario-pack content, Smith-like experiment drivers, memory-economy simulator extensions, Economy simple/Smith hosts, or WebGL observer evidence.
+The default stack publishes the node and three AccountApp instances only on
+loopback. PostgreSQL stays on the internal backend network and uses a
+Docker-managed named volume. Normal teardown preserves data:
 
-The `CanDoItAll.Ledger.Simulator*` projects are the BO/project simulator landing zone. They are not the Economy simple/Smith simulator lane.
+```powershell
+docker compose --env-file .env down --remove-orphans
+```
 
-Ledger-backed simulation may remain here only when it depends on ledger contracts and does not import the Economy basic simulator lane.
+See `docs/operations/containers.md` and
+`docs/operations/backup-and-restore.md` before resetting or moving durable data.
 
-## Namespace Migration
+## Documentation
 
-The first repository split intentionally kept imported `CanDoItAll.Economy.*` namespaces to avoid mixing physical movement with a broad public API rename. New Ledger code should use `CanDoItAll.Ledger.*` names where the surrounding public API allows it. Compatibility namespaces are tracked in `docs/architecture/namespace-compatibility.md` and must be retired through a documented package migration, type-forwarding, or source rename plan.
+- `docs/README.md` indexes active documentation.
+- `docs/architecture/repository-boundaries.md` defines Economy/Ledger ownership.
+- `docs/architecture/namespace-compatibility.md` records the completed namespace
+  migration and the intentionally stable persistence identities.
+- `docs/operations/local-build-test-audit.md` is the validation runbook.
+- `docs/legacy-economy-ledger-docs/README.md` marks imported Economy-era
+  material as non-product legacy quarantine.

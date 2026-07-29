@@ -1,9 +1,9 @@
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class CryptoDriverSmokeTests
 {
@@ -37,7 +37,7 @@ public sealed class CryptoDriverSmokeTests
         var alice = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "alice", alicePublic, alicePrivate);
         var bob = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "bob", bobPublic, bobPrivate);
 
-        EconomyMessageSignature signature = await AccountMessageSecurity.SignMessageAsync(alice, "hello bob", CancellationToken.None);
+        LedgerMessageSignature signature = await AccountMessageSecurity.SignMessageAsync(alice, "hello bob", CancellationToken.None);
         Assert.True(AccountMessageSecurity.VerifyMessage("hello bob", signature));
         Assert.False(AccountMessageSecurity.VerifyMessage("hello mallory", signature));
 
@@ -45,7 +45,7 @@ public sealed class CryptoDriverSmokeTests
         HashHex bobShared = await AccountMessageSecurity.DeriveSharedSecretHashAsync(bob, alicePublic, CancellationToken.None);
         Assert.Equal(aliceShared, bobShared);
 
-        EconomyEncryptedMessage encrypted = await AccountMessageSecurity.EncryptMessageAsync(
+        LedgerEncryptedMessage encrypted = await AccountMessageSecurity.EncryptMessageAsync(
             alice,
             "private hello",
             bob.Address,

@@ -1,0 +1,271 @@
+@namespace CanDoItAll.Ledger.Components
+@inject DialogService DialogService
+
+<div class="w-full min-w-0" data-testid="cda-commerce-dashboard">
+    <BusinessObjectCommerceTable Rows="CommerceRows"
+                                 Fields="Fields"
+                                 PageSize="PageSize"
+                                 RecordRequested="OpenDetailsAsync"
+                                 RelatedObjectRequested="OpenRelatedDetailsAsync" />
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+
+    [Parameter]
+    public BusinessObjectCommerceFields Fields { get; set; } = BusinessObjectCommerceFields.Compact;
+
+    [Parameter]
+    public int PageSize { get; set; } = 10;
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> EditRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<TxId> TransactionDetailsRequested { get; set; }
+
+    private IReadOnlyList<BusinessObjectCommerceRow> CommerceRows
+        => Workspace.BusinessObjects
+            .OfType<ICommerceBusinessObjectView>()
+            .Where(HasCommerceRecord)
+            .Select(CreateRow)
+            .OrderByDescending(row => row.ActivityAt)
+            .ThenBy(row => TransactionOrderFor(row.Source))
+            .ThenByDescending(row => row.Source.Version)
+            .ThenByDescending(row => row.Source.CurrentOutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenByDescending(row => row.Source.CurrentOutPoint.OutputIndex)
+            .ToArray();
+
+    private Task OpenDetailsAsync(BusinessObjectCommerceRow row)
+        => OpenDetailsDialogAsync(row.Source, $"{row.RecordTitle} - Details");
+
+    private Task OpenRelatedDetailsAsync(BusinessObjectCommerceRow row)
+        => row.RelatedObject is null
+            ? Task.CompletedTask
+            : OpenDetailsDialogAsync(row.RelatedObject, $"{DisplayName(row.RelatedObject)} - BO Details");
+
+    private Task OpenDetailsDialogAsync(IBusinessObjectView item, string title)
+        => DialogService.OpenAsync<BusinessObjectLedgerDetailsDialogContent>(
+            title,
+            new Dictionary<string, object?>
+            {
+                [nameof(BusinessObjectLedgerDetailsDialogContent.Object)] = item,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.ViewedAtUtc)] = Workspace.ViewedAtUtc,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.Workspace)] = Workspace,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.EditRequested)] = EditRequested,
+                [nameof(BusinessObjectLedgerDetailsDialogContent.TransactionDetailsRequested)] = TransactionDetailsRequested
+            },
+            new DialogOptions
+            {
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-ledger-dialog",
+                TestId = "cda-commerce-details-dialog"
+            });
+
+    private BusinessObjectCommerceRow CreateRow(ICommerceBusinessObjectView item)
+    {
+        string kind;
+        string kindLabel;
+        string icon;
+        BusinessObjectCommerceRecordStatus status;
+        decimal amount;
+        string? tokenId;
+        string buyerAddress;
+        string sellerAddress;
+        string targetObjectId;
+        string? deliveredObjectId;
+        BusinessObjectSaleMode saleMode;
+        string? recordTransactionId;
+        string? dispatchTransactionId;
+        string? rejectionReason;
+
+        if (item.Commerce.Payment is { } payment)
+        {
+            kind = "payment";
+            kindLabel = "Payment";
+            icon = "payments";
+            status = payment.Status;
+            amount = payment.PriceAmount;
+            tokenId = payment.TokenId;
+            buyerAddress = payment.BuyerAddress;
+            sellerAddress = payment.SellerAddress;
+            targetObjectId = payment.TargetObjectId;
+            deliveredObjectId = payment.DeliveredObjectId;
+            saleMode = payment.SaleMode;
+            recordTransactionId = payment.PaymentTxId;
+            dispatchTransactionId = payment.DispatchTxId;
+            rejectionReason = payment.RejectionReason;
+        }
+        else if (item.Commerce.Purchase is { } purchase)
+        {
+            kind = "purchase";
+            kindLabel = "Purchase";
+            icon = "shopping_cart";
+            status = purchase.Status;
+            amount = purchase.PriceAmount;
+            tokenId = purchase.TokenId;
+            buyerAddress = purchase.BuyerAddress;
+            sellerAddress = purchase.SellerAddress;
+            targetObjectId = purchase.TargetObjectId;
+            deliveredObjectId = purchase.DeliveredObjectId;
+            saleMode = purchase.SaleMode;
+            recordTransactionId = purchase.PaymentTxId;
+            dispatchTransactionId = purchase.DispatchTxId;
+            rejectionReason = null;
+        }
+        else
+        {
+            BusinessObjectReceiptRecord receipt = item.Commerce.Receipt!;
+            kind = "receipt";
+            kindLabel = "Receipt";
+            icon = "receipt_long";
+            status = receipt.Status;
+            amount = receipt.PriceAmount;
+            tokenId = receipt.TokenId;
+            buyerAddress = receipt.BuyerAddress;
+            sellerAddress = receipt.SellerAddress;
+            targetObjectId = receipt.TargetObjectId;
+            deliveredObjectId = receipt.DeliveredObjectId;
+            saleMode = receipt.SaleMode;
+            recordTransactionId = receipt.PaymentTxId;
+            dispatchTransactionId = receipt.DispatchTxId;
+            rejectionReason = null;
+        }
+
+        IBusinessObjectView? targetObject = ResolveObject(targetObjectId, item);
+        IBusinessObjectView? deliveredObject = ResolveObject(deliveredObjectId, item);
+        IBusinessObjectView? relatedObject = deliveredObject ?? targetObject;
+        string counterpartyAddress = ResolveCounterparty(buyerAddress, sellerAddress);
+
+        return new BusinessObjectCommerceRow(
+            item,
+            relatedObject,
+            ActivityTimestampFor(item),
+            kind,
+            kindLabel,
+            icon,
+            status,
+            StatusTone(status),
+            amount,
+            string.IsNullOrWhiteSpace(tokenId) ? BusinessObjectCommercePayloadBuilder.MainCurrencyCode : tokenId,
+            DisplayAddress(counterpartyAddress),
+            counterpartyAddress,
+            targetObject is null ? ShortIdentifier(targetObjectId) : DisplayName(targetObject),
+            targetObjectId,
+            string.IsNullOrWhiteSpace(deliveredObjectId)
+                ? null
+                : deliveredObject is null ? ShortIdentifier(deliveredObjectId) : DisplayName(deliveredObject),
+            deliveredObjectId,
+            saleMode,
+            item.CurrentOutPoint.TxId.Value,
+            recordTransactionId,
+            dispatchTransactionId,
+            rejectionReason,
+            DisplayName(item));
+    }
+
+    private static bool HasCommerceRecord(ICommerceBusinessObjectView item)
+        => item.Commerce.Payment is not null
+            || item.Commerce.Purchase is not null
+            || item.Commerce.Receipt is not null;
+
+    private IBusinessObjectView? ResolveObject(string? objectId, IBusinessObjectView source)
+        => string.IsNullOrWhiteSpace(objectId)
+            ? null
+            : Workspace.BusinessObjects.FirstOrDefault(candidate =>
+                candidate.ObjectId != source.ObjectId
+                && string.Equals(candidate.ObjectId.Value, objectId, StringComparison.Ordinal));
+
+    private DateTimeOffset ActivityTimestampFor(IBusinessObjectView item)
+        => Workspace.Transactions
+            .FirstOrDefault(transaction => transaction.TxId == item.CurrentOutPoint.TxId)
+            ?.Timestamp
+            ?? item.CreatedAt;
+
+    private int TransactionOrderFor(IBusinessObjectView item)
+    {
+        for (int index = 0; index < Workspace.Transactions.Count; index++)
+        {
+            if (Workspace.Transactions[index].TxId == item.CurrentOutPoint.TxId)
+            {
+                return index;
+            }
+        }
+
+        return int.MaxValue;
+    }
+
+    private string ResolveCounterparty(string buyerAddress, string sellerAddress)
+    {
+        string account = Workspace.Address.Value;
+        if (string.Equals(buyerAddress, account, StringComparison.OrdinalIgnoreCase))
+        {
+            return sellerAddress;
+        }
+
+        if (string.Equals(sellerAddress, account, StringComparison.OrdinalIgnoreCase))
+        {
+            return buyerAddress;
+        }
+
+        return buyerAddress;
+    }
+
+    private string DisplayAddress(string address)
+    {
+        if (string.Equals(address, Workspace.Address.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            return Workspace.AccountName;
+        }
+
+        AddressDirectoryEntry? directory = DirectoryEntries.FirstOrDefault(entry =>
+            string.Equals(entry.Address, address, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(directory?.DisplayName))
+        {
+            return directory.DisplayName;
+        }
+
+        LedgerAddressBookmark? bookmark = Workspace.AddressBookmarks.FirstOrDefault(entry =>
+            string.Equals(entry.Address.Value, address, StringComparison.OrdinalIgnoreCase));
+        return !string.IsNullOrWhiteSpace(bookmark?.Name)
+            ? bookmark.Name
+            : ShortIdentifier(address);
+    }
+
+    private static string DisplayName(IBusinessObjectView item)
+    {
+        if (item is ICommerceBusinessObjectView commerce && !string.IsNullOrWhiteSpace(commerce.Name))
+        {
+            return commerce.Name;
+        }
+
+        if (item is IMediaBusinessObjectView media && !string.IsNullOrWhiteSpace(media.Name))
+        {
+            return media.Name;
+        }
+
+        return BusinessObjectPayloadBuilder.TryParseMediaPayload(item.StateJson, out BusinessObjectMediaPayload? payload)
+            && !string.IsNullOrWhiteSpace(payload?.Name)
+                ? payload.Name
+                : ShortIdentifier(item.ObjectId.Value);
+    }
+
+    private static string StatusTone(BusinessObjectCommerceRecordStatus status)
+        => status switch
+        {
+            BusinessObjectCommerceRecordStatus.Dispatched => "success",
+            BusinessObjectCommerceRecordStatus.Pending => "warning",
+            BusinessObjectCommerceRecordStatus.Rejected => "danger",
+            BusinessObjectCommerceRecordStatus.Cancelled => "warning",
+            _ => "neutral"
+        };
+
+    private static string ShortIdentifier(string value)
+        => value.Length <= 22 ? value : $"{value[..12]}…{value[^7..]}";
+}

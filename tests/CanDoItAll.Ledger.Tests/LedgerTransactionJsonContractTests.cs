@@ -1,7 +1,7 @@
 using System.Text.Json;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.Core;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class LedgerTransactionJsonContractTests
 {

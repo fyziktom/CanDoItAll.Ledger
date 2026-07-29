@@ -1,10 +1,10 @@
-using CanDoItAll.Economy.Simulator.App.Hosting;
+using CanDoItAll.Ledger.Simulator.App.Hosting;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-builder.AddEconomySimulatorAppHost();
+builder.AddLedgerSimulatorAppHost();
 
 WebApplication app = builder.Build();
-app.SeedEconomySimulatorSampleProject();
-app.UseEconomySimulatorAppHost();
+app.SeedLedgerSimulatorSampleProject();
+app.UseLedgerSimulatorAppHost();
 
 await app.RunAsync();

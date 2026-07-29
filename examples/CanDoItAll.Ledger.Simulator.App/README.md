@@ -2,8 +2,13 @@
 
 Local browser host for the moved BO/project simulator.
 
-The app is retained for Ledger smoke testing of the migrated simulator runtime.
-It must not become the Economy simple/Smith launch surface.
+> [!WARNING]
+> This Simulator is work in progress and experimental. It is not
+> production-ready, and its output is not authoritative financial, accounting,
+> forecasting, or economic evidence.
+
+The app is retained for Ledger development and smoke testing of the Simulator
+runtime. It must not become the separate Economy simple/Smith launch surface.
 
 ## Run locally
 
@@ -21,8 +26,8 @@ writable `DataProtectionKeys` directory beside the app by default. Override
 `DataProtection:KeyRingPath` with an absolute path, or with a path relative to
 the app content root, when another durable writable location is required.
 
-The projection provider is configured under `EconomySimulator`. Supported
+The projection provider is configured under `LedgerSimulator`. Supported
 `StorageMode` values are `InMemory` and `PostgreSql`; PostgreSQL requires
-`EconomySimulator:PostgreSql:ConnectionString`. The provider adapters are
+`LedgerSimulator:PostgreSql:ConnectionString`. The provider adapters are
 registered, but the current run lifecycle does not write through them. The
 project workspace, runs, and generated graphs remain in memory in this host.

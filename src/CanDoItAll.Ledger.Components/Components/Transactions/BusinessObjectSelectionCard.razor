@@ -1,0 +1,134 @@
+@namespace CanDoItAll.Ledger.Components
+
+<ActionCard Active="@Selected"
+            Class="overflow-hidden"
+            Style="@CardStyle"
+            role="article"
+            data-testid="@TestId">
+    <button type="button"
+            class="cda-transaction-bo-picker-card__button grid h-full w-full min-w-0 cursor-pointer overflow-hidden border-0 bg-transparent p-0 text-left"
+            style="grid-template-rows:6.25rem minmax(0,1fr);@SelectionCursorStyle"
+            @onclick="SelectedChanged"
+            disabled="@(!Interactive)"
+            aria-pressed="@(Selected ? "true" : "false")"
+            aria-describedby="@RestrictionId"
+            title="@DisabledReason"
+            aria-label="@SelectionLabel">
+        @if (PreviewImage is not null)
+        {
+            <span class="cda-transaction-bo-picker-card__preview-media grid min-w-0 overflow-hidden border-b border-slate-200 bg-slate-100">
+                <BusinessObjectDataItemPreview Item="PreviewImage" Flush="true" />
+            </span>
+        }
+        else
+        {
+            <Stack AlignItems="AlignItems.Center"
+                   JustifyContent="JustifyContent.Center"
+                   FillHeight="true"
+                   Class="min-w-0 overflow-hidden border-b border-slate-200"
+                   Style="background:linear-gradient(135deg,#5f58cf,#659bd8);color:#fff">
+                <Icon Name="@BusinessObjectCardDisplay.PreviewIcon(Item)" />
+            </Stack>
+        }
+
+        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0 p-3">
+            <Split Breakpoint="LayoutBreakpoint.None"
+                   Gap="LayoutGap.Tiny"
+                   AlignItems="AlignItems.Start"
+                   JustifyContent="JustifyContent.SpaceBetween"
+                   Class="w-full">
+                <TextBlock TextStyle="TextStyle.Subtitle2"
+                           Value="@DisplayTitle"
+                           Class="cda-transaction-bo-picker-card__title" />
+                <Icon Name="@SelectionIcon" Class="shrink-0 text-violet-700" />
+            </Split>
+            <TextBlock TextStyle="TextStyle.Body2"
+                       Value="@Summary"
+                       Class="cda-transaction-bo-picker-card__description" />
+            @if (!string.IsNullOrWhiteSpace(DisabledReason))
+            {
+                <TextBlock id="@RestrictionId"
+                           TextStyle="TextStyle.Caption"
+                           Value="@DisabledReason"
+                           Class="font-semibold text-amber-700" />
+            }
+            <Cluster Gap="LayoutGap.Tiny">
+                <Pill Text="@Item.ObjectType" Tone="PillTone.Neutral" />
+                <Pill Text="@($"v{Item.Version}")" Tone="PillTone.Neutral" />
+                <Pill Text="@Item.Operation.ToString()" Tone="PillTone.Info" />
+                <Pill Text="@ShortOutPoint" Tone="PillTone.Neutral" title="@Item.CurrentOutPoint.ToString()" />
+            </Cluster>
+            @if (Tags.Count > 0)
+            {
+                <Cluster Gap="LayoutGap.Tiny">
+                    @foreach (string tag in Tags.Take(3))
+                    {
+                        <Pill Text="@($"#{tag}")" Tone="PillTone.Label" />
+                    }
+                </Cluster>
+            }
+        </Stack>
+    </button>
+</ActionCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public IBusinessObjectView Item { get; set; } = default!;
+
+    [Parameter]
+    public bool Selected { get; set; }
+
+    [Parameter]
+    public EventCallback SelectedChanged { get; set; }
+
+    [Parameter]
+    public bool Interactive { get; set; } = true;
+
+    [Parameter]
+    public string? DisabledReason { get; set; }
+
+    [Parameter]
+    public string? TestId { get; set; }
+
+    private string CardStyle
+        => string.IsNullOrWhiteSpace(DisabledReason)
+            ? "padding:0"
+            : "padding:0;opacity:.62";
+
+    private string SelectionCursorStyle
+        => Interactive ? string.Empty : "cursor:default";
+
+    private string SelectionIcon
+        => !string.IsNullOrWhiteSpace(DisabledReason)
+            ? "block"
+            : Selected ? "check_circle" : "radio_button_unchecked";
+
+    private string SelectionLabel => $"{(Selected ? "Deselect" : "Select")} {DisplayTitle}";
+
+    private string? RestrictionId
+        => string.IsNullOrWhiteSpace(DisabledReason)
+            ? null
+            : $"bo-card-restriction-{SafeId(Item.CurrentOutPoint.ToString())}";
+
+    private BusinessObjectDataItem? PreviewImage
+        => BusinessObjectCardDisplay.ImageFor(Item);
+
+    private IReadOnlyList<string> Tags
+        => BusinessObjectCardDisplay.TagsFor(Item);
+
+    private string DisplayTitle => BusinessObjectCardDisplay.DisplayName(Item);
+
+    private string Summary => BusinessObjectCardDisplay.Description(Item);
+
+    private string ShortOutPoint
+    {
+        get
+        {
+            string value = Item.CurrentOutPoint.ToString();
+            return value.Length <= 22 ? value : $"{value[..11]}...{value[^7..]}";
+        }
+    }
+
+    private static string SafeId(string value)
+        => new(value.Select(character => char.IsLetterOrDigit(character) ? character : '-').ToArray());
+}

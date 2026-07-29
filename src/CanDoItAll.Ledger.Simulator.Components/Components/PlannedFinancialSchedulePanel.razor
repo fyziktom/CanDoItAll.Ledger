@@ -1,4 +1,4 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
 <ListDetailShell Dense="true"
@@ -216,7 +216,7 @@
 </ListDetailShell>
 
 @code {
-    private static readonly IEconomySimulatorJsonSerializer Serializer = new EconomySimulatorJsonSerializer();
+    private static readonly ILedgerSimulatorJsonSerializer Serializer = new LedgerSimulatorJsonSerializer();
     private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);
     private IReadOnlyList<ScenarioFinancialScheduleState> schedules = [];
     private string? selectedNodeId;
@@ -412,7 +412,7 @@
         List<ScenarioFinancialScheduleState> loaded = [];
         invalidScheduleCount = 0;
         foreach (SimulationBusinessObjectDefinitionState definition in Project.BusinessObjectDefinitions
-                     .Where(definition => definition.ObjectType == EconomySimulatorObjectTypes.PlannedFinancialSchedule))
+                     .Where(definition => definition.ObjectType == LedgerSimulatorObjectTypes.PlannedFinancialSchedule))
         {
             ScenarioFinancialScheduleState? schedule = TryDeserialize(definition.StateJson);
             if (schedule is null)

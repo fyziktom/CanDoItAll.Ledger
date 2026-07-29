@@ -1,0 +1,56 @@
+@namespace CanDoItAll.Ledger.Components
+
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+    @if (!string.IsNullOrWhiteSpace(Media.Author)
+        || !string.IsNullOrWhiteSpace(Media.Link)
+        || !string.IsNullOrWhiteSpace(Media.ImageLink))
+    {
+        <Toolbar>
+            <ToolbarRow>
+                <CompactStatStrip Class="min-w-0">
+                    @if (!string.IsNullOrWhiteSpace(Media.Author))
+                    {
+                        <CompactStat Label="author" Value="@Media.Author" />
+                    }
+                    <CompactStat Label="data items" Value="@Media.DataItems.Count.ToString()" Tone="info" />
+                </CompactStatStrip>
+                <ToolbarActions>
+                    <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
+                        @if (!string.IsNullOrWhiteSpace(Media.Link))
+                        {
+                            <CopyableMonoValue Value="@Media.Link" StartChars="24" EndChars="8" AriaLabel="Copy object link" />
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Media.ImageLink)
+                            && !string.Equals(Media.ImageLink, Media.Link, StringComparison.Ordinal))
+                        {
+                            <CopyableMonoValue Value="@Media.ImageLink" StartChars="24" EndChars="8" AriaLabel="Copy image link" />
+                        }
+                    </Cluster>
+                </ToolbarActions>
+            </ToolbarRow>
+        </Toolbar>
+    }
+
+    @if (Media.Tags.Count > 0)
+    {
+        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
+            @foreach (string tag in Media.Tags)
+            {
+                <StatusBadge Tone="neutral" Text="@($"#{tag}")" />
+            }
+        </Cluster>
+    }
+
+    @if (Media.DataItems.Count > 0)
+    {
+        <BusinessObjectDataItemList Title="Attached data"
+                                    Description="Preview, copy, open, or download attached business-object data."
+                                    Items="@Media.DataItems"
+                                    TestId="cda-bo-renderer-data-items" />
+    }
+</Stack>
+
+@code {
+    [Parameter, EditorRequired]
+    public IMediaBusinessObjectView Media { get; set; } = default!;
+}

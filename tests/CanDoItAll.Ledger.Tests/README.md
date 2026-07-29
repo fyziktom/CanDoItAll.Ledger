@@ -2,7 +2,7 @@
 
 Ledger test project for transaction validation, storage, SDK, node, demo, and repository-boundary behavior.
 
-Tests in this repository should prove Ledger behavior and the no-basic-simulator boundary. Simulator-lane tests belong in the separated Economy repository.
+Tests in this repository should prove Ledger behavior and the no-basic-simulator boundary. Simulator-lane tests belong in the separated Ledger repository.
 
 Run:
 

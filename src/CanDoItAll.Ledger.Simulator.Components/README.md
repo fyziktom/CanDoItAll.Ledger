@@ -1,7 +1,11 @@
 # CanDoItAll.Ledger.Simulator.Components
 
-BO/project simulator UI moved from Economy.
+Experimental BO/project Simulator UI owned by Ledger.
 
-The components are part of the Ledger BO simulator landing zone, not the Economy
-simple/Smith observer host. Temporary `CanDoItAll.Economy.Simulator.Components`
-namespaces remain only for SB02 compatibility.
+This project is work in progress and not production-ready. Its screens and
+projections are development/exploration tools, not authoritative financial,
+accounting, forecasting, or economic evidence.
+
+The components are part of the Ledger BO/project Simulator, not the separate
+Economy simple/Smith observer host. Their namespace and assembly identity is
+`CanDoItAll.Ledger.Simulator.Components`.

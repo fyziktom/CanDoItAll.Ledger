@@ -1,6 +1,6 @@
 # Ledger Simulator Runtime Ownership Inventory
 
-Status: SB04 review update after SB02 landing and SB03 Economy removal.
+Status: completed ownership landing and Ledger namespace migration.
 
 This Ledger copy mirrors the Economy inventory for the v27 split. It records the
 actual post-landing BO/project simulator runtime ownership in this repo.
@@ -15,10 +15,13 @@ SB02 created these physical Ledger projects:
 - `examples/CanDoItAll.Ledger.Simulator.App`
 
 The first landing pass kept `CanDoItAll.Economy.Simulator*` assembly and
-namespace identities inside these Ledger project folders to reduce migration
-risk. This is temporary compatibility debt owned by the Ledger repo maintainer.
-It is reviewed at SB04 and must either be renamed or given a concrete sunset
-record at SB10.
+namespace identities temporarily. Those identities are now retired; projects,
+assemblies, namespaces, types, tests, and the browser host use
+`CanDoItAll.Ledger.Simulator*`.
+
+The Simulator remains work in progress and experimental. It is not
+production-ready and must not be used as authoritative financial, accounting,
+forecasting, or economic evidence.
 
 ## What Moves From Economy
 
@@ -34,9 +37,9 @@ record at SB10.
 
 | Economy test path | Ledger target | Reason |
 |---|---|---|
-| `tests/CanDoItAll.Economy.Tests/EconomySimulatorTests.cs` | `tests/CanDoItAll.Ledger.Tests/EconomySimulatorTests.cs` | Old BO/project simulator golden, projection, and persistence tests; Economy copy deleted in SB03. |
-| `tests/CanDoItAll.Economy.Tests/EconomySimulatorComponentTests.cs` | `tests/CanDoItAll.Ledger.Tests/EconomySimulatorComponentTests.cs` | Old simulator component tests; Economy copy deleted in SB03. |
-| `tests/CanDoItAll.Economy.Tests/EconomySimulatorRuleAutomationTests.cs` | `tests/CanDoItAll.Ledger.Tests/EconomySimulatorRuleAutomationTests.cs` | BO rule-token/account-rule automation tests; Economy copy deleted in SB03. |
+| `tests/CanDoItAll.Economy.Tests/EconomySimulatorTests.cs` | `tests/CanDoItAll.Ledger.Tests/LedgerSimulatorTests.cs` | BO/project simulator golden, projection, and persistence tests. |
+| `tests/CanDoItAll.Economy.Tests/EconomySimulatorComponentTests.cs` | `tests/CanDoItAll.Ledger.Tests/LedgerSimulatorComponentTests.cs` | Simulator component tests. |
+| `tests/CanDoItAll.Economy.Tests/EconomySimulatorRuleAutomationTests.cs` | `tests/CanDoItAll.Ledger.Tests/LedgerSimulatorRuleAutomationTests.cs` | BO rule-token/account-rule automation tests. |
 | `tests/CanDoItAll.Economy.Tests/SimulationApiEndpointTests.cs` | `tests/CanDoItAll.Ledger.Tests/SimulationApiEndpointTests.cs` | `/api/simulator` route tests; Economy copy deleted in SB03. |
 | `tests/CanDoItAll.Economy.Tests/SimulationProjectManagementTests.cs` | `tests/CanDoItAll.Ledger.Tests/SimulationProjectManagementTests.cs` | BO project workspace, import/export, and run lifecycle tests; Economy copy deleted in SB03. |
 
@@ -55,10 +58,10 @@ record at SB10.
 
 | Ledger path | Action | Role |
 |---|---|---|
-| `src/CanDoItAll.Economy.Core/**` | Keep/extend | Ledger transaction, address, token, rule, and BO primitives. |
-| `src/CanDoItAll.Economy.BusinessObjects/**` | Keep/extend | BO transitions and account behavior. |
-| `src/CanDoItAll.Economy.Components/**` | Keep/extend | Ledger/BO UI components. |
-| `src/CanDoItAll.Economy.Simulation.Ledger/**` | Keep/extend | Ledger-backed simulation adapter; must not import simple accounts or Smith. |
+| `src/CanDoItAll.Ledger.Core/**` | Keep/extend | Ledger transaction, address, token, rule, and BO primitives. |
+| `src/CanDoItAll.Ledger.BusinessObjects/**` | Keep/extend | BO transitions and account behavior. |
+| `src/CanDoItAll.Ledger.Components/**` | Keep/extend | Ledger/BO UI components. |
+| `src/CanDoItAll.Ledger.Simulation.Ledger/**` | Keep/extend | Ledger-backed simulation adapter; must not import simple accounts or Smith. |
 | `docs/architecture/repository-boundaries.md` | Update | Must distinguish Ledger BO simulator ownership from Economy simple/Smith runtime ownership. |
 
 ## Governance And Boundary Notes
@@ -67,9 +70,9 @@ record at SB10.
   future route ownership clarity.
 - Ledger receives the BO/project simulator only. It does not receive Economy
   simple accounts, Smith experiments, scenario packs, or WebGL observer evidence.
-- Compatibility namespaces are a temporary local migration rule with measured
-  benefit, complexity delta, validation cost, and sunset condition. They must not
-  become a permanent global naming policy.
-- Ledger build/test/audit proof passed before Economy deleted the old simulator
-  projects. SB04 and SB10 remain the audit gates for compatibility namespace
-  debt and cross-repo boundary drift.
+- Former compatibility namespaces are retired. Persisted format and schema
+  identifiers remain only under the exact compatibility policy in
+  `docs/architecture/namespace-compatibility.md`.
+- Ledger build/test/audit proof passed before Economy deleted the old Simulator
+  projects. Current identity and boundary validators now guard namespace and
+  cross-repository drift.

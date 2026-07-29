@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CanDoItAll.Economy.Simulator;
+namespace CanDoItAll.Ledger.Simulator;
 
 public interface ISimulationProjectValidationService
 {
@@ -25,7 +25,7 @@ public interface ISimulationRunObservationService
         SimulationRunSetupState setup,
         ScenarioRunState run,
         SimulationResultState result,
-        IReadOnlyList<EconomyGraphData> graphs,
+        IReadOnlyList<LedgerGraphData> graphs,
         IReadOnlyList<RuleExecutionEvidenceState> ruleEvidence);
 }
 
@@ -145,7 +145,7 @@ public sealed class SimulationProjectValidationService : ISimulationProjectValid
         HashSet<string> folders = project.Folders.Select(x => x.FolderId).ToHashSet(StringComparer.Ordinal);
         HashSet<string> definitions = new(StringComparer.Ordinal);
         HashSet<BusinessUnitId> businessUnits = project.BusinessUnits.Select(x => x.BusinessUnitId).ToHashSet();
-        IEconomySimulatorObjectTypeCatalog catalog = EconomySimulatorObjectTypeCatalog.Instance;
+        ILedgerSimulatorObjectTypeCatalog catalog = LedgerSimulatorObjectTypeCatalog.Instance;
 
         foreach (SimulationBusinessObjectDefinitionState definition in project.BusinessObjectDefinitions)
         {
@@ -270,7 +270,7 @@ public sealed class SimulationProjectValidationService : ISimulationProjectValid
 }
 
 public sealed class SimulationProjectImportExportService(
-    IEconomySimulatorJsonSerializer serializer,
+    ILedgerSimulatorJsonSerializer serializer,
     ISimulationProjectValidationService validationService) : ISimulationProjectImportExportService
 {
     public SimulationProjectExportManifest CreateManifest(SimulationProjectState project, DateTimeOffset exportedAtUtc)
@@ -287,7 +287,7 @@ public sealed class SimulationProjectImportExportService(
         };
 
         return new SimulationProjectExportManifest(
-            EconomySimulatorSchema.Version,
+            LedgerSimulatorSchema.Version,
             project.Summary.ProjectId,
             exportedAtUtc,
             project,
@@ -309,9 +309,9 @@ public sealed class SimulationProjectImportExportService(
 
             SimulationProjectValidationResult validation = validationService.Validate(manifest.Project);
             var warnings = new List<string>();
-            if (!string.Equals(manifest.SchemaVersion, EconomySimulatorSchema.Version, StringComparison.Ordinal))
+            if (!string.Equals(manifest.SchemaVersion, LedgerSimulatorSchema.Version, StringComparison.Ordinal))
             {
-                warnings.Add($"Manifest schema '{manifest.SchemaVersion}' differs from runtime schema '{EconomySimulatorSchema.Version}'.");
+                warnings.Add($"Manifest schema '{manifest.SchemaVersion}' differs from runtime schema '{LedgerSimulatorSchema.Version}'.");
             }
 
             return new SimulationProjectImportPreview(manifest, validation, validation.IsValid, warnings);
@@ -369,14 +369,14 @@ public sealed class SimulationProjectImportExportService(
         string BusinessObjectDefinitionHash);
 }
 
-public sealed class SimulationRunObservationService(IEconomySimulatorJsonSerializer serializer) : ISimulationRunObservationService
+public sealed class SimulationRunObservationService(ILedgerSimulatorJsonSerializer serializer) : ISimulationRunObservationService
 {
     public SimulationRunObservationState BuildObservation(
         SimulationProjectState project,
         SimulationRunSetupState setup,
         ScenarioRunState run,
         SimulationResultState result,
-        IReadOnlyList<EconomyGraphData> graphs,
+        IReadOnlyList<LedgerGraphData> graphs,
         IReadOnlyList<RuleExecutionEvidenceState> ruleEvidence)
     {
         string outputHash = result.OutputHashes.TryGetValue("result", out string? resultHash)

@@ -1,12 +1,12 @@
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectCommerceDispatcherTests
 {
@@ -77,7 +77,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
         {
             TokenOptions =
             [
-                new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+                new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
                 new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, UniqueAmount: Amount.FromInt64(9), UniqueUtxoCount: 9, TotalUtxoCount: 9)
             ]
         };
@@ -527,7 +527,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
             Alice,
             balance,
             [
-                new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
+                new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(100), IsMain: true),
                 new(OperatingToken.Value, OperatingToken.Value, OperatingToken, Amount.FromInt64(9), IsMain: false, SourceAmount: Amount.FromInt64(9), SourceUtxoCount: 1, TotalUtxoCount: 1)
             ],
             [],
@@ -613,7 +613,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
     private static TxId ExecutionTxId(int submissionNumber)
         => new(new string(submissionNumber.ToString("x")[0], 64));
 
-    private sealed class CapturingWorkspaceAdapter(BusinessObjectWorkspaceModel workspace) : IEconomyAccountWorkspaceAdapter
+    private sealed class CapturingWorkspaceAdapter(BusinessObjectWorkspaceModel workspace) : ILedgerAccountWorkspaceAdapter
     {
         public List<BusinessObjectTransactionDraft> SubmittedDrafts { get; } = [];
 
@@ -629,17 +629,17 @@ public sealed class BusinessObjectCommerceDispatcherTests
             CancellationToken cancellationToken = default)
             => Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(workspace, maxTransactions, workspace.ViewedAtUtc));
 
-        public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(
+        public Task<LedgerTransactionDetailsModel?> GetTransactionDetailsAsync(
             TxId txId,
             CancellationToken cancellationToken = default)
-            => Task.FromResult<EconomyTransactionDetailsModel?>(null);
+            => Task.FromResult<LedgerTransactionDetailsModel?>(null);
 
-        public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
+        public Task<LedgerTransactionExecutionResult> SubmitTransactionAsync(
             BusinessObjectTransactionDraft draft,
             CancellationToken cancellationToken = default)
         {
             SubmittedDrafts.Add(draft);
-            return Task.FromResult(new EconomyTransactionExecutionResult(
+            return Task.FromResult(new LedgerTransactionExecutionResult(
                 draft.SelectedMode,
                 Accepted: true,
                 TxId: ExecutionTxId(SubmittedDrafts.Count),
@@ -647,17 +647,17 @@ public sealed class BusinessObjectCommerceDispatcherTests
                 "Accepted."));
         }
 
-        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+        public Task<LedgerTransactionExecutionResult> SendBusinessObjectAsync(
             BusinessObjectSendRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException("Dispatcher must submit deterministic drafts.");
 
-        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+        public Task<LedgerTransactionExecutionResult> SetBusinessObjectPriceAsync(
             BusinessObjectPriceRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException("Dispatcher must submit explicit update drafts.");
 
-        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+        public Task<LedgerTransactionExecutionResult> UpdateProfileAsync(
             ProfileEditRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
@@ -667,7 +667,7 @@ public sealed class BusinessObjectCommerceDispatcherTests
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
-        public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        public Task<LedgerTransactionExecutionResult> UseTicketAsync(
             BusinessObjectTicketUseRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
@@ -677,13 +677,13 @@ public sealed class BusinessObjectCommerceDispatcherTests
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
-        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
-            EconomyTokenCreationRequest request,
+        public Task<LedgerTransactionExecutionResult> CreateTokenAsync(
+            LedgerTokenCreationRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
-        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
-            EconomyRuleTokenCreationRequest request,
+        public Task<LedgerTransactionExecutionResult> CreateRuleTokenAsync(
+            LedgerRuleTokenCreationRequest request,
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 

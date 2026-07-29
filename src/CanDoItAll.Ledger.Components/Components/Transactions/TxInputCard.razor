@@ -1,0 +1,70 @@
+@namespace CanDoItAll.Ledger.Components
+
+<SurfaceCard data-testid="cda-tx-input-card">
+    <Stack GapScale="LayoutGap.Medium">
+        <Split Breakpoint="LayoutBreakpoint.None"
+               AlignItems="AlignItems.Center"
+               Wrap="FlexWrap.Wrap"
+               Gap="LayoutGap.Small">
+            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@($"Input #{Input.InputIndex}")" />
+            <Cluster Gap="LayoutGap.XSmall">
+                @if (!string.IsNullOrWhiteSpace(RoleLabel))
+                {
+                    <StatusBadge Text="@RoleLabel" Tone="@RoleTone" />
+                }
+                <StatusBadge Text="@($"{Input.SignatureCount} sig")" Tone="info" />
+            </Cluster>
+        </Split>
+
+        <Grid ColumnsSm="3" Gap="LayoutGap.Small">
+            <MetricCard Label="Previous">
+                <ValueContent>
+                    <CopyableMonoValue Value="@Input.PreviousOutPoint.ToString()"
+                                       StartChars="10"
+                                       EndChars="6"
+                                       AriaLabel="Copy previous outpoint" />
+                </ValueContent>
+            </MetricCard>
+            <MetricCard Label="Main" Value="@(Input.MainAmount?.ToString() ?? "unknown")" />
+            <MetricCard Label="Token" Value="@FormatToken(Input.Token)" />
+        </Grid>
+
+        <Grid ColumnTemplateMd="minmax(7rem,0.24fr) minmax(0,1fr)"
+              Gap="LayoutGap.Small"
+              AlignItems="AlignItems.Center">
+            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Source address" />
+            <CopyableMonoValue Value="@Input.Address.Value" />
+        </Grid>
+
+        @if (Input.BusinessObject is not null)
+        {
+            <SmallText Paragraph="true">
+                BO <CopyableMonoValue Value="@Input.PreviousOutPoint.ToString()"
+                                      Truncate="false"
+                                      AriaLabel="Copy source business object UTXO id" /> v@(Input.BusinessObject.Version)
+            </SmallText>
+        }
+        @if (!string.IsNullOrWhiteSpace(SupportingText))
+        {
+            <TextBlock TextStyle="TextStyle.Muted" Value="@SupportingText" />
+        }
+    </Stack>
+</SurfaceCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public LedgerTransactionInputDetails Input { get; set; } = default!;
+
+    [Parameter]
+    public string? RoleLabel { get; set; }
+
+    [Parameter]
+    public string RoleTone { get; set; } = "info";
+
+    [Parameter]
+    public string? SupportingText { get; set; }
+
+    private static string FormatToken(TokenTransfer? token)
+        => token is null ? "none" : $"{token.Amount} {token.TokenId.Value}";
+
+}

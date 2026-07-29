@@ -1,17 +1,17 @@
-using CanDoItAll.Economy.Simulator;
-using CanDoItAll.Economy.Simulator.Components.Samples;
+using CanDoItAll.Ledger.Simulator;
+using CanDoItAll.Ledger.Simulator.Components.Samples;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class SimulationProjectManagementTests
 {
     [Fact]
     public void ProjectManifest_RoundtripsDeterministicallyWithBoRulesAndFinancialInputs()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
-        var serializer = new EconomySimulatorJsonSerializer();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
+        var serializer = new LedgerSimulatorJsonSerializer();
         var service = new SimulationProjectImportExportService(serializer, new SimulationProjectValidationService());
         DateTimeOffset exportedAt = DateTimeOffset.Parse("2026-05-14T12:00:00Z");
 
@@ -33,10 +33,10 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void ProjectValidation_CatchesBrokenReferencesAndInvalidFinancialInputs()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         BusinessUnitState brokenBusinessUnit = project.BusinessUnits[1] with
         {
-            ParentBusinessUnitId = EconomySimulatorIdentifiers.BusinessUnitId(project.Summary.ProjectId, "missing-parent")
+            ParentBusinessUnitId = LedgerSimulatorIdentifiers.BusinessUnitId(project.Summary.ProjectId, "missing-parent")
         };
         SimulationBusinessObjectDefinitionState brokenDefinition = project.BusinessObjectDefinitions[0] with
         {
@@ -59,7 +59,7 @@ public sealed class SimulationProjectManagementTests
         SimulationRunSetupState brokenSetup = project.RunSetups[0] with
         {
             StepCount = 0,
-            IncludedBusinessUnits = [EconomySimulatorIdentifiers.BusinessUnitId(project.Summary.ProjectId, "missing-bu")]
+            IncludedBusinessUnits = [LedgerSimulatorIdentifiers.BusinessUnitId(project.Summary.ProjectId, "missing-bu")]
         };
         SimulationProjectState invalid = project with
         {
@@ -86,8 +86,8 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void RunSetupHash_IgnoresUiSpeedButIncludesSemanticSetup()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
-        var service = new SimulationProjectImportExportService(new EconomySimulatorJsonSerializer(), new SimulationProjectValidationService());
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
+        var service = new SimulationProjectImportExportService(new LedgerSimulatorJsonSerializer(), new SimulationProjectValidationService());
         SimulationRunSetupState normalSpeed = project.RunSetups[0] with { UiSpeed = SimulationUiRunSpeed.Normal };
         SimulationRunSetupState maxSpeed = project.RunSetups[0] with { UiSpeed = SimulationUiRunSpeed.Max };
         SimulationRunSetupState differentSeed = project.RunSetups[0] with { Seed = project.RunSetups[0].Seed + 1 };
@@ -103,7 +103,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void ProjectRuleDefinitions_ReuseAccountRuleDefinitionFormat()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         IReadOnlyList<SimulationBusinessObjectDefinitionState> ruleDefinitions = project.BusinessObjectDefinitions
             .Where(x => x.Kind == SimulationBusinessObjectDefinitionKind.RuleDefinition)
             .ToArray();
@@ -113,14 +113,14 @@ public sealed class SimulationProjectManagementTests
         {
             Assert.NotNull(definition.RuleDefinition);
             Assert.True(RuleTokenAuthority.TryValidate(definition.RuleDefinition!, out IReadOnlyList<string> errors), string.Join("; ", errors));
-            Assert.Equal(EconomySimulatorObjectTypes.RuleState, definition.ObjectType);
+            Assert.Equal(LedgerSimulatorObjectTypes.RuleState, definition.ObjectType);
         });
     }
 
     [Fact]
     public void RunLifecycle_AutomaticStartCompletesAtConfiguredEnd()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService service = CreateLifecycleService();
         DateTimeOffset started = DateTimeOffset.Parse("2026-05-16T10:15:00Z");
 
@@ -146,7 +146,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public async Task RunLifecycle_LiveAutomaticStartRegistersBeforeCompletionAndMaterializes()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         SimulationRunSetupState setup = project.RunSetups[0] with
         {
             StepCount = 30,
@@ -179,7 +179,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void RunLifecycle_SameTimestampCreatesDistinctRunsWithoutOverwritingHistory()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService service = CreateLifecycleService();
         DateTimeOffset started = DateTimeOffset.Parse("2026-05-16T10:15:00Z");
 
@@ -205,7 +205,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public async Task RunLifecycle_RequestCancellationAfterStartDoesNotAbandonServerOwnedRun()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         SimulationRunSetupState setup = project.RunSetups[0] with
         {
             StepCount = 3,
@@ -238,7 +238,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void RunLifecycle_ManualStartWaitsAtFirstStep()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService service = CreateLifecycleService();
         DateTimeOffset started = DateTimeOffset.Parse("2026-05-16T10:15:00Z");
 
@@ -259,7 +259,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void RunLifecycle_ManualForwardCreatesMissingAndBackwardLoadsHistory()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService service = CreateLifecycleService();
         DateTimeOffset started = DateTimeOffset.Parse("2026-05-16T10:15:00Z");
         SimulationRunCommandResult start = service.StartRun(project, project.RunSetups[0].SetupId, started, SimulationRunMode.Manual);
@@ -295,7 +295,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void RunLifecycle_RejectsStepOutsideRunRange()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService service = CreateLifecycleService();
         SimulationRunCommandResult start = service.StartRun(project, project.RunSetups[0].SetupId, DateTimeOffset.Parse("2026-05-16T10:15:00Z"), SimulationRunMode.Manual);
 
@@ -342,14 +342,14 @@ public sealed class SimulationProjectManagementTests
         Assert.Equal(2, afterDemand.Run.SelectedStep);
         Assert.Equal(2, afterDemand.Run.AvailableStep);
         Assert.NotEqual(stepTwoHash, afterDemand.Run.OutputHash);
-        Assert.Contains(afterDemand.Project.BusinessObjectDefinitions, definition => definition.ObjectType == EconomySimulatorObjectTypes.RuntimeIntervention);
+        Assert.Contains(afterDemand.Project.BusinessObjectDefinitions, definition => definition.ObjectType == LedgerSimulatorObjectTypes.RuntimeIntervention);
 
         lifecycle.StepRun(interventionStart.RunId!, SimulationRunStepRequestKind.Next);
         SimulationRunConsoleState demandStepThree = lifecycle.GetRun(interventionStart.RunId!)!;
 
         Assert.True(GraphTotal(demandStepThree, ScenarioGraphMetric.Revenue, "nonCashIncome") > GraphTotal(baselineStepThree, ScenarioGraphMetric.Revenue, "nonCashIncome"));
 
-        BusinessUnitId production = EconomySimulatorIdentifiers.BusinessUnitId("s2-bakery", "production");
+        BusinessUnitId production = LedgerSimulatorIdentifiers.BusinessUnitId("s2-bakery", "production");
         SimulationRunInterventionCommandResult productionLine = lifecycle.ApplyIntervention(
             interventionStart.RunId!,
             new SimulationRunInterventionRequest(
@@ -376,7 +376,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void RunLifecycle_InvalidCommandReturnsVisibleError()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService service = CreateLifecycleService();
         SimulationRunConsoleState completed = service.EnsureProjectRuns(project).Single(run => run.Run.Status == SimulationRunLifecycleStatus.Completed);
 
@@ -389,7 +389,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void RunLifecycle_FailedSeedPreservesErrorsAndArtifacts()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService service = CreateLifecycleService();
         SimulationRunConsoleState failed = service.EnsureProjectRuns(project).Single(run => run.Run.Status == SimulationRunLifecycleStatus.Failed);
 
@@ -402,7 +402,7 @@ public sealed class SimulationProjectManagementTests
     [Fact]
     public void RunLifecycle_OutputSourceMapCoversMacroKpis()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         InMemorySimulationRunLifecycleService service = CreateLifecycleService();
         SimulationRunConsoleState run = service.EnsureProjectRuns(project)[0];
         string[] required = ["realGdp", "cpi", "unemployment", "policyRate", "budgetBalance", "currentAccount"];
@@ -417,15 +417,15 @@ public sealed class SimulationProjectManagementTests
 
     private static InMemorySimulationRunLifecycleService CreateLifecycleService()
     {
-        var serializer = new EconomySimulatorJsonSerializer();
+        var serializer = new LedgerSimulatorJsonSerializer();
         var validation = new SimulationProjectValidationService();
         var importExport = new SimulationProjectImportExportService(serializer, validation);
         var observation = new SimulationRunObservationService(serializer);
-        var scenarioCatalog = new EconomyScenarioTemplateCatalog();
-        var scenarioMaterializer = new EconomyScenarioRunMaterializer(
+        var scenarioCatalog = new LedgerScenarioTemplateCatalog();
+        var scenarioMaterializer = new LedgerScenarioRunMaterializer(
             scenarioCatalog,
-            new EconomyScenarioEventCompiler(serializer),
-            new EconomyProjectionService(),
+            new LedgerScenarioEventCompiler(serializer),
+            new LedgerProjectionService(),
             serializer);
         return new InMemorySimulationRunLifecycleService(
             validation,
@@ -441,7 +441,7 @@ public sealed class SimulationProjectManagementTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<ITimeProvider>(new FixedTimeProvider(DateTimeOffset.Parse("2026-05-16T10:30:00Z")));
-        services.AddEconomySimulator();
+        services.AddLedgerSimulator();
         return services.BuildServiceProvider();
     }
 

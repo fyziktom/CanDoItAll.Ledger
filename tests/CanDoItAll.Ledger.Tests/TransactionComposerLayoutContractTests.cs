@@ -1,4 +1,4 @@
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class TransactionComposerLayoutContractTests
 {
@@ -6,7 +6,7 @@ public sealed class TransactionComposerLayoutContractTests
     public void Context_rail_uses_compact_BaseLib_composition_without_nested_scrolling()
     {
         string rail = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionContextRail.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionContextRail.razor");
 
         Assert.Contains("<Toolbar", rail, StringComparison.Ordinal);
         Assert.Contains("<CompactStatStrip", rail, StringComparison.Ordinal);
@@ -16,7 +16,7 @@ public sealed class TransactionComposerLayoutContractTests
         Assert.DoesNotContain("<SummaryTiles", rail, StringComparison.Ordinal);
         Assert.DoesNotContain("overflow-y", rail, StringComparison.Ordinal);
         Assert.False(RepoFileExists(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionContextRail.razor.css"));
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionContextRail.razor.css"));
     }
 
     [Fact]
@@ -24,34 +24,34 @@ public sealed class TransactionComposerLayoutContractTests
     {
         string shell = ReadRepoFile(
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Components",
             "Transactions",
             "TransactionComposerShell.razor");
         string css = ReadRepoFile(
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "wwwroot",
             "css",
-            "economy-components.css");
+            "ledger-components.css");
         string workflow = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionWorkflowSteps.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionWorkflowSteps.razor");
         string compactWorkflow = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "CompactWorkflowProgress.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "CompactWorkflowProgress.razor");
         string reviewWizard = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionDetailsReviewWizard.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionDetailsReviewWizard.razor");
         string split = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionUtxoSplitForm.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionUtxoSplitForm.razor");
         string splitCss = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionUtxoSplitForm.razor.css");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionUtxoSplitForm.razor.css");
         string picker = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "BusinessObjectPickerDialogContent.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "BusinessObjectPickerDialogContent.razor");
         string accountHost = ReadRepoFile(
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Components",
             "Account",
-            "EconomyAccountWorkspaceAdapterHost.razor");
+            "LedgerAccountWorkspaceAdapterHost.razor");
 
         Assert.Contains("data-testid=\"transaction-workbench\"", shell, StringComparison.Ordinal);
         Assert.Contains("ColumnTemplateLg=\"minmax(0, 1fr) minmax(16rem, 19rem)\"", shell, StringComparison.Ordinal);
@@ -68,7 +68,7 @@ public sealed class TransactionComposerLayoutContractTests
         Assert.DoesNotContain("<Steps", compactWorkflow, StringComparison.Ordinal);
         Assert.Contains("@if (currentStep == 0)", reviewWizard, StringComparison.Ordinal);
         Assert.False(RepoFileExists(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionWorkflowSteps.razor.css"));
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionWorkflowSteps.razor.css"));
         Assert.DoesNotContain("cda-transaction-workflow-steps", css, StringComparison.Ordinal);
         Assert.Contains("<StickyActionFooter StatusLabel=\"Selection\"", picker, StringComparison.Ordinal);
         Assert.Contains("<Grid ColumnsLg=\"2\" Gap=\"LayoutGap.Medium\">", split, StringComparison.Ordinal);
@@ -80,7 +80,7 @@ public sealed class TransactionComposerLayoutContractTests
         Assert.DoesNotContain(".cda-action-review-panel", css, StringComparison.Ordinal);
         Assert.Contains(
             "<ActionReviewPanel",
-            ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionReviewPanel.razor"),
+            ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionReviewPanel.razor"),
             StringComparison.Ordinal);
         Assert.Matches(
             @"(?s)Size = ModalSize\.Full,\s*DenseChrome = true,\s*CloseOnBackdrop = false,\s*Class = ""cda-ledger-dialog"",\s*TestId = ""cda-send-transaction-dialog""",
@@ -97,9 +97,9 @@ public sealed class TransactionComposerLayoutContractTests
     public void New_object_wizards_never_offer_an_editable_target_identity()
     {
         string create = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "BusinessObjectCreateTransactionForm.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "BusinessObjectCreateTransactionForm.razor");
         string operations = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Transactions", "BusinessObjectOperationWizard.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "BusinessObjectOperationWizard.razor");
 
         Assert.Contains("bo-create-object-id-pending", create, StringComparison.Ordinal);
         Assert.DoesNotContain("SetObjectIdAsync", create, StringComparison.Ordinal);

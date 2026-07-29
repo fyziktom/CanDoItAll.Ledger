@@ -1,9 +1,9 @@
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Storage.InMemory;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Storage.InMemory;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class LedgerHardeningRegressionTests
 {

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ledger</AssemblyName>
+    <RootNamespace>CanDoItAll.Ledger.Cli</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Ledger.Core\CanDoItAll.Ledger.Core.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.BusinessObjects\CanDoItAll.Ledger.BusinessObjects.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Engine\CanDoItAll.Ledger.Engine.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Cryptography\CanDoItAll.Ledger.Cryptography.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Persistence.EFCore\CanDoItAll.Ledger.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Persistence.PostgreSql\CanDoItAll.Ledger.Persistence.PostgreSql.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Sdk\CanDoItAll.Ledger.Sdk.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+  </ItemGroup>
+</Project>

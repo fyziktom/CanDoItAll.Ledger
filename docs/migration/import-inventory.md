@@ -1,43 +1,52 @@
-# Ledger Import Inventory
+# Ledger Import And Namespace Migration Inventory
 
-Status: SB01 import plan, before code movement.
+Status: completed repository split and Ledger identity migration.
 
 ## Repository Role
 
-`CanDoItAll.Ledger` owns ledger, node, UTXO/blockchain persistence, ledger UI, ledger demos, CLI, SDK, and ledger-specific tests. It does not own the Economy basic simulator, Smith-like experimental economics, scenario packs, or WebGL observer evidence.
+`CanDoItAll.Ledger` owns the ledger, node, UTXO/blockchain persistence, ledger
+UI, demos, CLI, SDK, ledger-specific tests, and the experimental BO/project
+Simulator. It does not own the separate Economy simple-account simulator,
+Smith-style experiments, scenario packs, or WebGL observer evidence.
 
-## Planned Imports From Economy
+## Completed Target Inventory
 
-| Economy source | Ledger target | Notes |
-| --- | --- | --- |
-| `src/CanDoItAll.Economy.Core` | `src/CanDoItAll.Economy.Core` initially | Ledger transaction/UTXO/storage contracts. Namespace retained temporarily as a compatibility shim. |
-| `src/CanDoItAll.Economy.Cryptography` | `src/CanDoItAll.Economy.Cryptography` initially | Signature, hashing, and key support. Namespace retained temporarily. |
-| `src/CanDoItAll.Economy.Ledger` | `src/CanDoItAll.Economy.Ledger` initially | Ledger validation and confirmation logic. Namespace retained temporarily. |
-| `src/CanDoItAll.Economy.BusinessObjects` | `src/CanDoItAll.Economy.BusinessObjects` initially | Ledger-bound BusinessObject model and transaction builders. Namespace retained temporarily. |
-| `src/CanDoItAll.Economy.Sdk` | `src/CanDoItAll.Economy.Sdk` initially | Node HTTP driver and ledger facade. Namespace retained temporarily. |
-| `src/CanDoItAll.Economy.Simulation.Ledger` | `src/CanDoItAll.Economy.Simulation.Ledger` initially | Ledger-backed simulation adapter; must not bring basic scenario packs. |
-| `src/CanDoItAll.Economy.Storage.InMemory` | `src/CanDoItAll.Economy.Storage.InMemory` initially | In-memory ledger store. |
-| `src/CanDoItAll.Economy.Node` | `src/CanDoItAll.Economy.Node` initially | Ledger node host and admin UI. |
-| `src/CanDoItAll.Economy.Cli` | `src/CanDoItAll.Economy.Cli` initially | Ledger CLI. |
-| `src/CanDoItAll.Economy.Persistence.EFCore` ledger files | `src/CanDoItAll.Economy.Persistence.EFCore` initially | Ledger EF store/projections; simple economy EF files stay in Economy or are split. |
-| `src/CanDoItAll.Economy.Persistence.PostgreSql` ledger files | `src/CanDoItAll.Economy.Persistence.PostgreSql` initially | Ledger PostgreSQL registration/migrations; simple economy PostgreSQL files stay in Economy or are split. |
-| `src/CanDoItAll.Economy.Components` ledger/admin/BusinessObject UI | `src/CanDoItAll.Economy.Components` initially | Ledger UI components; simulator UI remains in Economy. |
-| `examples/CanDoItAll.Economy.AppHost*` | `examples/` | Ledger node apphost/demo scaffolding. |
-| `examples/CanDoItAll.Economy.ConsoleDemo` | `examples/` | Ledger console demo. |
-| `tools/CanDoItAll.Economy.DemoSeeder` | `tools/` | Ledger demo seeder. |
-| ledger tests from `tests/CanDoItAll.Economy.Tests` | `tests/CanDoItAll.Ledger.Tests` | Move ledger/node/persistence tests; keep basic simulator tests in Economy. |
+| Imported responsibility | Current Ledger target |
+| --- | --- |
+| Transaction, UTXO, storage, and account contracts | `src/CanDoItAll.Ledger.Core` |
+| Signature, hashing, and key drivers | `src/CanDoItAll.Ledger.Cryptography` |
+| Validation, execution, replay, and chain verification | `src/CanDoItAll.Ledger.Engine` |
+| BusinessObject transactions and account behavior | `src/CanDoItAll.Ledger.BusinessObjects` |
+| SDK and node HTTP client | `src/CanDoItAll.Ledger.Sdk` |
+| Ledger-backed simulation contracts and adapter | `src/CanDoItAll.Ledger.Simulation.Abstractions`, `src/CanDoItAll.Ledger.Simulation.Ledger` |
+| In-memory storage | `src/CanDoItAll.Ledger.Storage.InMemory` |
+| Node host | `src/CanDoItAll.Ledger.Node` |
+| CLI | `src/CanDoItAll.Ledger.Cli` |
+| EF Core and PostgreSQL persistence | `src/CanDoItAll.Ledger.Persistence.EFCore`, `src/CanDoItAll.Ledger.Persistence.PostgreSql` |
+| Ledger and BusinessObject UI | `src/CanDoItAll.Ledger.Components` |
+| AppHost, AccountApp, console, and component demos | `examples/CanDoItAll.Ledger.*` |
+| Demo seeding | `tools/CanDoItAll.Ledger.DemoSeeder` |
+| Ledger tests | `tests/CanDoItAll.Ledger.Tests` |
 
-## Compatibility Namespace Deletion Plan
+## Namespace Completion
 
-The first migration pass may preserve `CanDoItAll.Economy.*` namespaces inside the Ledger repo to keep behavior stable while physical ownership moves. These compatibility namespaces are liabilities with owner, cost, and sunset:
+The initial split temporarily retained `CanDoItAll.Economy.*` source identities.
+That debt is retired. The current solution has 27 Ledger-owned projects and no
+active Economy-named project, folder, assembly, root namespace, source namespace,
+type, configuration prefix, or infrastructure identity.
 
-| Shim | Owner | Benefit | Cost | Sunset condition |
-| --- | --- | --- | --- | --- |
-| `CanDoItAll.Economy.Core` in Ledger repo | Ledger repo maintainer | Avoids broad semantic rename during physical split. | Confusing package identity and docs. | Rename to `CanDoItAll.Ledger.Core` after both repos build and public API mapping is documented. |
-| `CanDoItAll.Economy.Ledger` in Ledger repo | Ledger repo maintainer | Keeps ledger tests and demos stable during import. | Old repo name remains visible in code. | Rename with package migration guide and compatibility type-forwarding if needed. |
-| `CanDoItAll.Economy.Node` in Ledger repo | Ledger repo maintainer | Preserves node host startup while moving host ownership. | Old host name implies Economy ownership. | Rename once Economy no longer depends on node browser evidence. |
-| `CanDoItAll.Economy.BusinessObjects` and `.Sdk` in Ledger repo | Ledger repo maintainer | Keeps ledger API clients and object workflows stable. | Old namespace hides Ledger ownership. | Rename after ledger package boundaries and client docs are updated. |
+The existing serialized format IDs and PostgreSQL `Economy_` schema names remain
+stable compatibility contracts. See
+`docs/architecture/namespace-compatibility.md`; they are not namespace shims.
 
-## Ledger Audit Gate
+## Audit Gates
 
-`scripts/audit-ledger-repo-does-not-contain-basic-simulator.ps1` fails if basic simulator scenario packs or drivers are copied into the Ledger repo.
+```powershell
+.\tools\validation\Test-LedgerIdentity.ps1 -RunNegativeFixture
+.\scripts\audit-ledger-repo-does-not-contain-basic-simulator.ps1 -RunNegativeFixture
+.\scripts\audit-ledger-boundaries.ps1
+```
+
+The cross-repository audit remains named
+`audit-economy-ledger-split.ps1` because Economy is the real name of the sibling
+repository whose ownership boundary it validates.

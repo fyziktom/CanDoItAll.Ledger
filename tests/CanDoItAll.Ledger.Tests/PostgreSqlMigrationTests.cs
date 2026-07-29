@@ -1,28 +1,28 @@
-using CanDoItAll.Economy.Persistence.EFCore;
-using CanDoItAll.Economy.Persistence.EFCore.Records;
-using CanDoItAll.Economy.Persistence.PostgreSql;
+using CanDoItAll.Ledger.Persistence.EFCore;
+using CanDoItAll.Ledger.Persistence.EFCore.Records;
+using CanDoItAll.Ledger.Persistence.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class PostgreSqlMigrationTests
 {
-    private const string TestConnectionEnvironmentVariable = "CANDOITALL_ECONOMY_TEST_CONNECTION";
+    private const string TestConnectionEnvironmentVariable = "CANDOITALL_LEDGER_TEST_CONNECTION";
 
     [Fact]
     public void PostgreSqlRegistration_DefaultsMigrationAssemblyAndProviderMigrator()
     {
         var services = new ServiceCollection();
-        services.AddEconomyPostgreSqlPersistence("Host=localhost;Database=contract;Username=user;Password=password");
+        services.AddLedgerPostgreSqlPersistence("Host=localhost;Database=contract;Username=user;Password=password");
 
         using ServiceProvider provider = services.BuildServiceProvider();
-        EconomyPostgreSqlOptions options = provider.GetRequiredService<IOptions<EconomyPostgreSqlOptions>>().Value;
+        LedgerPostgreSqlOptions options = provider.GetRequiredService<IOptions<LedgerPostgreSqlOptions>>().Value;
 
-        Assert.Equal(typeof(PostgreSqlEconomySchemaMigrator).Assembly.GetName().Name, options.MigrationsAssembly);
-        Assert.IsType<PostgreSqlEconomySchemaMigrator>(provider.GetRequiredService<IEconomySchemaMigrator>());
+        Assert.Equal(typeof(PostgreSqlLedgerSchemaMigrator).Assembly.GetName().Name, options.MigrationsAssembly);
+        Assert.IsType<PostgreSqlLedgerSchemaMigrator>(provider.GetRequiredService<ILedgerSchemaMigrator>());
     }
 
     [Fact]
@@ -36,19 +36,19 @@ public sealed class PostgreSqlMigrationTests
         }
 
         await using PostgreSqlMigrationDatabase legacy = await PostgreSqlMigrationDatabase.CreateAsync("migration_legacy", empty.AdminConnectionString);
-        var migrator = new PostgreSqlEconomySchemaMigrator();
+        var migrator = new PostgreSqlLedgerSchemaMigrator();
 
-        await using (EconomyDbContext db = empty.CreateContext())
+        await using (LedgerDbContext db = empty.CreateContext())
         {
-            EconomySchemaMigrationResult result = await migrator.MigrateAsync(db, CancellationToken.None);
+            LedgerSchemaMigrationResult result = await migrator.MigrateAsync(db, CancellationToken.None);
             Assert.False(result.BaselineAdopted);
             Assert.NotEmpty(result.AppliedMigrations);
         }
 
-        await using (EconomyDbContext db = legacy.CreateContext())
+        await using (LedgerDbContext db = legacy.CreateContext())
         {
             await db.Database.EnsureCreatedAsync();
-            EconomySchemaMigrationResult result = await migrator.MigrateAsync(db, CancellationToken.None);
+            LedgerSchemaMigrationResult result = await migrator.MigrateAsync(db, CancellationToken.None);
             Assert.True(result.BaselineAdopted);
             Assert.Equal(result.AvailableMigrations, result.AppliedMigrations);
         }
@@ -64,7 +64,7 @@ public sealed class PostgreSqlMigrationTests
             return;
         }
 
-        await using EconomyDbContext db = database.CreateContext();
+        await using LedgerDbContext db = database.CreateContext();
         await db.Database.EnsureCreatedAsync();
         await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Economy_LedgerTransactionOutputs\" DROP CONSTRAINT \"CK_Economy_TxOutput_AssetSeparation\"");
         db.TransactionOutputs.Add(new LedgerTransactionOutputRecord
@@ -78,8 +78,8 @@ public sealed class PostgreSqlMigrationTests
         });
         await db.SaveChangesAsync();
 
-        var migrator = new PostgreSqlEconomySchemaMigrator();
-        EconomySchemaMigrationException error = await Assert.ThrowsAsync<EconomySchemaMigrationException>(
+        var migrator = new PostgreSqlLedgerSchemaMigrator();
+        LedgerSchemaMigrationException error = await Assert.ThrowsAsync<LedgerSchemaMigrationException>(
             () => migrator.MigrateAsync(db, CancellationToken.None));
 
         Assert.Contains("mixed main/token", error.Message, StringComparison.OrdinalIgnoreCase);
@@ -98,16 +98,16 @@ public sealed class PostgreSqlMigrationTests
             return;
         }
 
-        await using (EconomyDbContext setup = database.CreateContext())
+        await using (LedgerDbContext setup = database.CreateContext())
         {
             await setup.Database.EnsureCreatedAsync();
         }
 
-        await using EconomyDbContext first = database.CreateContext();
-        await using EconomyDbContext second = database.CreateContext();
-        var migrator = new PostgreSqlEconomySchemaMigrator();
+        await using LedgerDbContext first = database.CreateContext();
+        await using LedgerDbContext second = database.CreateContext();
+        var migrator = new PostgreSqlLedgerSchemaMigrator();
 
-        EconomySchemaMigrationResult[] results = await Task.WhenAll(
+        LedgerSchemaMigrationResult[] results = await Task.WhenAll(
             migrator.MigrateAsync(first, CancellationToken.None),
             migrator.MigrateAsync(second, CancellationToken.None));
 
@@ -142,7 +142,7 @@ public sealed class PostgreSqlMigrationTests
         public static async Task<PostgreSqlMigrationDatabase?> TryCreateAsync(string suffix)
         {
             string configured = Environment.GetEnvironmentVariable(TestConnectionEnvironmentVariable)
-                ?? "Host=localhost;Port=5432;Database=postgres;Username=cdaeconomy;Password=cdaeconomy;Timeout=2;Command Timeout=5";
+                ?? "Host=localhost;Port=5432;Database=postgres;Username=cdaledger;Password=cdaledger;Timeout=2;Command Timeout=5";
             try
             {
                 return await CreateAsync(suffix, configured);
@@ -174,14 +174,14 @@ public sealed class PostgreSqlMigrationTests
             return new PostgreSqlMigrationDatabase(databaseName, databaseBuilder.ConnectionString, adminBuilder.ConnectionString, connection);
         }
 
-        public EconomyDbContext CreateContext()
+        public LedgerDbContext CreateContext()
         {
-            var options = new DbContextOptionsBuilder<EconomyDbContext>()
+            var options = new DbContextOptionsBuilder<LedgerDbContext>()
                 .UseNpgsql(
                     databaseConnectionString,
-                    npgsql => npgsql.MigrationsAssembly(typeof(PostgreSqlEconomySchemaMigrator).Assembly.GetName().Name))
+                    npgsql => npgsql.MigrationsAssembly(typeof(PostgreSqlLedgerSchemaMigrator).Assembly.GetName().Name))
                 .Options;
-            return new EconomyDbContext(options);
+            return new LedgerDbContext(options);
         }
 
         public async ValueTask DisposeAsync()

@@ -1,0 +1,214 @@
+@using System.Globalization
+@namespace CanDoItAll.Ledger.Components
+
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="utxo-split-form">
+<UtxoSelectionDialogLauncher Outputs="SpendableOutputs"
+                             SelectedOutPoints="Draft.SelectedUtxosOrEmpty"
+                             SelectedOutPointsChanged="SetSelectedUtxosAsync"
+                             Label="Split inputs"
+                             MinimumSelections="1"
+                             TestId="cda-split-utxo-selector" />
+
+<SurfaceCard Soft="true">
+<Grid ColumnTemplateLg="minmax(8rem,.35fr) minmax(10rem,.45fr) minmax(22rem,1.2fr) auto"
+      Gap="LayoutGap.Medium"
+      AlignItems="AlignItems.End">
+<FormField Text="Equal output count">
+    <TextBox Value="@equalCountText"
+             ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => equalCountText = value ?? string.Empty))"
+             Immediate="true"
+             Placeholder="100"
+             aria-label="Equal output count"
+             data-testid="cda-split-equal-count" />
+</FormField>
+
+<FormField Text="Equal amount">
+    <TextBox Value="@equalAmountText"
+             ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => equalAmountText = value ?? string.Empty))"
+             Immediate="true"
+             Placeholder="0.5"
+             aria-label="Equal amount"
+             data-testid="cda-split-equal-amount" />
+</FormField>
+
+<TransactionAddressInput Label="Equal receiver"
+                         Value="@equalReceiverText"
+                         ValueChanged="@(value => equalReceiverText = value ?? string.Empty)"
+                         Placeholder="@Draft.OwnerAddress.Value"
+                         Bookmarks="Bookmarks"
+                         AccountScope="@AccountScope"
+                         DialogSubtitle="Split"
+                         TestId="cda-split-equal-receiver" />
+
+<Stack JustifyContent="JustifyContent.End">
+    <Button Text="Apply equal outputs"
+            Icon="call_split"
+            ButtonStyle="ButtonStyle.Secondary"
+            Variant="Variant.Outlined"
+            Click="ApplyEqualOutputsAsync"
+            data-testid="cda-split-apply-equal" />
+</Stack>
+</Grid>
+</SurfaceCard>
+
+<div data-testid="cda-split-output-list">
+<SectionCard Title="Output plan"
+             Description="@($"{Draft.UtxoSplitOutputsOrEmpty.Count} output(s) · {OutputTotal} planned from {SelectedTotal} selected")">
+    <HeaderActions>
+        <Button Text="Add output"
+                Icon="add"
+                ButtonStyle="ButtonStyle.Secondary"
+                Variant="Variant.Outlined"
+                Click="AddOutputAsync"
+                data-testid="cda-split-add-output" />
+    </HeaderActions>
+
+    <ChildContent>
+    @if (OutputTotal > SelectedTotal && SelectedTotal > 0m)
+    {
+        <Alert AlertStyle="AlertStyle.Warning">
+            Split output total exceeds selected inputs.
+        </Alert>
+    }
+
+    @if (Draft.UtxoSplitOutputsOrEmpty.Count == 0)
+    {
+        <EmptyState Eyebrow="Outputs"
+                    Title="Output plan is empty"
+                    Description="Add a specific output or use the equal-output controls above." />
+    }
+    else
+    {
+        <div class="transaction-split-output-list">
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            @for (int index = 0; index < Draft.UtxoSplitOutputsOrEmpty.Count; index++)
+            {
+                UtxoSplitOutput output = Draft.UtxoSplitOutputsOrEmpty[index];
+                int rowIndex = index;
+                <SurfaceCard data-testid="cda-split-output-row">
+                    <Grid ColumnTemplateLg="minmax(0, 1fr) minmax(8rem, .4fr) auto"
+                          Gap="LayoutGap.Medium"
+                          AlignItems="AlignItems.End">
+                    <TransactionAddressInput Label="@($"Output {rowIndex + 1} address")"
+                                             Value="@output.ReceiverAddress.Value"
+                                             ValueChanged="@(value => SetOutputAddressAsync(rowIndex, value))"
+                                             Placeholder="@Draft.OwnerAddress.Value"
+                                             Bookmarks="Bookmarks"
+                                             AccountScope="@AccountScope"
+                                             DialogSubtitle="Split output"
+                                             TestId="@($"cda-split-output-address-{rowIndex}")" />
+                    <FormField Text="@($"Output {rowIndex + 1} amount")">
+                        <TextBox Value="@output.Amount.ToString()"
+                                 ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => SetOutputAmountAsync(rowIndex, value)))"
+                                 Immediate="true"
+                                 Placeholder="0.5"
+                                 aria-label="@($"Output {rowIndex + 1} amount")"
+                                 data-testid="@($"cda-split-output-amount-{rowIndex}")" />
+                    </FormField>
+                    <Stack JustifyContent="JustifyContent.End">
+                        <Button Text="Remove"
+                                Icon="delete"
+                                ButtonStyle="ButtonStyle.Secondary"
+                                Variant="Variant.Text"
+                                Click="@(() => RemoveOutputAsync(rowIndex))"
+                                data-testid="@($"cda-split-output-remove-{rowIndex}")" />
+                    </Stack>
+                    </Grid>
+                </SurfaceCard>
+            }
+        </Grid>
+        </div>
+    }
+    </ChildContent>
+</SectionCard>
+</div>
+</Stack>
+
+@code {
+    private string equalCountText = "2";
+    private string equalAmountText = "0.5";
+    private string equalReceiverText = string.Empty;
+
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> DraftChanged { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> SpendableOutputs { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<LedgerAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string AccountScope { get; set; } = "transaction-composer";
+
+    private decimal SelectedTotal
+        => SpendableOutputs
+            .Where(output => Draft.SelectedUtxosOrEmpty.Contains(output.OutPoint))
+            .Sum(output => output.MainAmount.Value);
+
+    private decimal OutputTotal
+        => Draft.UtxoSplitOutputsOrEmpty.Sum(output => output.Amount.Value);
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(equalReceiverText))
+        {
+            equalReceiverText = Draft.OwnerAddress.Value;
+        }
+    }
+
+    private Task SetSelectedUtxosAsync(IReadOnlyList<OutPoint> selected)
+        => DraftChanged.InvokeAsync(Draft with { SelectedUtxos = selected });
+
+    private Task ApplyEqualOutputsAsync()
+    {
+        int count = int.TryParse(equalCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsedCount)
+            ? Math.Clamp(parsedCount, 1, 200)
+            : 1;
+        Amount amount = ParseAmount(equalAmountText);
+        Address receiver = Address.TryParse(equalReceiverText, out Address parsedReceiver)
+            ? parsedReceiver
+            : Draft.OwnerAddress;
+        UtxoSplitOutput[] outputs = Enumerable
+            .Range(0, count)
+            .Select(_ => new UtxoSplitOutput(receiver, amount))
+            .ToArray();
+        return DraftChanged.InvokeAsync(Draft with { UtxoSplitOutputs = outputs });
+    }
+
+    private Task AddOutputAsync()
+    {
+        var outputs = Draft.UtxoSplitOutputsOrEmpty.ToList();
+        outputs.Add(new UtxoSplitOutput(Draft.OwnerAddress, Amount.FromDecimal(0.5m)));
+        return DraftChanged.InvokeAsync(Draft with { UtxoSplitOutputs = outputs });
+    }
+
+    private Task SetOutputAddressAsync(int index, string? value)
+    {
+        var outputs = Draft.UtxoSplitOutputsOrEmpty.ToList();
+        outputs[index] = outputs[index] with { ReceiverAddress = new Address(value ?? string.Empty) };
+        return DraftChanged.InvokeAsync(Draft with { UtxoSplitOutputs = outputs });
+    }
+
+    private Task SetOutputAmountAsync(int index, string? value)
+    {
+        var outputs = Draft.UtxoSplitOutputsOrEmpty.ToList();
+        outputs[index] = outputs[index] with { Amount = ParseAmount(value) };
+        return DraftChanged.InvokeAsync(Draft with { UtxoSplitOutputs = outputs });
+    }
+
+    private Task RemoveOutputAsync(int index)
+    {
+        var outputs = Draft.UtxoSplitOutputsOrEmpty.ToList();
+        outputs.RemoveAt(index);
+        return DraftChanged.InvokeAsync(Draft with { UtxoSplitOutputs = outputs });
+    }
+
+    private static Amount ParseAmount(string? value)
+        => decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed) && parsed >= 0m
+            ? new Amount(parsed)
+            : Amount.Zero;
+}

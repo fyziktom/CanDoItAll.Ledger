@@ -1,21 +1,27 @@
 @page "/"
-@inject EconomySimulatorProjectionPersistenceSelection PersistenceSelection
+@inject LedgerSimulatorProjectionPersistenceSelection PersistenceSelection
 @inject ISimulationRunLifecycleService RunLifecycle
 @inject ISimulationProjectWorkspaceService Workspace
 @inject ISimulationProjectImportExportService ImportExport
 @inject NavigationManager Navigation
 
-<PageTitle>Economy Simulator</PageTitle>
+<PageTitle>Ledger Simulator</PageTitle>
 
-<EconomySimulatorAppShell ActivePage="projects">
+<LedgerSimulatorAppShell ActivePage="projects">
+    <div class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+         role="status">
+        <strong>Experimental work in progress.</strong>
+        This Simulator is not production-ready, and its output is not
+        authoritative financial, accounting, forecasting, or economic evidence.
+    </div>
     <ProjectionStorageNotice />
-    <EconomySimulatorShell ViewModel="ViewModel"
+    <LedgerSimulatorShell ViewModel="ViewModel"
                            ImportExportService="ImportExport"
                            RunRequested="StartRunAsync"
                            ProjectImported="ImportProjectAsync"
                            LaunchMessages="launchMessages"
                            IsRunLaunching="isStartingRun" />
-</EconomySimulatorAppShell>
+</LedgerSimulatorAppShell>
 
 @code {
     private IReadOnlyList<SimulationProjectValidationMessage> launchMessages = [];
@@ -34,7 +40,7 @@
                 .ToArray();
             SimulationProjectState? selectedProject = projectStates.FirstOrDefault(project => string.Equals(project.Summary.ProjectId, "vef-financial-plan", StringComparison.Ordinal))
                 ?? projectStates.FirstOrDefault()
-                ?? EconomySimulatorSampleData.CreateProjectState(projectionStorageMode);
+                ?? LedgerSimulatorSampleData.CreateProjectState(projectionStorageMode);
             SimulationProjectExportManifest manifest = ImportExport.CreateManifest(selectedProject, DateTimeOffset.Parse("2026-05-15T12:00:00Z"));
             SimulationProjectImportPreview importPreview = ImportExport.PreviewImport(ImportExport.SerializeManifest(manifest));
 

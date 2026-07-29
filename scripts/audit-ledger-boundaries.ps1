@@ -7,6 +7,10 @@ $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path -LiteralPath $RepositoryRoot).Path
 $violations = New-Object System.Collections.Generic.List[string]
 
+& (Join-Path $repoRoot "tools/validation/Test-LedgerIdentity.ps1") `
+    -RepositoryRoot $repoRoot `
+    -RunNegativeFixture
+
 & (Join-Path $PSScriptRoot "audit-ledger-repo-does-not-contain-basic-simulator.ps1") `
     -RepositoryRoot $repoRoot `
     -RunNegativeFixture `
@@ -68,7 +72,7 @@ if (-not (Test-Path -LiteralPath $namespacePlan -PathType Leaf)) {
 }
 else {
     $namespacePlanText = Get-Content -LiteralPath $namespacePlan -Raw
-    foreach ($requiredText in @("Current namespace/project", "Target namespace/project", "Owner", "Sunset milestone", "New-Code Guidance")) {
+    foreach ($requiredText in @("Former namespace/project", "Target namespace/project", "Owner", "Sunset milestone", "New-Code Guidance")) {
         if ($namespacePlanText.IndexOf($requiredText, [StringComparison]::OrdinalIgnoreCase) -lt 0) {
             $violations.Add("namespace compatibility plan missing required text: $requiredText")
         }

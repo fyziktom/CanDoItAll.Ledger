@@ -1,0 +1,52 @@
+@namespace CanDoItAll.Ledger.Components
+@inject DialogService DialogService
+
+<Stack GapScale="LayoutGap.Medium">
+    <FormField Text="SubAccount name">
+        <TextBox Value="@subAccountName"
+                 ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => subAccountName = value ?? string.Empty))"
+                 Immediate="true"
+                 Placeholder="Field office"
+                 aria-label="Input SubAccount Name" />
+    </FormField>
+
+    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <CheckBox TValue="bool" @bind-Value="importExisting" />
+        <span>Import existing account</span>
+    </label>
+
+    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <CheckBox TValue="bool" @bind-Value="sendInitialAirdrop" />
+        <span>Send initial airdrop for demo tokens</span>
+    </label>
+
+    <Alert AlertStyle="AlertStyle.Info" Variant="Variant.Outlined">
+        Backend-held SSR keys stay in the scoped session; this dialog only captures account setup intent.
+    </Alert>
+
+    <Cluster Gap="LayoutGap.Small" JustifyContent="JustifyContent.End">
+        <Button Text="Cancel" Icon="close" Variant="Variant.Text" Click="CancelAsync" />
+        <Button Text="Create SubAccount"
+                Icon="account_tree"
+                ButtonStyle="ButtonStyle.Secondary"
+                Disabled="@string.IsNullOrWhiteSpace(subAccountName)"
+                Click="CreateAsync" />
+    </Cluster>
+</Stack>
+
+@code {
+    private string subAccountName = string.Empty;
+    private bool importExisting;
+    private bool sendInitialAirdrop = true;
+
+    [Parameter]
+    public string ParentAddress { get; set; } = "acct:operations:primary";
+
+    private Task CancelAsync()
+        => DialogService.CloseAsync();
+
+    private Task CreateAsync()
+        => string.IsNullOrWhiteSpace(subAccountName)
+            ? Task.CompletedTask
+            : DialogService.CloseAsync(new SubAccountCreateDialogResult(subAccountName.Trim(), importExisting, sendInitialAirdrop));
+}

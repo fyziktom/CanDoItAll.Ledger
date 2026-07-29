@@ -1,0 +1,97 @@
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
+@inject NavigationManager Navigation
+
+<div class="cda-sim-shell-theme">
+    <Layout FitViewport="true"
+            LockOverflow="true"
+            Class="cda-sim-shell"
+            data-testid="simulation-app-shell">
+    <SideMenu @ref="sideMenu"
+              MenuId="economy-simulator-primary"
+              Title="CanDoItAll"
+              Subtitle="Ledger Simulator"
+              Icon="bar_chart"
+              AriaLabel="Ledger simulator navigation"
+              Items="@NavigationItems"
+              FillHeight="true"
+              ItemSelected="HandleItemSelected" />
+
+    <Body FillHeight="true"
+          Scrollable="true"
+          Class="cda-sim-shell__body"
+          data-testid="simulation-app-scroll-owner">
+        @ChildContent
+    </Body>
+    </Layout>
+</div>
+
+@code {
+    private static readonly IReadOnlyList<ISideMenuItem> NavigationItems =
+    [
+        new SideMenuItemDefinition
+        {
+            Id = "projects",
+            Text = "Projects",
+            Icon = "folder_open",
+            Description = "Simulation projects and setup.",
+            OverflowBehavior = SideMenuOverflowBehavior.PreferVisible,
+            Payload = "/"
+        },
+        new SideMenuItemDefinition
+        {
+            Id = "runs",
+            Text = "Runs",
+            Icon = "play_circle",
+            Description = "Simulation runs and observations.",
+            OverflowBehavior = SideMenuOverflowBehavior.PreferVisible,
+            Payload = "/runs"
+        }
+    ];
+
+    private SideMenu? sideMenu;
+    private string? appliedActivePage;
+    private bool synchronizingActivePage;
+
+    [Parameter]
+    public string ActivePage { get; set; } = "projects";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        string activePage = NormalizeActivePage(ActivePage);
+        if (sideMenu is null || string.Equals(appliedActivePage, activePage, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        synchronizingActivePage = true;
+        try
+        {
+            if (await sideMenu.SelectAsync(activePage))
+            {
+                appliedActivePage = activePage;
+            }
+        }
+        finally
+        {
+            synchronizingActivePage = false;
+        }
+    }
+
+    private void HandleItemSelected(SideMenuSelection selection)
+    {
+        if (synchronizingActivePage || selection.Item.Payload is not string route)
+        {
+            return;
+        }
+
+        Navigation.NavigateTo(route);
+    }
+
+    private static string NormalizeActivePage(string? activePage)
+        => string.Equals(activePage, "runs", StringComparison.OrdinalIgnoreCase)
+            ? "runs"
+            : "projects";
+}

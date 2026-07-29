@@ -1,0 +1,17 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-bootstrap-info-panel">
+    <SectionCard Title="Ledger bootstrap" Description="Bootstrap">
+        <HeaderActions>
+            <StatusBadge Text="Initialized" Tone="success" />
+        </HeaderActions>
+        <ChildContent>
+            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                <SummaryTile Label="Genesis tx" Value="tx-genesis-company-economy" Compact="true" />
+                <SummaryTile Label="Admin key" Value="operator-admin" Compact="true" />
+                <SummaryTile Label="Scenario" Value="forward-sim-q2" Compact="true" />
+                <SummaryTile Label="Legacy routes" Value="disabled" Compact="true" />
+            </SummaryTiles>
+        </ChildContent>
+    </SectionCard>
+</div>

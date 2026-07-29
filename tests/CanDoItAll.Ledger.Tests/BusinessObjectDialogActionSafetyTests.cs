@@ -1,18 +1,18 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectDialogActionSafetyTests : BunitContext
 {
@@ -23,13 +23,13 @@ public sealed class BusinessObjectDialogActionSafetyTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
     public void ObjectActions_DisableUnimplementedAndUnboundCommands()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
 
@@ -48,7 +48,7 @@ public sealed class BusinessObjectDialogActionSafetyTests : BunitContext
     [Fact]
     public async Task ObjectActions_EnableAndInvokeBoundCallbacks()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
         var sentObjects = new List<IBusinessObjectView>();
@@ -94,7 +94,7 @@ public sealed class BusinessObjectDialogActionSafetyTests : BunitContext
                     _ =>
                     {
                         requestCount++;
-                        return Task.FromResult(new EconomyTransactionExecutionResult(
+                        return Task.FromResult(new LedgerTransactionExecutionResult(
                             BusinessObjectTransactionMode.UpdateObject,
                             Accepted: true,
                             new TxId("tx-ticket-used-action-safety"),

@@ -1,6 +1,6 @@
 {
-  "schema": "cdia.economy.golden-vectors.transaction-hashes.v1",
-  "canonicalizer": "CanDoItAll.Economy.Cryptography.DefaultTransactionCanonicalizer",
+  "schema": "cdia.ledger.golden-vectors.transaction-hashes.v1",
+  "canonicalizer": "CanDoItAll.Ledger.Cryptography.DefaultTransactionCanonicalizer",
   "hashAlgorithm": "SHA-256",
   "ledgerId": "default",
   "scenarioId": null,

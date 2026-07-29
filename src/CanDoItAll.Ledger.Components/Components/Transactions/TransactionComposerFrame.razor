@@ -1,0 +1,26 @@
+@namespace CanDoItAll.Ledger.Components
+
+@if (Dense)
+{
+    @ChildContent
+}
+else
+{
+    <SectionCard Title="@Title" Description="@Description">
+        @ChildContent
+    </SectionCard>
+}
+
+@code {
+    [Parameter]
+    public bool Dense { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

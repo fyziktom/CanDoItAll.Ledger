@@ -1,4 +1,4 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
 <PageScaffold Mode="PageScaffoldMode.FocusWorkbench"
@@ -321,7 +321,7 @@
                         </TabsItem>
                         <TabsItem Text="Graphs" Icon="monitoring">
                             <div data-testid="simulation-run-graphs-tab">
-                                <EconomyScenarioGraphPanel Graphs="Selected.Observation.Graphs"
+                                <LedgerScenarioGraphPanel Graphs="Selected.Observation.Graphs"
                                                            BusinessUnits="GraphBusinessUnits"
                                                            AddressBindings="GraphAddressBindings"
                                                            CurrencyCode="@Selected.Project.Model.BaseCurrencyCode" />
@@ -492,7 +492,7 @@
         }
     }
 
-    private SimulationRunConsoleViewModel Console => ConsoleViewModel ?? EconomySimulatorSampleData.CreateRunConsole();
+    private SimulationRunConsoleViewModel Console => ConsoleViewModel ?? LedgerSimulatorSampleData.CreateRunConsole();
 
     private SimulationRunConsoleState Selected => Console.SelectedRun;
 
@@ -516,7 +516,7 @@
     private bool CanApplyInterventions => Selected.Run.RunMode == SimulationRunMode.Manual
         && Selected.Run.Status is SimulationRunLifecycleStatus.Paused or SimulationRunLifecycleStatus.Running;
 
-    private int RuntimeInterventionCount => Selected.Project.BusinessObjectDefinitions.Count(definition => definition.ObjectType == EconomySimulatorObjectTypes.RuntimeIntervention);
+    private int RuntimeInterventionCount => Selected.Project.BusinessObjectDefinitions.Count(definition => definition.ObjectType == LedgerSimulatorObjectTypes.RuntimeIntervention);
 
     private string InterventionTargetLabel => pendingInterventionKind == SimulationRunInterventionKind.DemandChange
         ? "Demand schedule"

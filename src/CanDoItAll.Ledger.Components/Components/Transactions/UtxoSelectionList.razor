@@ -1,0 +1,142 @@
+@namespace CanDoItAll.Ledger.Components
+
+<Stack Section="true" GapScale="LayoutGap.Small" data-testid="@TestId">
+    <Toolbar>
+        <ToolbarRow>
+            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Label" />
+            <CompactStatStrip Class="justify-end">
+                <CompactStat Text="@($"{SelectedCount} selected")" Tone="info" />
+                <CompactStat Text="@($"{EligibleOutputs.Count}/{AllEligibleOutputs.Count} eligible")" />
+                <CompactStat Label="Selected total" Value="@SelectedTotal.ToString()" Tone="info" />
+                <CompactStat Label="Available" Value="@AllEligibleTotal.ToString()" />
+            </CompactStatStrip>
+        </ToolbarRow>
+    </Toolbar>
+
+    <FormField Text="Search UTXOs">
+        <TextBox Value="@filter"
+                 ValueChanged="@(EventCallback.Factory.Create<string?>(this, value => filter = value ?? string.Empty))"
+                 Immediate="true"
+                 Placeholder="Transaction ID, outpoint, address, or amount"
+                 aria-label="Search UTXOs"
+                 data-testid="@($"{TestId}-filter")" />
+    </FormField>
+
+    @if (EligibleOutputs.Count == 0)
+    {
+        <EmptyState Eyebrow="UTXO" Title="No eligible UTXOs" Description="Only plain main-currency outputs without token or BO references can be selected." />
+    }
+    else
+    {
+        <div class="cda-utxo-selection-scroll">
+            <ListGroup>
+                @foreach (LedgerSpendableOutput output in EligibleOutputs)
+                {
+                    bool selected = IsSelected(output.OutPoint);
+                    <SurfaceCard Soft="@selected" data-testid="@($"{TestId}-row")">
+                        <Split Breakpoint="LayoutBreakpoint.Sm"
+                               AlignItems="AlignItems.Center"
+                               Wrap="FlexWrap.Wrap"
+                               Gap="LayoutGap.Medium">
+                            <Cluster Wrap="FlexWrap.NoWrap" AlignItems="AlignItems.Center" Class="min-w-0">
+                                <CheckBox TValue="bool"
+                                          Value="@selected"
+                                          ValueChanged="@((bool value) => ToggleAsync(output.OutPoint, value))"
+                                          aria-label="@($"Select UTXO {output.OutPoint}")" />
+                                <Icon Name="receipt_long" />
+                                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                    <MonoText Text="@output.OutPoint.ToString()" />
+                                    <TextBlock TextStyle="TextStyle.Body2" Value="@($"{output.MainAmount} main")" />
+                                    <SmallText Text="@Short(output.Address.Value)" />
+                                </Stack>
+                            </Cluster>
+                            <CopyableMonoValue Value="@output.OutPointKey.Value.Value" />
+                        </Split>
+                    </SurfaceCard>
+                }
+            </ListGroup>
+        </div>
+    }
+</Stack>
+
+@code {
+    private string filter = string.Empty;
+
+    [Parameter]
+    public string Label { get; set; } = "Selected inputs";
+
+    [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> Outputs { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<OutPoint> SelectedOutPoints { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<IReadOnlyList<OutPoint>> SelectedOutPointsChanged { get; set; }
+
+    [Parameter]
+    public string TestId { get; set; } = "cda-utxo-selector";
+
+    private IReadOnlyList<LedgerSpendableOutput> AllEligibleOutputs
+        => Outputs
+            .Where(output => output.BusinessObject is null && output.Token is null)
+            .OrderBy(output => output.CreatedAt)
+            .ThenBy(output => output.OutPoint.TxId.Value, StringComparer.Ordinal)
+            .ThenBy(output => output.OutPoint.OutputIndex)
+            .ToArray();
+
+    private IReadOnlyList<LedgerSpendableOutput> EligibleOutputs
+        => AllEligibleOutputs.Where(MatchesFilter).ToArray();
+
+    private decimal AllEligibleTotal
+        => AllEligibleOutputs.Sum(output => output.MainAmount.Value);
+
+    private decimal SelectedTotal
+        => AllEligibleOutputs
+            .Where(output => IsSelected(output.OutPoint))
+            .Sum(output => output.MainAmount.Value);
+
+    private int SelectedCount
+        => AllEligibleOutputs.Count(output => IsSelected(output.OutPoint));
+
+    private bool MatchesFilter(LedgerSpendableOutput output)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return true;
+        }
+
+        string probe = $"{output.OutPoint} {output.OutPoint.TxId.Value} {output.OutPoint.OutputIndex} {output.Address.Value} {output.MainAmount}";
+        return probe.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsSelected(OutPoint outPoint)
+        => SelectedOutPoints.Contains(outPoint);
+
+    private async Task ToggleAsync(OutPoint outPoint, bool selected)
+    {
+        var next = SelectedOutPoints
+            .Where(IsEligible)
+            .Distinct()
+            .ToList();
+        if (selected)
+        {
+            if (!next.Contains(outPoint))
+            {
+                next.Add(outPoint);
+            }
+        }
+        else
+        {
+            next.RemoveAll(item => item == outPoint);
+        }
+
+        await SelectedOutPointsChanged.InvokeAsync(next);
+    }
+
+    private bool IsEligible(OutPoint outPoint)
+        => AllEligibleOutputs.Any(output => output.OutPoint == outPoint);
+
+    private static string Short(string value)
+        => value.Length > 18 ? $"{value[..10]}...{value[^6..]}" : value;
+}

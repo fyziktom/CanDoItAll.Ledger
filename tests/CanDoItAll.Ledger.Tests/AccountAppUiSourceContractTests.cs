@@ -1,4 +1,4 @@
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class AccountAppUiSourceContractTests
 {
@@ -7,10 +7,10 @@ public sealed class AccountAppUiSourceContractTests
     {
         string[] shells =
         [
-            ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Layout", "MainLayout.razor"),
-            ReadRepoFile("examples", "CanDoItAll.Economy.Components.Demo", "Components", "App.razor"),
+            ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Layout", "MainLayout.razor"),
+            ReadRepoFile("examples", "CanDoItAll.Ledger.Components.Demo", "Components", "App.razor"),
             ReadRepoFile("examples", "CanDoItAll.Ledger.Simulator.App", "Components", "App.razor"),
-            ReadRepoFile("src", "CanDoItAll.Economy.Node", "Components", "App.razor")
+            ReadRepoFile("src", "CanDoItAll.Ledger.Node", "Components", "App.razor")
         ];
 
         foreach (string shell in shells)
@@ -39,10 +39,10 @@ public sealed class AccountAppUiSourceContractTests
     {
         (string Host, string Bundle)[] hosts =
         [
-            (ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "wwwroot", "index.html"), "CanDoItAll.Economy.AccountApp.styles.css"),
-            (ReadRepoFile("examples", "CanDoItAll.Economy.Components.Demo", "Components", "App.razor"), "CanDoItAll.Economy.Components.Demo.styles.css"),
-            (ReadRepoFile("examples", "CanDoItAll.Ledger.Simulator.App", "Components", "App.razor"), "CanDoItAll.Economy.Simulator.App.styles.css"),
-            (ReadRepoFile("src", "CanDoItAll.Economy.Node", "Components", "App.razor"), "CanDoItAll.Economy.Node.styles.css")
+            (ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "wwwroot", "index.html"), "CanDoItAll.Ledger.AccountApp.styles.css"),
+            (ReadRepoFile("examples", "CanDoItAll.Ledger.Components.Demo", "Components", "App.razor"), "CanDoItAll.Ledger.Components.Demo.styles.css"),
+            (ReadRepoFile("examples", "CanDoItAll.Ledger.Simulator.App", "Components", "App.razor"), "CanDoItAll.Ledger.Simulator.App.styles.css"),
+            (ReadRepoFile("src", "CanDoItAll.Ledger.Node", "Components", "App.razor"), "CanDoItAll.Ledger.Node.styles.css")
         ];
 
         foreach ((string host, string bundle) in hosts)
@@ -54,7 +54,7 @@ public sealed class AccountAppUiSourceContractTests
     [Fact]
     public void Home_uses_steps_for_import_and_removes_unlocked_workspace_frame()
     {
-        string home = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor");
+        string home = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Pages", "Home.razor");
 
         Assert.Contains("<Steps @bind-Value=\"importStep\"", home, StringComparison.Ordinal);
         Assert.Contains("<StepsItem Text=\"Import\"", home, StringComparison.Ordinal);
@@ -74,8 +74,8 @@ public sealed class AccountAppUiSourceContractTests
     [Fact]
     public void Reset_guard_requires_cancel_reveal_countdown_and_double_confirmation()
     {
-        string home = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor");
-        string session = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Services", "AccountAppSession.cs");
+        string home = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Pages", "Home.razor");
+        string session = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Services", "AccountAppSession.cs");
 
         Assert.Contains("ResetConfirmationPhrase = \"RESET LOCAL VAULT\"", session, StringComparison.Ordinal);
         Assert.Contains("ResetAcknowledged", session, StringComparison.Ordinal);
@@ -99,7 +99,7 @@ public sealed class AccountAppUiSourceContractTests
     [Fact]
     public void Account_setup_fields_update_before_navigation_click()
     {
-        string home = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor");
+        string home = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Pages", "Home.razor");
 
         Assert.Contains("@bind-Value=\"Session.ImportBackupJson\"", home, StringComparison.Ordinal);
         Assert.Contains("@bind-Value=\"Session.ImportBackupPassword\"", home, StringComparison.Ordinal);
@@ -123,7 +123,7 @@ public sealed class AccountAppUiSourceContractTests
     [Fact]
     public void BuyBo_assigns_commerce_identity_from_confirmed_output_only()
     {
-        string buyBo = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "BuyBo.razor");
+        string buyBo = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Pages", "BuyBo.razor");
 
         Assert.Contains("BusinessObjectId.FromOutPoint(transaction.TxId, output.OutputIndex)", buyBo, StringComparison.Ordinal);
         Assert.Contains("objectId.IsCanonicalOutPointId()", buyBo, StringComparison.Ordinal);
@@ -144,9 +144,9 @@ public sealed class AccountAppUiSourceContractTests
     [Fact]
     public void Standalone_routes_keep_a_main_landmark_after_the_shell_wrapper_is_removed()
     {
-        string home = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor");
-        string buyBo = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "BuyBo.razor");
-        string notFound = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "NotFound.razor");
+        string home = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Pages", "Home.razor");
+        string buyBo = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Pages", "BuyBo.razor");
+        string notFound = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Pages", "NotFound.razor");
 
         Assert.Contains("<main class=\"account-entry ", home, StringComparison.Ordinal);
         Assert.Contains("<main class=\"buy-bo-page\"", buyBo, StringComparison.Ordinal);

@@ -1,0 +1,29 @@
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
+
+<SectionCard Title="Templates" Description="Versioned recipes that produce command drafts, not direct store writes.">
+    <DataGrid TItem="TemplateOptionItem" Data="Items">
+        <DataGridColumn TItem="TemplateOptionItem" Property="DisplayName" Title="Template" />
+        <DataGridColumn TItem="TemplateOptionItem" Property="TemplateId" Title="ID" />
+        <DataGridColumn TItem="TemplateOptionItem" Title="Kind">
+            <Template Context="item">
+                <StatusBadge Text="@item.Kind" Tone="info" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="TemplateOptionItem" Title="Status">
+            <Template Context="item">
+                <StatusBadge Text="@item.Status" Tone="@StatusTone(item.Status)" />
+            </Template>
+        </DataGridColumn>
+        <DataGridColumn TItem="TemplateOptionItem" Property="OutputSummary" Title="Outputs" />
+    </DataGrid>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<TemplateOptionItem> Items { get; set; } = Array.Empty<TemplateOptionItem>();
+
+    private static string StatusTone(string status)
+        => status.Equals("Selected", StringComparison.OrdinalIgnoreCase) || status.Equals("Required", StringComparison.OrdinalIgnoreCase)
+            ? "success"
+            : "neutral";
+}

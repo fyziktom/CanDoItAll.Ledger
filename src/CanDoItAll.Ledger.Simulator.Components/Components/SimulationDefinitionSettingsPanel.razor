@@ -1,4 +1,4 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
 <Stack GapScale="LayoutGap.Medium" data-testid="simulation-definition-settings-panel">
@@ -103,7 +103,7 @@
 </Stack>
 
 @code {
-    private static readonly IEconomySimulatorJsonSerializer Serializer = new EconomySimulatorJsonSerializer();
+    private static readonly ILedgerSimulatorJsonSerializer Serializer = new LedgerSimulatorJsonSerializer();
 
     [Parameter, EditorRequired]
     public SimulationProjectState Project { get; set; } = default!;
@@ -113,23 +113,23 @@
 
     private RuleProcessTemplateState? RuleProcess => TryDeserialize<RuleProcessTemplateState>();
 
-    private ScenarioFinancialScheduleState? PlannedSchedule => Definition.ObjectType == EconomySimulatorObjectTypes.PlannedFinancialSchedule
+    private ScenarioFinancialScheduleState? PlannedSchedule => Definition.ObjectType == LedgerSimulatorObjectTypes.PlannedFinancialSchedule
         ? TryDeserialize<ScenarioFinancialScheduleState>()
         : null;
 
-    private BusinessUnitState? BusinessUnit => Definition.ObjectType == EconomySimulatorObjectTypes.BusinessUnit
+    private BusinessUnitState? BusinessUnit => Definition.ObjectType == LedgerSimulatorObjectTypes.BusinessUnit
         ? TryDeserialize<BusinessUnitState>()
         : null;
 
-    private RuleAutomationPlanState? RuleAutomationPlan => Definition.ObjectType == EconomySimulatorObjectTypes.RuleAutomationPlan
+    private RuleAutomationPlanState? RuleAutomationPlan => Definition.ObjectType == LedgerSimulatorObjectTypes.RuleAutomationPlan
         ? TryDeserialize<RuleAutomationPlanState>()
         : null;
 
-    private EconomySimulatorModelState? Model => Definition.ObjectType == EconomySimulatorObjectTypes.ProjectConfiguration
-        ? TryDeserialize<EconomySimulatorModelState>()
+    private LedgerSimulatorModelState? Model => Definition.ObjectType == LedgerSimulatorObjectTypes.ProjectConfiguration
+        ? TryDeserialize<LedgerSimulatorModelState>()
         : null;
 
-    private ScenarioBusinessModelState? ScenarioModel => Definition.ObjectType == EconomySimulatorObjectTypes.Template
+    private ScenarioBusinessModelState? ScenarioModel => Definition.ObjectType == LedgerSimulatorObjectTypes.Template
         ? TryDeserialize<ScenarioBusinessModelState>()
         : null;
 

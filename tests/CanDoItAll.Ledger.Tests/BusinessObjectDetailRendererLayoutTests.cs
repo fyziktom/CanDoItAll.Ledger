@@ -1,18 +1,18 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Rendering;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Rendering;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
 using Microsoft.AspNetCore.Components;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectDetailRendererLayoutTests : BunitContext
 {
@@ -25,7 +25,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
@@ -515,7 +515,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : BunitContext
     [Fact]
     public async Task RendererRegistry_ResolvesRuleSettingsMediaTypedCommerceAndGenericCategories()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView rule = workspace.BusinessObjects.Single(item => item.ObjectType == "account-rule");
         IBusinessObjectView settings = workspace.BusinessObjects.Single(item => item.ObjectType == "account-settings");
         IBusinessObjectView media = workspace.BusinessObjects.OfType<IMediaBusinessObjectView>().First();
@@ -546,7 +546,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : BunitContext
     [Fact]
     public async Task DetailsDialog_ExposesEverySpecializedRendererThroughTypeDetailsTab()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView rule = workspace.BusinessObjects.Single(item => item.ObjectType == "account-rule");
         IBusinessObjectView settings = workspace.BusinessObjects.Single(item => item.ObjectType == "account-settings");
         IBusinessObjectView media = workspace.BusinessObjects.OfType<IMediaBusinessObjectView>().First();
@@ -745,7 +745,7 @@ public sealed class BusinessObjectDetailRendererLayoutTests : BunitContext
             Context,
             Alice,
             balance,
-            [new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
+            [new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
             [],
             [],
             businessObjects,

@@ -1,6 +1,6 @@
-using CanDoItAll.Economy.Simulator;
+using CanDoItAll.Ledger.Simulator;
 
-namespace CanDoItAll.Economy.Simulator.Components.Models;
+namespace CanDoItAll.Ledger.Simulator.Components.Models;
 
 public sealed record SimulationRunRegistryRevision(
     string RunId,

@@ -1,0 +1,29 @@
+@namespace CanDoItAll.Ledger.Components
+
+<SectionCard Title="Account" Description="@Description">
+    <SummaryTiles ColumnsSm="2" ColumnsXl="4" GapScale="LayoutGap.Medium">
+        <SummaryTile Label="Main balance" Value="@FormatAmount(Workspace.Balance.MainBalance)" />
+        <SummaryTile Label="Business objects" Value="@Workspace.BusinessObjects.Count.ToString()" />
+        <SummaryTile Label="Spendable outputs" Value="@Workspace.Balance.UtxoCount.ToString()" />
+        <SummaryTile Label="Subaccounts" Value="@Workspace.SubAccounts.Count.ToString()" />
+    </SummaryTiles>
+
+    <Grid ColumnTemplate="repeat(auto-fit, minmax(10rem, 1fr))" Gap="LayoutGap.Small">
+        @foreach (KeyValuePair<TokenId, Amount> token in OrderedTokenBalances)
+        {
+            <SummaryTile Label="@token.Key.Value" Value="@FormatAmount(token.Value)" Compact="true" Tone="info" />
+        }
+    </Grid>
+</SectionCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    private string Description => $"{Workspace.Address} on {Workspace.Context.LedgerId}";
+
+    private IEnumerable<KeyValuePair<TokenId, Amount>> OrderedTokenBalances
+        => Workspace.Balance.TokenBalances.OrderBy(token => token.Key.Value, StringComparer.Ordinal);
+
+    private static string FormatAmount(Amount amount) => amount.ToString();
+}

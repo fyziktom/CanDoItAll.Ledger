@@ -1,13 +1,13 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class TransactionPayloadSignaturePrimitiveTests : BunitContext
 {
@@ -20,7 +20,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : BunitContext
     [Fact]
     public void PayloadViewer_RendersBusinessObjectOutputReferencesAsDenseRows()
     {
-        EconomyTransactionDetailsModel details = EconomyComponentSampleData.CreateTransactionDetails();
+        LedgerTransactionDetailsModel details = LedgerComponentSampleData.CreateTransactionDetails();
 
         IRenderedComponent<TxDataPayloadViewer> component = Render<TxDataPayloadViewer>(parameters => parameters
             .Add(x => x.Data, details.Data)
@@ -42,7 +42,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : BunitContext
     [Fact]
     public void PayloadViewer_AllowsBusinessObjectReferencesWithoutTransactionData()
     {
-        EconomyTransactionDetailsModel details = EconomyComponentSampleData.CreateTransactionDetails();
+        LedgerTransactionDetailsModel details = LedgerComponentSampleData.CreateTransactionDetails();
 
         IRenderedComponent<TxDataPayloadViewer> component = Render<TxDataPayloadViewer>(parameters => parameters
             .Add(x => x.Outputs, details.Outputs));
@@ -56,9 +56,9 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : BunitContext
     [Fact]
     public void SignatureList_FlattensSignaturesAcrossInputsIntoDenseRows()
     {
-        EconomyTransactionDetailsModel details = EconomyComponentSampleData.CreateTransactionDetails();
+        LedgerTransactionDetailsModel details = LedgerComponentSampleData.CreateTransactionDetails();
         SignatureEnvelope secondSignature = CreateSignature("secondary-key", 0x20);
-        EconomyTransactionInputDetails secondInput = details.Inputs[0] with
+        LedgerTransactionInputDetails secondInput = details.Inputs[0] with
         {
             InputIndex = 3,
             SignatureBundle = new SignatureBundle([secondSignature])
@@ -87,8 +87,8 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : BunitContext
     [Fact]
     public void SignatureList_RendersCompactEmptyStateWhenNoSignaturesExist()
     {
-        EconomyTransactionDetailsModel details = EconomyComponentSampleData.CreateTransactionDetails();
-        EconomyTransactionInputDetails unsignedInput = details.Inputs[0] with
+        LedgerTransactionDetailsModel details = LedgerComponentSampleData.CreateTransactionDetails();
+        LedgerTransactionInputDetails unsignedInput = details.Inputs[0] with
         {
             SignatureBundle = SignatureBundle.Empty
         };
@@ -104,7 +104,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : BunitContext
     [Fact]
     public void SignatureCard_PreservesTestIdAndDelegatesToReusableList()
     {
-        EconomyTransactionInputDetails input = EconomyComponentSampleData.CreateTransactionDetails().Inputs[0];
+        LedgerTransactionInputDetails input = LedgerComponentSampleData.CreateTransactionDetails().Inputs[0];
 
         IRenderedComponent<TxSignatureCard> component = Render<TxSignatureCard>(parameters => parameters
             .Add(x => x.Input, input));
@@ -117,7 +117,7 @@ public sealed class TransactionPayloadSignaturePrimitiveTests : BunitContext
     [Fact]
     public void TransactionInspector_UsesFlexiblePayloadAndFlattenedSignaturePrimitives()
     {
-        EconomyTransactionDetailsModel details = EconomyComponentSampleData.CreateTransactionDetails();
+        LedgerTransactionDetailsModel details = LedgerComponentSampleData.CreateTransactionDetails();
 
         IRenderedComponent<TransactionInspectorDialog> component = Render<TransactionInspectorDialog>(parameters => parameters
             .Add(x => x.Details, details));

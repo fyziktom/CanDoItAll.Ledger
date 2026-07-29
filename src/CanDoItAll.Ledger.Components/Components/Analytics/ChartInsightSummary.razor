@@ -1,0 +1,20 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-chart-insight-summary">
+<SectionCard Title="@Title" Description="Insights">
+    <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+        @foreach ((string Label, string Value) insight in Insights)
+        {
+            <SummaryTile Label="@insight.Label" Value="@insight.Value" Compact="true" />
+        }
+    </SummaryTiles>
+</SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Chart summary";
+
+    [Parameter]
+    public IReadOnlyList<(string Label, string Value)> Insights { get; set; } = [];
+}

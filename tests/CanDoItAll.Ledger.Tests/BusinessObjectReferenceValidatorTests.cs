@@ -1,8 +1,8 @@
 using System.Text.Json;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Engine;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectReferenceValidatorTests
 {

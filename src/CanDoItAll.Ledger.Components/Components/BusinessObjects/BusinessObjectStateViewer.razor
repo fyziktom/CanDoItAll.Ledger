@@ -1,0 +1,51 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-bo-state-viewer">
+<SectionCard Title="@(Object?.ObjectId.Value ?? "No object")" Description="Business object state">
+    <HeaderActions>
+        @if (Object is not null)
+        {
+            <StatusBadge Text="@($"v{Object.Version}")" Tone="info" />
+        }
+    </HeaderActions>
+    <ChildContent>
+        @if (Object is null)
+        {
+            <EmptyState Eyebrow="Business object state" Title="No object selected" Description="Select a business object to inspect state." />
+        }
+        else
+        {
+            <Grid ColumnsLg="3" Gap="LayoutGap.Small">
+                <SummaryTile Label="Type" Value="@Object.ObjectType" Compact="true" />
+                <SummaryTile Label="Schema" Value="@Object.SchemaVersion" Compact="true" />
+                <SummaryTile Label="Operation" Value="@Object.Operation.ToString()" Compact="true" />
+                <MetricCard Label="Owner">
+                    <ValueContent>
+                        <CopyableMonoValue Value="@Object.OwnerAddress.Value" StartChars="10" EndChars="6" AriaLabel="Copy owner address" />
+                    </ValueContent>
+                </MetricCard>
+                <MetricCard Label="OutPoint">
+                    <ValueContent>
+                        <CopyableMonoValue Value="@Object.CurrentOutPoint.ToString()" StartChars="10" EndChars="6" AriaLabel="Copy object outpoint" />
+                    </ValueContent>
+                </MetricCard>
+                <SummaryTile Label="Created" Value="@Object.CreatedAt.ToString("MM.dd HH:mm")" Compact="true" />
+                <MetricCard Label="Data hash">
+                    <ValueContent>
+                        <HashDisplay Value="@Object.DataHash.Value" />
+                    </ValueContent>
+                </MetricCard>
+            </Grid>
+            @if (!string.IsNullOrWhiteSpace(Object.StateJson))
+            {
+                <LedgerCodeBlock Text="@Object.StateJson" />
+            }
+        }
+    </ChildContent>
+</SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public IBusinessObjectView? Object { get; set; }
+}

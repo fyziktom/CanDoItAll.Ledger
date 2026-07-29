@@ -1,0 +1,49 @@
+@namespace CanDoItAll.Ledger.Components
+@inherits BusinessObjectDataItemAddressComponentBase
+
+<div data-testid="cda-bo-data-item-strip">
+<SectionCard Title="Data items" Description="Attached data">
+    <HeaderActions>
+        <StatusBadge Text="@($"{Items.Count} item(s)")" Tone="info" />
+    </HeaderActions>
+    <ChildContent>
+        @if (Items.Count == 0)
+        {
+            <EmptyState Eyebrow="Attached data" Title="No data items" Description="No attached data items were found for this object." />
+        }
+        else
+        {
+            <Grid ColumnTemplate="repeat(auto-fit, minmax(13rem, 1fr))" Gap="LayoutGap.Small">
+                @foreach (BusinessObjectDataItem item in Items)
+                {
+                    string? itemUri = ResolveDataItemUriString(item);
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Small">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="@item.Type.ToString()" />
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@item.Name" />
+                            <TextBlock TextStyle="TextStyle.Caption">@(item.Size?.ToString("N0") ?? "unknown") bytes</TextBlock>
+                            <HashDisplay Value="@item.Hash" />
+                            <Button Text="Download"
+                                    Icon="download"
+                                    Size="ButtonSize.Small"
+                                    Variant="Variant.Outlined"
+                                    Href="@itemUri"
+                                    Target="_blank"
+                                    Rel="noopener noreferrer"
+                                    Disabled="@(itemUri is null)" />
+                        </Stack>
+                    </SurfaceCard>
+                }
+            </Grid>
+        }
+    </ChildContent>
+</SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public IBusinessObjectView? Object { get; set; }
+
+    private IReadOnlyList<BusinessObjectDataItem> Items
+        => Object is IMediaBusinessObjectView media ? media.DataItems : [];
+}

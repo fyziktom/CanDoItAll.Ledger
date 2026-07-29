@@ -1,13 +1,13 @@
 using System.Text.Json;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Persistence.EFCore;
-using CanDoItAll.Economy.Persistence.EFCore.Records;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Persistence.EFCore;
+using CanDoItAll.Ledger.Persistence.EFCore.Records;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class EfLedgerProjectionRebuilderTests
 {
@@ -20,7 +20,7 @@ public sealed class EfLedgerProjectionRebuilderTests
     public async Task RebuildAsync_RecreatesDerivedRowsFromConfirmedTransactions()
     {
         ITransactionHasher hasher = CreateHasher();
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -187,7 +187,7 @@ public sealed class EfLedgerProjectionRebuilderTests
         EfLedgerSnapshotVerificationReport cleanSnapshot = await snapshotService.VerifySnapshotAsync(snapshot.SnapshotId, CancellationToken.None);
         Assert.True(cleanSnapshot.IsValid, string.Join("; ", cleanSnapshot.Issues.Select(x => x.Message)));
 
-        await using (EconomyDbContext corruptDb = await factory.CreateDbContextAsync(CancellationToken.None))
+        await using (LedgerDbContext corruptDb = await factory.CreateDbContextAsync(CancellationToken.None))
         {
             UnspentOutputRecord corruptOutput = await corruptDb.UnspentOutputs
                 .OrderBy(x => x.OutPointKey)
@@ -207,7 +207,7 @@ public sealed class EfLedgerProjectionRebuilderTests
 
     private static async Task<ProjectionSnapshot> SnapshotAsync(TestDbContextFactory factory)
     {
-        await using EconomyDbContext db = await factory.CreateDbContextAsync(CancellationToken.None);
+        await using LedgerDbContext db = await factory.CreateDbContextAsync(CancellationToken.None);
         return new ProjectionSnapshot(
             await db.UnspentOutputs
                 .AsNoTracking()
@@ -291,7 +291,7 @@ public sealed class EfLedgerProjectionRebuilderTests
 
     private static async Task DeleteDerivedRowsAsync(TestDbContextFactory factory)
     {
-        await using EconomyDbContext db = await factory.CreateDbContextAsync(CancellationToken.None);
+        await using LedgerDbContext db = await factory.CreateDbContextAsync(CancellationToken.None);
         db.UnspentOutputs.RemoveRange(db.UnspentOutputs);
         db.SpentOutputs.RemoveRange(db.SpentOutputs);
         db.AddressStateProjections.RemoveRange(db.AddressStateProjections);
@@ -412,12 +412,12 @@ public sealed class EfLedgerProjectionRebuilderTests
             => signature.SequenceEqual(Hex.Utf8("alice-signature"));
     }
 
-    private sealed class TestDbContextFactory(DbContextOptions<EconomyDbContext> options) : IDbContextFactory<EconomyDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<LedgerDbContext> options) : IDbContextFactory<LedgerDbContext>
     {
-        public EconomyDbContext CreateDbContext()
+        public LedgerDbContext CreateDbContext()
             => new(options);
 
-        public Task<EconomyDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        public Task<LedgerDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
             => Task.FromResult(CreateDbContext());
     }
 

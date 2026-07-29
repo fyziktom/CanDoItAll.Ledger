@@ -1,4 +1,4 @@
-namespace CanDoItAll.Economy.Simulator;
+namespace CanDoItAll.Ledger.Simulator;
 
 public sealed record SimulatorFunctionCatalog(
     IReadOnlyList<SimulatorFunctionMapItem> Functions,

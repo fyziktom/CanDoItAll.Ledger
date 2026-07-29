@@ -1,0 +1,147 @@
+@page "/adapter-workspace-samples"
+
+<PageTitle>Account Workspace Adapter Samples</PageTitle>
+
+<PageScaffold MaxWidthClass="max-w-[1680px]">
+    <ChildContent>
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <section>
+                <LedgerAccountWorkspaceAdapterHost Adapter="ssrAdapter" AutoRefreshEnabled="false" />
+            </section>
+            <section>
+                <LedgerAccountWorkspaceAdapterHost Adapter="wasmAdapter" AutoRefreshEnabled="false" />
+            </section>
+        </Grid>
+    </ChildContent>
+</PageScaffold>
+
+@code {
+    private readonly ILedgerAccountWorkspaceAdapter ssrAdapter = new SampleWorkspaceAdapter("SSR");
+    private readonly ILedgerAccountWorkspaceAdapter wasmAdapter = new SampleWorkspaceAdapter("WASM");
+
+    private sealed class SampleWorkspaceAdapter(string hostMode) : ILedgerAccountWorkspaceAdapter
+    {
+        public string HostMode => hostMode;
+
+        public bool UsesServerSideAccountSigning => hostMode == "SSR";
+
+        public Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default)
+        {
+            BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace() with
+            {
+                AccountName = $"{hostMode} account workspace",
+                ConnectionLabel = $"{hostMode} adapter"
+            };
+            return Task.FromResult(workspace);
+        }
+
+        public Task<LedgerTransactionDetailsModel?> GetTransactionDetailsAsync(
+            TxId txId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<LedgerTransactionDetailsModel?>(
+                LedgerComponentSampleData.CreateTransactionDetails() with { TxId = txId });
+
+        public Task<AccountWorkspaceRefreshSnapshot> GetRefreshSnapshotAsync(
+            int maxTransactions = 10,
+            CancellationToken cancellationToken = default)
+        {
+            BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
+            return Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(
+                workspace,
+                maxTransactions,
+                DateTimeOffset.Parse("2026-06-29T12:00:00Z")));
+        }
+
+        public Task<LedgerTransactionExecutionResult> SubmitTransactionAsync(
+            BusinessObjectTransactionDraft draft,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(new LedgerTransactionExecutionResult(
+                draft.SelectedMode,
+                Accepted: true,
+                TxId: new TxId($"tx-{hostMode.ToLowerInvariant()}"),
+                LedgerSequence: 1,
+                $"{hostMode} adapter accepted transaction."));
+
+        public Task<LedgerTransactionExecutionResult> SendBusinessObjectAsync(
+            BusinessObjectSendRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
+
+        public Task<LedgerTransactionExecutionResult> SetBusinessObjectPriceAsync(
+            BusinessObjectPriceRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<LedgerTransactionExecutionResult> UpdateProfileAsync(
+            ProfileEditRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(request.CreateNew
+                ? BusinessObjectTransactionMode.Create
+                : BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+            BusinessObjectTicketVerificationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(new BusinessObjectTicketVerificationResult(
+                Success: false,
+                "Sample adapter does not verify tickets.",
+                string.Empty,
+                MessageHash: null,
+                SignatureJson: null,
+                DateTimeOffset.Parse("2026-06-29T12:00:00Z"),
+                DateTimeOffset.Parse("2026-06-29T12:05:00Z"),
+                new BusinessObjectTicketHistoryValidation(
+                    BusinessObjectTicketHistoryStatus.NotTicket,
+                    OriginTxId: null,
+                    UsedTxId: null,
+                    [])));
+
+        public Task<LedgerTransactionExecutionResult> UseTicketAsync(
+            BusinessObjectTicketUseRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
+
+        public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+            BusinessObjectEventLookupRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(BusinessObjectEventLookupResult.NotFound("Sample adapter has no event lookup."));
+
+        public Task<LedgerTransactionExecutionResult> CreateTokenAsync(
+            LedgerTokenCreationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));
+
+        public Task<LedgerTransactionExecutionResult> CreateRuleTokenAsync(
+            LedgerRuleTokenCreationRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Accepted(BusinessObjectTransactionMode.CreateRuleToken));
+
+        public Task<MessageSecurityActionResult> SignMessageAsync(
+            MessageSecuritySignRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not sign messages."));
+
+        public Task<MessageSecurityActionResult> VerifyMessageAsync(
+            MessageSecurityVerifyRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not verify messages."));
+
+        public Task<MessageSecurityActionResult> EncryptMessageAsync(
+            MessageSecurityEncryptRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not encrypt messages."));
+
+        public Task<MessageSecurityActionResult> DecryptMessageAsync(
+            MessageSecurityDecryptRequest request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not decrypt messages."));
+
+        private LedgerTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
+            => new(
+                mode,
+                Accepted: true,
+                TxId: new TxId($"tx-{hostMode.ToLowerInvariant()}"),
+                LedgerSequence: 1,
+                $"{hostMode} adapter accepted transaction.");
+    }
+}

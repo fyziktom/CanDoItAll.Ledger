@@ -1,10 +1,10 @@
 using System.Text.Json;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class LedgerVerificationGoldenVectorTests
 {
@@ -34,7 +34,7 @@ public sealed class LedgerVerificationGoldenVectorTests
             SignatureBundle.Empty,
             DateTimeOffset.Parse(vector.Genesis.ConfirmedAt));
 
-        Assert.Equal("cdia.economy.golden-vectors.transaction-hashes.v1", vector.Schema);
+        Assert.Equal("cdia.ledger.golden-vectors.transaction-hashes.v1", vector.Schema);
         Assert.Equal(Alice.Value, vector.Actors.Alice.Address);
         Assert.Equal(Bob.Value, vector.Actors.Bob.Address);
         Assert.Equal(vector.Genesis.TxId, genesisTxId.Value);

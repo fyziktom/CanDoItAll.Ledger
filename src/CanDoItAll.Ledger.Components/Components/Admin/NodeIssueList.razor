@@ -1,0 +1,31 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-node-issue-list">
+    <SectionCard Title="Node issue review" Description="Issues requiring operator attention.">
+        <HeaderActions>
+            <StatusBadge Text="2 open" Tone="warning" />
+        </HeaderActions>
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Small">
+                <SurfaceCard Soft="true">
+                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                        <Icon Name="warning" />
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="Legacy route disabled" />
+                            <SmallText Text="Clients must use api/v1 or configured ApiBasePath." />
+                        </Stack>
+                    </Cluster>
+                </SurfaceCard>
+                <SurfaceCard Soft="true">
+                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                        <Icon Name="info" />
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="Projection rebuild queued" />
+                            <SmallText Text="Operator approval required before rebuild." />
+                        </Stack>
+                    </Cluster>
+                </SurfaceCard>
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>

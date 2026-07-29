@@ -1,11 +1,11 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Core;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class NodeAdminBaseLibComponentTests : BunitContext
 {

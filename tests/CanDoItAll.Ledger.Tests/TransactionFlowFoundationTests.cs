@@ -1,14 +1,14 @@
 using Bunit;
 using AngleSharp.Dom;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Core;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class TransactionFlowFoundationTests : BunitContext
 {
@@ -252,19 +252,19 @@ public sealed class TransactionFlowFoundationTests : BunitContext
     public async Task Token_creator_exposes_submit_only_on_review_step()
     {
         var permissionSource = new OutPoint(new TxId(new string('a', 64)), 0);
-        EconomyTokenCreationAuthority authority = new(
+        LedgerTokenCreationAuthority authority = new(
             "demo",
             BusinessObjectId.FromOutPoint(permissionSource),
             Alice,
             permissionSource,
             Amount.FromInt64(1),
             Repeatable: true);
-        EconomyTokenCreationRequest? submitted = null;
+        LedgerTokenCreationRequest? submitted = null;
         IRenderedComponent<TokenCreationDialogContent> component = Render<TokenCreationDialogContent>(parameters => parameters
             .Add(item => item.Authorities, new[] { authority })
             .Add(
                 item => item.SubmitRequested,
-                EventCallback.Factory.Create<EconomyTokenCreationRequest>(this, request => submitted = request)));
+                EventCallback.Factory.Create<LedgerTokenCreationRequest>(this, request => submitted = request)));
 
         Assert.Empty(component.FindAll("[data-testid='token-creation-submit']"));
 
@@ -287,7 +287,7 @@ public sealed class TransactionFlowFoundationTests : BunitContext
     {
         IRenderedComponent<TransactionTokenTransferForm> component = Render<TransactionTokenTransferForm>(parameters => parameters
             .Add(item => item.Draft, CreateDraft() with { SelectedMode = BusinessObjectTransactionMode.TokenTransfer })
-            .Add(item => item.Options, Array.Empty<EconomyTokenOption>()));
+            .Add(item => item.Options, Array.Empty<LedgerTokenOption>()));
 
         Assert.Contains("No transferable token balance", component.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(component.FindAll("[data-testid='composer-token-selector']"));
@@ -405,7 +405,7 @@ public sealed class TransactionFlowFoundationTests : BunitContext
         TokenId seedToken = new("seed-token");
         Address staleReceiver = Address.FromPublicKey([9, 10, 11, 12]);
         BusinessObjectTransactionDraft? captured = null;
-        EconomyTokenOption tokenOption = new(
+        LedgerTokenOption tokenOption = new(
             seedToken.Value,
             "Seed token",
             seedToken,
@@ -529,7 +529,7 @@ public sealed class TransactionFlowFoundationTests : BunitContext
             TokenId = null,
             TokenAmount = null
         };
-        EconomyTokenOption option = new(
+        LedgerTokenOption option = new(
             tokenId.Value,
             "Available token",
             tokenId,

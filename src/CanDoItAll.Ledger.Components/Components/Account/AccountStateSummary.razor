@@ -1,0 +1,64 @@
+@namespace CanDoItAll.Ledger.Components
+@using System.Globalization
+
+<div data-testid="cda-account-state-summary">
+    <SectionCard Title="@Workspace.AccountName" Description="Account state">
+        <HeaderActions>
+            <StatusBadge Text="@(Workspace.ConnectionLabel ?? "in-memory")" Tone="info" />
+        </HeaderActions>
+
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Large">
+                <SummaryTiles>
+                    <SummaryTile Label="Main" Value="@FormatTileAmount(Workspace.Balance.MainBalance.Value)" HelperText="Spendable native balance." Tone="success" Compact="true" />
+                    <SummaryTile Label="Tokens" Value="@Workspace.TokenOptions.Count(option => !option.IsMain).ToString(CultureInfo.InvariantCulture)" HelperText="Tracked token balances and sources." Tone="info" Compact="true" />
+                    <SummaryTile Label="UTXOs" Value="@Workspace.Balance.UtxoCount.ToString(CultureInfo.InvariantCulture)" HelperText="Spendable output count." Tone="warning" Compact="true" />
+                    <SummaryTile Label="Objects" Value="@Workspace.BusinessObjects.Count.ToString(CultureInfo.InvariantCulture)" HelperText="Current business object holdings." Compact="true" />
+                </SummaryTiles>
+
+                <Grid ColumnsSm="2" ColumnsXl="4" Gap="LayoutGap.Small">
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Address" />
+                            <CopyableMonoValue Value="@Workspace.Address.Value" />
+                        </Stack>
+                    </SurfaceCard>
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Ledger" />
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Workspace.Context.LedgerId.Value" />
+                        </Stack>
+                    </SurfaceCard>
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Scenario" />
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@(Workspace.Context.ScenarioId?.Value ?? "live")" />
+                        </Stack>
+                    </SurfaceCard>
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Viewed" />
+                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Workspace.ViewedAtUtc.ToString("u")" />
+                        </Stack>
+                    </SurfaceCard>
+                </Grid>
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    private static string FormatTileAmount(decimal amount)
+    {
+        decimal absolute = Math.Abs(amount);
+        if (absolute < 1_000_000_000_000m)
+        {
+            return amount.ToString("0.####", CultureInfo.InvariantCulture);
+        }
+
+        return amount.ToString("0.####E+0", CultureInfo.InvariantCulture);
+    }
+}

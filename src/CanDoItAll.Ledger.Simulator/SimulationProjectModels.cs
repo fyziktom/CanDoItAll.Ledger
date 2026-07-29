@@ -1,4 +1,4 @@
-namespace CanDoItAll.Economy.Simulator;
+namespace CanDoItAll.Ledger.Simulator;
 
 public enum SimulationProjectStatus
 {
@@ -240,7 +240,7 @@ public sealed record SimulationRunSetupState(
 
 public sealed record SimulationProjectState(
     SimulationProjectSummary Summary,
-    EconomySimulatorModelState Model,
+    LedgerSimulatorModelState Model,
     IReadOnlyList<BusinessUnitState> BusinessUnits,
     IReadOnlyList<BusinessUnitAddressBindingState> AddressBindings,
     IReadOnlyList<SimulationProjectFolderState> Folders,
@@ -458,7 +458,7 @@ public sealed record SimulationRunArtifactState(
 public sealed record SimulationRunObservationState(
     SimulationRunSummary Summary,
     SimulationRunClockState Clock,
-    IReadOnlyList<EconomyGraphData> Graphs,
+    IReadOnlyList<LedgerGraphData> Graphs,
     IReadOnlyList<SimulationBusinessUnitAccountSnapshot> AccountSnapshots,
     IReadOnlyList<SimulationBusinessObjectDefinitionState> CurrentBusinessObjects,
     IReadOnlyList<RuleExecutionEvidenceState> RuleEvidence,

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Ledger.Components.Demo</AssemblyName>
+    <RootNamespace>CanDoItAll.Ledger.Components.Demo</RootNamespace>
+    <EnableBusinessObjectIpfsStorage>true</EnableBusinessObjectIpfsStorage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CanDoItAll.Components.BaseLib" />
+    <PackageReference Include="CanDoItAll.Components.Charts" />
+    <PackageReference Include="CanDoItAll.Components.Mermaid" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.BusinessObjects\CanDoItAll.Ledger.BusinessObjects.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=true" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Components\CanDoItAll.Ledger.Components.csproj" AdditionalProperties="EnableBusinessObjectIpfsStorage=true" />
+  </ItemGroup>
+</Project>

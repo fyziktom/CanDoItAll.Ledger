@@ -1,12 +1,12 @@
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Persistence.EFCore;
-using CanDoItAll.Economy.Storage.InMemory;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Persistence.EFCore;
+using CanDoItAll.Ledger.Storage.InMemory;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class TokenDefinitionProtocolTests
 {
@@ -147,11 +147,11 @@ public sealed class TokenDefinitionProtocolTests
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseSqlite(connection)
             .Options;
         var factory = new TestDbContextFactory(options);
-        await using (EconomyDbContext setup = factory.CreateDbContext())
+        await using (LedgerDbContext setup = factory.CreateDbContext())
         {
             await setup.Database.EnsureCreatedAsync();
         }
@@ -402,12 +402,12 @@ public sealed class TokenDefinitionProtocolTests
             ]);
     }
 
-    private sealed class TestDbContextFactory(DbContextOptions<EconomyDbContext> options)
-        : IDbContextFactory<EconomyDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<LedgerDbContext> options)
+        : IDbContextFactory<LedgerDbContext>
     {
-        public EconomyDbContext CreateDbContext() => new(options);
+        public LedgerDbContext CreateDbContext() => new(options);
 
-        public ValueTask<EconomyDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        public ValueTask<LedgerDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
             => ValueTask.FromResult(CreateDbContext());
     }
 }

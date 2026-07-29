@@ -1,0 +1,722 @@
+@namespace CanDoItAll.Ledger.Components
+@using CanDoItAll.Ledger.Components.Services
+@implements IAsyncDisposable
+@inject DialogService DialogService
+@inject NotificationService Notifications
+@inject IAddressDirectoryService AddressDirectory
+
+@if (loadError is not null)
+{
+    <Alert AlertStyle="AlertStyle.Danger">
+        <strong>@Adapter.HostMode workspace failed</strong>
+        <span>@loadError</span>
+    </Alert>
+}
+else if (workspace is null)
+{
+    <EmptyState Eyebrow="@Adapter.HostMode"
+                Title="Loading account workspace"
+                Description="Account workspace data is being loaded." />
+}
+else
+{
+    <section data-testid="adapter-workspace-host">
+        @if (UseFullAppShell)
+        {
+            <LedgerAccountAppShell Workspace="workspace"
+                                InitialView="@InitialView"
+                                HostModeLabel="@Adapter.HostMode"
+                                SigningModeLabel="@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")"
+                                RefreshRequested="RefreshAsync"
+                                CreateSubAccountRequested="OpenSubAccountDialogAsync"
+                                ValidateRequested="OpenProfileEditDialogAsync"
+                                OpenSendTransactionRequested="OpenSendTransactionDialogAsync"
+                                TransactionSubmitRequested="SubmitTransactionAsync"
+                                TransactionBatchSubmitRequested="SubmitTransactionBatchAsync"
+                                RuleTokenCreateRequested="SubmitRuleTokenCreationAsync"
+                                TransactionDetailsRequested="OpenTransactionDetailsAsync"
+                                BusinessObjectTransactionDetailsRequested="OpenTransactionDetailsByIdAsync"
+                                CreateTokenRequested="OpenTokenCreationDialogAsync"
+                                BusinessObjectSendRequested="OpenBusinessObjectSendDialogAsync"
+                                BusinessObjectSetPriceRequested="OpenBusinessObjectSetPriceDialogAsync"
+                                BusinessObjectTicketVerificationRequested="CreateTicketVerificationAsync"
+                                BusinessObjectTicketUseRequested="UseTicketAsync"
+                                BusinessObjectEventLookupRequested="LookupEventBusinessObjectAsync"
+                                MessageSignRequested="SignMessageAsync"
+                                MessageVerifyRequested="VerifyMessageAsync"
+                                MessageEncryptRequested="EncryptMessageAsync"
+                                MessageDecryptRequested="DecryptMessageAsync"
+                                SecureMessageSendRequested="SendSecureMessageAsync"
+                                SecureMessageOpenRequested="OpenSecureMessageAsync"
+                                SecureMessageAttachmentOpenRequested="OpenSecureMessageAttachmentAsync" />
+        }
+        else
+        {
+            <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap" data-testid="adapter-host-mode">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="@Adapter.HostMode" />
+                <StatusBadge Text="@(Adapter.UsesServerSideAccountSigning ? "Server signing" : "Browser signing")" Tone="info" />
+            </Cluster>
+
+            <LedgerAccountWorkspace Workspace="workspace"
+                                     RefreshRequested="RefreshAsync"
+                                     AddTransactionRequested="SubmitCurrentDraftAsync"
+                                     ValidateRequested="OpenProfileEditDialogAsync"
+                                     TransactionSubmitRequested="SubmitTransactionAsync"
+                                     TransactionDetailsRequested="LoadTransactionDetailsAsync"
+                                     MessageSignRequested="SignMessageAsync"
+                                     MessageVerifyRequested="VerifyMessageAsync"
+                                     MessageEncryptRequested="EncryptMessageAsync"
+                                     MessageDecryptRequested="DecryptMessageAsync" />
+
+            <Grid ColumnsLg="3" Gap="LayoutGap.Medium">
+                <section data-testid="adapter-utxo-explorer">
+                    <UtxoExplorer Outputs="workspace.SpendableOutputsOrEmpty" />
+                </section>
+
+                <section data-testid="adapter-transaction-history">
+                    <TransactionHistoryBrowser Transactions="workspace.Transactions" />
+                </section>
+
+                <section data-testid="adapter-transaction-composer">
+                    <TransactionComposerShell Draft="workspace.TransactionDraft"
+                                              TokenOptions="workspace.TokenOptions"
+                                              SpendableOutputs="workspace.SpendableOutputsOrEmpty"
+                                              Bookmarks="workspace.AddressBookmarks"
+                                              AccountScope="@workspace.Address.Value"
+                                              SubmitRequested="SubmitTransactionAsync" />
+                </section>
+            </Grid>
+
+        }
+    </section>
+}
+
+@code {
+    private BusinessObjectWorkspaceModel? workspace;
+    private AccountWorkspaceRefreshSnapshot? refreshSnapshot;
+    private LedgerTransactionExecutionResult? lastResult;
+    private string? loadError;
+    private readonly SemaphoreSlim refreshGate = new(1, 1);
+    private readonly BusinessObjectCommerceDispatcher commerceDispatcher = new();
+    private CancellationTokenSource? autoRefreshCancellation;
+    private Task? autoRefreshTask;
+
+    [Parameter, EditorRequired]
+    public ILedgerAccountWorkspaceAdapter Adapter { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BusinessObjectWorkspaceModel> WorkspaceLoaded { get; set; }
+
+    [Parameter]
+    public EventCallback<LedgerTransactionExecutionResult> TransactionSubmitted { get; set; }
+
+    [Parameter]
+    public bool UseFullAppShell { get; set; }
+
+    [Parameter]
+    public string? InitialView { get; set; }
+
+    [Parameter]
+    public bool AutoRefreshEnabled { get; set; } = true;
+
+    [Parameter]
+    public TimeSpan AutoRefreshInterval { get; set; } = TimeSpan.FromSeconds(30);
+
+    [Parameter]
+    public int AutoRefreshTransactionProbeCount { get; set; } = 10;
+
+    [Parameter]
+    public bool CommerceDispatchEnabled { get; set; } = true;
+
+    [Parameter]
+    public int CommerceDispatchMaxPaymentsPerRefresh { get; set; } = 3;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshWorkspaceAsync(showNotification: false);
+        StartAutoRefreshLoop();
+    }
+
+    private async Task RefreshAsync()
+        => await RefreshWorkspaceAsync(showNotification: true);
+
+    private async Task RefreshWorkspaceAsync(bool showNotification)
+    {
+        await refreshGate.WaitAsync();
+        try
+        {
+            await LoadWorkspaceCoreAsync();
+            if (showNotification && workspace is not null)
+            {
+                Notifications.Info(
+                    "Workspace refreshed",
+                    $"Workspace refreshed for {workspace.AccountName}.",
+                    position: NotificationPosition.BottomCenter);
+            }
+        }
+        catch (Exception exception)
+        {
+            loadError = exception.Message;
+            workspace = null;
+        }
+        finally
+        {
+            refreshGate.Release();
+        }
+    }
+
+    private Task SubmitCurrentDraftAsync()
+        => workspace is null
+            ? Task.CompletedTask
+            : SubmitTransactionAsync(workspace.TransactionDraft);
+
+    private async Task SubmitTransactionAsync(BusinessObjectTransactionDraft draft)
+        => await ExecuteAndRefreshAsync(
+            () => Adapter.SubmitTransactionAsync(draft),
+            "Transaction submitted").ConfigureAwait(false);
+
+    private async Task SubmitTransactionBatchAsync(BusinessObjectBatchTransactionRequest request)
+    {
+        if (request.Drafts.Count == 0)
+        {
+            Notifications.Warning("Batch empty", "No transactions were prepared for this batch.", position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        var results = new List<LedgerTransactionExecutionResult>(request.Drafts.Count);
+        try
+        {
+            for (int draftIndex = 0; draftIndex < request.Drafts.Count; draftIndex++)
+            {
+                BusinessObjectTransactionDraft draft = request.Drafts[draftIndex];
+                (int correlationIndex, string? correlationExternalRef) = request.CorrelationFor(draftIndex);
+                LedgerTransactionExecutionResult result = (await Adapter.SubmitTransactionAsync(draft).ConfigureAwait(false)) with
+                {
+                    BatchIndex = correlationIndex,
+                    CorrelationExternalRef = correlationExternalRef
+                };
+                results.Add(result);
+                lastResult = result;
+                await TransactionSubmitted.InvokeAsync(result).ConfigureAwait(false);
+
+                if (!result.Accepted)
+                {
+                    break;
+                }
+            }
+
+            await RefreshWorkspaceAsync(showNotification: false).ConfigureAwait(false);
+
+            int acceptedCount = results.Count(result => result.Accepted);
+            string message = $"{acceptedCount}/{request.Drafts.Count} transaction(s) accepted. {request.Summary}";
+            if (acceptedCount == request.Drafts.Count)
+            {
+                Notifications.Success(request.Label, message, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                string rejectedMessage = results.LastOrDefault(result => !result.Accepted)?.Message ?? message;
+                Notifications.Error(request.Label, $"{message} Last result: {rejectedMessage}", position: NotificationPosition.BottomCenter);
+            }
+        }
+        catch (Exception exception)
+        {
+            lastResult = new LedgerTransactionExecutionResult(
+                BusinessObjectTransactionMode.Create,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                exception.Message);
+            await TransactionSubmitted.InvokeAsync(lastResult).ConfigureAwait(false);
+            Notifications.Error(request.Label, exception.Message, position: NotificationPosition.BottomCenter);
+        }
+    }
+
+    private Task OpenSendTransactionDialogAsync()
+    {
+        if (workspace is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return DialogService.OpenAsync<TransactionComposerDialogContent>(
+            "Send Transaction",
+            new Dictionary<string, object?>
+            {
+                [nameof(TransactionComposerDialogContent.Draft)] = workspace.TransactionDraft,
+                [nameof(TransactionComposerDialogContent.TokenOptions)] = workspace.TokenOptions,
+                [nameof(TransactionComposerDialogContent.SpendableOutputs)] = workspace.SpendableOutputsOrEmpty,
+                [nameof(TransactionComposerDialogContent.Balance)] = workspace.Balance,
+                [nameof(TransactionComposerDialogContent.BusinessObjects)] = workspace.BusinessObjects,
+                [nameof(TransactionComposerDialogContent.BusinessObjectLookupAsync)] =
+                    (Func<BusinessObjectLookupRequest, Task<IReadOnlyList<IBusinessObjectView>>>)LookupBusinessObjectsAsync,
+                [nameof(TransactionComposerDialogContent.Bookmarks)] = workspace.AddressBookmarks,
+                [nameof(TransactionComposerDialogContent.AccountScope)] = workspace.Address.Value,
+                [nameof(TransactionComposerDialogContent.SubmitRequested)] =
+                    EventCallback.Factory.Create<BusinessObjectTransactionDraft>(this, SubmitTransactionAsync),
+                [nameof(TransactionComposerDialogContent.AssembleRequested)] =
+                    EventCallback.Factory.Create(this, RefreshAsync),
+                [nameof(TransactionComposerDialogContent.BroadcastRequested)] =
+                    EventCallback.Factory.Create(this, RefreshAsync),
+                [nameof(TransactionComposerDialogContent.CreateTokenRequested)] =
+                    EventCallback.Factory.Create(this, OpenTokenCreationDialogAsync)
+            },
+            new DialogOptions
+            {
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-ledger-dialog",
+                TestId = "cda-send-transaction-dialog"
+            });
+    }
+
+    private Task<IReadOnlyList<IBusinessObjectView>> LookupBusinessObjectsAsync(BusinessObjectLookupRequest request)
+        => Adapter.LookupBusinessObjectsAsync(request);
+
+    private async Task OpenSubAccountDialogAsync()
+    {
+        if (workspace is null)
+        {
+            return;
+        }
+
+        object? result = await DialogService.OpenAsync<SubAccountCreateDialogContent>(
+            "Add New SubAccount",
+            new Dictionary<string, object?>
+            {
+                [nameof(SubAccountCreateDialogContent.ParentAddress)] = workspace.Address.Value
+            },
+            new DialogOptions
+            {
+                Subtitle = "Create a child account under the current browser vault.",
+                Size = ModalSize.Compact,
+                DenseChrome = true,
+                Class = "cda-ledger-dialog max-w-lg",
+                ShowCloseButton = false,
+                TestId = "cda-subaccount-dialog"
+            }).ConfigureAwait(false);
+
+        if (result is SubAccountCreateDialogResult)
+        {
+            Notifications.Info(
+                "SubAccount prepared",
+                "The browser AccountApp does not persist child accounts yet.",
+                position: NotificationPosition.BottomCenter);
+        }
+    }
+
+    private Task OpenTransactionDetailsAsync(LedgerTransactionSummary transaction)
+        => OpenTransactionDetailsByIdAsync(transaction.TxId);
+
+    private async Task OpenTransactionDetailsByIdAsync(TxId txId)
+    {
+        LedgerTransactionDetailsModel? details = await Adapter.GetTransactionDetailsAsync(txId).ConfigureAwait(false);
+        if (details is null)
+        {
+            Notifications.Warning("Transaction not found", txId.Value, position: NotificationPosition.BottomCenter);
+            return;
+        }
+
+        IReadOnlyList<AddressDirectoryEntry> directoryEntries = workspace is null
+            ? []
+            : await AddressDirectory
+                .GetEntriesAsync(AddressDirectorySeed.FromWorkspace(workspace))
+                .ConfigureAwait(false);
+
+        await DialogService.OpenAsync<TransactionDetailsDialogContent>(
+            "Transaction Details",
+            new Dictionary<string, object?>
+            {
+                [nameof(TransactionDetailsDialogContent.Details)] = details,
+                [nameof(TransactionDetailsDialogContent.DirectoryEntries)] = directoryEntries
+            },
+            new DialogOptions
+            {
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-ledger-dialog cda-ledger-dialog--compact",
+                TestId = "cda-transaction-details-dialog"
+            }).ConfigureAwait(false);
+    }
+
+    private Task OpenBusinessObjectSendDialogAsync(IBusinessObjectView item)
+    {
+        if (workspace is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return DialogService.OpenAsync<BusinessObjectSendDialogContent>(
+            "Send BusinessObject",
+            new Dictionary<string, object?>
+            {
+                [nameof(BusinessObjectSendDialogContent.Object)] = item,
+                [nameof(BusinessObjectSendDialogContent.Bookmarks)] = workspace.AddressBookmarks,
+                [nameof(BusinessObjectSendDialogContent.SubmitRequested)] =
+                    EventCallback.Factory.Create<BusinessObjectSendRequest>(this, SubmitBusinessObjectSendAsync)
+            },
+            new DialogOptions
+            {
+                Subtitle = item.ObjectId.Value,
+                Size = ModalSize.Compact,
+                DenseChrome = true,
+                Class = "cda-ledger-dialog max-w-lg",
+                TestId = "cda-bo-send-dialog"
+            });
+    }
+
+    private Task OpenBusinessObjectSetPriceDialogAsync(IBusinessObjectView item)
+    {
+        if (workspace is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return DialogService.OpenAsync<BusinessObjectSetPriceDialogContent>(
+            "Set BusinessObject Sale",
+            new Dictionary<string, object?>
+            {
+                [nameof(BusinessObjectSetPriceDialogContent.Object)] = item,
+                [nameof(BusinessObjectSetPriceDialogContent.TokenOptions)] = workspace.TokenOptions,
+                [nameof(BusinessObjectSetPriceDialogContent.SubmitRequested)] =
+                    EventCallback.Factory.Create<BusinessObjectPriceRequest>(this, SubmitBusinessObjectPriceAsync)
+            },
+            new DialogOptions
+            {
+                Subtitle = item.ObjectId.Value,
+                Size = ModalSize.Compact,
+                DenseChrome = true,
+                Class = "cda-ledger-dialog max-w-lg",
+                TestId = "cda-bo-set-price-dialog"
+            });
+    }
+
+    private Task OpenProfileEditDialogAsync()
+    {
+        if (workspace is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        IBusinessObjectView? profileObject = workspace.BusinessObjects.FirstOrDefault(item =>
+            item.ObjectType.Equals("profile", StringComparison.OrdinalIgnoreCase));
+
+        return DialogService.OpenAsync<ProfileEditDialogContent>(
+            profileObject is null ? "Create Profile" : "Edit Profile",
+            new Dictionary<string, object?>
+            {
+                [nameof(ProfileEditDialogContent.ProfileObject)] = profileObject,
+                [nameof(ProfileEditDialogContent.AccountName)] = workspace.AccountName,
+                [nameof(ProfileEditDialogContent.SubmitRequested)] =
+                    EventCallback.Factory.Create<ProfileEditRequest>(this, SubmitProfileEditAsync)
+            },
+            new DialogOptions
+            {
+                Subtitle = profileObject?.ObjectId.Value ?? "New profile BusinessObject",
+                Size = ModalSize.Compact,
+                DenseChrome = true,
+                Class = "cda-ledger-dialog max-w-lg",
+                TestId = "cda-profile-edit-dialog"
+            });
+    }
+
+    private Task OpenTokenCreationDialogAsync()
+    {
+        if (workspace is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return DialogService.OpenAsync<TokenCreationDialogContent>(
+            "Create Token",
+            new Dictionary<string, object?>
+            {
+                [nameof(TokenCreationDialogContent.Authorities)] = workspace.TokenCreationAuthorities,
+                [nameof(TokenCreationDialogContent.SubmitRequested)] =
+                    EventCallback.Factory.Create<LedgerTokenCreationRequest>(this, SubmitTokenCreationAsync)
+            },
+            new DialogOptions
+            {
+                Subtitle = "Authority-aware token mint",
+                Size = ModalSize.Wide,
+                DenseChrome = true,
+                CloseOnBackdrop = false,
+                Class = "cda-ledger-dialog",
+                TestId = "cda-token-create-dialog"
+            });
+    }
+
+    private Task SubmitBusinessObjectSendAsync(BusinessObjectSendRequest request)
+        => ExecuteAndRefreshAsync(
+            () => Adapter.SendBusinessObjectAsync(request),
+            "BusinessObject sent");
+
+    private Task SubmitBusinessObjectPriceAsync(BusinessObjectPriceRequest request)
+        => ExecuteAndRefreshAsync(
+            () => Adapter.SetBusinessObjectPriceAsync(request),
+            request.ClearSale ? "Sale cleared" : "Sale updated");
+
+    private Task SubmitProfileEditAsync(ProfileEditRequest request)
+        => ExecuteAndRefreshAsync(
+            () => Adapter.UpdateProfileAsync(request),
+            request.CreateNew ? "Profile created" : "Profile updated");
+
+    private Task SubmitTokenCreationAsync(LedgerTokenCreationRequest request)
+        => ExecuteAndRefreshAsync(
+            () => Adapter.CreateTokenAsync(request),
+            "Token created");
+
+    private Task SubmitRuleTokenCreationAsync(LedgerRuleTokenCreationRequest request)
+        => ExecuteAndRefreshAsync(
+            () => Adapter.CreateRuleTokenAsync(request),
+            "Rule BO created");
+
+    private Task<MessageSecurityActionResult> SignMessageAsync(MessageSecuritySignRequest request)
+        => Adapter.SignMessageAsync(request);
+
+    private Task<MessageSecurityActionResult> VerifyMessageAsync(MessageSecurityVerifyRequest request)
+        => Adapter.VerifyMessageAsync(request);
+
+    private Task<MessageSecurityActionResult> EncryptMessageAsync(MessageSecurityEncryptRequest request)
+        => Adapter.EncryptMessageAsync(request);
+
+    private Task<MessageSecurityActionResult> DecryptMessageAsync(MessageSecurityDecryptRequest request)
+        => Adapter.DecryptMessageAsync(request);
+
+    private async Task<LedgerTransactionExecutionResult> SendSecureMessageAsync(SecureMessageComposeRequest request)
+    {
+        LedgerTransactionExecutionResult result = await Adapter.SendSecureMessageAsync(request).ConfigureAwait(false);
+        lastResult = result;
+        await TransactionSubmitted.InvokeAsync(result);
+        if (result.Accepted)
+        {
+            await RefreshWorkspaceAsync(showNotification: false);
+        }
+
+        return result;
+    }
+
+    private Task<SecureMessageOpenResult> OpenSecureMessageAsync(SecureMessageOpenRequest request)
+        => Adapter.OpenSecureMessageAsync(request);
+
+    private Task<SecureMessageAttachmentOpenResult> OpenSecureMessageAttachmentAsync(SecureMessageAttachmentOpenRequest request)
+        => Adapter.OpenSecureMessageAttachmentAsync(request);
+
+    private Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
+        BusinessObjectTicketVerificationRequest request)
+        => Adapter.CreateTicketVerificationAsync(request);
+
+    private async Task<LedgerTransactionExecutionResult> UseTicketAsync(BusinessObjectTicketUseRequest request)
+    {
+        try
+        {
+            LedgerTransactionExecutionResult result = await Adapter.UseTicketAsync(request).ConfigureAwait(false);
+            lastResult = result;
+            await TransactionSubmitted.InvokeAsync(result);
+            await RefreshWorkspaceAsync(showNotification: false);
+
+            if (result.Accepted)
+            {
+                Notifications.Success("Ticket used", result.Message, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                Notifications.Error("Ledger rejected transaction", result.Message, position: NotificationPosition.BottomCenter);
+            }
+
+            return result;
+        }
+        catch (Exception exception)
+        {
+            lastResult = new LedgerTransactionExecutionResult(
+                BusinessObjectTransactionMode.UpdateObject,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                exception.Message);
+            await TransactionSubmitted.InvokeAsync(lastResult);
+            Notifications.Error("Ledger action failed", exception.Message, position: NotificationPosition.BottomCenter);
+            return lastResult;
+        }
+    }
+
+    private Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
+        BusinessObjectEventLookupRequest request)
+        => Adapter.LookupEventBusinessObjectAsync(request);
+
+    private async Task ExecuteAndRefreshAsync(
+        Func<Task<LedgerTransactionExecutionResult>> action,
+        string successSummary)
+    {
+        try
+        {
+            lastResult = await action();
+            await TransactionSubmitted.InvokeAsync(lastResult);
+            await RefreshWorkspaceAsync(showNotification: false);
+
+            if (lastResult.Accepted)
+            {
+                Notifications.Success(successSummary, lastResult.Message, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                Notifications.Error("Ledger rejected transaction", lastResult.Message, position: NotificationPosition.BottomCenter);
+            }
+        }
+        catch (Exception exception)
+        {
+            lastResult = new LedgerTransactionExecutionResult(
+                BusinessObjectTransactionMode.Create,
+                Accepted: false,
+                TxId: null,
+                LedgerSequence: null,
+                exception.Message);
+            await TransactionSubmitted.InvokeAsync(lastResult);
+            Notifications.Error("Ledger action failed", exception.Message, position: NotificationPosition.BottomCenter);
+        }
+    }
+
+    private Task LoadTransactionDetailsAsync(LedgerTransactionSummary transaction)
+        => Adapter.GetTransactionDetailsAsync(transaction.TxId);
+
+    private async Task LoadWorkspaceCoreAsync(CancellationToken cancellationToken = default)
+    {
+        loadError = null;
+        BusinessObjectWorkspaceModel loaded = await Adapter.GetWorkspaceAsync(cancellationToken);
+        BusinessObjectCommerceDispatchResult dispatchResult = BusinessObjectCommerceDispatchResult.Empty;
+        if (CommerceDispatchEnabled)
+        {
+            try
+            {
+                dispatchResult = await commerceDispatcher
+                    .DispatchPendingAsync(
+                        Adapter,
+                        loaded,
+                        CommerceDispatchMaxPaymentsPerRefresh,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                Notifications.Error(
+                    "Commerce dispatch failed",
+                    exception.Message,
+                    position: NotificationPosition.BottomCenter);
+            }
+        }
+
+        if (dispatchResult.HasSubmissions)
+        {
+            Notifications.Info(
+                "Commerce dispatch",
+                dispatchResult.Summary,
+                position: NotificationPosition.BottomCenter);
+            loaded = await Adapter.GetWorkspaceAsync(cancellationToken);
+        }
+
+        workspace = loaded;
+        refreshSnapshot = AccountWorkspaceRefreshSnapshot.Create(
+            loaded,
+            AutoRefreshTransactionProbeCount,
+            loaded.ViewedAtUtc);
+        await WorkspaceLoaded.InvokeAsync(loaded);
+    }
+
+    private void StartAutoRefreshLoop()
+    {
+        if (!AutoRefreshEnabled || AutoRefreshInterval <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        autoRefreshCancellation = new CancellationTokenSource();
+        autoRefreshTask = RunAutoRefreshLoopAsync(autoRefreshCancellation.Token);
+    }
+
+    private async Task RunAutoRefreshLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(AutoRefreshInterval);
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                await InvokeAsync(async () =>
+                {
+                    await ProbeAndRefreshIfChangedAsync(cancellationToken);
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private async Task ProbeAndRefreshIfChangedAsync(CancellationToken cancellationToken)
+    {
+        await refreshGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (workspace is null)
+            {
+                await LoadWorkspaceCoreAsync(cancellationToken);
+                return;
+            }
+
+            AccountWorkspaceRefreshSnapshot latest = await Adapter
+                .GetRefreshSnapshotAsync(AutoRefreshTransactionProbeCount, cancellationToken);
+            if (refreshSnapshot is not null && refreshSnapshot.HasSameTransactions(latest))
+            {
+                return;
+            }
+
+            await LoadWorkspaceCoreAsync(cancellationToken);
+            if (workspace is not null)
+            {
+                Notifications.Info(
+                    "Auto refresh",
+                    $"Workspace refreshed for {workspace.AccountName}.",
+                    position: NotificationPosition.BottomCenter);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            loadError = exception.Message;
+        }
+        finally
+        {
+            refreshGate.Release();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (autoRefreshCancellation is not null)
+        {
+            await autoRefreshCancellation.CancelAsync();
+        }
+
+        if (autoRefreshTask is not null)
+        {
+            try
+            {
+                await autoRefreshTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        autoRefreshCancellation?.Dispose();
+        refreshGate.Dispose();
+    }
+}

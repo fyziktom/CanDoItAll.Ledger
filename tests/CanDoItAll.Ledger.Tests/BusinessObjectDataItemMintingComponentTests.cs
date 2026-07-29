@@ -1,19 +1,19 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectDataItemMintingComponentTests : BunitContext
 {
@@ -25,7 +25,7 @@ public sealed class BusinessObjectDataItemMintingComponentTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
@@ -233,9 +233,9 @@ public sealed class BusinessObjectDataItemMintingComponentTests : BunitContext
             Context,
             Alice,
             balance,
-            [new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
+            [new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
             [],
-            [new EconomyAddressBookmark("Alice", Alice)],
+            [new LedgerAddressBookmark("Alice", Alice)],
             [],
             [],
             [],

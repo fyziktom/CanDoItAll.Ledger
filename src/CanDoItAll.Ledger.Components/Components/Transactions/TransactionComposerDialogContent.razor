@@ -1,0 +1,64 @@
+@namespace CanDoItAll.Ledger.Components
+@inject DialogService DialogService
+
+<TransactionComposerShell Draft="Draft"
+                          TokenOptions="TokenOptions"
+                          SpendableOutputs="SpendableOutputs"
+                          Balance="Balance"
+                          BusinessObjects="BusinessObjects"
+                          BusinessObjectLookupAsync="BusinessObjectLookupAsync"
+                          Bookmarks="Bookmarks"
+                          AccountScope="@AccountScope"
+                          DraftChanged="DraftChanged"
+                          SubmitRequested="SubmitAsync"
+                          AssembleRequested="AssembleRequested"
+                          BroadcastRequested="BroadcastRequested"
+                          CreateTokenRequested="CreateTokenRequested"
+                          Dense="true" />
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<LedgerTokenOption> TokenOptions { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> SpendableOutputs { get; set; } = [];
+
+    [Parameter]
+    public LedgerAccountBalance? Balance { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<IBusinessObjectView> BusinessObjects { get; set; } = [];
+
+    [Parameter]
+    public Func<BusinessObjectLookupRequest, Task<IReadOnlyList<IBusinessObjectView>>>? BusinessObjectLookupAsync { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<LedgerAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string AccountScope { get; set; } = "transaction-composer";
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> DraftChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> SubmitRequested { get; set; }
+
+    [Parameter]
+    public EventCallback AssembleRequested { get; set; }
+
+    [Parameter]
+    public EventCallback BroadcastRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CreateTokenRequested { get; set; }
+
+    private async Task SubmitAsync(BusinessObjectTransactionDraft draft)
+    {
+        await SubmitRequested.InvokeAsync(draft);
+        await DialogService.CloseAsync();
+    }
+}

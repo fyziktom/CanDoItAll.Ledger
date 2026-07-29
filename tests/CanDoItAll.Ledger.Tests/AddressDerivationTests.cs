@@ -1,8 +1,8 @@
 using System.Text;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.Core;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class AddressDerivationTests
 {

@@ -1,0 +1,29 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-security-profile-panel">
+    <SectionCard Title="@ProfileName" Description="Security">
+        <HeaderActions>
+            <StatusBadge Text="@(ProductionMode ? "Production-like" : "Development")" Tone="@(ProductionMode ? "warning" : "info")" />
+        </HeaderActions>
+        <ChildContent>
+            <StatusCheckList Items="Items" />
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public string ProfileName { get; set; } = "Local operator";
+
+    [Parameter]
+    public bool ProductionMode { get; set; }
+
+    private IReadOnlyList<StatusCheckItem> Items
+        =>
+        [
+            new() { Label = "API key header", Status = "Configured", Tone = "success", Complete = true },
+            new() { Label = "Bearer token", Status = ProductionMode ? "Required" : "Optional", Tone = ProductionMode ? "warning" : "neutral" },
+            new() { Label = "Danger actions", Status = ProductionMode ? "Disabled" : "Confirmation required", Tone = "warning" },
+            new() { Label = "Secrets in UI", Status = "Never displayed", Tone = "success", Complete = true }
+        ];
+}
