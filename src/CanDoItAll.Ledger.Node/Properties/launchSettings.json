@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "CanDoItAll.Ledger.Node": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Ledger__Persistence__Provider": "InMemory",
+        "Ledger__InMemory__DatabaseName": "candoitall-ledger-dev",
+        "Ledger__Auth__Ui__UseDevelopmentAdminDefaults": "true"
+      },
+      "applicationUrl": "https://localhost:56428;http://localhost:56429"
+    }
+  }
+}

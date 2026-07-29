@@ -1,14 +1,14 @@
 using System;
 using System.IO;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class ConsoleDemoParityTests
 {
     [Fact]
     public void ConsoleDemoDriver_ExposesExplicitUtxoSplitMergeFacadeOverAccount()
     {
-        string source = ReadRepoFile("examples", "CanDoItAll.Economy.ConsoleDemo", "DemoAccountDriver.cs");
+        string source = ReadRepoFile("examples", "CanDoItAll.Ledger.ConsoleDemo", "DemoAccountDriver.cs");
 
         Assert.Contains("public Task<LedgerSubmitResult> SplitUtxosAsync(", source, StringComparison.Ordinal);
         Assert.Contains("=> Account.SplitUtxosAsync(", source, StringComparison.Ordinal);
@@ -22,7 +22,7 @@ public sealed class ConsoleDemoParityTests
     [Fact]
     public void ConsoleDemoLesson7_DistinguishesPlainUtxoSplitMergeFromBusinessObjectOperations()
     {
-        string source = ReadRepoFile("examples", "CanDoItAll.Economy.ConsoleDemo", "LearningScenarios.cs");
+        string source = ReadRepoFile("examples", "CanDoItAll.Ledger.ConsoleDemo", "LearningScenarios.cs");
 
         Assert.Contains("Plain UTXO split and merge", source, StringComparison.Ordinal);
         Assert.Contains("SplitUtxosAsync(", source, StringComparison.Ordinal);
@@ -34,7 +34,7 @@ public sealed class ConsoleDemoParityTests
     [Fact]
     public void ConsoleDemoReadme_DocumentsWasmParityTransactionSemantics()
     {
-        string source = ReadRepoFile("examples", "CanDoItAll.Economy.ConsoleDemo", "README.md");
+        string source = ReadRepoFile("examples", "CanDoItAll.Ledger.ConsoleDemo", "README.md");
 
         Assert.Contains("UTXO split", source, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("UTXO merge", source, StringComparison.OrdinalIgnoreCase);

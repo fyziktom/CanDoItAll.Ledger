@@ -1,0 +1,39 @@
+@namespace CanDoItAll.Ledger.Components
+
+<DangerActionDialog Eyebrow="Danger operation"
+                    Title="Reset development ledger"
+                    Description="Reset destroys local ledger data and projections for the selected environment."
+                    RequiredConfirmation="@EnvironmentName"
+                    ConfirmButtonText="Reset ledger"
+                    ContextRail="@RenderContext"
+                    ReviewPanel="@RenderReview"
+                    TestId="cda-ledger-reset-dialog">
+    <Alert AlertStyle="AlertStyle.Danger">
+        This action must be disabled for production profiles by the hosting application.
+    </Alert>
+</DangerActionDialog>
+
+@code {
+    [Parameter]
+    public string EnvironmentName { get; set; } = "Development";
+
+    private RenderFragment RenderContext => builder =>
+    {
+        builder.OpenComponent<NodeHealthPanel>(0);
+        builder.AddAttribute(1, nameof(NodeHealthPanel.EnvironmentName), EnvironmentName);
+        builder.CloseComponent();
+    };
+
+    private RenderFragment RenderReview => builder =>
+    {
+        builder.OpenComponent<ActionReviewPanel>(0);
+        builder.AddAttribute(1, nameof(ActionReviewPanel.Title), "Reset impact");
+        builder.AddAttribute(2, nameof(ActionReviewPanel.Items), new[]
+        {
+            new ActionReviewFact("Environment", EnvironmentName),
+            new ActionReviewFact("Data", "Ledger transactions, projections, and snapshots"),
+            new ActionReviewFact("Recovery", "Restore from external backup only")
+        });
+        builder.CloseComponent();
+    };
+}

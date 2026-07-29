@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CanDoItAll.Economy.Simulator;
+namespace CanDoItAll.Ledger.Simulator;
 
 public interface ISimulationScenarioProjectFactory
 {
@@ -8,8 +8,8 @@ public interface ISimulationScenarioProjectFactory
 }
 
 public sealed class SimulationScenarioProjectFactory(
-    IEconomyScenarioTemplateCatalog catalog,
-    IEconomySimulatorJsonSerializer serializer) : ISimulationScenarioProjectFactory
+    ILedgerScenarioTemplateCatalog catalog,
+    ILedgerSimulatorJsonSerializer serializer) : ISimulationScenarioProjectFactory
 {
     public IReadOnlyList<SimulationProjectState> CreateScenarioProjects(DateTimeOffset updatedAtUtc)
         => catalog.GetScenarios()
@@ -25,10 +25,10 @@ public sealed class SimulationScenarioProjectFactory(
             .GroupBy(x => x.BusinessUnitId)
             .Select(x => x.First())
             .ToArray();
-        var model = new EconomySimulatorModelState(
+        var model = new LedgerSimulatorModelState(
             scenario.ProjectId,
             scenario.DisplayName,
-            EconomySimulatorSchema.Version,
+            LedgerSimulatorSchema.Version,
             scenario.BaseCurrencyCode,
             scenario.PlanningStartDate,
             scenario.PlanningEndDate,
@@ -69,7 +69,7 @@ public sealed class SimulationScenarioProjectFactory(
             new("folder:flow-evidence", null, "Work and product flow evidence", SimulationProjectFolderKind.ImportedObjects, 60, Empty()),
             new("folder:planned-financial-schedules", null, "Planned financial schedules", SimulationProjectFolderKind.FinancialInputs, 70, Empty())
         ];
-        EconomySimulatorScenarioRulePack rulePack = EconomySimulatorScenarioRulePackCatalog.CreateRulePack(scenario);
+        LedgerSimulatorScenarioRulePack rulePack = LedgerSimulatorScenarioRulePackCatalog.CreateRulePack(scenario);
         IReadOnlyList<SimulationBusinessObjectDefinitionState> definitions = BuildDefinitions(scenario, model, businessUnits, rulePack);
         IReadOnlyList<SimulationFinancialInputProfileState> profiles = [BuildFinancialProfile(scenario)];
         int stepCount = MonthsInclusive(scenario.PlanningStartDate, scenario.PlanningEndDate);
@@ -120,22 +120,22 @@ public sealed class SimulationScenarioProjectFactory(
 
     private IReadOnlyList<SimulationBusinessObjectDefinitionState> BuildDefinitions(
         ScenarioBusinessModelState scenario,
-        EconomySimulatorModelState model,
+        LedgerSimulatorModelState model,
         IReadOnlyList<BusinessUnitState> businessUnits,
-        EconomySimulatorScenarioRulePack rulePack)
+        LedgerSimulatorScenarioRulePack rulePack)
     {
         var definitions = new List<SimulationBusinessObjectDefinitionState>
         {
-            Definition("def:project-config", "Project model configuration", SimulationBusinessObjectDefinitionKind.ProjectConfiguration, EconomySimulatorObjectTypes.ProjectConfiguration, "folder:project-config", null, null, serializer.Serialize(model), null, SimulationDefinitionMaterializationStatus.Validated),
-            Definition("def:scenario-model", scenario.DisplayName, SimulationBusinessObjectDefinitionKind.ImportedObject, EconomySimulatorObjectTypes.Template, "folder:scenario-model", null, null, serializer.Serialize(scenario), null, SimulationDefinitionMaterializationStatus.Validated),
-            Definition("def:rule-automation-plan", $"{scenario.ScenarioCode} rule automation plan", SimulationBusinessObjectDefinitionKind.RuleDefinition, EconomySimulatorObjectTypes.RuleAutomationPlan, "folder:rule-pack", null, null, serializer.Serialize(rulePack.ToPlanState()), null, SimulationDefinitionMaterializationStatus.Validated)
+            Definition("def:project-config", "Project model configuration", SimulationBusinessObjectDefinitionKind.ProjectConfiguration, LedgerSimulatorObjectTypes.ProjectConfiguration, "folder:project-config", null, null, serializer.Serialize(model), null, SimulationDefinitionMaterializationStatus.Validated),
+            Definition("def:scenario-model", scenario.DisplayName, SimulationBusinessObjectDefinitionKind.ImportedObject, LedgerSimulatorObjectTypes.Template, "folder:scenario-model", null, null, serializer.Serialize(scenario), null, SimulationDefinitionMaterializationStatus.Validated),
+            Definition("def:rule-automation-plan", $"{scenario.ScenarioCode} rule automation plan", SimulationBusinessObjectDefinitionKind.RuleDefinition, LedgerSimulatorObjectTypes.RuleAutomationPlan, "folder:rule-pack", null, null, serializer.Serialize(rulePack.ToPlanState()), null, SimulationDefinitionMaterializationStatus.Validated)
         };
 
         definitions.AddRange(businessUnits.Select(unit => Definition(
-            $"def:bu:{EconomySimulatorIdentifiers.NormalizeSegment(unit.Path)}",
+            $"def:bu:{LedgerSimulatorIdentifiers.NormalizeSegment(unit.Path)}",
             unit.DisplayName,
             SimulationBusinessObjectDefinitionKind.BusinessUnitDefinition,
-            EconomySimulatorObjectTypes.BusinessUnit,
+            LedgerSimulatorObjectTypes.BusinessUnit,
             "folder:business-units",
             unit.BusinessUnitId,
             unit.PrimaryAddress,
@@ -144,10 +144,10 @@ public sealed class SimulationScenarioProjectFactory(
             SimulationDefinitionMaterializationStatus.Materialized)));
 
         definitions.AddRange(rulePack.Templates.Select(template => Definition(
-            $"def:rule:{EconomySimulatorIdentifiers.NormalizeSegment(template.Rule.RuleId)}",
+            $"def:rule:{LedgerSimulatorIdentifiers.NormalizeSegment(template.Rule.RuleId)}",
             template.Process.ProcessCode,
             SimulationBusinessObjectDefinitionKind.RuleDefinition,
-            EconomySimulatorObjectTypes.RuleState,
+            LedgerSimulatorObjectTypes.RuleState,
             "folder:rule-pack",
             template.OwnerBusinessUnitId,
             template.OwnerAddress,
@@ -156,10 +156,10 @@ public sealed class SimulationScenarioProjectFactory(
             SimulationDefinitionMaterializationStatus.Validated)));
 
         definitions.AddRange(scenario.WorkOrders.Select(workOrder => Definition(
-            $"def:work-order:{EconomySimulatorIdentifiers.NormalizeSegment(workOrder.WorkOrderId)}",
+            $"def:work-order:{LedgerSimulatorIdentifiers.NormalizeSegment(workOrder.WorkOrderId)}",
             workOrder.DisplayName,
             SimulationBusinessObjectDefinitionKind.ImportedObject,
-            EconomySimulatorObjectTypes.WorkOrder,
+            LedgerSimulatorObjectTypes.WorkOrder,
             "folder:flow-evidence",
             workOrder.DeliveryBusinessUnitId,
             businessUnits.First(x => x.BusinessUnitId == workOrder.DeliveryBusinessUnitId).PrimaryAddress,
@@ -168,10 +168,10 @@ public sealed class SimulationScenarioProjectFactory(
             SimulationDefinitionMaterializationStatus.Validated)));
 
         definitions.AddRange(scenario.ProductFlowPlans.Select(flow => Definition(
-            $"def:product-flow:{EconomySimulatorIdentifiers.NormalizeSegment(flow.ProductFlowPlanId)}",
+            $"def:product-flow:{LedgerSimulatorIdentifiers.NormalizeSegment(flow.ProductFlowPlanId)}",
             flow.DisplayName,
             SimulationBusinessObjectDefinitionKind.ImportedObject,
-            EconomySimulatorObjectTypes.ProductFlowPlan,
+            LedgerSimulatorObjectTypes.ProductFlowPlan,
             "folder:flow-evidence",
             businessUnits.FirstOrDefault(x => flow.Steps.Any(step => step.BusinessUnitId == x.BusinessUnitId))?.BusinessUnitId,
             businessUnits.FirstOrDefault(x => flow.Steps.Any(step => step.BusinessUnitId == x.BusinessUnitId))?.PrimaryAddress,
@@ -180,10 +180,10 @@ public sealed class SimulationScenarioProjectFactory(
             SimulationDefinitionMaterializationStatus.Validated)));
 
         definitions.AddRange(scenario.FinancialSchedules.Select(schedule => Definition(
-            $"def:financial-schedule:{EconomySimulatorIdentifiers.NormalizeSegment(schedule.ScheduleId)}",
+            $"def:financial-schedule:{LedgerSimulatorIdentifiers.NormalizeSegment(schedule.ScheduleId)}",
             schedule.DisplayName,
             SimulationBusinessObjectDefinitionKind.FinancialInput,
-            EconomySimulatorObjectTypes.PlannedFinancialSchedule,
+            LedgerSimulatorObjectTypes.PlannedFinancialSchedule,
             "folder:planned-financial-schedules",
             schedule.BusinessUnitId,
             businessUnits.FirstOrDefault(x => x.BusinessUnitId == schedule.BusinessUnitId)?.PrimaryAddress,
@@ -240,7 +240,7 @@ public sealed class SimulationScenarioProjectFactory(
             displayName,
             kind,
             objectType,
-            EconomySimulatorSchema.Version,
+            LedgerSimulatorSchema.Version,
             folderId,
             ownerBusinessUnitId,
             ownerAddress,
@@ -284,7 +284,7 @@ public sealed class SimulationScenarioProjectFactory(
 
     private static BusinessUnitState CreateExternalClearing(string projectId, BusinessUnitState treasury)
     {
-        BusinessUnitId id = EconomySimulatorIdentifiers.BusinessUnitId(projectId, "external-clearing");
+        BusinessUnitId id = LedgerSimulatorIdentifiers.BusinessUnitId(projectId, "external-clearing");
         Address address = Address.FromPublicKey(System.Text.Encoding.UTF8.GetBytes($"{projectId}:external-clearing"));
         return new BusinessUnitState(
             projectId,

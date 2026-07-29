@@ -1,0 +1,72 @@
+@namespace CanDoItAll.Ledger.Components
+@inherits BusinessObjectDataItemAddressComponentBase
+
+<Cluster Gap="LayoutGap.XSmall"
+         Wrap="FlexWrap.NoWrap"
+         aria-label="@($"Actions for {Item.Name}")">
+    @if (HasHash)
+    {
+        <CopyButton Value="@Item.Hash"
+                    Icon="tag"
+                    DisplayMode="CopyButtonDisplayMode.IconOnly"
+                    Size="CopyButtonSize.ExtraSmall"
+                    AriaLabel="@($"Copy {HashLabel} for {Item.Name}")"
+                    title="@($"Copy {HashLabel}")"
+                    data-testid="@HashCopyTestId" />
+    }
+    @if (ActionUri is not null)
+    {
+        <CopyButton Value="@ActionUri"
+                    Icon="link"
+                    DisplayMode="CopyButtonDisplayMode.IconOnly"
+                    Size="CopyButtonSize.ExtraSmall"
+                    AriaLabel="@($"Copy {LinkLabel} for {Item.Name}")"
+                    title="@($"Copy {LinkLabel}")"
+                    data-testid="@LinkCopyTestId" />
+        <PageHeaderActionButton Icon="open_in_new"
+                                Label="@($"Open {Item.Name}")"
+                                TooltipText="Open data item"
+                                Variant="Variant.Outlined"
+                                Href="@ActionUri"
+                                Target="_blank"
+                                Rel="noopener noreferrer"
+                                TestId="cda-bo-data-item-open" />
+        <PageHeaderActionButton Icon="download"
+                                Label="@($"Download {Item.Name}")"
+                                TooltipText="Download data item"
+                                Variant="Variant.Outlined"
+                                Href="@ActionUri"
+                                download="@DownloadFileName"
+                                TestId="cda-bo-data-item-download" />
+    }
+</Cluster>
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectDataItem Item { get; set; } = default!;
+
+    private bool HasHash
+        => !string.IsNullOrWhiteSpace(Item.Hash);
+
+    private string? ActionUri
+        => ResolveActionableDataItemUriString(Item);
+
+    private string HashLabel
+        => Item.Storage == BusinessObjectDataItemStorage.Ipfs ? "CID" : "hash";
+
+    private string HashCopyTestId
+        => Item.Storage == BusinessObjectDataItemStorage.Ipfs
+            ? "cda-bo-data-item-copy-cid"
+            : "cda-bo-data-item-copy-hash";
+
+    private string LinkLabel
+        => Item.Storage == BusinessObjectDataItemStorage.Ipfs ? "IPFS link" : "URL";
+
+    private string LinkCopyTestId
+        => Item.Storage == BusinessObjectDataItemStorage.Ipfs
+            ? "cda-bo-data-item-copy-link"
+            : "cda-bo-data-item-copy-url";
+
+    private string DownloadFileName
+        => string.IsNullOrWhiteSpace(Item.FileName) ? Item.Name : Item.FileName;
+}

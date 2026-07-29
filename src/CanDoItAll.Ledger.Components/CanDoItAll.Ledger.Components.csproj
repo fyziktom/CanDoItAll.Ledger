@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CanDoItAll.Ledger.Components</AssemblyName>
+    <RootNamespace>CanDoItAll.Ledger.Components</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CanDoItAll.Ledger.BusinessObjects\CanDoItAll.Ledger.BusinessObjects.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Cryptography\CanDoItAll.Ledger.Cryptography.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Engine\CanDoItAll.Ledger.Engine.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Sdk\CanDoItAll.Ledger.Sdk.csproj" />
+    <ProjectReference Include="..\CanDoItAll.Ledger.Storage.InMemory\CanDoItAll.Ledger.Storage.InMemory.csproj" />
+    <PackageReference Include="CanDoItAll.Components.BaseLib" />
+    <PackageReference Include="CanDoItAll.Components.Charts" />
+    <PackageReference Include="CanDoItAll.Components.Mermaid" />
+    <PackageReference Include="CanDoItAll.Components.QRCode" />
+  </ItemGroup>
+</Project>

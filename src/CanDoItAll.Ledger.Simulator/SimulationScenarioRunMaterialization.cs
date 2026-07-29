@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CanDoItAll.Economy.Simulator;
+namespace CanDoItAll.Ledger.Simulator;
 
 public interface ISimulationScenarioRunMaterializer
 {
@@ -29,11 +29,11 @@ public sealed record SimulationScenarioRunMaterialization(
     DateOnly StepEndDate,
     IReadOnlyList<SimulationRunInterventionState> Interventions);
 
-public sealed class EconomyScenarioRunMaterializer(
-    IEconomyScenarioTemplateCatalog scenarioCatalog,
-    IEconomyScenarioEventCompiler scenarioCompiler,
-    IEconomyProjectionService projectionService,
-    IEconomySimulatorJsonSerializer serializer) : ISimulationScenarioRunMaterializer
+public sealed class LedgerScenarioRunMaterializer(
+    ILedgerScenarioTemplateCatalog scenarioCatalog,
+    ILedgerScenarioEventCompiler scenarioCompiler,
+    ILedgerProjectionService projectionService,
+    ILedgerSimulatorJsonSerializer serializer) : ISimulationScenarioRunMaterializer
 {
     public SimulationScenarioRunMaterialization? TryMaterialize(
         SimulationScenarioRunMaterializationRequest request)
@@ -55,12 +55,12 @@ public sealed class EconomyScenarioRunMaterializer(
         ScenarioBusinessModelState scenario = ApplyScenarioInterventions(
             scenarioCatalog.GetScenario(scenarioCode),
             request.Interventions);
-        EconomyScenarioEventCompileResult compiled = scenarioCompiler.Compile(new EconomyScenarioEventCompileRequest(
+        LedgerScenarioEventCompileResult compiled = scenarioCompiler.Compile(new LedgerScenarioEventCompileRequest(
             scenario,
             request.Setup.ScenarioId,
             request.Setup.HorizonStartDate,
             request.StepEndDate));
-        IReadOnlyList<EconomicEventState> scheduledEvents = EconomyProjectionService.SortEvents(compiled.Events)
+        IReadOnlyList<EconomicEventState> scheduledEvents = LedgerProjectionService.SortEvents(compiled.Events)
             .Where(x => x.EconomicDate >= request.Setup.HorizonStartDate && x.EconomicDate <= request.StepEndDate)
             .Select(x =>
             {
@@ -75,7 +75,7 @@ public sealed class EconomyScenarioRunMaterializer(
                 };
             })
             .ToArray();
-        EconomyProjection projection = projectionService.BuildProjection(new ProjectionRequest(
+        LedgerProjection projection = projectionService.BuildProjection(new ProjectionRequest(
             request.Project.Summary.ProjectId,
             scenario.OpeningCash,
             scheduledEvents));
@@ -262,7 +262,7 @@ public sealed class EconomyScenarioRunMaterializer(
         BusinessUnitState businessUnit = scenario.BusinessUnits.FirstOrDefault(unit => string.Equals(unit.BusinessUnitId.Value, intervention.TargetId, StringComparison.Ordinal))
             ?? scenario.BusinessUnits.FirstOrDefault(unit => string.Equals(unit.Path, intervention.TargetId, StringComparison.OrdinalIgnoreCase))
             ?? scenario.BusinessUnits.First(unit => unit.Kind == BusinessUnitKind.CostCenter);
-        string capexId = $"runtime-capacity:{EconomySimulatorIdentifiers.NormalizeSegment(intervention.InterventionId)}";
+        string capexId = $"runtime-capacity:{LedgerSimulatorIdentifiers.NormalizeSegment(intervention.InterventionId)}";
         return new CapexPlanState(
             scenario.ProjectId,
             capexId,
@@ -283,7 +283,7 @@ public sealed class EconomyScenarioRunMaterializer(
     private static IReadOnlyDictionary<string, decimal> BuildScenarioKpiValues(
         ScenarioBusinessModelState scenario,
         IReadOnlyList<EconomicEventState> events,
-        EconomyProjection projection,
+        LedgerProjection projection,
         IReadOnlyList<SimulationIssue> issues,
         IReadOnlyList<SimulationRunInterventionState> interventions)
     {
@@ -295,8 +295,8 @@ public sealed class EconomyScenarioRunMaterializer(
             .Sum(x => x.Amount.Value);
         decimal profitAndLossExpense = events
             .Where(x => x.ImpactKind is EconomicImpactKind.CashAndAccrual or EconomicImpactKind.NonCashPnl or EconomicImpactKind.AccrualOnly)
-            .Where(EconomyProjectionService.IsOutflow)
-            .Where(x => x.Metadata.TryGetValue(EconomyScenarioMetadataKeys.FinancialStatementSection, out string? section)
+            .Where(LedgerProjectionService.IsOutflow)
+            .Where(x => x.Metadata.TryGetValue(LedgerScenarioMetadataKeys.FinancialStatementSection, out string? section)
                 && section is nameof(FinancialStatementSection.Cogs) or nameof(FinancialStatementSection.Opex) or nameof(FinancialStatementSection.Payroll) or nameof(FinancialStatementSection.Depreciation))
             .Sum(x => x.Amount.Value);
         decimal cashOutflow = projection.CashFlow.Sum(x => x.PlannedOutflow.Value + x.CommittedOutflow.Value + x.ActualOutflow.Value + x.SimulatedOutflow.Value);

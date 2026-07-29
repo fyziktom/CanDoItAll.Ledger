@@ -1,10 +1,10 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Samples;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Samples;
 using Microsoft.AspNetCore.Components;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class AccountSetupComponentTests : BunitContext
 {
@@ -20,7 +20,7 @@ public sealed class AccountSetupComponentTests : BunitContext
         var subAccountRequests = 0;
 
         IRenderedComponent<AccountBackupPanel> component = Render<AccountBackupPanel>(parameters => parameters
-            .Add(x => x.Model, EconomyComponentSampleData.CreateAccountBackup())
+            .Add(x => x.Model, LedgerComponentSampleData.CreateAccountBackup())
             .Add(x => x.CreateAccountRequested, EventCallback.Factory.Create(this, () => createRequests++))
             .Add(x => x.UnlockAccountRequested, EventCallback.Factory.Create(this, () => unlockRequests++))
             .Add(x => x.BackupAccountRequested, EventCallback.Factory.Create(this, () => backupRequests++))

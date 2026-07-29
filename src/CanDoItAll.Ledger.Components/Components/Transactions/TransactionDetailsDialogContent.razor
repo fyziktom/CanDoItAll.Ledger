@@ -1,0 +1,181 @@
+@namespace CanDoItAll.Ledger.Components
+
+@if (Details is null)
+{
+    <EmptyState Eyebrow="Transaction" Title="Details are unavailable" Description="The transaction could not be loaded from the current ledger session." />
+}
+else
+{
+    <div class="min-w-0" data-testid="tx-details-layout">
+        <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.Stretch" Class="w-full min-w-0 max-w-full">
+            <Toolbar Class="gap-2"
+                     Style="padding:0.5rem;box-shadow:none"
+                     data-testid="cda-transaction-identity-strip">
+                <ToolbarRow Class="gap-2!">
+                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap" Class="min-w-0">
+                        <Icon Name="@StatusIcon" />
+                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@TransactionKindLabel" />
+                        <StatusBadge Text="@Details.Status.ToString()" Tone="@StatusTone" NoWrap="true" />
+                        <StatusBadge Text="@SigningLabel" Tone="neutral" NoWrap="true" />
+                        <StatusBadge Text="@($"{Details.Inputs.Count} in · {Details.Outputs.Count} out")" Tone="info" NoWrap="true" />
+                        <StatusBadge Text="@($"{TotalSignatures} signature(s)")" Tone="neutral" NoWrap="true" />
+                        <StatusBadge Text="@CreatedLabel" Tone="neutral" NoWrap="true" />
+                    </Cluster>
+                    <Cluster Gap="LayoutGap.Small"
+                             JustifyContent="JustifyContent.End"
+                             Wrap="FlexWrap.Wrap"
+                             Class="min-w-0"
+                             aria-label="Transaction identifiers">
+                        <TextBlock TextStyle="TextStyle.Eyebrow" Value="Tx" />
+                        <CopyableMonoValue Value="@Details.TxId.Value" StartChars="12" EndChars="8" AriaLabel="Copy transaction id" />
+                        @if (HasDistinctTransactionHash)
+                        {
+                            <TextBlock TextStyle="TextStyle.Eyebrow" Value="Hash" />
+                            <HashDisplay Value="@Details.TxHash!.Value.Value" StartChars="10" EndChars="6" AriaLabel="Copy transaction hash" />
+                        }
+                        <QrCodeButton Payload="@TransactionQrPayload"
+                                      Label="Show transaction QR"
+                                      TooltipText="Show transaction identifier as QR"
+                                      Variant="Variant.Outlined"
+                                      TestId="cda-tx-hash-qr-button" />
+                    </Cluster>
+                </ToolbarRow>
+            </Toolbar>
+
+            <Tabs Variant="TabsVariant.ModalCompact"
+                  BorderMode="TabsBorderMode.Soft"
+                  OverflowMode="TabsOverflowMode.Scroll"
+                  PanelOverflowMode="TabsPanelOverflowMode.Visible"
+                  AriaLabel="Transaction detail sections">
+                <TabsItem Text="Overview" Icon="hub">
+                    <Grid Gap="LayoutGap.Small" ColumnTemplateLg="@OverviewColumnTemplate" AlignItems="AlignItems.Start">
+                        <TransactionInputOutputFlow Inputs="Details.Inputs"
+                                                    Outputs="Details.Outputs"
+                                                    TransactionId="Details.TxId"
+                                                    DirectoryEntries="DirectoryEntries"
+                                                    InputPresentationSelector="InputPresentation"
+                                                    OutputPresentationSelector="OutputPresentation" />
+                        <TransactionTimeline Details="Details" />
+                    </Grid>
+                </TabsItem>
+
+                <TabsItem Text="Inputs & outputs" Icon="account_tree" BadgeText="@($"{Details.Inputs.Count}/{Details.Outputs.Count}")">
+                    <TransactionInputOutputFlow Inputs="Details.Inputs"
+                                                Outputs="Details.Outputs"
+                                                TransactionId="Details.TxId"
+                                                DirectoryEntries="DirectoryEntries"
+                                                DetailLevel="TransactionFlowDetailLevel.Detailed"
+                                                InputPresentationSelector="InputPresentation"
+                                                OutputPresentationSelector="OutputPresentation" />
+                </TabsItem>
+
+                <TabsItem Text="Payload" Icon="data_object">
+                    <TxDataPayloadViewer Data="Details.Data"
+                                         Outputs="Details.Outputs"
+                                         TransactionId="Details.TxId" />
+                </TabsItem>
+
+                <TabsItem Text="Signatures" Icon="key" BadgeText="@TotalSignatures.ToString()">
+                    <TransactionSignatureList Inputs="Details.Inputs" />
+                </TabsItem>
+
+                <TabsItem Text="Raw tx" Icon="code" BadgeText="JSON">
+                    <div class="min-w-0" data-testid="tx-raw-json-panel">
+                        <LedgerCodeBlock Text="@RawTransactionJson" data-testid="tx-raw-json" />
+                    </div>
+                </TabsItem>
+            </Tabs>
+        </Stack>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public LedgerTransactionDetailsModel? Details { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<AddressDirectoryEntry> DirectoryEntries { get; set; } = [];
+
+    private string StatusIcon
+        => Details is null ? "receipt_long" : TransactionUiPresentation.StatusIcon(Details.Status);
+
+    private string StatusTone
+        => Details is null ? "neutral" : TransactionUiPresentation.StatusTone(Details.Status);
+
+    private string TransactionKindLabel
+        => Details is null ? "Transaction" : TransactionUiPresentation.KindLabel(Details.Kind);
+
+    private string SigningLabel
+        => Details is null ? "Signing unknown" : $"{Details.SigningMode} signing";
+
+    private string CreatedLabel
+        => Details is null
+            ? "Date unavailable"
+            : TransactionUiPresentation.FormatLocalTimestamp(Details.Timestamp);
+
+    private bool HasDistinctTransactionHash
+        => Details?.TxHash is { } hash
+            && !string.Equals(hash.Value, Details.TxId.Value, StringComparison.OrdinalIgnoreCase);
+
+    private string OverviewColumnTemplate
+        => "minmax(0,1.25fr) minmax(18rem,0.62fr)";
+
+    private bool IsMintTransaction
+        => Details?.Kind == TransactionKind.Mint;
+
+    private int TotalSignatures
+        => Details?.Inputs.Sum(input => input.SignatureCount) ?? 0;
+
+    private QrCodePayload TransactionQrPayload
+        => Details is null
+            ? new(string.Empty)
+            : new(
+                Details.TxHash?.Value ?? Details.TxId.Value,
+                QrPayloadKind.TransactionHash,
+                "Transaction hash",
+                Details.TxId.Value);
+
+    private string RawTransactionJson
+        => Details is null
+            ? "{}"
+            : TransactionRawJsonFormatter.FormatTransaction(Details);
+
+    private bool IsPermissionInput(LedgerTransactionInputDetails input)
+        => IsMintTransaction
+            && PermissionTokenAuthority.IsPermissionToken(input.Token)
+            && IsPermissionBusinessObject(input.BusinessObject);
+
+    private bool IsMintedTokenOutput(LedgerTransactionOutputDetails output)
+        => IsMintTransaction
+            && output.Token is not null
+            && !PermissionTokenAuthority.IsPermissionToken(output.Token);
+
+    private bool IsPermissionReturnOutput(LedgerTransactionOutputDetails output)
+        => IsMintTransaction
+            && PermissionTokenAuthority.IsPermissionToken(output.Token)
+            && IsPermissionBusinessObject(output.BusinessObject);
+
+    private TransactionFlowItemPresentation? InputPresentation(LedgerTransactionInputDetails input)
+        => IsPermissionInput(input)
+            ? new("Permission authority", "warning", "Spent mint permission; the returned permission output remains reusable.")
+            : null;
+
+    private TransactionFlowItemPresentation? OutputPresentation(LedgerTransactionOutputDetails output)
+    {
+        if (IsMintedTokenOutput(output))
+        {
+            return new("Minted token", "success");
+        }
+
+        if (IsPermissionReturnOutput(output))
+        {
+            return new("Permission returned", "warning", "Reusable authority for a future mint transaction.");
+        }
+
+        return null;
+    }
+
+    private static bool IsPermissionBusinessObject(LedgerTransactionBusinessObjectDetails? businessObject)
+        => businessObject is not null;
+
+}

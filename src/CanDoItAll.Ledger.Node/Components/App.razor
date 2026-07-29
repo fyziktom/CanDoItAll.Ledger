@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="_content/CanDoItAll.Components.BaseLib/css/material-icons.css" />
+    <link rel="stylesheet" href="_content/CanDoItAll.Components.BaseLib/css/output.css" />
+    <link rel="stylesheet" href="_content/CanDoItAll.Ledger.Components/css/ledger-components.css" />
+    <link rel="stylesheet" href="CanDoItAll.Ledger.Node.styles.css" />
+    <ChartsHeadAssets />
+    <MermaidHeadAssets />
+    <HeadOutlet />
+</head>
+<body>
+    <ThemeHost>
+        <Routes />
+        <DialogHost @rendermode="InteractiveServer" />
+        <Notification Position="NotificationPosition.BottomCenter" @rendermode="InteractiveServer" />
+        <Tooltip @rendermode="InteractiveServer" />
+    </ThemeHost>
+    <script src="_framework/blazor.web.js"></script>
+</body>
+</html>

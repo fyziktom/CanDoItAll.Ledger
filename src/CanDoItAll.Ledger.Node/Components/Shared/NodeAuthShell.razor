@@ -1,0 +1,38 @@
+@namespace CanDoItAll.Ledger.Node.Components.Shared
+
+<section class="min-h-dvh flex items-center justify-center px-4 py-8" data-testid="@TestId">
+    <span class="sr-only" data-route-focus>@Heading</span>
+    <div class="w-full max-w-lg mx-auto">
+        <Stack GapScale="LayoutGap.Medium" Class="min-w-0 w-full">
+            <Stack GapScale="LayoutGap.Tiny" AlignItems="AlignItems.Center" Class="text-center">
+                <TextBlock TextStyle="TextStyle.Eyebrow" Value="@Eyebrow" />
+                <TextBlock TextStyle="TextStyle.H1" Value="@Heading" />
+                @if (!string.IsNullOrWhiteSpace(Description))
+                {
+                    <TextBlock TextStyle="TextStyle.Body2" Value="@Description" />
+                }
+            </Stack>
+
+            <div class="w-full">
+                @ChildContent
+            </div>
+        </Stack>
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public string Eyebrow { get; set; } = "Ledger Node";
+
+    [Parameter]
+    public string Heading { get; set; } = "Operator access";
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public string TestId { get; set; } = "node-auth-shell";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

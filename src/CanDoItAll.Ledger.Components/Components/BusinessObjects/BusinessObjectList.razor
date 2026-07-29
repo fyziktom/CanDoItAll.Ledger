@@ -1,0 +1,37 @@
+@namespace CanDoItAll.Ledger.Components
+
+<SectionCard Title="Business objects" Description="Current BO holdings projected from the ledger">
+    <Stack GapScale="LayoutGap.Small">
+        @foreach (IBusinessObjectView item in Items)
+        {
+            bool isSelected = SelectedObjectId.HasValue && item.ObjectId.Equals(SelectedObjectId.Value);
+
+            <SelectionListItem Title="@item.ObjectId.ToString()"
+                               Meta="@($"{item.ObjectType} v{item.Version} owned by {item.OwnerAddress}")"
+                               IsSelected="@isSelected"
+                               Dense="true"
+                               OnSelect="@(() => SelectAsync(item))">
+                <Status>
+                    <Cluster Gap="LayoutGap.Small">
+                        <StatusBadge Text="@item.Operation.ToString()" Tone="info" />
+                        <Pill Text="@($"schema {item.SchemaVersion}")" Tone="PillTone.Neutral" />
+                    </Cluster>
+                </Status>
+            </SelectionListItem>
+        }
+    </Stack>
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<IBusinessObjectView> Items { get; set; } = [];
+
+    [Parameter]
+    public BusinessObjectId? SelectedObjectId { get; set; }
+
+    [Parameter]
+    public EventCallback<IBusinessObjectView> SelectedObjectChanged { get; set; }
+
+    private Task SelectAsync(IBusinessObjectView item)
+        => SelectedObjectChanged.InvokeAsync(item);
+}

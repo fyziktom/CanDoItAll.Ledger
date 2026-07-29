@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CanDoItAll.Economy.Simulator;
+namespace CanDoItAll.Ledger.Simulator;
 
 public interface ISimulationRunLifecycleService
 {
@@ -34,9 +34,9 @@ public sealed class InMemorySimulationRunLifecycleService(
     ISimulationProjectValidationService validationService,
     ISimulationProjectImportExportService importExportService,
     ISimulationRunObservationService observationService,
-    IEconomySimulatorJsonSerializer serializer,
+    ILedgerSimulatorJsonSerializer serializer,
     ITimeProvider timeProvider,
-    IEconomyScenarioTemplateCatalog scenarioCatalog,
+    ILedgerScenarioTemplateCatalog scenarioCatalog,
     ISimulationScenarioRunMaterializer scenarioMaterializer) : ISimulationRunLifecycleService
 {
     private readonly object sync = new();
@@ -570,7 +570,7 @@ public sealed class InMemorySimulationRunLifecycleService(
 
     private string CreateAvailableRunId(string projectId, ScenarioId scenarioId, DateTimeOffset startedAtUtc)
     {
-        string baseRunId = EconomySimulatorIdentifiers.RunId(projectId, scenarioId, startedAtUtc).Value;
+        string baseRunId = LedgerSimulatorIdentifiers.RunId(projectId, scenarioId, startedAtUtc).Value;
         if (!runs.ContainsKey(baseRunId))
         {
             return baseRunId;
@@ -735,13 +735,13 @@ public sealed class InMemorySimulationRunLifecycleService(
             setup.IncludedTemplateIds,
             setup.IncludedBusinessUnits,
             DisplayStatus(status),
-            $"simres:{EconomySimulatorIdentifiers.NormalizeSegment(project.Summary.ProjectId)}:{EconomySimulatorIdentifiers.NormalizeSegment(runId)}",
+            $"simres:{LedgerSimulatorIdentifiers.NormalizeSegment(project.Summary.ProjectId)}:{LedgerSimulatorIdentifiers.NormalizeSegment(runId)}",
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["currentStep"] = normalizedStep.ToString(CultureInfo.InvariantCulture)
             });
         IReadOnlyList<RuleExecutionEvidenceState> evidence = BuildRuleEvidence(project, setup, runId, status, startedAtUtc);
-        IReadOnlyList<EconomyGraphData> graphs = scenarioMaterialization is null
+        IReadOnlyList<LedgerGraphData> graphs = scenarioMaterialization is null
             ? BuildGraphs(project, result)
             : BuildScenarioGraphs(project, result, scenarioMaterialization.Events, result.CashFlow, scenarioMaterialization.StepEndDate);
         SimulationRunObservationState observation = observationService.BuildObservation(project, setup, runState, result, graphs, evidence);
@@ -938,7 +938,7 @@ public sealed class InMemorySimulationRunLifecycleService(
         string targetId = request.Kind == SimulationRunInterventionKind.CapacityExpansion
             ? ResolveBusinessUnit(current.Project, request.TargetId)?.BusinessUnitId.Value ?? request.TargetId.Trim()
             : request.TargetId.Trim();
-        string segment = EconomySimulatorIdentifiers.NormalizeSegment(
+        string segment = LedgerSimulatorIdentifiers.NormalizeSegment(
             $"{request.Kind}-{targetId}-{effectiveDate:yyyyMMdd}-{appliedAt.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture)}");
         string interventionId = $"runint:{segment}";
         string definitionId = $"def:runtime-intervention:{segment}";
@@ -1024,8 +1024,8 @@ public sealed class InMemorySimulationRunLifecycleService(
             intervention.BusinessObjectDefinitionId,
             intervention.DisplayName,
             SimulationBusinessObjectDefinitionKind.Custom,
-            EconomySimulatorObjectTypes.RuntimeIntervention,
-            EconomySimulatorSchema.Version,
+            LedgerSimulatorObjectTypes.RuntimeIntervention,
+            LedgerSimulatorSchema.Version,
             folderId,
             owner?.BusinessUnitId,
             owner?.PrimaryAddress,
@@ -1241,7 +1241,7 @@ public sealed class InMemorySimulationRunLifecycleService(
                     : AccountRuleExecutionStatus.Executed.ToString(),
                 new SimulationObjectReference(definition.DefinitionId),
                 null,
-                status == SimulationRunLifecycleStatus.Failed && index == 0 ? null : new TxId($"tx:{EconomySimulatorIdentifiers.NormalizeSegment(runId)}:{index + 1:000}"),
+                status == SimulationRunLifecycleStatus.Failed && index == 0 ? null : new TxId($"tx:{LedgerSimulatorIdentifiers.NormalizeSegment(runId)}:{index + 1:000}"),
                 observedAtUtc.AddSeconds(index + 1),
                 status == SimulationRunLifecycleStatus.Failed && index == 0
                     ? "Rule execution halted after inventory precondition failed."
@@ -1254,7 +1254,7 @@ public sealed class InMemorySimulationRunLifecycleService(
             .ToArray();
     }
 
-    private static IReadOnlyList<EconomyGraphData> BuildGraphs(SimulationProjectState project, SimulationResultState result)
+    private static IReadOnlyList<LedgerGraphData> BuildGraphs(SimulationProjectState project, SimulationResultState result)
     {
         return
         [
@@ -1264,10 +1264,10 @@ public sealed class InMemorySimulationRunLifecycleService(
         ];
     }
 
-    private static EconomyGraphData Graph(SimulationProjectState project, SimulationResultState result, ScenarioGraphMetric metric)
+    private static LedgerGraphData Graph(SimulationProjectState project, SimulationResultState result, ScenarioGraphMetric metric)
     {
-        IReadOnlyList<EconomyGraphPoint> points = result.CashFlow
-            .Select(point => new EconomyGraphPoint(
+        IReadOnlyList<LedgerGraphPoint> points = result.CashFlow
+            .Select(point => new LedgerGraphPoint(
                 point.Date,
                 point.BusinessUnitId.Value,
                 null,
@@ -1285,13 +1285,13 @@ public sealed class InMemorySimulationRunLifecycleService(
                 metric == ScenarioGraphMetric.Expense ? Math.Max(0m, point.PlannedOutflow.Value + point.CommittedOutflow.Value + point.SimulatedOutflow.Value) : 0m,
                 point.BalanceAfter.Value))
             .ToArray();
-        var filter = new EconomyGraphQueryFilter(project.Summary.ProjectId, result.ScenarioId.Value, result.HorizonStartDate, result.HorizonEndDate, metric, null, [], [], 500);
-        IReadOnlyList<EconomyGraphSeries> series = points
+        var filter = new LedgerGraphQueryFilter(project.Summary.ProjectId, result.ScenarioId.Value, result.HorizonStartDate, result.HorizonEndDate, metric, null, [], [], 500);
+        IReadOnlyList<LedgerGraphSeries> series = points
             .GroupBy(point => point.CategoryCode, StringComparer.Ordinal)
-            .Select(group => new EconomyGraphSeries(group.Key, group.Key, group.ToArray()))
+            .Select(group => new LedgerGraphSeries(group.Key, group.Key, group.ToArray()))
             .ToArray();
-        IReadOnlyList<EconomyGraphDrilldownRow> rows = points
-            .Select((point, index) => new EconomyGraphDrilldownRow(
+        IReadOnlyList<LedgerGraphDrilldownRow> rows = points
+            .Select((point, index) => new LedgerGraphDrilldownRow(
                 point.PeriodStart,
                 $"evt:{project.Summary.ProjectId}:{metric.ToString().ToLowerInvariant()}:{index + 1:000}",
                 point.BusinessUnitId,
@@ -1310,10 +1310,10 @@ public sealed class InMemorySimulationRunLifecycleService(
             ["netCashFlow"] = points.Sum(point => point.PlannedInflow + point.CommittedInflow + point.ActualInflow + point.SimulatedInflow - point.PlannedOutflow - point.CommittedOutflow - point.ActualOutflow - point.SimulatedOutflow),
             ["rowCount"] = points.Count
         };
-        return new EconomyGraphData(filter, series, rows, totals);
+        return new LedgerGraphData(filter, series, rows, totals);
     }
 
-    private static decimal GraphAmount(ScenarioGraphMetric metric, EconomyGraphPoint point)
+    private static decimal GraphAmount(ScenarioGraphMetric metric, LedgerGraphPoint point)
         => metric switch
         {
             ScenarioGraphMetric.Revenue => point.PlannedInflow + point.CommittedInflow + point.SimulatedInflow + point.NonCashIncome,
@@ -1321,7 +1321,7 @@ public sealed class InMemorySimulationRunLifecycleService(
             _ => point.PlannedInflow + point.CommittedInflow + point.SimulatedInflow - point.PlannedOutflow - point.CommittedOutflow - point.SimulatedOutflow
         };
 
-    private static IReadOnlyList<EconomyGraphData> BuildScenarioGraphs(
+    private static IReadOnlyList<LedgerGraphData> BuildScenarioGraphs(
         SimulationProjectState project,
         SimulationResultState result,
         IReadOnlyList<EconomicEventState> events,
@@ -1334,7 +1334,7 @@ public sealed class InMemorySimulationRunLifecycleService(
             ScenarioGraph(project, result, events, cashFlow, periodEnd, ScenarioGraphMetric.Expense)
         ];
 
-    private static EconomyGraphData ScenarioGraph(
+    private static LedgerGraphData ScenarioGraph(
         SimulationProjectState project,
         SimulationResultState result,
         IReadOnlyList<EconomicEventState> events,
@@ -1342,7 +1342,7 @@ public sealed class InMemorySimulationRunLifecycleService(
         DateOnly periodEnd,
         ScenarioGraphMetric metric)
     {
-        IReadOnlyList<EconomyGraphPoint> points = events
+        IReadOnlyList<LedgerGraphPoint> points = events
             .Select((eventState, index) => ToScenarioGraphPoint(eventState, index < cashFlow.Count ? cashFlow[index] : null))
             .Where(point => metric switch
             {
@@ -1358,20 +1358,20 @@ public sealed class InMemorySimulationRunLifecycleService(
             .ThenBy(point => point.BusinessUnitId, StringComparer.Ordinal)
             .ThenBy(point => point.CategoryCode, StringComparer.Ordinal)
             .ToArray();
-        var filter = new EconomyGraphQueryFilter(project.Summary.ProjectId, result.ScenarioId.Value, result.HorizonStartDate, periodEnd, metric, null, [], [], 5000);
-        IReadOnlyList<EconomyGraphSeries> series = points
+        var filter = new LedgerGraphQueryFilter(project.Summary.ProjectId, result.ScenarioId.Value, result.HorizonStartDate, periodEnd, metric, null, [], [], 5000);
+        IReadOnlyList<LedgerGraphSeries> series = points
             .GroupBy(point => point.CategoryCode, StringComparer.Ordinal)
-            .Select(group => new EconomyGraphSeries(group.Key, group.Key, group.ToArray()))
+            .Select(group => new LedgerGraphSeries(group.Key, group.Key, group.ToArray()))
             .ToArray();
-        IReadOnlyList<EconomyGraphDrilldownRow> rows = events
+        IReadOnlyList<LedgerGraphDrilldownRow> rows = events
             .Where(eventState => EventIncludedInMetric(eventState, metric))
             .OrderBy(eventState => eventState.EconomicDate)
             .ThenBy(eventState => eventState.EventId, StringComparer.Ordinal)
             .Take(250)
             .Select(eventState =>
             {
-                EconomyGraphPoint point = ToScenarioGraphPoint(eventState, null);
-                return new EconomyGraphDrilldownRow(
+                LedgerGraphPoint point = ToScenarioGraphPoint(eventState, null);
+                return new LedgerGraphDrilldownRow(
                     point.PeriodStart,
                     eventState.EventId,
                     point.BusinessUnitId,
@@ -1381,7 +1381,7 @@ public sealed class InMemorySimulationRunLifecycleService(
                     eventState.Status.ToString(),
                     GraphAmount(metric, point),
                     eventState.SourceObjectId ?? string.Empty,
-                    eventState.Metadata.TryGetValue(EconomyScenarioMetadataKeys.Description, out string? description) ? description : eventState.CategoryCode);
+                    eventState.Metadata.TryGetValue(LedgerScenarioMetadataKeys.Description, out string? description) ? description : eventState.CategoryCode);
             })
             .ToArray();
         IReadOnlyDictionary<string, decimal> totals = new Dictionary<string, decimal>(StringComparer.Ordinal)
@@ -1394,12 +1394,12 @@ public sealed class InMemorySimulationRunLifecycleService(
             ["rowCount"] = points.Count
         };
 
-        return new EconomyGraphData(filter, series, rows, totals);
+        return new LedgerGraphData(filter, series, rows, totals);
     }
 
-    private static EconomyGraphPoint ToScenarioGraphPoint(EconomicEventState eventState, CashFlowProjectionPoint? cashFlowPoint)
+    private static LedgerGraphPoint ToScenarioGraphPoint(EconomicEventState eventState, CashFlowProjectionPoint? cashFlowPoint)
     {
-        bool outflow = EconomyProjectionService.IsOutflow(eventState);
+        bool outflow = LedgerProjectionService.IsOutflow(eventState);
         bool cashImpact = eventState.ImpactKind is EconomicImpactKind.CashOnly or EconomicImpactKind.CashAndAccrual;
         bool pnlWithoutCashMovement = eventState.ImpactKind is EconomicImpactKind.AccrualOnly or EconomicImpactKind.NonCashPnl;
         decimal plannedInflow = 0m;
@@ -1435,13 +1435,13 @@ public sealed class InMemorySimulationRunLifecycleService(
             }
         }
 
-        string section = eventState.Metadata.TryGetValue(EconomyScenarioMetadataKeys.FinancialStatementSection, out string? value)
+        string section = eventState.Metadata.TryGetValue(LedgerScenarioMetadataKeys.FinancialStatementSection, out string? value)
             ? value
             : FinancialStatementSection.Opex.ToString();
-        return new EconomyGraphPoint(
-            EconomySimulatorPeriods.MonthStart(eventState.EconomicDate),
+        return new LedgerGraphPoint(
+            LedgerSimulatorPeriods.MonthStart(eventState.EconomicDate),
             eventState.SourceBusinessUnitId.Value,
-            eventState.SourceAddress?.Value ?? (eventState.Metadata.TryGetValue(EconomyScenarioMetadataKeys.AccountAddress, out string? address) ? address : null),
+            eventState.SourceAddress?.Value ?? (eventState.Metadata.TryGetValue(LedgerScenarioMetadataKeys.AccountAddress, out string? address) ? address : null),
             eventState.CategoryCode,
             section,
             plannedInflow,
@@ -1459,7 +1459,7 @@ public sealed class InMemorySimulationRunLifecycleService(
 
     private static bool EventIncludedInMetric(EconomicEventState eventState, ScenarioGraphMetric metric)
     {
-        string section = eventState.Metadata.TryGetValue(EconomyScenarioMetadataKeys.FinancialStatementSection, out string? value)
+        string section = eventState.Metadata.TryGetValue(LedgerScenarioMetadataKeys.FinancialStatementSection, out string? value)
             ? value
             : FinancialStatementSection.Opex.ToString();
         return metric switch
@@ -1558,7 +1558,7 @@ public sealed class InMemorySimulationRunLifecycleService(
 
     private static SimulationRunEventState Event(SimulationRunRegistryRecord run, int monthOffset, SimulationValidationSeverity level, string source, string message)
         => new(
-            $"event:{run.RunId}:{EconomySimulatorIdentifiers.NormalizeSegment(source)}:{Math.Abs(monthOffset):000}",
+            $"event:{run.RunId}:{LedgerSimulatorIdentifiers.NormalizeSegment(source)}:{Math.Abs(monthOffset):000}",
             run.CurrentDate.AddMonths(monthOffset),
             run.LastUpdatedAtUtc.AddSeconds(Math.Abs(monthOffset)),
             level,
@@ -1653,7 +1653,7 @@ public sealed class InMemorySimulationRunLifecycleService(
                 intervention.InterventionId,
                 intervention.DisplayName,
                 intervention.Kind.ToString(),
-                EconomySimulatorObjectTypes.RuntimeIntervention,
+                LedgerSimulatorObjectTypes.RuntimeIntervention,
                 new Dictionary<string, string>(intervention.Metadata, StringComparer.Ordinal)
                 {
                     ["effectiveDate"] = intervention.EffectiveDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)

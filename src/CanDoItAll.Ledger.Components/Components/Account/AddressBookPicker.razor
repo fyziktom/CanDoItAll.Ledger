@@ -1,0 +1,72 @@
+@namespace CanDoItAll.Ledger.Components
+@inject DialogService DialogService
+
+<div data-testid="cda-address-book-picker">
+    <SectionCard Title="@SelectedLabel" Description="Address book">
+        <HeaderActions>
+            <PageHeaderActionButton Icon="contacts"
+                                    Label="Choose address"
+                                    TooltipText="Choose from address directory"
+                                    Variant="Variant.Outlined"
+                                    Click="OpenAsync"
+                                    TestId="cda-address-book-picker-open" />
+        </HeaderActions>
+
+        <ChildContent>
+            <SurfaceCard Soft="true">
+                <Split Breakpoint="LayoutBreakpoint.Md" Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                    <CopyableMonoValue Value="@(SelectedAddress ?? Bookmarks.FirstOrDefault()?.Address.Value ?? string.Empty)"
+                                       StartChars="10"
+                                       EndChars="6"
+                                       AriaLabel="Copy selected address" />
+                    <Button Text="Select" Icon="check" Size="ButtonSize.Small" Variant="Variant.Outlined" Click="OpenAsync" />
+                </Split>
+            </SurfaceCard>
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string? SelectedAddress { get; set; }
+
+    [Parameter]
+    public EventCallback<string> SelectedAddressChanged { get; set; }
+
+    [Parameter]
+    public BusinessObjectWorkspaceModel? Workspace { get; set; }
+
+    private string SelectedLabel
+        => Bookmarks.FirstOrDefault(item => item.Address.Value == SelectedAddress)?.Name
+            ?? "Choose receiver";
+
+    private async Task OpenAsync()
+    {
+        object? result = await DialogService.OpenAsync<AddressDirectoryDialogContent>(
+            "Select Address",
+            new Dictionary<string, object?>
+            {
+                [nameof(AddressDirectoryDialogContent.Workspace)] = Workspace,
+                [nameof(AddressDirectoryDialogContent.Bookmarks)] = Bookmarks,
+                [nameof(AddressDirectoryDialogContent.AccountScope)] = Workspace?.Address.Value ?? "bookmarks",
+                [nameof(AddressDirectoryDialogContent.Mode)] = AddressDirectoryDialogMode.Select
+            },
+            new DialogOptions
+            {
+                Subtitle = "Select an own or external receiver address.",
+                Size = ModalSize.Full,
+                DenseChrome = true,
+                Class = "cda-ledger-dialog",
+                TestId = "cda-address-directory-dialog"
+            });
+
+        if (result is AddressDirectoryEntry entry)
+        {
+            SelectedAddress = entry.Address;
+            await SelectedAddressChanged.InvokeAsync(entry.Address);
+        }
+    }
+}

@@ -1,0 +1,143 @@
+@namespace CanDoItAll.Ledger.Components
+
+<Stack GapScale="LayoutGap.Medium" AlignItems="AlignItems.Stretch" data-testid="bo-source-step">
+    <FormSection Title="Where should we look?"
+                 Description="Choose a source. Results are loaded and validated before selection.">
+        <CardGrid>
+            <SelectionListItem Title="My business objects"
+                               Eyebrow="Fastest"
+                               Summary="Use objects already loaded for this account."
+                               IsSelected="@(sourceMode == BusinessObjectSourceMode.Mine)"
+                               OnSelect="@(() => SetMode(BusinessObjectSourceMode.Mine))"
+                               DataTestId="bo-source-mine" />
+            @if (AllowExternalSources)
+            {
+                <SelectionListItem Title="Another address"
+                                   Eyebrow="Ledger lookup"
+                                   Summary="Load the current business objects owned by a valid cdia1 address."
+                                   IsSelected="@(sourceMode == BusinessObjectSourceMode.Address)"
+                                   OnSelect="@(() => SetMode(BusinessObjectSourceMode.Address))"
+                                   DataTestId="bo-source-address" />
+                <SelectionListItem Title="Direct reference"
+                                   Eyebrow="Exact lookup"
+                                   Summary="Find one business object by current outpoint or data hash."
+                                   IsSelected="@(sourceMode == BusinessObjectSourceMode.DirectReference)"
+                                   OnSelect="@(() => SetMode(BusinessObjectSourceMode.DirectReference))"
+                                   DataTestId="bo-source-direct" />
+            }
+        </CardGrid>
+    </FormSection>
+
+    @if (sourceMode != BusinessObjectSourceMode.Mine)
+    {
+        <FormField Text="@QueryLabel">
+            <TextBox Value="@query"
+                     ValueChanged="@(EventCallback.Factory.Create<string?>(this, SetQuery))"
+                     Immediate="true"
+                     Placeholder="@QueryPlaceholder"
+                     aria-label="@QueryLabel"
+                     data-testid="bo-source-query" />
+        </FormField>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <Alert AlertStyle="AlertStyle.Danger" Variant="Variant.Outlined">@error</Alert>
+    }
+
+    <Cluster Gap="LayoutGap.Small">
+        <Button Text="@LoadLabel"
+                Icon="search"
+                Disabled="@(!CanLoad || loading)"
+                Click="LoadAsync"
+                data-testid="bo-source-load" />
+        @if (loading)
+        {
+            <span role="status">Loading business objects…</span>
+        }
+    </Cluster>
+</Stack>
+
+@code {
+    private BusinessObjectSourceMode sourceMode = BusinessObjectSourceMode.Mine;
+    private string query = string.Empty;
+    private string? error;
+    private bool loading;
+
+    [Parameter]
+    public IReadOnlyList<IBusinessObjectView> Mine { get; set; } = [];
+
+    [Parameter]
+    public bool AllowExternalSources { get; set; }
+
+    [Parameter]
+    public Func<BusinessObjectLookupRequest, Task<IReadOnlyList<IBusinessObjectView>>>? LookupAsync { get; set; }
+
+    [Parameter]
+    public EventCallback<IReadOnlyList<IBusinessObjectView>> ResultsLoaded { get; set; }
+
+    private string QueryLabel => sourceMode == BusinessObjectSourceMode.Address ? "Owner address" : "Current outpoint or data hash";
+
+    private string QueryPlaceholder => sourceMode == BusinessObjectSourceMode.Address ? "cdia1…" : "transaction-id:0 or data hash";
+
+    private string LoadLabel => sourceMode == BusinessObjectSourceMode.Mine ? $"Use my objects ({Mine.Count})" : "Load matching objects";
+
+    private bool CanLoad
+        => sourceMode switch
+        {
+            BusinessObjectSourceMode.Mine => true,
+            BusinessObjectSourceMode.Address => Address.IsValid(query),
+            BusinessObjectSourceMode.DirectReference => !string.IsNullOrWhiteSpace(query),
+            _ => false
+        };
+
+    private void SetMode(BusinessObjectSourceMode mode)
+    {
+        sourceMode = mode;
+        query = string.Empty;
+        error = null;
+    }
+
+    private void SetQuery(string? value)
+    {
+        query = value?.Trim() ?? string.Empty;
+        error = sourceMode == BusinessObjectSourceMode.Address && query.Length > 0 && !Address.IsValid(query)
+            ? "Enter a valid cdia1 address."
+            : null;
+    }
+
+    private async Task LoadAsync()
+    {
+        if (!CanLoad)
+        {
+            return;
+        }
+
+        loading = true;
+        error = null;
+        try
+        {
+            IReadOnlyList<IBusinessObjectView> results = sourceMode == BusinessObjectSourceMode.Mine
+                ? Mine
+                : LookupAsync is null
+                    ? []
+                    : await LookupAsync(new BusinessObjectLookupRequest(sourceMode, query));
+
+            if (results.Count == 0)
+            {
+                error = "No matching business objects were found.";
+                return;
+            }
+
+            await ResultsLoaded.InvokeAsync(results);
+        }
+        catch (Exception exception)
+        {
+            error = $"Business object lookup failed: {exception.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

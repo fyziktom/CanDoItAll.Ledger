@@ -1,0 +1,156 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-account-rule-preview">
+<SectionCard Title="@(Rule?.RuleId ?? "No rule")" Description="Rule logic">
+    <HeaderActions>
+        @if (Rule is not null)
+        {
+            <Cluster Gap="LayoutGap.Small">
+                <StatusBadge Text="@(Rule.Enabled ? "enabled" : "disabled")" Tone="@(Rule.Enabled ? "success" : "muted")" />
+                <StatusBadge Text="@Rule.RuleNamespace" Tone="info" />
+            </Cluster>
+        }
+    </HeaderActions>
+    <ChildContent>
+        @if (Rule is null)
+        {
+            <EmptyState Eyebrow="Rule" Title="No rule preview" Description="Complete the required fields to preview the rule logic." />
+        }
+        else
+        {
+            <Stack GapScale="@(Compact ? LayoutGap.Small : LayoutGap.Medium)">
+                @if (ValidationErrors.Count > 0)
+                {
+                    <Alert AlertStyle="AlertStyle.Warning">
+                        <strong>Rule needs attention</strong>
+                        <span>@string.Join(" ", ValidationErrors)</span>
+                    </Alert>
+                }
+
+                <SummaryTiles ColumnsSm="2" ColumnsXl="3" GapScale="LayoutGap.Small">
+                    <SummaryTile Label="Trigger" Value="@TriggerLabel" Compact="true" />
+                    <SummaryTile Label="Conditions" Value="@Rule.Conditions.Count.ToString()" Compact="true" />
+                    <SummaryTile Label="Actions" Value="@Rule.Actions.Count.ToString()" Compact="true" />
+                    <SummaryTile Label="Processed flag" Value="@Processing.ProcessedProperty" Compact="true" />
+                    <SummaryTile Label="Keep trigger BO" Value="@(Processing.KeepProcessedBusinessObject ? "yes" : "close after processing")" Compact="true" />
+                    <SummaryTile Label="Max actions" Value="@Processing.MaxActionsPerRefresh.ToString()" Compact="true" />
+                </SummaryTiles>
+
+                <Grid ColumnsLg="3" Gap="LayoutGap.Small" AlignItems="AlignItems.Start">
+                    <SectionCard Title="@($"{Rule.Variables.Count} variable(s)")" Description="Variables">
+                        @if (Rule.Variables.Count == 0)
+                        {
+                            <EmptyState Title="No custom variables" Description="This rule does not define additional variables." />
+                        }
+                        else
+                        {
+                            <ListGroup>
+                            @foreach (KeyValuePair<string, string> variable in Rule.Variables)
+                            {
+                                <ListItem>
+                                    <Cluster AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                                        <Icon Name="tag" />
+                                        <Stack GapScale="LayoutGap.Tiny">
+                                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@variable.Key" />
+                                            <TextBlock TextStyle="TextStyle.Body2" Value="@variable.Value" />
+                                        </Stack>
+                                    </Cluster>
+                                </ListItem>
+                            }
+                            </ListGroup>
+                        }
+                    </SectionCard>
+
+                    <SectionCard Title="NCalc expressions" Description="Conditions">
+                        <ListGroup>
+                        @foreach (string condition in Rule.Conditions)
+                        {
+                            <ListItem>
+                                <Cluster AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                                    <Icon Name="rule" />
+                                    <Stack GapScale="LayoutGap.Tiny">
+                                        <TextBlock TextStyle="TextStyle.Mono" Value="@condition" />
+                                        <TextBlock TextStyle="TextStyle.Caption" Value="must evaluate true" />
+                                    </Stack>
+                                </Cluster>
+                            </ListItem>
+                        }
+                        </ListGroup>
+                    </SectionCard>
+
+                    <SectionCard Title="Submitted by refresh" Description="Actions">
+                        <ListGroup>
+                        @foreach (AccountRuleAction action in Rule.Actions)
+                        {
+                            <ListItem>
+                                <Cluster AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                                    <Icon Name="@ActionIcon(action.Kind)" />
+                                    <Stack GapScale="LayoutGap.Tiny">
+                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@action.Kind.ToString()" />
+                                        <TextBlock TextStyle="TextStyle.Body2" Value="@ActionDetails(action)" />
+                                    </Stack>
+                                </Cluster>
+                            </ListItem>
+                        }
+                        </ListGroup>
+                    </SectionCard>
+                </Grid>
+            </Stack>
+        }
+    </ChildContent>
+</SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public AccountRuleDefinition? Rule { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<string> ValidationErrors { get; set; } = [];
+
+    [Parameter]
+    public bool Compact { get; set; }
+
+    private AccountRuleProcessingOptions Processing
+        => Rule?.Processing ?? AccountRuleProcessingOptions.Default;
+
+    private string TriggerLabel
+    {
+        get
+        {
+            AccountRuleTrigger trigger = Rule?.Trigger ?? AccountRuleTrigger.Default;
+            return string.IsNullOrWhiteSpace(trigger.ObjectType)
+                ? trigger.Kind.ToString()
+                : $"{trigger.Kind} / {trigger.ObjectType}";
+        }
+    }
+
+    private static string ActionIcon(AccountRuleActionKind kind)
+        => kind switch
+        {
+            AccountRuleActionKind.Payment => "payments",
+            AccountRuleActionKind.TokenTransfer => "toll",
+            AccountRuleActionKind.TransferBusinessObject => "move_up",
+            AccountRuleActionKind.UpdateBusinessObject => "edit_note",
+            AccountRuleActionKind.MarkProcessed => "task_alt",
+            _ => "bolt"
+        };
+
+    private static string ActionDetails(AccountRuleAction action)
+        => action.Kind switch
+        {
+            AccountRuleActionKind.Payment => $"{action.AmountExpression} main to {Short(action.ReceiverAddress)}",
+            AccountRuleActionKind.TokenTransfer => $"{action.AmountExpression} {action.TokenId} to {Short(action.ReceiverAddress)}",
+            AccountRuleActionKind.TransferBusinessObject => $"transfer trigger BO to {Short(action.ReceiverAddress)}",
+            AccountRuleActionKind.UpdateBusinessObject => "update trigger BO state",
+            AccountRuleActionKind.MarkProcessed => "mark or close trigger BO",
+            _ => "rule action"
+        };
+
+    private static string Short(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? "not set"
+            : value.Length <= 18
+                ? value
+                : $"{value[..10]}...{value[^5..]}";
+}

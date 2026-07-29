@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -9,17 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.BusinessObjects\CanDoItAll.Economy.BusinessObjects.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Core\CanDoItAll.Economy.Core.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Cryptography\CanDoItAll.Economy.Cryptography.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Ledger\CanDoItAll.Economy.Ledger.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Node\CanDoItAll.Economy.Node.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Persistence.EFCore\CanDoItAll.Economy.Persistence.EFCore.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Persistence.PostgreSql\CanDoItAll.Economy.Persistence.PostgreSql.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Rules.NCalc\CanDoItAll.Economy.Rules.NCalc.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Sdk\CanDoItAll.Economy.Sdk.csproj" />
-    <ProjectReference Include="..\..\src\CanDoItAll.Economy.Storage.InMemory\CanDoItAll.Economy.Storage.InMemory.csproj" />
-    <ProjectReference Include="..\..\tools\CanDoItAll.Economy.DemoSeeder\CanDoItAll.Economy.DemoSeeder.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.BusinessObjects\CanDoItAll.Ledger.BusinessObjects.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Core\CanDoItAll.Ledger.Core.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Cryptography\CanDoItAll.Ledger.Cryptography.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Engine\CanDoItAll.Ledger.Engine.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Node\CanDoItAll.Ledger.Node.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Persistence.EFCore\CanDoItAll.Ledger.Persistence.EFCore.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Persistence.PostgreSql\CanDoItAll.Ledger.Persistence.PostgreSql.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Rules.NCalc\CanDoItAll.Ledger.Rules.NCalc.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Sdk\CanDoItAll.Ledger.Sdk.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Storage.InMemory\CanDoItAll.Ledger.Storage.InMemory.csproj" />
+    <ProjectReference Include="..\..\tools\CanDoItAll.Ledger.DemoSeeder\CanDoItAll.Ledger.DemoSeeder.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator\CanDoItAll.Ledger.Simulator.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator.Components\CanDoItAll.Ledger.Simulator.Components.csproj" />
     <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Simulator.Persistence.EFCore\CanDoItAll.Ledger.Simulator.Persistence.EFCore.csproj" />

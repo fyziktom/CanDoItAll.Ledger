@@ -1,12 +1,12 @@
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Rules.NCalc;
-using CanDoItAll.Economy.Storage.InMemory;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Rules.NCalc;
+using CanDoItAll.Ledger.Storage.InMemory;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectAccountRuleTests
 {

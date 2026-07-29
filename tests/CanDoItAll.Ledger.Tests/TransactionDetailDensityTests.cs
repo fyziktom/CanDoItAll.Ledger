@@ -1,12 +1,12 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class TransactionDetailDensityTests : BunitContext
 {
@@ -23,7 +23,7 @@ public sealed class TransactionDetailDensityTests : BunitContext
     [Fact]
     public void Input_output_flow_uses_compact_nodes_and_directory_names()
     {
-        EconomyTransactionDetailsModel details = CreateDetails();
+        LedgerTransactionDetailsModel details = CreateDetails();
         IReadOnlyList<AddressDirectoryEntry> directory = CreateDirectory();
 
         IRenderedComponent<TransactionInputOutputFlow> component = Render<TransactionInputOutputFlow>(parameters => parameters
@@ -47,18 +47,18 @@ public sealed class TransactionDetailDensityTests : BunitContext
     [Fact]
     public void Input_output_flow_detailed_mode_exposes_protocol_fields_without_stat_cards()
     {
-        EconomyTransactionDetailsModel baseline = CreateDetails(signatures: CreateSignatureBundle());
+        LedgerTransactionDetailsModel baseline = CreateDetails(signatures: CreateSignatureBundle());
         HashHex inputDataHash = new(new string('3', 64));
         HashHex payloadHash = new(new string('4', 64));
         OutPointKey outPointKey = new(new HashHex(new string('5', 64)));
         HashHex metadataHash = new(new string('6', 64));
-        EconomyTransactionInputDetails input = baseline.Inputs[0] with
+        LedgerTransactionInputDetails input = baseline.Inputs[0] with
         {
-            BusinessObject = new EconomyTransactionBusinessObjectDetails(2, BusinessObjectOperation.Update, inputDataHash),
+            BusinessObject = new LedgerTransactionBusinessObjectDetails(2, BusinessObjectOperation.Update, inputDataHash),
             SignaturePayloadHash = payloadHash,
             OutPointKey = outPointKey
         };
-        EconomyTransactionOutputDetails output = baseline.Outputs[1] with { MetadataHash = metadataHash };
+        LedgerTransactionOutputDetails output = baseline.Outputs[1] with { MetadataHash = metadataHash };
 
         IRenderedComponent<TransactionInputOutputFlow> component = Render<TransactionInputOutputFlow>(parameters => parameters
             .Add(item => item.Inputs, [input])
@@ -168,18 +168,18 @@ public sealed class TransactionDetailDensityTests : BunitContext
     [Fact]
     public void Source_contract_keeps_custom_css_ledger_specific_and_removes_duplicate_dialog_subtitles()
     {
-        string details = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionDetailsDialogContent.razor");
-        string flow = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionInputOutputFlow.razor");
-        string flowCss = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionInputOutputFlow.razor.css");
-        string payload = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TxDataPayloadViewer.razor");
-        string signatures = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionSignatureList.razor");
-        string timeline = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionTimeline.razor");
-        string timelineCss = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Transactions", "TransactionTimeline.razor.css");
-        string adapter = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Account", "EconomyAccountWorkspaceAdapterHost.razor");
-        string demo = ReadRepoFile("examples", "CanDoItAll.Economy.Components.Demo", "Components", "Pages", "Home.razor");
-        string accountApp = ReadRepoFile("examples", "CanDoItAll.Economy.AccountApp", "Pages", "Home.razor");
-        string node = ReadRepoFile("src", "CanDoItAll.Economy.Node", "Components", "Shared", "NodeWorkspace.razor");
-        string nodeAdmin = ReadRepoFile("src", "CanDoItAll.Economy.Components", "Components", "Admin", "NodeAdminDashboard.razor");
+        string details = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionDetailsDialogContent.razor");
+        string flow = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionInputOutputFlow.razor");
+        string flowCss = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionInputOutputFlow.razor.css");
+        string payload = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TxDataPayloadViewer.razor");
+        string signatures = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionSignatureList.razor");
+        string timeline = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionTimeline.razor");
+        string timelineCss = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Transactions", "TransactionTimeline.razor.css");
+        string adapter = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Account", "LedgerAccountWorkspaceAdapterHost.razor");
+        string demo = ReadRepoFile("examples", "CanDoItAll.Ledger.Components.Demo", "Components", "Pages", "Home.razor");
+        string accountApp = ReadRepoFile("examples", "CanDoItAll.Ledger.AccountApp", "Pages", "Home.razor");
+        string node = ReadRepoFile("src", "CanDoItAll.Ledger.Node", "Components", "Shared", "NodeWorkspace.razor");
+        string nodeAdmin = ReadRepoFile("src", "CanDoItAll.Ledger.Components", "Components", "Admin", "NodeAdminDashboard.razor");
 
         Assert.Contains("<Toolbar Class=\"gap-2\"", details, StringComparison.Ordinal);
         Assert.Contains("Style=\"padding:0.5rem;box-shadow:none\"", details, StringComparison.Ordinal);
@@ -220,12 +220,12 @@ public sealed class TransactionDetailDensityTests : BunitContext
         Assert.DoesNotContain("nameof(TransactionDetailsDialogContent.ContextLabel)", nodeAdmin, StringComparison.Ordinal);
     }
 
-    private static EconomyTransactionDetailsModel CreateDetails(
+    private static LedgerTransactionDetailsModel CreateDetails(
         TransactionStatus status = TransactionStatus.Confirmed,
         SignatureBundle? signatures = null)
     {
         const string transactionId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        return new EconomyTransactionDetailsModel(
+        return new LedgerTransactionDetailsModel(
             new TxId(transactionId),
             new HashHex(transactionId),
             TransactionKind.BusinessObject,
@@ -234,7 +234,7 @@ public sealed class TransactionDetailDensityTests : BunitContext
             RecordedAt,
             null,
             [
-                new EconomyTransactionInputDetails(
+                new LedgerTransactionInputDetails(
                     0,
                     new OutPoint(new TxId("previous"), 0),
                     Alice,
@@ -244,13 +244,13 @@ public sealed class TransactionDetailDensityTests : BunitContext
                     signatures ?? SignatureBundle.Empty)
             ],
             [
-                new EconomyTransactionOutputDetails(0, Alice, Amount.FromInt64(2), null, null, null),
-                new EconomyTransactionOutputDetails(
+                new LedgerTransactionOutputDetails(0, Alice, Amount.FromInt64(2), null, null, null),
+                new LedgerTransactionOutputDetails(
                     1,
                     Bob,
                     Amount.Zero,
                     new TokenTransfer(new TokenId("bo.posts"), Amount.FromInt64(1)),
-                    new EconomyTransactionBusinessObjectDetails(
+                    new LedgerTransactionBusinessObjectDetails(
                         1,
                         BusinessObjectOperation.Create,
                         new HashHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),

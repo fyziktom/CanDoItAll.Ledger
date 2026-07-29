@@ -1,0 +1,30 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-time-control-panel">
+    <SectionCard Title="Ledger clock" Description="Time control">
+        <HeaderActions>
+            <StatusBadge Text="Guarded" Tone="warning" />
+        </HeaderActions>
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Small">
+                <Grid ColumnTemplate="repeat(auto-fit, minmax(min(100%, 15rem), 1fr))" Gap="LayoutGap.Medium">
+                    <FormField Text="Current UTC">
+                        <TextBox Value="@CurrentUtc.ToString("u")" ReadOnly="true" />
+                    </FormField>
+                    <FormField Text="Advance by">
+                        <DropDown TItem="string" Value="@advanceBy" ValueChanged="@((string value) => advanceBy = value)" Items="Steps" />
+                    </FormField>
+                </Grid>
+                <Button Text="Review time change" Icon="schedule" Variant="Variant.Outlined" />
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    private string advanceBy = "1 hour";
+    private static readonly IReadOnlyList<string> Steps = ["15 minutes", "1 hour", "1 day"];
+
+    [Parameter]
+    public DateTimeOffset CurrentUtc { get; set; } = new(2026, 05, 06, 14, 45, 00, TimeSpan.Zero);
+}

@@ -1,0 +1,40 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-node-health-panel">
+    <SectionCard Title="@NodeName" Description="Node health">
+        <HeaderActions>
+            <StatusBadge Text="@Status" Tone="@Tone" />
+        </HeaderActions>
+        <ChildContent>
+            <SummaryTiles ColumnsSm="2" ColumnsXl="2" GapScale="LayoutGap.Small">
+                <SummaryTile Label="Base URI" Value="@BaseUri" Compact="true" />
+                <SummaryTile Label="Ledger" Value="@LedgerId" Compact="true" />
+                <SummaryTile Label="Mode" Value="@EnvironmentName" Compact="true" />
+                <SummaryTile Label="Checked" Value="@CheckedAtUtc.ToString("u")" Compact="true" />
+            </SummaryTiles>
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public string NodeName { get; set; } = "Ledger node";
+
+    [Parameter]
+    public string Status { get; set; } = "Healthy";
+
+    [Parameter]
+    public string Tone { get; set; } = "success";
+
+    [Parameter]
+    public string BaseUri { get; set; } = "http://localhost:5000/api/v1";
+
+    [Parameter]
+    public string LedgerId { get; set; } = "company-economy";
+
+    [Parameter]
+    public string EnvironmentName { get; set; } = "Development";
+
+    [Parameter]
+    public DateTimeOffset CheckedAtUtc { get; set; } = new(2026, 05, 06, 14, 45, 00, TimeSpan.Zero);
+}

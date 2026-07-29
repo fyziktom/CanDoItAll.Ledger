@@ -1,9 +1,9 @@
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class DemoSeedOptionsTests
 {
     private const string VerificationEnvironmentVariable =
-        "CANDOITALL_ECONOMY_VERIFY_PERMISSION_TOKEN_BO_FLOW";
+        "CANDOITALL_LEDGER_VERIFY_PERMISSION_TOKEN_BO_FLOW";
 
     [Fact]
     public void Parse_LeavesLiveVerificationDisabledByDefault()

@@ -1,6 +1,9 @@
 # Ledger Simulator Vision And Refactoring Record
 
-Status: active architecture record for the BO/project simulator owned by this repository.
+Status: active architecture record for the work-in-progress, experimental
+BO/project Simulator owned by this repository. It is not production-ready and
+its output is not authoritative financial, accounting, forecasting, or economic
+evidence.
 
 ## Product intent
 
@@ -24,11 +27,11 @@ This repository owns the BO/project simulator. It must not absorb the separate E
 
 | Surface | Current owner | Current responsibility | Architectural result |
 | --- | --- | --- | --- |
-| Project/scenario domain and deterministic services | `src/CanDoItAll.Ledger.Simulator` | Projects, BUs, events, scenario compilation, run lifecycle, projections, actual validation, reconciliation inputs, API services | Correct physical owner, but still uses temporary `CanDoItAll.Economy.Simulator` identities. |
+| Project/scenario domain and deterministic services | `src/CanDoItAll.Ledger.Simulator` | Projects, BUs, events, scenario compilation, run lifecycle, projections, actual validation, reconciliation inputs, API services | Correct physical and `CanDoItAll.Ledger.Simulator` identity owner. |
 | Reusable simulator UI | `src/CanDoItAll.Ledger.Simulator.Components` | Project editor, run console, graphs, reconciliation and actual-entry components | Correct UI boundary; sample data is still coupled to the component package. |
 | Projection persistence | `src/CanDoItAll.Ledger.Simulator.Persistence.EFCore` | Optional EF graph projection/cache adapters using `IDbContextFactory` | Correct infrastructure direction, but no lifecycle path writes through the adapters; projects, runs, and generated graphs remain in memory. |
 | Browser host | `examples/CanDoItAll.Ledger.Simulator.App` | Composition, local provider choice, sample seeding, Razor/interactive-server pipeline | Pre-repair it used profile-scoped Data Protection, Windows EventLog, a missing `/Error`, and stale launch docs; this repair makes those host concerns explicit. |
-| Generic ledger-backed snapshot adapter | `src/CanDoItAll.Economy.Simulation.Ledger` | Projects already-built ledger snapshots into backend-neutral frames | Separated correctly, but it is not currently composed into the BO/project simulator. |
+| Generic ledger-backed snapshot adapter | `src/CanDoItAll.Ledger.Simulation.Ledger` | Projects already-built ledger snapshots into backend-neutral frames | Separated correctly, but it is not currently composed into the BO/project simulator. |
 
 Important limitation: `CanDoItAll.Ledger.Simulator.csproj` currently references only `Microsoft.AspNetCore.App`. `SimulatorPrimitives.cs` duplicates names and concepts that also exist in Ledger/Core, and `IEconomicPostingService` is not used by a production path. The current runtime is therefore a deterministic BO/project simulator and future observation foundation, not yet a real Ledger-backed observation implementation. Its current account snapshots and rule evidence are sample projections, not confirmed Ledger facts, and must not be presented as actuals. Canonical Ledger contract adoption requires a compatibility/migration slice with golden serialization proof; it must not be hidden inside this startup repair.
 
@@ -43,7 +46,7 @@ CodeAnalytics snapshot `snap-20260718213913-5e195798-failed` was attempted with 
 | `Program.cs` | default host infrastructure | Razor pipeline relies on an unwritable user-profile key ring and default Windows EventLog; production handler targets missing `/Error` | App host composition and configuration | Real root-page/health smoke plus direct option/registration tests where practical | High |
 | `RunObservation.razor` | view-model getter and one-second refresh loop | Rebuilds the complete observation query during rendering and rerenders every second while any seeded run says `Running`, even when no lifecycle value changed | Stable page snapshot plus lightweight lifecycle-revision observation | Browser interaction remains responsive across refresh intervals; changed run revisions replace the snapshot | High |
 | `SimulatorPrimitives.cs` | Ledger-like primitives | Local `Address`, `Amount`, token/transaction/account-rule shapes duplicate canonical Ledger/Core concepts | Future Contracts/Adapter migration, not this repair | Golden JSON/hash compatibility and adapter contract tests | Critical follow-up |
-| `EconomySimulatorSampleData.cs` | sample project/run builders | Reusable UI defaults, app bootstrap, and test fixtures | Future Samples/Fixtures project or app-owned seed provider | Components receive explicit models; fixtures test seed determinism | Medium follow-up |
+| `LedgerSimulatorSampleData.cs` | sample project/run builders | Reusable UI defaults, app bootstrap, and test fixtures | Future Samples/Fixtures project or app-owned seed provider | Components receive explicit models; fixtures test seed determinism | Medium follow-up |
 
 ## Architecture decision for this repair
 
@@ -74,7 +77,9 @@ The simulator core must not reference the host, UI, or EF implementation. No new
 - Rejected simpler option: another private method or partial file leaves the lifecycle responsible for the algorithm and does not create a direct test seam.
 - Selected pattern: Extract Service behind the required top-level `ISimulationScenarioRunMaterializer` port. Scenario projects must carry a nonblank `scenarioCode`; invalid projects fail validation instead of silently using the generic sample projection.
 - Rejected patterns: a service locator, a new partial class, a facade that retains the existing logic, or a speculative multi-strategy resolver before a real Ledger observation materializer exists.
-- Test seam: instantiate `EconomyScenarioRunMaterializer` without `InMemorySimulationRunLifecycleService`; retain lifecycle scenario/run regressions and DI validation as composition proof.
+- Test seam: instantiate `LedgerScenarioRunMaterializer` without
+  `InMemorySimulationRunLifecycleService`; retain lifecycle scenario/run
+  regressions and DI validation as composition proof.
 - Migration: move one cohesive materialization slice, delegate production calls, delete the moved lifecycle logic, and keep serialized property names, ordering, and deterministic hashes unchanged. Generalize the port into strict multi-strategy resolution only when the real Ledger observation implementation supplies a second algorithm.
 
 ### Pattern selection record: persistence selection

@@ -1,0 +1,77 @@
+@namespace CanDoItAll.Ledger.Components
+
+@if (Commerce is null)
+{
+    <TypedFamilyBusinessObjectRenderer Object="Object"
+                                       Mode="Mode"
+                                       ViewedAtUtc="ViewedAtUtc"
+                                       Descriptor="Descriptor" />
+}
+else if (Mode == BusinessObjectRenderMode.Summary)
+{
+    <Stack GapScale="LayoutGap.Tiny">
+        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@Commerce.Name" />
+        <Cluster Gap="LayoutGap.Small" Wrap="FlexWrap.Wrap">
+            <StatusBadge Tone="info" Text="@RecordKind" />
+            <StatusBadge Tone="@StatusTone" Text="@StatusText" />
+        </Cluster>
+    </Stack>
+}
+else
+{
+    <Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+        <BusinessObjectCommerceSummary Object="Commerce" />
+        <BusinessObjectRendererMediaDetails Media="@Commerce" />
+    </Stack>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IBusinessObjectView Object { get; set; } = default!;
+
+    [Parameter]
+    public BusinessObjectRenderMode Mode { get; set; } = BusinessObjectRenderMode.Detail;
+
+    [Parameter]
+    public DateTimeOffset? ViewedAtUtc { get; set; }
+
+    [Parameter, EditorRequired]
+    public BusinessObjectRendererDescriptor Descriptor { get; set; } = default!;
+
+    private ICommerceBusinessObjectView? Commerce
+        => Object as ICommerceBusinessObjectView;
+
+    private string RecordKind
+        => Commerce?.Commerce switch
+        {
+            { Payment: not null } => "Payment",
+            { Purchase: not null } => "Purchase",
+            { Receipt: not null } => "Receipt",
+            _ => "Commerce"
+        };
+
+    private string StatusText
+        => Commerce?.Commerce switch
+        {
+            { Payment: { } payment } => payment.Status.ToString(),
+            { Purchase: { } purchase } => purchase.Status.ToString(),
+            { Receipt: { } receipt } => receipt.Status.ToString(),
+            _ => "Unknown"
+        };
+
+    private string StatusTone
+        => Commerce?.Commerce switch
+        {
+            { Payment.Status: BusinessObjectCommerceRecordStatus.Dispatched }
+                or { Purchase.Status: BusinessObjectCommerceRecordStatus.Dispatched }
+                or { Receipt.Status: BusinessObjectCommerceRecordStatus.Dispatched } => "success",
+            { Payment.Status: BusinessObjectCommerceRecordStatus.Pending }
+                or { Purchase.Status: BusinessObjectCommerceRecordStatus.Pending }
+                or { Receipt.Status: BusinessObjectCommerceRecordStatus.Pending } => "warning",
+            { Payment.Status: BusinessObjectCommerceRecordStatus.Rejected }
+                or { Purchase.Status: BusinessObjectCommerceRecordStatus.Rejected }
+                or { Receipt.Status: BusinessObjectCommerceRecordStatus.Rejected } => "danger",
+            _ => "neutral"
+        };
+
+}

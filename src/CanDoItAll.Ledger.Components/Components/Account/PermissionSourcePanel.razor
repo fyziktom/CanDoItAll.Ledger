@@ -1,0 +1,42 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-permission-source-panel">
+    <SectionCard Title="Permission source panel" Description="Permissions available to guarded account actions">
+        <HeaderActions>
+            <StatusBadge Text="@($"{Sources.Count} grants")" Tone="warning" />
+        </HeaderActions>
+
+        <ChildContent>
+            @if (Sources.Count == 0)
+            {
+                <EmptyState Eyebrow="Permissions" Title="No permission sources" Description="Minting and guarded actions will stay disabled until permission outputs are available." />
+            }
+            else
+            {
+                <Stack GapScale="LayoutGap.Small">
+                    @foreach (LedgerPermissionSource source in Sources)
+                    {
+                        <SurfaceCard Soft="true">
+                            <Split Breakpoint="LayoutBreakpoint.Md" Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
+                                <Cluster AlignItems="AlignItems.Start" Gap="LayoutGap.Small">
+                                    <Icon Name="verified_user" />
+                                    <Stack GapScale="LayoutGap.Tiny">
+                                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="@source.Grant.Action" />
+                                        <TextBlock TextStyle="TextStyle.Body2" Value="@source.Grant.Namespace" />
+                                        <TextBlock TextStyle="TextStyle.Caption">@source.OutPoint - @source.Amount permission token(s)</TextBlock>
+                                    </Stack>
+                                </Cluster>
+                                <StatusBadge Text="available" Tone="success" />
+                            </Split>
+                        </SurfaceCard>
+                    }
+                </Stack>
+            }
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerPermissionSource> Sources { get; set; } = [];
+}

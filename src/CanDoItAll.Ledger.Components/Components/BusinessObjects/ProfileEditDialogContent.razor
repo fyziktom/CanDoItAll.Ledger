@@ -1,0 +1,205 @@
+@namespace CanDoItAll.Ledger.Components
+@inject DialogService DialogService
+
+<Stack GapScale="LayoutGap.Small" AlignItems="AlignItems.Stretch">
+        <Toolbar data-testid="cda-profile-picture-preview">
+            <ToolbarRow>
+            <Cluster Gap="LayoutGap.Medium" Wrap="FlexWrap.NoWrap" Class="w-full">
+                <Avatar ImageUrl="@ProfileImageUri?.ToString()"
+                        Alt="@displayName"
+                        FallbackText="@ProfileInitials"
+                        UseDefaultImageWhenMissing="false"
+                        Size="AvatarSize.Large"
+                        Shape="AvatarShape.Rounded" />
+                <Stack GapScale="LayoutGap.Tiny" Class="min-w-0 flex-1">
+                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="Profile picture" />
+                    <TextBlock TextStyle="TextStyle.Muted"
+                               Value="@(ProfileImageUri is null ? "Paste an image link to load a profile picture preview." : "Loaded from the image link field.")" />
+                </Stack>
+            </Cluster>
+            </ToolbarRow>
+        </Toolbar>
+
+        <FormField Text="Display name">
+            <TextBox Value="@displayName" ValueChanged="@(value => displayName = value ?? string.Empty)" Immediate="true" aria-label="Profile display name" />
+        </FormField>
+        <Grid ColumnsLg="2" Gap="LayoutGap.Medium">
+            <FormField Text="First name">
+                <TextBox Value="@firstName" ValueChanged="@(value => firstName = value ?? string.Empty)" Immediate="true" aria-label="Profile first name" />
+            </FormField>
+            <FormField Text="Surname">
+                <TextBox Value="@surname" ValueChanged="@(value => surname = value ?? string.Empty)" Immediate="true" aria-label="Profile surname" />
+            </FormField>
+            <FormField Text="Nickname">
+                <TextBox Value="@nickname" ValueChanged="@(value => nickname = value ?? string.Empty)" Immediate="true" aria-label="Profile nickname" />
+            </FormField>
+            <FormField Text="Image link">
+                <TextBox Value="@imageLink" ValueChanged="@(value => imageLink = value ?? string.Empty)" Immediate="true" aria-label="Profile image link" />
+            </FormField>
+            <FormField Text="Contact">
+                <TextBox Value="@contact" ValueChanged="@(value => contact = value ?? string.Empty)" Immediate="true" aria-label="Profile contact" />
+            </FormField>
+            <FormField Text="Website">
+                <TextBox Value="@website" ValueChanged="@(value => website = value ?? string.Empty)" Immediate="true" aria-label="Profile website" />
+            </FormField>
+            <FormField Text="Role">
+                <TextBox Value="@role" ValueChanged="@(value => role = value ?? string.Empty)" Immediate="true" aria-label="Profile role" />
+            </FormField>
+            <FormField Text="Age">
+                <TextBox Value="@age" ValueChanged="@(value => age = value ?? string.Empty)" Immediate="true" aria-label="Profile age" />
+            </FormField>
+            <FormField Text="Relationship status">
+                <TextBox Value="@relationshipStatus" ValueChanged="@(value => relationshipStatus = value ?? string.Empty)" Immediate="true" aria-label="Profile relationship status" />
+            </FormField>
+            <FormField Text="Currency">
+                <TextBox Value="@currency" ValueChanged="@(value => currency = value ?? string.Empty)" Immediate="true" aria-label="Profile currency" />
+            </FormField>
+            <FormField Text="Approval mode">
+                <TextBox Value="@approvalMode" ValueChanged="@(value => approvalMode = value ?? string.Empty)" Immediate="true" aria-label="Profile approval mode" />
+            </FormField>
+            <FormField Text="Simulation clock">
+                <TextBox Value="@simulationClock" ValueChanged="@(value => simulationClock = value ?? string.Empty)" Immediate="true" aria-label="Profile simulation clock" />
+            </FormField>
+        </Grid>
+        <FormField Text="Bio">
+            <TextArea Value="@bio" ValueChanged="@(value => bio = value ?? string.Empty)" Immediate="true" Rows="5" aria-label="Profile bio" />
+        </FormField>
+
+        <Cluster Gap="LayoutGap.Small" JustifyContent="JustifyContent.End">
+            <PageHeaderActionButton Icon="save"
+                                    Label="@SaveButtonText"
+                                    TooltipText="@SaveButtonText"
+                                    ButtonStyle="ButtonStyle.Secondary"
+                                    Click="SubmitAsync" />
+            <PageHeaderActionButton Icon="close"
+                                    Label="Cancel"
+                                    TooltipText="Cancel profile edit"
+                                    Variant="Variant.Outlined"
+                                    ButtonStyle="ButtonStyle.Secondary"
+                                    Click="CancelAsync" />
+        </Cluster>
+</Stack>
+
+@code {
+    private string displayName = "Operations account";
+    private string firstName = string.Empty;
+    private string surname = string.Empty;
+    private string nickname = string.Empty;
+    private string bio = string.Empty;
+    private string imageLink = string.Empty;
+    private string age = string.Empty;
+    private string relationshipStatus = string.Empty;
+    private string contact = string.Empty;
+    private string website = string.Empty;
+    private string role = string.Empty;
+    private string currency = "USD";
+    private string approvalMode = "two-step";
+    private string simulationClock = "manual";
+
+    [Parameter]
+    public IBusinessObjectView? ProfileObject { get; set; }
+
+    [Parameter]
+    public string AccountName { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<ProfileEditRequest> SubmitRequested { get; set; }
+
+    private bool IsNewProfile => ProfileObject is null;
+
+    private string SaveButtonText => IsNewProfile ? "Create Profile" : "Save Profile";
+
+    private Uri? ProfileImageUri
+        => Uri.TryCreate(imageLink, UriKind.Absolute, out Uri? uri)
+            ? uri
+            : null;
+
+    private string ProfileInitials
+        => string.Concat(displayName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(part => char.ToUpperInvariant(part[0])));
+
+    protected override void OnParametersSet()
+    {
+        displayName = string.IsNullOrWhiteSpace(displayName) ? AccountName : displayName;
+
+        if (ProfileObject is IMediaBusinessObjectView media)
+        {
+            displayName = string.IsNullOrWhiteSpace(media.Name) ? displayName : media.Name;
+            bio = string.IsNullOrWhiteSpace(media.Text) ? media.Description : media.Text;
+        }
+
+        if (BusinessObjectPayloadBuilder.TryParseMediaPayload(ProfileObject?.StateJson, out BusinessObjectMediaPayload? payload)
+            && payload is not null)
+        {
+            displayName = string.IsNullOrWhiteSpace(payload.Name) ? displayName : payload.Name;
+            bio = string.IsNullOrWhiteSpace(payload.Text) ? payload.Description : payload.Text;
+            imageLink = payload.ImageLink ?? imageLink;
+            website = payload.Link ?? website;
+            ApplyFields(payload.Fields);
+        }
+
+        if (ProfileObject is AccountSettingsBusinessObjectView settings)
+        {
+            displayName = settings.Settings.TryGetValue("displayName", out string? name) ? name : AccountName;
+            currency = settings.Settings.TryGetValue("currency", out string? value) ? value : currency;
+            approvalMode = settings.Settings.TryGetValue("approvalMode", out value) ? value : approvalMode;
+            simulationClock = settings.Settings.TryGetValue("simulationClock", out value) ? value : simulationClock;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        var request = new ProfileEditRequest(
+            ProfileObject?.ObjectId,
+            currency,
+            approvalMode,
+            displayName,
+            simulationClock,
+            ProfileObject?.StateJson ?? "{}",
+            CreateNew: ProfileObject is null,
+            FirstName: firstName,
+            Surname: surname,
+            Nickname: nickname,
+            Bio: bio,
+            ImageLink: imageLink,
+            Age: age,
+            RelationshipStatus: relationshipStatus,
+            Contact: contact,
+            Website: website,
+            Role: role);
+
+        await SubmitRequested.InvokeAsync(request);
+        await DialogService.CloseAsync(request);
+    }
+
+    private void ApplyFields(IReadOnlyDictionary<string, string>? fields)
+    {
+        if (fields is null)
+        {
+            return;
+        }
+
+        firstName = Get(fields, "firstName", firstName);
+        surname = Get(fields, "surname", surname);
+        nickname = Get(fields, "nickname", nickname);
+        bio = Get(fields, "bio", bio);
+        imageLink = Get(fields, "imageLink", imageLink);
+        age = Get(fields, "age", age);
+        relationshipStatus = Get(fields, "relationshipStatus", relationshipStatus);
+        contact = Get(fields, "contact", contact);
+        website = Get(fields, "website", website);
+        role = Get(fields, "role", role);
+        currency = Get(fields, "currency", currency);
+        approvalMode = Get(fields, "approvalMode", approvalMode);
+        simulationClock = Get(fields, "simulationClock", simulationClock);
+    }
+
+    private static string Get(IReadOnlyDictionary<string, string> fields, string key, string fallback)
+        => fields.TryGetValue(key, out string? value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : fallback;
+
+    private Task CancelAsync() => DialogService.CloseAsync();
+}

@@ -1,0 +1,20 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-snapshot-admin-panel">
+    <SectionCard Title="Snapshot administration" Description="Snapshots">
+        <HeaderActions>
+            <Button Text="Create snapshot" Icon="add_a_photo" Variant="Variant.Outlined" />
+        </HeaderActions>
+        <ChildContent>
+            <SurfaceCard Soft="true">
+                <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
+                    <Icon Name="inventory" />
+                    <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                        <TextBlock TextStyle="TextStyle.Subtitle2" Value="snapshot-20260506-1445" />
+                        <SmallText Text="3 transactions, 6 business objects, 11 UTXOs" />
+                    </Stack>
+                </Cluster>
+            </SurfaceCard>
+        </ChildContent>
+    </SectionCard>
+</div>

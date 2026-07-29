@@ -1,0 +1,63 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-transaction-history-browser">
+    <SectionCard Title="History browser" Description="Transactions">
+        <HeaderActions>
+            <StatusBadge Text="@($"{Transactions.Count} rows")" Tone="info" />
+        </HeaderActions>
+
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Medium">
+                <TransactionFilterToolbar />
+
+                @if (Transactions.Count == 0)
+                {
+                    <EmptyState Eyebrow="History" Title="No transactions" Description="Submitted transactions will appear here." />
+                }
+                else
+                {
+                    <ListGroup>
+                        @foreach (LedgerTransactionSummary item in LedgerTransactionOrdering.NewestFirst(Transactions))
+                        {
+                            <ListItem>
+                                <Split Breakpoint="LayoutBreakpoint.Sm"
+                                       AlignItems="AlignItems.Center"
+                                       Wrap="FlexWrap.Wrap"
+                                       Gap="LayoutGap.Medium">
+                                    <Cluster Wrap="FlexWrap.NoWrap" AlignItems="AlignItems.Start" Class="min-w-0">
+                                        <Icon Name="@IconFor(item.Kind)" />
+                                        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                            <CopyableMonoValue Value="@item.TxId.Value"
+                                                               StartChars="10"
+                                                               EndChars="6"
+                                                               AriaLabel="Copy transaction id" />
+                                            <TextBlock TextStyle="TextStyle.Body2"
+                                                       Value="@($"{TransactionUiPresentation.KindLabel(item.Kind)} · {item.Status} · {TransactionUiPresentation.FormatLocalTimestamp(item.Timestamp)}")" />
+                                            <SmallText Text="@($"{item.Inputs.Count} input(s), {item.Outputs.Count} output(s)")" />
+                                        </Stack>
+                                    </Cluster>
+                                    <StatusBadge Text="@item.Status.ToString()" Tone="@TransactionUiPresentation.StatusTone(item.Status)" />
+                                </Split>
+                            </ListItem>
+                        }
+                    </ListGroup>
+                }
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerTransactionSummary> Transactions { get; set; } = [];
+
+    private static string IconFor(TransactionKind kind)
+        => kind switch
+        {
+            TransactionKind.Mint => "token",
+            TransactionKind.BusinessObject => "inventory_2",
+            TransactionKind.Transfer => "sync_alt",
+            _ => "receipt_long"
+        };
+
+}

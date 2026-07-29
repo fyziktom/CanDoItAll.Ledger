@@ -12,14 +12,23 @@ Economy must not reference Ledger.
 
 Ledger may reference a small neutral Economy helper package only if it has no dependency on simulation, Node, Ledger, EF, WebGL, or runtime host code. Any such reference must be documented with an owner, expected benefit, complexity cost, validation cost, and retirement condition.
 
-## Compatibility Namespace Rule
+## Namespace Rule
 
-Imported code may keep old `CanDoItAll.Economy.*` namespaces only as temporary compatibility shims while physical ownership is separated. New ledger code should use `CanDoItAll.Ledger.*`.
+All Ledger-owned projects and source use `CanDoItAll.Ledger.*`. The former
+Economy compatibility namespaces are retired; they may appear only in migration
+history, explicit repository-boundary rules, and adversarial audit fixtures.
 
-Compatibility shims must be tracked in `docs/migration/import-inventory.md` and removed after package boundaries and consumer docs are updated.
+Versioned backup/browser format identifiers and the existing `Economy_`
+PostgreSQL schema names remain stable compatibility contracts. Their exact
+allowlist and change requirements are recorded in
+`namespace-compatibility.md`.
 
 ## Basic Simulator Exclusion
 
 Ledger must not copy Economy scenario packs, `Simulation.SimpleAccounts`, `Simulation.ExperimentalEconomics`, Smith-like experiment drivers, WebGL observer evidence, or simple/Smith simulator host projects.
 
 Ledger may own `CanDoItAll.Ledger.Simulator*` projects only for the BO/project simulator runtime moved from Economy. Those projects must not import simple-account drivers, Smith mechanisms, scenario packs, or WebGL observer evidence.
+
+The BO/project Simulator is work in progress and experimental. It is not
+production-ready and its output is not authoritative financial, accounting,
+forecasting, or economic evidence.

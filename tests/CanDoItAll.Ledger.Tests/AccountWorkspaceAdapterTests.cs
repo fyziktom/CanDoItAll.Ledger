@@ -4,23 +4,23 @@ using System.Text.Json;
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Sdk;
-using CanDoItAll.Economy.Storage.InMemory;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Sdk;
+using CanDoItAll.Ledger.Storage.InMemory;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class AccountWorkspaceAdapterTests : BunitContext
 {
@@ -31,7 +31,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
     {
         Services.AddCanDoItAllBaseLib();
         Services.AddSingleton<IJSRuntime>(new SideMenuTestJsRuntime());
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
     {
         foreach (string hostMode in new[] { "SSR", "WASM" })
         {
-            IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
+            IRenderedComponent<LedgerAccountWorkspaceAdapterHost> component = Render<LedgerAccountWorkspaceAdapterHost>(
                 parameters => parameters.Add(x => x.Adapter, new SampleWorkspaceAdapter(hostMode)));
 
             Assert.Contains(hostMode, component.Markup, StringComparison.Ordinal);
@@ -56,7 +56,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
     [Fact]
     public void AdapterHost_FullShellStartsOnInitialGalleryView()
     {
-        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
+        IRenderedComponent<LedgerAccountWorkspaceAdapterHost> component = Render<LedgerAccountWorkspaceAdapterHost>(
             parameters => parameters
                 .Add(x => x.Adapter, new SampleWorkspaceAdapter("WASM"))
                 .Add(x => x.UseFullAppShell, true)
@@ -76,7 +76,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
     public async Task AdapterHost_FullShellSubmitsTicketMultimintBatchWithSingleFinalRefresh()
     {
         var adapter = new CapturingBatchWorkspaceAdapter();
-        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
+        IRenderedComponent<LedgerAccountWorkspaceAdapterHost> component = Render<LedgerAccountWorkspaceAdapterHost>(
             parameters => parameters
                 .Add(x => x.Adapter, adapter)
                 .Add(x => x.UseFullAppShell, true)
@@ -125,7 +125,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
         await adapter.UseUnlockedAccountAsync(rig.UnlockedKey, CancellationToken.None);
 
         BusinessObjectWorkspaceModel workspace = await adapter.GetWorkspaceAsync(CancellationToken.None);
-        EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(
+        LedgerTransactionExecutionResult result = await adapter.SubmitTransactionAsync(
             workspace.TransactionDraft with
             {
                 SelectedMode = BusinessObjectTransactionMode.MainPayment,
@@ -168,7 +168,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
 
         BusinessObjectWorkspaceModel initial = await adapter.GetWorkspaceAsync(CancellationToken.None);
         LedgerSpendableOutput source = Assert.Single(initial.SpendableOutputsOrEmpty, output => output.BusinessObject is null && output.Token is null);
-        EconomyTransactionExecutionResult split = await adapter.SubmitTransactionAsync(
+        LedgerTransactionExecutionResult split = await adapter.SubmitTransactionAsync(
             initial.TransactionDraft with
             {
                 SelectedMode = BusinessObjectTransactionMode.UtxoSplit,
@@ -189,7 +189,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             .ToArray();
         Assert.Equal(2, mergeInputs.Length);
 
-        EconomyTransactionExecutionResult merge = await adapter.SubmitTransactionAsync(
+        LedgerTransactionExecutionResult merge = await adapter.SubmitTransactionAsync(
             afterSplit.TransactionDraft with
             {
                 SelectedMode = BusinessObjectTransactionMode.UtxoMerge,
@@ -200,7 +200,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
 
         Assert.True(merge.Accepted, merge.Message);
         Assert.NotNull(merge.TxId);
-        EconomyTransactionDetailsModel? details = await adapter.GetTransactionDetailsAsync(merge.TxId!.Value, CancellationToken.None);
+        LedgerTransactionDetailsModel? details = await adapter.GetTransactionDetailsAsync(merge.TxId!.Value, CancellationToken.None);
         Assert.NotNull(details);
         Assert.Equal(2, details!.Inputs.Count);
         Assert.Equal(
@@ -209,7 +209,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
                 .OrderBy(input => input.MainAmount?.Value ?? -1m)
                 .Select(input => input.MainAmount?.ToString() ?? "unknown")
                 .ToArray());
-        EconomyTransactionOutputDetails output = Assert.Single(details.Outputs);
+        LedgerTransactionOutputDetails output = Assert.Single(details.Outputs);
         Assert.Equal(Receiver, output.Address);
         Assert.Equal("100", output.MainAmount.ToString());
     }
@@ -225,7 +225,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
         await PrimePublicKeyDiscoveryAsync(aliceAdapter, rig.Alice.Address);
         await PrimePublicKeyDiscoveryAsync(bobAdapter, rig.Bob.Address);
 
-        EconomyTransactionExecutionResult aliceToBob = await aliceAdapter.SendSecureMessageAsync(
+        LedgerTransactionExecutionResult aliceToBob = await aliceAdapter.SendSecureMessageAsync(
             new SecureMessageComposeRequest(
                 "alice",
                 rig.Bob.Address.Value,
@@ -233,7 +233,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
                 "message from Alice",
                 []),
             CancellationToken.None);
-        EconomyTransactionExecutionResult bobToAlice = await bobAdapter.SendSecureMessageAsync(
+        LedgerTransactionExecutionResult bobToAlice = await bobAdapter.SendSecureMessageAsync(
             new SecureMessageComposeRequest(
                 "bob",
                 rig.Alice.Address.Value,
@@ -304,7 +304,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             initialTransactionId: "tx-refresh-stable",
             probeTransactionId: "tx-refresh-stable");
 
-        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
+        IRenderedComponent<LedgerAccountWorkspaceAdapterHost> component = Render<LedgerAccountWorkspaceAdapterHost>(
             parameters => parameters
                 .Add(x => x.Adapter, adapter)
                 .Add(x => x.AutoRefreshInterval, TimeSpan.FromMilliseconds(20))
@@ -324,7 +324,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             initialTransactionId: "tx-refresh-before",
             probeTransactionId: "tx-refresh-after");
 
-        IRenderedComponent<EconomyAccountWorkspaceAdapterHost> component = Render<EconomyAccountWorkspaceAdapterHost>(
+        IRenderedComponent<LedgerAccountWorkspaceAdapterHost> component = Render<LedgerAccountWorkspaceAdapterHost>(
             parameters => parameters
                 .Add(x => x.Adapter, adapter)
                 .Add(x => x.AutoRefreshInterval, TimeSpan.FromMilliseconds(20))
@@ -361,7 +361,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
         await adapter.UseUnlockedAccountAsync(rig.UnlockedKey, CancellationToken.None);
 
         BusinessObjectWorkspaceModel workspace = await adapter.GetWorkspaceAsync(CancellationToken.None);
-        EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(
+        LedgerTransactionExecutionResult result = await adapter.SubmitTransactionAsync(
             workspace.TransactionDraft with
             {
                 SelectedMode = BusinessObjectTransactionMode.MainPayment,
@@ -372,13 +372,13 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
         Assert.NotNull(result.TxId);
         TxId txId = result.TxId ?? throw new InvalidOperationException("Accepted transaction did not return a tx id.");
 
-        EconomyTransactionDetailsModel? first = await adapter.GetTransactionDetailsAsync(txId, CancellationToken.None);
-        EconomyTransactionDetailsModel? second = await adapter.GetTransactionDetailsAsync(txId, CancellationToken.None);
+        LedgerTransactionDetailsModel? first = await adapter.GetTransactionDetailsAsync(txId, CancellationToken.None);
+        LedgerTransactionDetailsModel? second = await adapter.GetTransactionDetailsAsync(txId, CancellationToken.None);
 
         Assert.NotNull(first);
         Assert.NotNull(second);
         Assert.Equal(first.TxId, second.TxId);
-        EconomyTransactionInputDetails input = Assert.Single(first.Inputs);
+        LedgerTransactionInputDetails input = Assert.Single(first.Inputs);
         Assert.Equal("100", input.MainAmount?.ToString());
         Assert.Equal(1, readClient.TransactionDetailReadCount);
     }
@@ -391,14 +391,14 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
 
         services.AddSingleton<ILedgerGateway>(ledgerClient);
         services.AddSingleton<ILedgerReadClient>(ledgerClient);
-        services.AddEconomyWasmAccountWorkspaceAdapter();
+        services.AddLedgerWasmAccountWorkspaceAdapter();
 
         using ServiceProvider provider = services.BuildServiceProvider();
-        Assert.Null(provider.GetService<EconomyNodeWorkspaceSession>());
-        Assert.IsType<WasmAccountWorkspaceAdapter>(provider.GetRequiredService<IEconomyAccountWorkspaceAdapter>());
+        Assert.Null(provider.GetService<LedgerNodeWorkspaceSession>());
+        Assert.IsType<WasmAccountWorkspaceAdapter>(provider.GetRequiredService<ILedgerAccountWorkspaceAdapter>());
     }
 
-    private sealed class SampleWorkspaceAdapter(string hostMode) : IEconomyAccountWorkspaceAdapter
+    private sealed class SampleWorkspaceAdapter(string hostMode) : ILedgerAccountWorkspaceAdapter
     {
         public string HostMode => hostMode;
 
@@ -406,7 +406,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
 
         public Task<BusinessObjectWorkspaceModel> GetWorkspaceAsync(CancellationToken cancellationToken = default)
         {
-            BusinessObjectWorkspaceModel sample = EconomyComponentSampleData.CreateWorkspace() with
+            BusinessObjectWorkspaceModel sample = LedgerComponentSampleData.CreateWorkspace() with
             {
                 AccountName = $"{hostMode} account workspace",
                 ConnectionLabel = $"{hostMode} adapter"
@@ -418,37 +418,37 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             int maxTransactions = 10,
             CancellationToken cancellationToken = default)
         {
-            BusinessObjectWorkspaceModel sample = EconomyComponentSampleData.CreateWorkspace();
+            BusinessObjectWorkspaceModel sample = LedgerComponentSampleData.CreateWorkspace();
             return Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(
                 sample,
                 maxTransactions,
                 DateTimeOffset.Parse("2026-06-29T12:00:00Z")));
         }
 
-        public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
-            => Task.FromResult<EconomyTransactionDetailsModel?>(EconomyComponentSampleData.CreateTransactionDetails() with { TxId = txId });
+        public Task<LedgerTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
+            => Task.FromResult<LedgerTransactionDetailsModel?>(LedgerComponentSampleData.CreateTransactionDetails() with { TxId = txId });
 
-        public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
+        public Task<LedgerTransactionExecutionResult> SubmitTransactionAsync(
             BusinessObjectTransactionDraft draft,
             CancellationToken cancellationToken = default)
-            => Task.FromResult(new EconomyTransactionExecutionResult(
+            => Task.FromResult(new LedgerTransactionExecutionResult(
                 draft.SelectedMode,
                 Accepted: true,
                 TxId: new TxId($"tx-{hostMode.ToLowerInvariant()}"),
                 LedgerSequence: 1,
                 $"{hostMode} adapter accepted transaction."));
 
-        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(
+        public Task<LedgerTransactionExecutionResult> SendBusinessObjectAsync(
             BusinessObjectSendRequest request,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
 
-        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(
+        public Task<LedgerTransactionExecutionResult> SetBusinessObjectPriceAsync(
             BusinessObjectPriceRequest request,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
 
-        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(
+        public Task<LedgerTransactionExecutionResult> UpdateProfileAsync(
             ProfileEditRequest request,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(request.CreateNew
@@ -460,7 +460,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(VerifiedTicketResult(request.ObjectId));
 
-        public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        public Task<LedgerTransactionExecutionResult> UseTicketAsync(
             BusinessObjectTicketUseRequest request,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
@@ -470,13 +470,13 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(BusinessObjectEventLookupResult.NotFound("Sample adapter has no event lookup."));
 
-        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(
-            EconomyTokenCreationRequest request,
+        public Task<LedgerTransactionExecutionResult> CreateTokenAsync(
+            LedgerTokenCreationRequest request,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));
 
-        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(
-            EconomyRuleTokenCreationRequest request,
+        public Task<LedgerTransactionExecutionResult> CreateRuleTokenAsync(
+            LedgerRuleTokenCreationRequest request,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.CreateRuleToken));
 
@@ -500,7 +500,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(MessageSecurityActionResult.Fail($"{hostMode} sample adapter does not decrypt messages."));
 
-        private EconomyTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
+        private LedgerTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
             => new(
                 mode,
                 Accepted: true,
@@ -509,9 +509,9 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
                 $"{hostMode} adapter accepted transaction.");
     }
 
-    private sealed class CapturingBatchWorkspaceAdapter : IEconomyAccountWorkspaceAdapter
+    private sealed class CapturingBatchWorkspaceAdapter : ILedgerAccountWorkspaceAdapter
     {
-        public BusinessObjectWorkspaceModel Workspace { get; } = EconomyComponentSampleData.CreateWorkspace();
+        public BusinessObjectWorkspaceModel Workspace { get; } = LedgerComponentSampleData.CreateWorkspace();
 
         public List<BusinessObjectTransactionDraft> SubmittedDrafts { get; } = [];
 
@@ -535,15 +535,15 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
                 maxTransactions,
                 DateTimeOffset.Parse("2026-06-29T12:00:00Z")));
 
-        public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
-            => Task.FromResult<EconomyTransactionDetailsModel?>(EconomyComponentSampleData.CreateTransactionDetails() with { TxId = txId });
+        public Task<LedgerTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
+            => Task.FromResult<LedgerTransactionDetailsModel?>(LedgerComponentSampleData.CreateTransactionDetails() with { TxId = txId });
 
-        public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
+        public Task<LedgerTransactionExecutionResult> SubmitTransactionAsync(
             BusinessObjectTransactionDraft draft,
             CancellationToken cancellationToken = default)
         {
             SubmittedDrafts.Add(draft);
-            return Task.FromResult(new EconomyTransactionExecutionResult(
+            return Task.FromResult(new LedgerTransactionExecutionResult(
                 draft.SelectedMode,
                 Accepted: true,
                 TxId: new TxId($"tx-ticket-batch-{SubmittedDrafts.Count}"),
@@ -551,13 +551,13 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
                 "Accepted."));
         }
 
-        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(BusinessObjectSendRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> SendBusinessObjectAsync(BusinessObjectSendRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
 
-        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(BusinessObjectPriceRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> SetBusinessObjectPriceAsync(BusinessObjectPriceRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
 
-        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(ProfileEditRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> UpdateProfileAsync(ProfileEditRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(request.CreateNew ? BusinessObjectTransactionMode.Create : BusinessObjectTransactionMode.UpdateObject));
 
         public Task<BusinessObjectTicketVerificationResult> CreateTicketVerificationAsync(
@@ -565,7 +565,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(VerifiedTicketResult(request.ObjectId));
 
-        public Task<EconomyTransactionExecutionResult> UseTicketAsync(BusinessObjectTicketUseRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> UseTicketAsync(BusinessObjectTicketUseRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
 
         public Task<BusinessObjectEventLookupResult> LookupEventBusinessObjectAsync(
@@ -573,10 +573,10 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(BusinessObjectEventLookupResult.NotFound("Capturing adapter has no event lookup."));
 
-        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(EconomyTokenCreationRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> CreateTokenAsync(LedgerTokenCreationRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));
 
-        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(EconomyRuleTokenCreationRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> CreateRuleTokenAsync(LedgerRuleTokenCreationRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.CreateRuleToken));
 
         public Task<MessageSecurityActionResult> SignMessageAsync(MessageSecuritySignRequest request, CancellationToken cancellationToken = default)
@@ -591,14 +591,14 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
         public Task<MessageSecurityActionResult> DecryptMessageAsync(MessageSecurityDecryptRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
 
-        private static EconomyTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
+        private static LedgerTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
             => new(mode, true, new TxId($"tx-capturing-{mode}"), 1, "Accepted.");
     }
 
     private sealed class RefreshProbeWorkspaceAdapter(
         string hostMode,
         string initialTransactionId,
-        string probeTransactionId) : IEconomyAccountWorkspaceAdapter
+        string probeTransactionId) : ILedgerAccountWorkspaceAdapter
     {
         private readonly DateTimeOffset timestamp = DateTimeOffset.Parse("2026-06-29T12:00:00Z");
 
@@ -614,7 +614,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
         {
             WorkspaceLoadCount++;
             string txId = WorkspaceLoadCount == 1 ? initialTransactionId : probeTransactionId;
-            BusinessObjectWorkspaceModel sample = EconomyComponentSampleData.CreateWorkspace() with
+            BusinessObjectWorkspaceModel sample = LedgerComponentSampleData.CreateWorkspace() with
             {
                 AccountName = $"{hostMode} refresh workspace",
                 Transactions = new[] { CreateTransaction(txId, timestamp) }
@@ -627,28 +627,28 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             CancellationToken cancellationToken = default)
         {
             RefreshProbeCount++;
-            BusinessObjectWorkspaceModel sample = EconomyComponentSampleData.CreateWorkspace() with
+            BusinessObjectWorkspaceModel sample = LedgerComponentSampleData.CreateWorkspace() with
             {
                 Transactions = new[] { CreateTransaction(probeTransactionId, timestamp) }
             };
             return Task.FromResult(AccountWorkspaceRefreshSnapshot.Create(sample, maxTransactions, timestamp));
         }
 
-        public Task<EconomyTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
-            => Task.FromResult<EconomyTransactionDetailsModel?>(EconomyComponentSampleData.CreateTransactionDetails() with { TxId = txId });
+        public Task<LedgerTransactionDetailsModel?> GetTransactionDetailsAsync(TxId txId, CancellationToken cancellationToken = default)
+            => Task.FromResult<LedgerTransactionDetailsModel?>(LedgerComponentSampleData.CreateTransactionDetails() with { TxId = txId });
 
-        public Task<EconomyTransactionExecutionResult> SubmitTransactionAsync(
+        public Task<LedgerTransactionExecutionResult> SubmitTransactionAsync(
             BusinessObjectTransactionDraft draft,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(draft.SelectedMode));
 
-        public Task<EconomyTransactionExecutionResult> SendBusinessObjectAsync(BusinessObjectSendRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> SendBusinessObjectAsync(BusinessObjectSendRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.TransferObject));
 
-        public Task<EconomyTransactionExecutionResult> SetBusinessObjectPriceAsync(BusinessObjectPriceRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> SetBusinessObjectPriceAsync(BusinessObjectPriceRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
 
-        public Task<EconomyTransactionExecutionResult> UpdateProfileAsync(ProfileEditRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> UpdateProfileAsync(ProfileEditRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(request.CreateNew
                 ? BusinessObjectTransactionMode.Create
                 : BusinessObjectTransactionMode.UpdateObject));
@@ -658,7 +658,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(VerifiedTicketResult(request.ObjectId));
 
-        public Task<EconomyTransactionExecutionResult> UseTicketAsync(
+        public Task<LedgerTransactionExecutionResult> UseTicketAsync(
             BusinessObjectTicketUseRequest request,
             CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.UpdateObject));
@@ -668,10 +668,10 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             CancellationToken cancellationToken = default)
             => Task.FromResult(BusinessObjectEventLookupResult.NotFound("Refresh probe adapter has no event lookup."));
 
-        public Task<EconomyTransactionExecutionResult> CreateTokenAsync(EconomyTokenCreationRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> CreateTokenAsync(LedgerTokenCreationRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.TokenTransfer));
 
-        public Task<EconomyTransactionExecutionResult> CreateRuleTokenAsync(EconomyRuleTokenCreationRequest request, CancellationToken cancellationToken = default)
+        public Task<LedgerTransactionExecutionResult> CreateRuleTokenAsync(LedgerRuleTokenCreationRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(Accepted(BusinessObjectTransactionMode.CreateRuleToken));
 
         public Task<MessageSecurityActionResult> SignMessageAsync(MessageSecuritySignRequest request, CancellationToken cancellationToken = default)
@@ -686,7 +686,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
         public Task<MessageSecurityActionResult> DecryptMessageAsync(MessageSecurityDecryptRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(MessageSecurityActionResult.Fail("Not needed."));
 
-        private EconomyTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
+        private LedgerTransactionExecutionResult Accepted(BusinessObjectTransactionMode mode)
             => new(mode, true, new TxId($"tx-refresh-{mode}"), 1, "Accepted.");
     }
 
@@ -815,7 +815,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
     private static async Task PrimePublicKeyDiscoveryAsync(WasmAccountWorkspaceAdapter adapter, Address address)
     {
         BusinessObjectWorkspaceModel workspace = await adapter.GetWorkspaceAsync(CancellationToken.None);
-        EconomyTransactionExecutionResult result = await adapter.SubmitTransactionAsync(
+        LedgerTransactionExecutionResult result = await adapter.SubmitTransactionAsync(
             workspace.TransactionDraft with
             {
                 SelectedMode = BusinessObjectTransactionMode.MainPayment,
@@ -872,7 +872,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             InProcessLedgerGateway gateway,
             BusinessObjectTransactionBuilder transactionBuilder,
             IAccountTransactionSigner transactionSigner,
-            IEconomyCryptoDriver cryptoDriver,
+            ILedgerCryptoDriver cryptoDriver,
             IBusinessObjectCastRegistry castRegistry,
             ManualTimeProvider timeProvider,
             MemoryBusinessObjectDataStorageDriver storage,
@@ -896,7 +896,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
 
         public IAccountTransactionSigner TransactionSigner { get; }
 
-        public IEconomyCryptoDriver CryptoDriver { get; }
+        public ILedgerCryptoDriver CryptoDriver { get; }
 
         public IBusinessObjectCastRegistry CastRegistry { get; }
 
@@ -946,7 +946,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
                 new LedgerExecutor(store, hasher, payloadBuilder, new TestAdminSigner(), timeProvider, SignatureProviderRegistry.CreateDefault()),
                 hasher,
                 timeProvider);
-            var cryptoDriver = new DotNetEconomyCryptoDriver();
+            var cryptoDriver = new DotNetLedgerCryptoDriver();
             var vaultService = new AccountVaultService(cryptoDriver, new InMemoryAccountVaultStore());
             AccountVaultCreationResult alice = await vaultService.CreateAsync(
                 new AccountVaultCreateRequest("alice-vault", "passphrase", "Alice account", "alice-key"),
@@ -1056,7 +1056,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
             InProcessLedgerGateway gateway,
             BusinessObjectTransactionBuilder transactionBuilder,
             IAccountTransactionSigner transactionSigner,
-            IEconomyCryptoDriver cryptoDriver,
+            ILedgerCryptoDriver cryptoDriver,
             IBusinessObjectCastRegistry castRegistry,
             ManualTimeProvider timeProvider,
             AccountVaultUnlockedKey unlockedKey)
@@ -1076,7 +1076,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
 
         public IAccountTransactionSigner TransactionSigner { get; }
 
-        public IEconomyCryptoDriver CryptoDriver { get; }
+        public ILedgerCryptoDriver CryptoDriver { get; }
 
         public IBusinessObjectCastRegistry CastRegistry { get; }
 
@@ -1094,7 +1094,7 @@ public sealed class AccountWorkspaceAdapterTests : BunitContext
                 new LedgerExecutor(store, hasher, payloadBuilder, new TestAdminSigner(), timeProvider, SignatureProviderRegistry.CreateDefault()),
                 hasher,
                 timeProvider);
-            var cryptoDriver = new DotNetEconomyCryptoDriver();
+            var cryptoDriver = new DotNetLedgerCryptoDriver();
             var vaultStore = new InMemoryAccountVaultStore();
             var vaultService = new AccountVaultService(cryptoDriver, vaultStore);
             AccountVaultCreationResult created = await vaultService.CreateAsync(

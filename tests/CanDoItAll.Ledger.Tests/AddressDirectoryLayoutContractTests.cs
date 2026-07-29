@@ -1,4 +1,4 @@
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class AddressDirectoryLayoutContractTests
 {
@@ -6,9 +6,9 @@ public sealed class AddressDirectoryLayoutContractTests
     public void Directory_prioritizes_contact_cards_and_delegates_creation_to_a_compact_dialog()
     {
         string directory = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Account", "AddressDirectoryDialogContent.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Account", "AddressDirectoryDialogContent.razor");
         string addDialog = ReadRepoFile(
-            "src", "CanDoItAll.Economy.Components", "Components", "Account", "AddressDirectoryAddDialogContent.razor");
+            "src", "CanDoItAll.Ledger.Components", "Components", "Account", "AddressDirectoryAddDialogContent.razor");
         Assert.Contains("<Toolbar data-testid=\"cda-address-directory-toolbar\">", directory, StringComparison.Ordinal);
         Assert.Contains("<ToolbarRow>", directory, StringComparison.Ordinal);
         Assert.Contains("<ToolbarFields", directory, StringComparison.Ordinal);

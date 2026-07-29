@@ -1,4 +1,4 @@
-@namespace CanDoItAll.Economy.Simulator.Components.Components
+@namespace CanDoItAll.Ledger.Simulator.Components.Components
 @using System.Globalization
 
 <Stack GapScale="LayoutGap.Large" data-testid="simulation-template-catalogue">
@@ -64,7 +64,7 @@
         <Stack GapScale="LayoutGap.Large">
                 <SectionCard Title="Matching templates" Description="Templates filtered by text and tags. Select one to review required BOs, rules, and setup fields.">
                     <Stack GapScale="LayoutGap.Small" data-testid="simulation-template-results">
-                        @foreach (EconomySimulatorTemplateState template in FilteredTemplates.Take(10))
+                        @foreach (LedgerSimulatorTemplateState template in FilteredTemplates.Take(10))
                         {
                             bool selected = string.Equals(template.TemplateId, SelectedTemplate?.TemplateId, StringComparison.Ordinal);
                             <SelectionListItem IsSelected="@selected"
@@ -112,23 +112,23 @@
                     </FormSection>
 
                     <FormSection Title="Configuration" Description="@ConfigurationSummary(SelectedTemplate)">
-                        <DataGrid TItem="EconomySimulatorTemplateParameter" Data="SelectedTemplate.Parameters">
-                            <DataGridColumn TItem="EconomySimulatorTemplateParameter" Property="DisplayName" Title="Field" />
-                            <DataGridColumn TItem="EconomySimulatorTemplateParameter" Property="ValueType" Title="Type" />
-                            <DataGridColumn TItem="EconomySimulatorTemplateParameter" Title="Default">
+                        <DataGrid TItem="LedgerSimulatorTemplateParameter" Data="SelectedTemplate.Parameters">
+                            <DataGridColumn TItem="LedgerSimulatorTemplateParameter" Property="DisplayName" Title="Field" />
+                            <DataGridColumn TItem="LedgerSimulatorTemplateParameter" Property="ValueType" Title="Type" />
+                            <DataGridColumn TItem="LedgerSimulatorTemplateParameter" Title="Default">
                                 <Template Context="parameter">
                                     <SmallText Text="@(parameter.DefaultValue ?? "required")" />
                                 </Template>
                             </DataGridColumn>
-                            <DataGridColumn TItem="EconomySimulatorTemplateParameter" Property="Description" Title="Description" />
+                            <DataGridColumn TItem="LedgerSimulatorTemplateParameter" Property="Description" Title="Description" />
                         </DataGrid>
                     </FormSection>
 
                     <FormSection Title="Outputs" Description="BOs, rule states, or configuration objects created by this template.">
-                        <DataGrid TItem="EconomySimulatorTemplateOutput" Data="SelectedTemplate.Outputs">
-                            <DataGridColumn TItem="EconomySimulatorTemplateOutput" Property="ObjectType" Title="Object type" />
-                            <DataGridColumn TItem="EconomySimulatorTemplateOutput" Property="Role" Title="Role" />
-                            <DataGridColumn TItem="EconomySimulatorTemplateOutput" Property="ObjectIdPattern" Title="Object id pattern" />
+                        <DataGrid TItem="LedgerSimulatorTemplateOutput" Data="SelectedTemplate.Outputs">
+                            <DataGridColumn TItem="LedgerSimulatorTemplateOutput" Property="ObjectType" Title="Object type" />
+                            <DataGridColumn TItem="LedgerSimulatorTemplateOutput" Property="Role" Title="Role" />
+                            <DataGridColumn TItem="LedgerSimulatorTemplateOutput" Property="ObjectIdPattern" Title="Object id pattern" />
                         </DataGrid>
                     </FormSection>
 
@@ -147,10 +147,10 @@
 </Stack>
 
 @code {
-    private readonly IEconomySimulatorTemplateProvider provider = new EconomySimulatorTemplateProvider();
+    private readonly ILedgerSimulatorTemplateProvider provider = new LedgerSimulatorTemplateProvider();
     private readonly HashSet<string> expandedNodeIds = new(StringComparer.Ordinal);
     private readonly HashSet<string> selectedTags = new(StringComparer.OrdinalIgnoreCase);
-    private IReadOnlyList<EconomySimulatorTemplateState> templates = [];
+    private IReadOnlyList<LedgerSimulatorTemplateState> templates = [];
     private bool isLoadingTemplates = true;
     private string? templateLoadError;
     private string? selectedTemplateId;
@@ -159,7 +159,7 @@
     [Parameter, EditorRequired]
     public SimulationProjectState Project { get; set; } = default!;
 
-    private IReadOnlyList<EconomySimulatorTemplateState> Templates => templates;
+    private IReadOnlyList<LedgerSimulatorTemplateState> Templates => templates;
 
     private string CatalogueStatusText => isLoadingTemplates
         ? "Loading templates for this dialog..."
@@ -175,11 +175,11 @@
         .Order(StringComparer.OrdinalIgnoreCase)
         .ToArray();
 
-    private IReadOnlyList<EconomySimulatorTemplateState> FilteredTemplates
+    private IReadOnlyList<LedgerSimulatorTemplateState> FilteredTemplates
     {
         get
         {
-            IEnumerable<EconomySimulatorTemplateState> query = Templates;
+            IEnumerable<LedgerSimulatorTemplateState> query = Templates;
             if (!string.IsNullOrWhiteSpace(templateSearch))
             {
                 query = query.Where(template => SearchText(template).Contains(templateSearch, StringComparison.OrdinalIgnoreCase));
@@ -197,7 +197,7 @@
         }
     }
 
-    private EconomySimulatorTemplateState? SelectedTemplate
+    private LedgerSimulatorTemplateState? SelectedTemplate
         => FilteredTemplates.FirstOrDefault(template => string.Equals(template.TemplateId, selectedTemplateId, StringComparison.Ordinal))
             ?? FilteredTemplates.FirstOrDefault();
 
@@ -316,19 +316,19 @@
         }
     }
 
-    private static string TreePath(EconomySimulatorTemplateState template)
+    private static string TreePath(LedgerSimulatorTemplateState template)
         => template.Metadata.GetValueOrDefault("treePath", template.Kind.ToString());
 
-    private static IReadOnlyList<string> Tags(EconomySimulatorTemplateState template)
+    private static IReadOnlyList<string> Tags(LedgerSimulatorTemplateState template)
         => SplitMetadata(template.Metadata.GetValueOrDefault("tags", string.Empty));
 
-    private static IReadOnlyList<string> RequiredTemplates(EconomySimulatorTemplateState template)
+    private static IReadOnlyList<string> RequiredTemplates(LedgerSimulatorTemplateState template)
         => SplitMetadata(template.Metadata.GetValueOrDefault("requiresTemplates", string.Empty));
 
-    private static IReadOnlyList<string> RequiredObjectTypes(EconomySimulatorTemplateState template)
+    private static IReadOnlyList<string> RequiredObjectTypes(LedgerSimulatorTemplateState template)
         => SplitMetadata(template.Metadata.GetValueOrDefault("requiresObjectTypes", string.Empty));
 
-    private static string ConfigurationSummary(EconomySimulatorTemplateState template)
+    private static string ConfigurationSummary(LedgerSimulatorTemplateState template)
         => template.Metadata.GetValueOrDefault("configurationSummary", template.Description);
 
     private static IReadOnlyList<string> SplitMetadata(string value)
@@ -337,7 +337,7 @@
             .Where(item => !string.IsNullOrWhiteSpace(item))
             .ToArray();
 
-    private static string SearchText(EconomySimulatorTemplateState template)
+    private static string SearchText(LedgerSimulatorTemplateState template)
         => string.Join(' ', [
             template.TemplateId,
             template.DisplayName,
@@ -348,7 +348,7 @@
             string.Join(' ', RequiredObjectTypes(template))
         ]);
 
-    private IReadOnlyList<SimulationProjectValidationMessage> DependencyMessages(EconomySimulatorTemplateState template)
+    private IReadOnlyList<SimulationProjectValidationMessage> DependencyMessages(LedgerSimulatorTemplateState template)
         => [
             new(
                 $"template-dependency-{template.TemplateId}",
@@ -358,12 +358,12 @@
                 template.TemplateId)
         ];
 
-    private static string TemplateIcon(EconomySimulatorTemplateState template)
+    private static string TemplateIcon(LedgerSimulatorTemplateState template)
         => template.Kind switch
         {
-            EconomySimulatorTemplateKind.Department => "corporate_fare",
-            EconomySimulatorTemplateKind.Composite => "hub",
-            EconomySimulatorTemplateKind.InvestmentModel => "account_balance",
+            LedgerSimulatorTemplateKind.Department => "corporate_fare",
+            LedgerSimulatorTemplateKind.Composite => "hub",
+            LedgerSimulatorTemplateKind.InvestmentModel => "account_balance",
             _ => template.Metadata.GetValueOrDefault("treePath", string.Empty).Contains("Rule", StringComparison.OrdinalIgnoreCase) ? "rule" : "draft"
         };
 }

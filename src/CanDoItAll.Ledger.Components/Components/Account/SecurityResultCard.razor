@@ -1,0 +1,30 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-security-result-card">
+<SectionCard Title="@(Result?.Summary ?? "No operation yet")" Description="Security result">
+    <HeaderActions>
+        <StatusBadge Text="@(Result?.Success == true ? "Success" : "Pending")" Tone="@(Result?.Success == true ? "success" : "neutral")" />
+    </HeaderActions>
+    <ChildContent>
+        @if (Result?.PayloadJson is not null)
+        {
+            <LedgerCodeBlock Text="@Result.PayloadJson" />
+        }
+        else if (Result?.PlainText is not null)
+        {
+            <LedgerCodeBlock Text="@Result.PlainText" />
+        }
+        else
+        {
+            <EmptyState Eyebrow="Security result"
+                        Title="No operation yet"
+                        Description="Signed, verified, encrypted, and decrypted payloads are shown after the operation returns." />
+        }
+    </ChildContent>
+</SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public MessageSecurityActionResult? Result { get; set; }
+}

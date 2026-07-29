@@ -1,15 +1,15 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.Node.Components.Shared;
+using CanDoItAll.Ledger.Node.Components.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class NodeShellComponentTests : BunitContext
 {
-    private const string MenuId = "economy-node-primary";
+    private const string MenuId = "ledger-node-primary";
 
     public NodeShellComponentTests()
     {
@@ -58,7 +58,7 @@ public sealed class NodeShellComponentTests : BunitContext
         Assert.Single(component.FindAll("[data-testid='node-content']"));
 
         await component.InvokeAsync(() =>
-            component.Find("[data-testid='side-menu-economy-node-primary-item-node-status']").Click());
+            component.Find("[data-testid='side-menu-ledger-node-primary-item-node-status']").Click());
 
         component.WaitForAssertion(() =>
         {
@@ -68,7 +68,7 @@ public sealed class NodeShellComponentTests : BunitContext
         });
 
         await component.InvokeAsync(() =>
-            component.Find("[data-testid='side-menu-economy-node-primary-item-session']").Click());
+            component.Find("[data-testid='side-menu-ledger-node-primary-item-session']").Click());
 
         component.WaitForAssertion(() =>
         {
@@ -91,7 +91,7 @@ public sealed class NodeShellComponentTests : BunitContext
         Assert.Equal(navigation.BaseUri, navigation.Uri);
 
         await component.InvokeAsync(() =>
-            component.Find("[data-testid='side-menu-economy-node-primary-item-admin']").Click());
+            component.Find("[data-testid='side-menu-ledger-node-primary-item-admin']").Click());
 
         component.WaitForAssertion(() =>
         {
@@ -106,7 +106,7 @@ public sealed class NodeShellComponentTests : BunitContext
             Assert.Equal("analytics", sideMenus.GetSnapshot(MenuId).SelectedItemId);
             Assert.Equal(
                 "page",
-                component.Find("[data-testid='side-menu-economy-node-primary-item-analytics']")
+                component.Find("[data-testid='side-menu-ledger-node-primary-item-analytics']")
                     .GetAttribute("aria-current"));
         });
     }

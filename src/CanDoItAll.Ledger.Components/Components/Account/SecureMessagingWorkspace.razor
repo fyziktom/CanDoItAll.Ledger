@@ -1,0 +1,579 @@
+@namespace CanDoItAll.Ledger.Components
+@inject NotificationService Notifications
+
+<Stack Section="true" GapScale="LayoutGap.Medium" data-testid="secure-messaging-workspace">
+    <Grid ColumnsLg="3" ColumnTemplateLg="minmax(18rem, 0.8fr) minmax(0, 1.25fr) minmax(20rem, 0.95fr)" Gap="LayoutGap.Medium">
+        <SectionCard Title="Mailbox" Description="Encrypted messages visible in the current ledger snapshot.">
+            <HeaderActions>
+                <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                    <StatusBadge Text="@Messages.Count.ToString()" Tone="info" />
+                    <StatusBadge Text="E2E" Tone="success" />
+                </Cluster>
+            </HeaderActions>
+            <ChildContent>
+              <div class="cda-secure-mail__panel-body cda-secure-mail__mailbox">
+                @if (Messages.Count == 0)
+                {
+                    <EmptyState Title="No secure messages"
+                                Description="No secure messages are visible in the current transaction snapshot." />
+                }
+                else
+                {
+                    <Stack GapScale="LayoutGap.Small">
+                        @foreach (SecureMailboxItem item in Messages)
+                        {
+                            <SelectionListItem Title="@PeerLabel(item)"
+                                               Eyebrow="@MessageStateLabel(item)"
+                                               Meta="@item.Transaction.Timestamp.ToString("MM.dd HH:mm")"
+                                               Summary="Encrypted message"
+                                               IsSelected="@(selectedItem?.Transaction.TxId == item.Transaction.TxId)"
+                                               Dense="true"
+                                               OnSelect="@(() => OpenMessageAsync(item))"
+                                               DataTestId="secure-message-row"
+                                               data-txid="@item.Transaction.TxId.Value">
+                                <Status>
+                                    <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap">
+                                        <Icon Name="@MessageStateIcon(item)" />
+                                        <StatusBadge Text="@MessageStateLabel(item)" Tone="@MessageStateTone(item)" />
+                                    </Cluster>
+                                </Status>
+                                <Actions>
+                                    <CopyableMonoValue Value="@item.Transaction.TxId.Value" StartChars="8" EndChars="6" AriaLabel="Copy message transaction id" />
+                                </Actions>
+                            </SelectionListItem>
+                        }
+                    </Stack>
+                }
+              </div>
+            </ChildContent>
+        </SectionCard>
+
+        <SectionCard Title="Message" Description="Decrypt and inspect the selected message and its attachments.">
+            <HeaderActions>
+                @if (selectedItem is not null)
+                {
+                    <CopyableMonoValue Value="@selectedItem.Transaction.TxId.Value" StartChars="10" EndChars="6" AriaLabel="Copy selected message transaction id" />
+                }
+            </HeaderActions>
+            <ChildContent>
+              <div class="cda-secure-mail__panel-body">
+                @if (selectedItem is null)
+                {
+                    <EmptyState Eyebrow="Mailbox"
+                                Title="No message selected"
+                                Description="Choose a message from the mailbox to decrypt and inspect it." />
+                }
+                else if (openBusy)
+                {
+                    <LoadingState Eyebrow="Message" Title="Decrypting" Description="Opening the selected encrypted ledger payload." />
+                }
+                else if (openResult?.Success == true && openResult.Content is not null)
+                {
+                    <Stack GapScale="LayoutGap.Medium">
+                        <Stack GapScale="LayoutGap.Tiny">
+                            <StatusBadge Text="@MessageStateLabel(selectedItem)" Tone="@MessageStateTone(selectedItem)" />
+                            <TextBlock TextStyle="TextStyle.H3" Value="@openResult.Content.Subject" />
+                            <CopyableMonoValue Value="@PeerAddress(selectedItem).Value" StartChars="12" EndChars="8" AriaLabel="Copy message peer address" />
+                        </Stack>
+                        <pre class="cda-secure-mail__body" data-testid="secure-message-plaintext">@openResult.Content.Body</pre>
+
+                        @if (openResult.Content.Attachments.Count > 0)
+                        {
+                            <Stack GapScale="LayoutGap.Small" data-testid="secure-message-attachments">
+                                @foreach (SecureLedgerMessageContentAttachment attachment in openResult.Content.Attachments)
+                                {
+                                    <SurfaceCard Soft="true">
+                                      <Split Breakpoint="LayoutBreakpoint.None"
+                                             Gap="LayoutGap.Small"
+                                             AlignItems="AlignItems.Center"
+                                             JustifyContent="JustifyContent.SpaceBetween"
+                                             Wrap="FlexWrap.Wrap">
+                                        <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap">
+                                            <Icon Name="@AttachmentIcon(attachment.ContentType, attachment.FileName)" />
+                                            <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                                <TextBlock TextStyle="TextStyle.Subtitle2" Value="@attachment.FileName" />
+                                                <SmallText Text="@($"{attachment.ContentType} / {FormatSize(attachment.Size)}")" />
+                                            </Stack>
+                                        </Cluster>
+                                            <PageHeaderActionButton Icon="lock_open"
+                                                                    Label="Decrypt attachment"
+                                                                    TooltipText="Decrypt attachment"
+                                                                    Variant="Variant.Outlined"
+                                                                    IsBusy="@(attachmentBusyId == attachment.AttachmentId)"
+                                                                    Click="@(() => OpenAttachmentAsync(attachment.AttachmentId))"
+                                                                    TestId="secure-message-decrypt-attachment" />
+                                      </Split>
+                                    </SurfaceCard>
+                                }
+                            </Stack>
+                        }
+
+                        @if (attachmentResult?.Success == true && attachmentResult.Attachment is not null)
+                        {
+                            SecureLedgerMessageAttachmentPlaintext decryptedAttachment = attachmentResult.Attachment;
+                            string attachmentDataUri = AttachmentDataUri(decryptedAttachment);
+                            <SurfaceCard Soft="true" data-testid="secure-message-decrypted-attachment">
+                                <Stack GapScale="LayoutGap.Medium">
+                                <Split Breakpoint="LayoutBreakpoint.None"
+                                       Gap="LayoutGap.Medium"
+                                       AlignItems="AlignItems.Center"
+                                       JustifyContent="JustifyContent.SpaceBetween"
+                                       Wrap="FlexWrap.Wrap">
+                                    <Cluster Gap="LayoutGap.Small" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap">
+                                        <Icon Name="@AttachmentIcon(decryptedAttachment.ContentType, decryptedAttachment.FileName)" />
+                                        <Stack GapScale="LayoutGap.Tiny" Class="min-w-0">
+                                            <TextBlock TextStyle="TextStyle.Subtitle2" Value="@decryptedAttachment.FileName" />
+                                            <TextBlock TextStyle="TextStyle.Caption" Value="@($"{decryptedAttachment.ContentType} / {FormatSize(decryptedAttachment.Data.LongLength)}")" />
+                                        </Stack>
+                                    </Cluster>
+                                    <Button Text="Download"
+                                            Icon="download"
+                                            Variant="Variant.Outlined"
+                                            Href="@attachmentDataUri"
+                                            Target="_blank"
+                                            Rel="noopener noreferrer"
+                                            download="@decryptedAttachment.FileName"
+                                            data-testid="secure-message-download-attachment"
+                                            title="Download decrypted attachment" />
+                                </Split>
+
+                                @if (IsImageAttachment(decryptedAttachment))
+                                {
+                                    <img class="cda-secure-mail__decrypted-media"
+                                         src="@attachmentDataUri"
+                                         alt="@decryptedAttachment.FileName"
+                                         data-testid="secure-message-decrypted-image" />
+                                }
+                                else if (IsVideoAttachment(decryptedAttachment))
+                                {
+                                    <video class="cda-secure-mail__decrypted-media"
+                                           src="@attachmentDataUri"
+                                           controls
+                                           preload="metadata"
+                                           data-testid="secure-message-decrypted-video"></video>
+                                }
+                                else if (IsAudioAttachment(decryptedAttachment))
+                                {
+                                    <audio class="cda-secure-mail__decrypted-audio"
+                                           src="@attachmentDataUri"
+                                           controls
+                                           preload="metadata"
+                                           data-testid="secure-message-decrypted-audio"></audio>
+                                }
+                                else if (IsTextAttachment(decryptedAttachment))
+                                {
+                                    <div data-testid="secure-message-decrypted-text">
+                                        <TextArea Value="@AttachmentTextPreview(decryptedAttachment)"
+                                                  ReadOnly="true"
+                                                  Rows="8" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div data-testid="secure-message-decrypted-file">
+                                        <EmptyState Eyebrow="Attachment"
+                                                    Title="Preview unavailable"
+                                                    Description="Use download to open this file with a local application." />
+                                    </div>
+                                }
+                                </Stack>
+                            </SurfaceCard>
+                        }
+                    </Stack>
+                }
+                else if (openResult is not null)
+                {
+                    <Alert AlertStyle="AlertStyle.Danger">@openResult.Summary</Alert>
+                }
+              </div>
+            </ChildContent>
+        </SectionCard>
+
+        <SectionCard Title="Compose" Description="Encrypt a message and optional attachments for another ledger address.">
+            <div class="cda-secure-mail__panel-body" @key="composeRevision">
+                <Stack GapScale="LayoutGap.Small">
+                    <FormField Text="To">
+                        <TextBox Value="@receiver"
+                                 ValueChanged="@(value => receiver = value ?? string.Empty)"
+                                 Immediate="true"
+                                 Placeholder="Address or saved contact"
+                                 data-testid="secure-message-receiver" />
+                    </FormField>
+                    <FormField Text="Subject">
+                        <TextBox Value="@subject"
+                                 ValueChanged="@(value => subject = value ?? string.Empty)"
+                                 Immediate="true"
+                                 data-testid="secure-message-subject" />
+                    </FormField>
+                    <FormField Text="Message">
+                        <TextArea Value="@body"
+                                  ValueChanged="@(value => body = value ?? string.Empty)"
+                                  Immediate="true"
+                                  Rows="8"
+                                  data-testid="secure-message-body" />
+                    </FormField>
+                    <FileUpload PrimaryText="Attachments"
+                                SecondaryText="Local files"
+                                ButtonText="Choose files"
+                                Compact="true"
+                                Multiple="true"
+                                Disabled="@sendBusy"
+                                Change="HandleAttachmentChangeAsync"
+                                InputTestHookId="secure-message-attachment-input"
+                                RootTestHookId="secure-message-attachment-upload"
+                                DropZoneTestHookId="secure-message-attachment-zone" />
+                    @if (attachments.Count > 0)
+                    {
+                        <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.Wrap">
+                            @foreach (SecureMessageAttachmentDraft attachment in attachments)
+                            {
+                                <StatusBadge Text="@($"{attachment.FileName} ({FormatSize(attachment.Size)})")" Tone="neutral" />
+                            }
+                        </Cluster>
+                    }
+                    <PageHeaderActionButton Icon="send"
+                                            Label="Send secure message"
+                                            TooltipText="Send secure message"
+                                            ButtonStyle="ButtonStyle.Secondary"
+                                            Disabled="@(!CanSend)"
+                                            IsBusy="@sendBusy"
+                                            Click="SendAsync"
+                                            TestId="secure-message-send" />
+                    @if (!string.IsNullOrWhiteSpace(composeStatus))
+                    {
+                        <Alert AlertStyle="@composeAlert">@composeStatus</Alert>
+                    }
+                </Stack>
+            </div>
+        </SectionCard>
+    </Grid>
+</Stack>
+
+@code {
+    private const long MaxAttachmentBytes = 32 * 1024 * 1024;
+    private SecureMailboxItem? selectedItem;
+    private SecureMessageOpenResult? openResult;
+    private SecureMessageAttachmentOpenResult? attachmentResult;
+    private string receiver = string.Empty;
+    private string subject = string.Empty;
+    private string body = string.Empty;
+    private string? composeStatus;
+    private AlertStyle composeAlert = AlertStyle.Info;
+    private readonly List<SecureMessageAttachmentDraft> attachments = [];
+    private bool sendBusy;
+    private bool openBusy;
+    private string? attachmentBusyId;
+    private int composeRevision;
+
+    [Parameter, EditorRequired]
+    public BusinessObjectWorkspaceModel Workspace { get; set; } = default!;
+
+    [Parameter]
+    public Func<SecureMessageComposeRequest, Task<LedgerTransactionExecutionResult>>? SendRequested { get; set; }
+
+    [Parameter]
+    public Func<SecureMessageOpenRequest, Task<SecureMessageOpenResult>>? OpenRequested { get; set; }
+
+    [Parameter]
+    public Func<SecureMessageAttachmentOpenRequest, Task<SecureMessageAttachmentOpenResult>>? AttachmentOpenRequested { get; set; }
+
+    private IReadOnlyList<SecureMailboxItem> Messages
+        => LedgerTransactionOrdering
+            .NewestFirst(Workspace.Transactions)
+            .Select(CreateMailboxItem)
+            .Where(item => item is not null)
+            .Cast<SecureMailboxItem>()
+            .ToArray();
+
+    private bool CanSend
+        => SendRequested is not null
+            && !sendBusy
+            && !string.IsNullOrWhiteSpace(receiver)
+            && !string.IsNullOrWhiteSpace(body);
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(receiver))
+        {
+            receiver = Workspace.AddressBookmarks.FirstOrDefault()?.Address.Value ?? string.Empty;
+        }
+    }
+
+    private async Task OpenMessageAsync(SecureMailboxItem item)
+    {
+        selectedItem = item;
+        openResult = null;
+        attachmentResult = null;
+        if (OpenRequested is null)
+        {
+            openResult = SecureMessageOpenResult.Fail("Secure message decryption is not available.");
+            return;
+        }
+
+        openBusy = true;
+        try
+        {
+            openResult = await OpenRequested(new SecureMessageOpenRequest(CurrentAccountAlias, item.Transaction.TxId, item.Payload));
+            if (!openResult.Success)
+            {
+                Notifications.Error("Message decrypt failed", openResult.Summary, position: NotificationPosition.BottomCenter);
+            }
+        }
+        finally
+        {
+            openBusy = false;
+        }
+    }
+
+    private async Task OpenAttachmentAsync(string attachmentId)
+    {
+        if (AttachmentOpenRequested is null || selectedItem is null || openResult?.Content is null)
+        {
+            return;
+        }
+
+        attachmentBusyId = attachmentId;
+        try
+        {
+            attachmentResult = await AttachmentOpenRequested(new SecureMessageAttachmentOpenRequest(
+                CurrentAccountAlias,
+                selectedItem.Payload,
+                openResult.Content,
+                attachmentId));
+            if (attachmentResult.Success)
+            {
+                Notifications.Success("Attachment decrypted", attachmentResult.Summary, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                Notifications.Error("Attachment decrypt failed", attachmentResult.Summary, position: NotificationPosition.BottomCenter);
+            }
+        }
+        finally
+        {
+            attachmentBusyId = null;
+        }
+    }
+
+    private async Task SendAsync()
+    {
+        if (!CanSend || SendRequested is null)
+        {
+            return;
+        }
+
+        sendBusy = true;
+        try
+        {
+            LedgerTransactionExecutionResult result = await SendRequested(new SecureMessageComposeRequest(
+                CurrentAccountAlias,
+                receiver,
+                subject,
+                body,
+                attachments.ToArray()));
+            composeStatus = result.Message;
+            composeAlert = result.Accepted ? AlertStyle.Success : AlertStyle.Danger;
+            if (result.Accepted)
+            {
+                subject = string.Empty;
+                body = string.Empty;
+                attachments.Clear();
+                composeStatus = null;
+                composeRevision++;
+                Notifications.Success("Secure message sent", result.Message, position: NotificationPosition.BottomCenter);
+            }
+            else
+            {
+                Notifications.Error("Secure message failed", result.Message, position: NotificationPosition.BottomCenter);
+            }
+        }
+        finally
+        {
+            sendBusy = false;
+        }
+    }
+
+    private async Task HandleAttachmentChangeAsync(InputFileChangeEventArgs args)
+    {
+        attachments.Clear();
+        foreach (IBrowserFile file in args.GetMultipleFiles(6))
+        {
+            await using Stream stream = file.OpenReadStream(MaxAttachmentBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            attachments.Add(new SecureMessageAttachmentDraft(
+                file.Name,
+                string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
+                memory.ToArray()));
+        }
+    }
+
+    private SecureMailboxItem? CreateMailboxItem(LedgerTransactionSummary transaction)
+    {
+        if (!SecureLedgerMessages.TryParseTransactionData(transaction.Data, out SecureLedgerMessagePayload payload))
+        {
+            return null;
+        }
+
+        bool incoming = payload.ReceiverAddress == Workspace.Address;
+        bool outgoing = payload.SenderAddress == Workspace.Address;
+        if (!incoming && !outgoing)
+        {
+            return null;
+        }
+
+        return new SecureMailboxItem(
+            transaction,
+            payload,
+            incoming ? SecureMailboxDirection.Incoming : SecureMailboxDirection.Sent);
+    }
+
+    private string CurrentAccountAlias
+        => string.IsNullOrWhiteSpace(Workspace.AccountAlias)
+            ? Workspace.AccountName
+            : Workspace.AccountAlias;
+
+    private string MessageStateIcon(SecureMailboxItem item)
+        => MessageStateLabel(item) switch
+        {
+            "Replied" => "reply",
+            "Received" => "move_to_inbox",
+            _ => "outbox"
+        };
+
+    private Address PeerAddress(SecureMailboxItem item)
+        => item.Direction == SecureMailboxDirection.Incoming ? item.Payload.SenderAddress : item.Payload.ReceiverAddress;
+
+    private string MessageStateLabel(SecureMailboxItem item)
+    {
+        if (IsReplied(item))
+        {
+            return "Replied";
+        }
+
+        return item.Direction == SecureMailboxDirection.Incoming ? "Received" : "Sent";
+    }
+
+    private string MessageStateTone(SecureMailboxItem item)
+        => MessageStateLabel(item) switch
+        {
+            "Replied" => "success",
+            "Received" => "info",
+            _ => "neutral"
+        };
+
+    private bool IsReplied(SecureMailboxItem item)
+    {
+        if (item.Direction != SecureMailboxDirection.Sent)
+        {
+            return false;
+        }
+
+        Address peer = PeerAddress(item);
+        return Messages.Any(candidate =>
+            candidate.Direction == SecureMailboxDirection.Incoming
+            && PeerAddress(candidate) == peer
+            && candidate.Transaction.Timestamp > item.Transaction.Timestamp);
+    }
+
+    private string PeerLabel(SecureMailboxItem item)
+    {
+        Address address = PeerAddress(item);
+        LedgerAddressBookmark? bookmark = Workspace.AddressBookmarks.FirstOrDefault(entry => entry.Address == address);
+        return bookmark?.Name ?? ShortAddress(address);
+    }
+
+    private static string ShortAddress(Address address)
+    {
+        string value = address.Value;
+        return value.Length <= 18 ? value : $"{value[..10]}...{value[^6..]}";
+    }
+
+    private static string FormatSize(long size)
+    {
+        if (size < 1024)
+        {
+            return $"{size} B";
+        }
+
+        double kb = size / 1024d;
+        return kb < 1024 ? $"{kb:0.#} KB" : $"{kb / 1024d:0.#} MB";
+    }
+
+    private static bool IsImageAttachment(SecureLedgerMessageAttachmentPlaintext attachment)
+        => attachment.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".webp", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsVideoAttachment(SecureLedgerMessageAttachmentPlaintext attachment)
+        => attachment.ContentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".mov", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsAudioAttachment(SecureLedgerMessageAttachmentPlaintext attachment)
+        => attachment.ContentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsTextAttachment(SecureLedgerMessageAttachmentPlaintext attachment)
+        => attachment.ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
+            || attachment.ContentType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
+            || attachment.ContentType.EndsWith("+json", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+            || attachment.FileName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
+
+    private static string AttachmentDataUri(SecureLedgerMessageAttachmentPlaintext attachment)
+        => $"data:{AttachmentContentType(attachment)};base64,{Convert.ToBase64String(attachment.Data)}";
+
+    private static string AttachmentContentType(SecureLedgerMessageAttachmentPlaintext attachment)
+        => string.IsNullOrWhiteSpace(attachment.ContentType)
+            ? "application/octet-stream"
+            : attachment.ContentType;
+
+    private static string AttachmentTextPreview(SecureLedgerMessageAttachmentPlaintext attachment)
+        => System.Text.Encoding.UTF8.GetString(attachment.Data);
+
+    private static string AttachmentIcon(string contentType, string fileName)
+    {
+        if (contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "image";
+        }
+
+        if (contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "movie";
+        }
+
+        if (contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "graphic_eq";
+        }
+
+        if (contentType.Contains("pdf", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return "picture_as_pdf";
+        }
+
+        return "attach_file";
+    }
+
+    private enum SecureMailboxDirection
+    {
+        Incoming,
+        Sent
+    }
+
+    private sealed record SecureMailboxItem(
+        LedgerTransactionSummary Transaction,
+        SecureLedgerMessagePayload Payload,
+        SecureMailboxDirection Direction);
+}

@@ -1,16 +1,16 @@
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Node;
-using CanDoItAll.Economy.Persistence.EFCore;
-using CanDoItAll.Economy.Persistence.EFCore.Records;
-using CanDoItAll.Economy.Sdk;
-using CanDoItAll.Economy.Storage.InMemory;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Node;
+using CanDoItAll.Ledger.Persistence.EFCore;
+using CanDoItAll.Ledger.Persistence.EFCore.Records;
+using CanDoItAll.Ledger.Sdk;
+using CanDoItAll.Ledger.Storage.InMemory;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class LedgerSimulationAndPersistenceTests
 {
@@ -410,7 +410,7 @@ public sealed class LedgerSimulationAndPersistenceTests
     {
         ITransactionHasher hasher = CreateHasher();
         string databaseName = Guid.NewGuid().ToString("N");
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(databaseName)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -447,7 +447,7 @@ public sealed class LedgerSimulationAndPersistenceTests
         Assert.Empty(await store.GetUnspentOutputsAsync(LedgerId, scenarioId, [firstKey], CancellationToken.None));
         Assert.NotEmpty(await store.GetSpentOutputsAsync(LedgerId, scenarioId, [firstKey], CancellationToken.None));
 
-        await using EconomyDbContext db = await factory.CreateDbContextAsync(CancellationToken.None);
+        await using LedgerDbContext db = await factory.CreateDbContextAsync(CancellationToken.None);
         Assert.Contains(db.Transactions, x => x.TxId == genesisTxId.Value && x.DataItemType == (int)TransactionDataItemType.AccountSettings);
     }
 
@@ -456,7 +456,7 @@ public sealed class LedgerSimulationAndPersistenceTests
     {
         ITransactionHasher hasher = CreateHasher();
         string databaseName = Guid.NewGuid().ToString("N");
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(databaseName)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -467,7 +467,7 @@ public sealed class LedgerSimulationAndPersistenceTests
         LedgerSubmitResult genesisResult = await executor.SubmitAsync(CreateGenesisTransaction(timeProvider.UtcNow), CancellationToken.None);
         Assert.True(genesisResult.Accepted);
 
-        await using EconomyDbContext afterGenesis = await factory.CreateDbContextAsync(CancellationToken.None);
+        await using LedgerDbContext afterGenesis = await factory.CreateDbContextAsync(CancellationToken.None);
         AddressStateProjectionRecord aliceInitial = Assert.Single(afterGenesis.AddressStateProjections, x => x.Address == Alice.Value);
         Assert.Equal(100m, aliceInitial.MainBalance);
         Assert.Equal("{}", aliceInitial.TokenBalancesJson);
@@ -479,7 +479,7 @@ public sealed class LedgerSimulationAndPersistenceTests
         LedgerSubmitResult transferResult = await executor.SubmitAsync(Sign(CreateTransferTransaction(timeProvider.UtcNow, firstOutPoint), hasher), CancellationToken.None);
         Assert.True(transferResult.Accepted);
 
-        await using EconomyDbContext afterTransfer = await factory.CreateDbContextAsync(CancellationToken.None);
+        await using LedgerDbContext afterTransfer = await factory.CreateDbContextAsync(CancellationToken.None);
         AddressStateProjectionRecord aliceFinal = Assert.Single(afterTransfer.AddressStateProjections, x => x.Address == Alice.Value);
         AddressStateProjectionRecord bobFinal = Assert.Single(afterTransfer.AddressStateProjections, x => x.Address == Bob.Value);
         Assert.Equal(0m, aliceFinal.MainBalance);
@@ -496,7 +496,7 @@ public sealed class LedgerSimulationAndPersistenceTests
     {
         ITransactionHasher hasher = CreateHasher();
         string databaseName = Guid.NewGuid().ToString("N");
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(databaseName)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -520,7 +520,7 @@ public sealed class LedgerSimulationAndPersistenceTests
     {
         ITransactionHasher hasher = CreateHasher();
         string databaseName = Guid.NewGuid().ToString("N");
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(databaseName)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -552,7 +552,7 @@ public sealed class LedgerSimulationAndPersistenceTests
     {
         ITransactionHasher hasher = CreateHasher();
         string databaseName = Guid.NewGuid().ToString("N");
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(databaseName)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -585,7 +585,7 @@ public sealed class LedgerSimulationAndPersistenceTests
             CancellationToken.None);
         Assert.True(genesis.Accepted, string.Join("; ", genesis.Errors));
 
-        await using (EconomyDbContext db = await factory.CreateDbContextAsync(CancellationToken.None))
+        await using (LedgerDbContext db = await factory.CreateDbContextAsync(CancellationToken.None))
         {
             Assert.Contains(db.LedgerTokenTypes, x => x.TokenId == tokenId.Value && x.CreatedTxId == genesis.TxId!.Value.Value);
         }
@@ -616,7 +616,7 @@ public sealed class LedgerSimulationAndPersistenceTests
     {
         ITransactionHasher hasher = CreateHasher();
         string databaseName = Guid.NewGuid().ToString("N");
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(databaseName)
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -639,18 +639,18 @@ public sealed class LedgerSimulationAndPersistenceTests
     }
 
     [Fact]
-    public async Task EconomyNodeService_UsesProjectionBackedAccountSummariesAfterMintAndTransfer()
+    public async Task LedgerNodeService_UsesProjectionBackedAccountSummariesAfterMintAndTransfer()
     {
         ITransactionHasher hasher = CreateHasher();
         string databaseName = Guid.NewGuid().ToString("N");
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(databaseName)
             .Options;
         var factory = new TestDbContextFactory(options);
         var store = new EfLedgerStore(factory, hasher);
         var timeProvider = new ManualTimeProvider(DateTimeOffset.Parse("2026-11-01T00:00:00Z"));
         LedgerExecutor executor = CreateExecutor(store, hasher, timeProvider);
-        var node = new EconomyNodeService(factory, executor, timeProvider);
+        var node = new LedgerNodeService(factory, executor, timeProvider);
 
         LedgerSubmitResult genesis = await executor.SubmitAsync(
             CreateGenesisTransaction(timeProvider.UtcNow) with
@@ -694,7 +694,7 @@ public sealed class LedgerSimulationAndPersistenceTests
         Assert.Equal(40.10m, bob.MainBalance);
         Assert.Equal(1, bob.UtxoCount);
 
-        await using EconomyDbContext db = await factory.CreateDbContextAsync(CancellationToken.None);
+        await using LedgerDbContext db = await factory.CreateDbContextAsync(CancellationToken.None);
         Assert.Contains(db.AddressStateProjections, x => x.Address == Alice.Value);
         Assert.Contains(db.AddressStateProjections, x => x.Address == Bob.Value);
     }
@@ -873,12 +873,12 @@ public sealed class LedgerSimulationAndPersistenceTests
                 "Ledger state changed during confirmation.");
     }
 
-    private sealed class TestDbContextFactory(DbContextOptions<EconomyDbContext> options) : IDbContextFactory<EconomyDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<LedgerDbContext> options) : IDbContextFactory<LedgerDbContext>
     {
-        public EconomyDbContext CreateDbContext()
+        public LedgerDbContext CreateDbContext()
             => new(options);
 
-        public ValueTask<EconomyDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        public ValueTask<LedgerDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
             => ValueTask.FromResult(CreateDbContext());
     }
 }

@@ -1,12 +1,12 @@
 using System.Text.Json;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
 using System.Net;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectDataItemTests
 {
@@ -226,7 +226,7 @@ public sealed class BusinessObjectDataItemTests
             "Short description",
             "Longer body text",
             tags,
-            "Economy demo",
+            "Ledger demo",
             ImageLink: "http://127.0.0.1:8080/ipfs/QmDemoImage",
             DataItems:
             [

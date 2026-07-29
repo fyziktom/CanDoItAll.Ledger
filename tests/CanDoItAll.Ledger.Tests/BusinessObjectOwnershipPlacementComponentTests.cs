@@ -1,15 +1,15 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Components.Services;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContext
 {
@@ -17,13 +17,13 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
     public void DetailsActions_KeepOwnerQrButDoNotExposeOwnershipVerifierScanner()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
 
@@ -42,10 +42,10 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
     [Fact]
     public async Task HomeSecuritySurface_StillHostsOwnershipVerificationTool()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
 
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            Render<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
         IRenderedComponent<MessageSecurityPanel> security =
             Render<MessageSecurityPanel>(parameters => parameters
@@ -61,7 +61,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
     [Fact]
     public async Task HomeBalances_ShowOnlyRealTokenSourcesInsideBalancesCard()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         LedgerSpendableOutput tokenSource = Assert.Single(
             workspace.SpendableOutputsOrEmpty,
             output => output.Token?.TokenId.Value == "USD-CREDIT"
@@ -70,8 +70,8 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
             .Where(output => output.BusinessObject is not null)
             .ToArray();
 
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            Render<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(home, "Balances");
@@ -94,9 +94,9 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
     [Fact]
     public async Task HomeBalances_UsesResponsiveFullWidthLanesWhenSourcesExist()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            Render<EconomyAccountWorkspace>(parameters => parameters
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(home, "Balances");
@@ -116,12 +116,12 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
     [Fact]
     public async Task HomeBalances_UsesOneLaneWhenNoTokenSourcesExist()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace() with
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace() with
         {
             SpendableOutputs = []
         };
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            Render<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         await ClickTabAsync(home, "Balances");
@@ -135,10 +135,10 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
     [Fact]
     public async Task HomeWorkspace_RendersRequestedTabOrderAndPanels()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
 
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            Render<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         var tabs = home.FindAll("[role='tab']");
@@ -164,10 +164,10 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
     [Fact]
     public void HomeActionGroup_RendersVisibleShortLabels()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
 
-        IRenderedComponent<EconomyAccountWorkspace> home =
-            Render<EconomyAccountWorkspace>(parameters => parameters
+        IRenderedComponent<LedgerAccountWorkspace> home =
+            Render<LedgerAccountWorkspace>(parameters => parameters
                 .Add(x => x.Workspace, workspace));
 
         AssertActionLabel(home, "cda-action-send", "Send");
@@ -195,7 +195,7 @@ public sealed class BusinessObjectOwnershipPlacementComponentTests : BunitContex
             .ClickAsync(new MouseEventArgs());
 
     private static void AssertActionLabel(
-        IRenderedComponent<EconomyAccountWorkspace> home,
+        IRenderedComponent<LedgerAccountWorkspace> home,
         string testId,
         string expectedLabel)
     {

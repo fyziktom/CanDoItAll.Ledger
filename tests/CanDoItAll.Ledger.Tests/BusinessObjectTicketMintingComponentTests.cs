@@ -1,17 +1,17 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectTicketMintingComponentTests : BunitContext
 {
@@ -25,7 +25,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : BunitContext
             ],
             bookmarks:
             [
-                new EconomyAddressBookmark("Bob", Bob)
+                new LedgerAddressBookmark("Bob", Bob)
             ]);
         BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
 
@@ -239,7 +239,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : BunitContext
     public async Task TicketWizard_MultimintManualSingleRecipientRepeatsByCount()
     {
         var stagedBatches = new List<BusinessObjectBatchTransactionRequest>();
-        BusinessObjectWorkspaceModel workspace = CreateWorkspace(bookmarks: [new EconomyAddressBookmark("Bob", Bob)]);
+        BusinessObjectWorkspaceModel workspace = CreateWorkspace(bookmarks: [new LedgerAddressBookmark("Bob", Bob)]);
         BusinessObjectCreationWizardModel model = CreateTicketWizardModel(step: 2);
 
         IRenderedComponent<BusinessObjectCreationWizard> component =
@@ -362,7 +362,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : BunitContext
     private static BusinessObjectWorkspaceModel CreateWorkspace(
         IReadOnlyList<IBusinessObjectView>? businessObjects = null,
         IReadOnlyList<BusinessObjectSubAccountSummary>? subAccounts = null,
-        IReadOnlyList<EconomyAddressBookmark>? bookmarks = null)
+        IReadOnlyList<LedgerAddressBookmark>? bookmarks = null)
     {
         businessObjects ??= [];
         subAccounts ??= [];
@@ -398,7 +398,7 @@ public sealed class BusinessObjectTicketMintingComponentTests : BunitContext
             Context,
             Alice,
             balance,
-            [new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
+            [new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
             [],
             bookmarks,
             businessObjects,

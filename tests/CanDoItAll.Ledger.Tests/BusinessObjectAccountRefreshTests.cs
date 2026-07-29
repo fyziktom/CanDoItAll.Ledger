@@ -1,11 +1,11 @@
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Storage.InMemory;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Storage.InMemory;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectAccountRefreshTests
 {
@@ -124,7 +124,7 @@ public sealed class BusinessObjectAccountRefreshTests
         BusinessObjectAccount alice = rig.CreateAccount("alice");
         BusinessObjectAccount bob = rig.CreateAccount("bob");
         BusinessObjectSubAccount operations = alice.AddSubAccount("operations", CreateKeySource("alice-operations"));
-        var handler = new EconomyAccountHandler();
+        var handler = new LedgerAccountHandler();
         var observed = new List<AccountTransactionsObservedEventArgs>();
         var routedParentEvents = new List<AccountTransactionsObservedEventArgs>();
         handler.NewTransactionsObserved += (_, args) => observed.Add(args);

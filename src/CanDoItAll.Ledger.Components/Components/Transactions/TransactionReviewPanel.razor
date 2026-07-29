@@ -1,0 +1,147 @@
+@namespace CanDoItAll.Ledger.Components
+
+<ActionReviewPanel Title="@ReviewTitle"
+                   Description="@ReviewDescription"
+                   Items="Facts"
+                   data-testid="cda-transaction-review-panel" />
+
+@code {
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionDraft Draft { get; set; } = default!;
+
+    private string ReviewTitle
+        => Draft.SelectedMode switch
+        {
+            BusinessObjectTransactionMode.MainPayment => "Review payment",
+            BusinessObjectTransactionMode.TokenTransfer => "Review token transfer",
+            BusinessObjectTransactionMode.UtxoMerge => "Review UTXO merge",
+            BusinessObjectTransactionMode.UtxoSplit => "Review UTXO split",
+            BusinessObjectTransactionMode.Create => "Review new object",
+            BusinessObjectTransactionMode.TransferObject => "Review object transfer",
+            BusinessObjectTransactionMode.UpdateObject => "Review object update",
+            BusinessObjectTransactionMode.CloseObject => "Confirm object closure",
+            BusinessObjectTransactionMode.CloneObject => "Review object clone",
+            BusinessObjectTransactionMode.MergeObjects => "Review object merge",
+            BusinessObjectTransactionMode.SplitBusinessObjectPayment => "Review object allocation",
+            _ => "Transaction review"
+        };
+
+    private string ReviewDescription
+        => Draft.SelectedMode switch
+        {
+            BusinessObjectTransactionMode.CloseObject => "Closing is final. Verify the object and final state before submission.",
+            BusinessObjectTransactionMode.UtxoMerge or BusinessObjectTransactionMode.UtxoSplit => "Verify the selected inputs and resulting output plan before submission.",
+            BusinessObjectTransactionMode.CreateRuleToken => "Token creation continues in the authority-aware creator.",
+            _ => "Verify the transaction effects before signing and submission."
+        };
+
+    private IReadOnlyList<ActionReviewFact> Facts
+        => Draft.SelectedMode switch
+        {
+            BusinessObjectTransactionMode.MainPayment =>
+            [
+                new("Receiver", Draft.PaymentReceiverAddress.Value),
+                new("Amount", Draft.PaymentAmount.ToString()),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.TokenTransfer =>
+            [
+                new("Token", Draft.TokenId?.Value ?? "Not selected"),
+                new("Receiver", Draft.PaymentReceiverAddress.Value),
+                new("Token amount", Draft.TokenAmount?.ToString() ?? "0"),
+                new("Attached main amount", Draft.MainAmount.ToString()),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.UtxoMerge =>
+            [
+                new("Inputs", $"{Draft.SelectedUtxosOrEmpty.Count} selected"),
+                new("Result", "1 plain output"),
+                new("Output address", Draft.PaymentReceiverAddress.Value),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.UtxoSplit =>
+            [
+                new("Inputs", $"{Draft.SelectedUtxosOrEmpty.Count} selected"),
+                new("Outputs", Draft.UtxoSplitOutputsOrEmpty.Count.ToString()),
+                new("Allocated", Draft.UtxoSplitOutputsOrEmpty.Sum(output => output.Amount.Value).ToString()),
+                new("Receivers", Draft.UtxoSplitOutputsOrEmpty.Select(output => output.ReceiverAddress).Distinct().Count().ToString()),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.Create =>
+            [
+                new("Object ID", "Assigned after confirmation"),
+                new("Type", Draft.ObjectType),
+                new("Schema", Draft.SchemaVersion),
+                new("Owner", Draft.OwnerAddress.Value),
+                new("Main amount", Draft.MainAmount.ToString()),
+                new("Token", TokenSummary),
+                new("State", StateSummary),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.TransferObject =>
+            [
+                new("Object", Draft.ObjectId.Value),
+                new("New owner", Draft.ReceiverAddress.Value),
+                new("Main amount", Draft.MainAmount.ToString()),
+                new("State", StateSummary),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.UpdateObject =>
+            [
+                new("Object", Draft.ObjectId.Value),
+                new("Operation", "Publish next state"),
+                new("State", StateSummary),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.CloseObject =>
+            [
+                new("Object", Draft.ObjectId.Value),
+                new("Operation", "Close permanently"),
+                new("Final state", StateSummary),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.CloneObject =>
+            [
+                new("Clone-source reference", Draft.SourceObjectId?.Value ?? "Not selected"),
+                new("New object", "Assigned after confirmation"),
+                new("Type", Draft.ObjectType),
+                new("Schema", Draft.SchemaVersion),
+                new("State", StateSummary),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.MergeObjects =>
+            [
+                new("First merge-source reference", Draft.SourceObjectId?.Value ?? "Not selected"),
+                new("Second merge-source reference", Draft.SecondObjectId?.Value ?? "Not selected"),
+                new("Result object", "Assigned after confirmation"),
+                new("Result state", StateSummary),
+                new("External reference", ExternalReference)
+            ],
+            BusinessObjectTransactionMode.SplitBusinessObjectPayment =>
+            [
+                new("Object", Draft.ObjectId.Value),
+                new("Primary receiver", Draft.PaymentReceiverAddress.Value),
+                new("Primary amount", Draft.PaymentAmount.ToString()),
+                new("Secondary receiver", Draft.ReceiverAddress.Value),
+                new("Secondary amount", Draft.SecondaryPaymentAmount?.ToString() ?? "0"),
+                new("Total allocation", (Draft.PaymentAmount.Value + (Draft.SecondaryPaymentAmount?.Value ?? 0m)).ToString()),
+                new("External reference", ExternalReference)
+            ],
+            _ =>
+            [
+                new("Mode", Draft.SelectedMode.ToString()),
+                new("External reference", ExternalReference)
+            ]
+        };
+
+    private string ExternalReference
+        => string.IsNullOrWhiteSpace(Draft.ExternalRef) ? "Not provided" : Draft.ExternalRef;
+
+    private string StateSummary
+        => string.IsNullOrWhiteSpace(Draft.StateJson) ? "No state payload" : "Validated inline JSON";
+
+    private string TokenSummary
+        => Draft.TokenId is null
+            ? "None"
+            : $"{Draft.TokenAmount?.ToString() ?? "0"} {Draft.TokenId.Value.Value}";
+}

@@ -1,0 +1,24 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-projection-maintenance-panel">
+    <SectionCard Title="Projection maintenance" Description="Maintenance">
+        <HeaderActions>
+            <StatusBadge Text="Manual" Tone="warning" />
+        </HeaderActions>
+        <ChildContent>
+            <Stack GapScale="LayoutGap.Small">
+                <StatusCheckList Items="Items" />
+                <Button Text="Review projection rebuild" Icon="replay" ButtonStyle="ButtonStyle.Secondary" />
+            </Stack>
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    private static readonly IReadOnlyList<StatusCheckItem> Items =
+    [
+        new() { Label = "Balance projection", Status = "Current", Tone = "success", Complete = true },
+        new() { Label = "Object projection", Status = "Current", Tone = "success", Complete = true },
+        new() { Label = "Maintenance window", Status = "Required", Tone = "warning" }
+    ];
+}

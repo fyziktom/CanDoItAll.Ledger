@@ -1,0 +1,37 @@
+@namespace CanDoItAll.Ledger.Components
+
+<div data-testid="cda-asset-balance-strip">
+    <SectionCard Title="Balance strip" Description="Assets available to this account">
+        <HeaderActions>
+            <StatusBadge Text="@($"{TokenOptions.Count} assets")" Tone="info" />
+        </HeaderActions>
+
+        <ChildContent>
+            <Grid ColumnsSm="2" ColumnsLg="3" ColumnsXl="4" Gap="LayoutGap.Small">
+                @foreach (LedgerTokenOption option in TokenOptions)
+                {
+                    <SurfaceCard Soft="true">
+                        <Stack GapScale="LayoutGap.Small">
+                            <Split Breakpoint="LayoutBreakpoint.None" Gap="LayoutGap.Small" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
+                                <Stack GapScale="LayoutGap.Tiny">
+                                    <TextBlock TextStyle="TextStyle.Eyebrow" Value="@(option.IsMain ? "Native" : "Token")" />
+                                    <TextBlock TextStyle="TextStyle.Subtitle2" Value="@option.AssetLabel" />
+                                </Stack>
+                                @if (option.CanCreateMore)
+                                {
+                                    <StatusBadge Text="Mintable" Tone="success" />
+                                }
+                            </Split>
+                            <TextBlock TextStyle="TextStyle.Subtitle1" Value="@option.AvailableAmount.ToString()" />
+                        </Stack>
+                    </SurfaceCard>
+                }
+            </Grid>
+        </ChildContent>
+    </SectionCard>
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<LedgerTokenOption> TokenOptions { get; set; } = [];
+}

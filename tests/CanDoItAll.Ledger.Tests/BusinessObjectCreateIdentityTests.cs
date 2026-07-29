@@ -1,17 +1,17 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectCreateIdentityTests : BunitContext
 {
@@ -23,7 +23,7 @@ public sealed class BusinessObjectCreateIdentityTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
@@ -33,45 +33,45 @@ public sealed class BusinessObjectCreateIdentityTests : BunitContext
         string wizard = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Components",
             "BusinessObjects",
             "BusinessObjectCreationWizard.razor")).ReplaceLineEndings("\n");
         string wasmAdapter = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Services",
-            "EconomyAccountWorkspaceAdapters.cs")).ReplaceLineEndings("\n");
+            "LedgerAccountWorkspaceAdapters.cs")).ReplaceLineEndings("\n");
         string nodeSession = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Services",
-            "EconomyNodeWorkspaceSession.cs")).ReplaceLineEndings("\n");
+            "LedgerNodeWorkspaceSession.cs")).ReplaceLineEndings("\n");
         string eventLookup = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Services",
             "BusinessObjectEventLookup.cs")).ReplaceLineEndings("\n");
         string rawFormatter = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Components",
+            "CanDoItAll.Ledger.Components",
             "Services",
             "TransactionRawJsonFormatter.cs")).ReplaceLineEndings("\n");
         string nodeWorkspace = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Node",
+            "CanDoItAll.Ledger.Node",
             "Components",
             "Shared",
             "NodeWorkspace.razor")).ReplaceLineEndings("\n");
         string cli = File.ReadAllText(Path.Combine(
             root,
             "src",
-            "CanDoItAll.Economy.Cli",
+            "CanDoItAll.Ledger.Cli",
             "Program.cs")).ReplaceLineEndings("\n");
 
         Assert.DoesNotContain("BusinessObjectCreateIdFactory.CreateNewObjectId", wizard, StringComparison.Ordinal);
@@ -175,9 +175,9 @@ public sealed class BusinessObjectCreateIdentityTests : BunitContext
             Context,
             Alice,
             balance,
-            [new(EconomyTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
+            [new(LedgerTokenOption.MainKey, "Main", null, Amount.FromInt64(1000), IsMain: true)],
             [],
-            [new EconomyAddressBookmark("Alice", Alice)],
+            [new LedgerAddressBookmark("Alice", Alice)],
             [],
             [],
             [],

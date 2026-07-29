@@ -8,14 +8,21 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
 output
+backups/
 .codex/live-targets
 .codex/live-runner
 .codex/runlogs
 .codex-artifacts
 .codex-tmp
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.key
 codex/tmp/**/account-key.json
 codex/tmp/**/account-key.legacy-*.json
-**/economy-console-demo/accounts/*/account-key.json
+**/ledger-console-demo/accounts/*/account-key.json
 .playwright-mcp
 evidence
 !codex/bundles/project-economy-simulator-20260510/evidence/

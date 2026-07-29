@@ -1,0 +1,248 @@
+@namespace CanDoItAll.Ledger.Components
+@using System.Globalization
+@inherits BusinessObjectDataItemAddressComponentBase
+
+<section class="cda-bo-preview-stage"
+         data-item-name="@Item.Name"
+         data-item-hash="@Item.Hash"
+         data-item-type="@Item.Type.ToString()"
+         data-testid="cda-bo-selected-preview">
+    <div class="cda-bo-preview-stage__toolbar">
+        <div>
+            <strong>@Item.Name</strong>
+            <span>@Item.Type / @Item.Storage</span>
+        </div>
+
+        @if (PreviewUri is not null)
+        {
+            <Cluster Gap="LayoutGap.XSmall" Wrap="FlexWrap.NoWrap" aria-label="Image view controls">
+                @if (Item.Type == BusinessObjectDataItemType.Image)
+                {
+                    <PageHeaderActionButton Icon="zoom_out"
+                                            Label="Zoom out"
+                                            TooltipText="Zoom out"
+                                            Variant="Variant.Outlined"
+                                            Click="ZoomOut" />
+                    <PageHeaderActionButton Icon="center_focus_strong"
+                                            Label="Reset view"
+                                            TooltipText="Reset view"
+                                            Variant="Variant.Outlined"
+                                            Click="ResetView" />
+                    <PageHeaderActionButton Icon="zoom_in"
+                                            Label="Zoom in"
+                                            TooltipText="Zoom in"
+                                            Variant="Variant.Outlined"
+                                            Click="ZoomIn" />
+                }
+                <PageHeaderActionButton Icon="download"
+                                        Label="Download data item"
+                                        TooltipText="Download"
+                                        Variant="Variant.Outlined"
+                                        Href="@PreviewUri"
+                                        TestId="cda-bo-dataitem-download"
+                                        download="@DownloadFileName" />
+            </Cluster>
+        }
+    </div>
+
+    <div class="cda-bo-preview-stage__canvas @CanvasClass"
+         @onpointerdown="BeginPan"
+         @onpointermove="MovePan"
+         @onpointerup="EndPan"
+         @onpointerleave="EndPan"
+         @onwheel="HandleWheel"
+         @onwheel:preventDefault="@IsImagePreview">
+        @if (Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null)
+        {
+            <img src="@PreviewUri"
+                 alt="@Item.Name"
+                 draggable="false"
+                 style="@ImageTransformStyle" />
+        }
+        else if (IsDocumentFrame && PreviewUri is not null)
+        {
+            <iframe src="@PreviewUri" title="@Item.Name"></iframe>
+        }
+        else if (Item.Type == BusinessObjectDataItemType.Mermaid && MermaidSource is not null)
+        {
+            <MermaidDiagram Source="@MermaidSource"
+                            PanZoomEnabled="true"
+                            ShowControls="true"
+                            Class="cda-bo-mermaid-preview"
+                            Style="height: 100%; --cda-mermaid-height: auto; --cda-mermaid-min-height: 0;" />
+        }
+        else if (IsVideo && PreviewUri is not null)
+        {
+            <video src="@PreviewUri" controls preload="metadata"></video>
+        }
+        else if (IsAudio && PreviewUri is not null)
+        {
+            <div class="cda-bo-file-preview">
+                <span class="material-icons" aria-hidden="true">graphic_eq</span>
+                <strong>@Item.Name</strong>
+                <audio src="@PreviewUri" controls preload="metadata"></audio>
+            </div>
+        }
+        else
+        {
+            <div class="cda-bo-file-preview">
+                <span class="material-icons" aria-hidden="true">@Icon</span>
+                <strong>@Label</strong>
+                <small>@(Item.Description ?? Item.FileName ?? Item.Hash)</small>
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private const double MinZoom = 0.6;
+    private const double MaxZoom = 4.0;
+    private double zoom = 1.0;
+    private double panX;
+    private double panY;
+    private double lastX;
+    private double lastY;
+    private bool dragging;
+    private string? displayedItemKey;
+
+    [Parameter, EditorRequired]
+    public BusinessObjectDataItem Item { get; set; } = default!;
+
+    protected override void OnParametersSet()
+    {
+        string nextItemKey = $"{Item.Storage}\u001f{Item.Type}\u001f{Item.Hash}\u001f{Item.Name}";
+        if (string.Equals(displayedItemKey, nextItemKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        displayedItemKey = nextItemKey;
+        ResetView();
+    }
+
+    private string? PreviewUri
+        => ResolveActionableDataItemUriString(Item);
+
+    private bool IsDocumentFrame
+        => Item.Type is BusinessObjectDataItemType.Pdf
+            or BusinessObjectDataItemType.Json
+            or BusinessObjectDataItemType.Text;
+
+    private string DownloadFileName
+        => string.IsNullOrWhiteSpace(Item.FileName)
+            ? Item.Name
+            : Item.FileName;
+
+    private string? MermaidSource
+        => Item.Type == BusinessObjectDataItemType.Mermaid && Item.Storage == BusinessObjectDataItemStorage.Inline
+            ? Item.Hash
+            : null;
+
+    private bool IsVideo
+        => Item.Type == BusinessObjectDataItemType.AVMedia
+            && (Item.ContentType?.StartsWith("video/", StringComparison.OrdinalIgnoreCase) == true
+                || Item.FileName?.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) == true
+                || Item.FileName?.EndsWith(".mov", StringComparison.OrdinalIgnoreCase) == true);
+
+    private bool IsAudio
+        => Item.Type == BusinessObjectDataItemType.AVMedia
+            && (Item.ContentType?.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) == true
+                || Item.FileName?.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) == true
+                || Item.FileName?.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) == true);
+
+    private string CanvasClass
+        => IsImagePreview
+            ? "is-draggable"
+            : string.Empty;
+
+    private bool IsImagePreview
+        => Item.Type == BusinessObjectDataItemType.Image && PreviewUri is not null;
+
+    private string ImageTransformStyle
+        => string.Create(
+            CultureInfo.InvariantCulture,
+            $"transform: translate3d({panX}px, {panY}px, 0) scale({zoom});");
+
+    private string Icon
+        => Item.Type switch
+        {
+            BusinessObjectDataItemType.Pdf => "picture_as_pdf",
+            BusinessObjectDataItemType.Json => "data_object",
+            BusinessObjectDataItemType.Html => "html",
+            BusinessObjectDataItemType.Mermaid => "account_tree",
+            BusinessObjectDataItemType.AVMedia => "movie",
+            BusinessObjectDataItemType.Text => "article",
+            _ => "insert_drive_file"
+        };
+
+    private string Label
+        => Item.Type switch
+        {
+            BusinessObjectDataItemType.Pdf => "PDF",
+            BusinessObjectDataItemType.Json => "JSON",
+            BusinessObjectDataItemType.Html => "HTML",
+            BusinessObjectDataItemType.Mermaid => "Mermaid",
+            BusinessObjectDataItemType.AVMedia => "Media",
+            BusinessObjectDataItemType.Text => "Text",
+            _ => "File"
+        };
+
+    private void BeginPan(PointerEventArgs args)
+    {
+        if (Item.Type != BusinessObjectDataItemType.Image)
+        {
+            return;
+        }
+
+        dragging = true;
+        lastX = args.ClientX;
+        lastY = args.ClientY;
+    }
+
+    private void MovePan(PointerEventArgs args)
+    {
+        if (!dragging)
+        {
+            return;
+        }
+
+        panX += args.ClientX - lastX;
+        panY += args.ClientY - lastY;
+        lastX = args.ClientX;
+        lastY = args.ClientY;
+    }
+
+    private void EndPan()
+    {
+        dragging = false;
+    }
+
+    private void HandleWheel(WheelEventArgs args)
+    {
+        if (Item.Type != BusinessObjectDataItemType.Image)
+        {
+            return;
+        }
+
+        SetZoom(zoom + (args.DeltaY < 0 ? 0.12 : -0.12));
+    }
+
+    private void ZoomIn()
+        => SetZoom(zoom + 0.2);
+
+    private void ZoomOut()
+        => SetZoom(zoom - 0.2);
+
+    private void SetZoom(double value)
+    {
+        zoom = Math.Clamp(value, MinZoom, MaxZoom);
+    }
+
+    private void ResetView()
+    {
+        zoom = 1;
+        panX = 0;
+        panY = 0;
+        dragging = false;
+    }
+}

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>CanDoItAll.Ledger.ConsoleDemo</AssemblyName>
+    <RootNamespace>CanDoItAll.Ledger.ConsoleDemo</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.BusinessObjects\CanDoItAll.Ledger.BusinessObjects.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Core\CanDoItAll.Ledger.Core.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Cryptography\CanDoItAll.Ledger.Cryptography.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Engine\CanDoItAll.Ledger.Engine.csproj" />
+    <ProjectReference Include="..\..\src\CanDoItAll.Ledger.Sdk\CanDoItAll.Ledger.Sdk.csproj" />
+  </ItemGroup>
+</Project>

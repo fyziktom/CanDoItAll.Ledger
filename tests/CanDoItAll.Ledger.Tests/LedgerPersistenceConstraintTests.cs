@@ -1,9 +1,9 @@
-using CanDoItAll.Economy.Persistence.EFCore;
-using CanDoItAll.Economy.Persistence.EFCore.Records;
+using CanDoItAll.Ledger.Persistence.EFCore;
+using CanDoItAll.Ledger.Persistence.EFCore.Records;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class LedgerPersistenceConstraintTests
 {
@@ -12,11 +12,11 @@ public sealed class LedgerPersistenceConstraintTests
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseSqlite(connection)
             .Options;
 
-        await using var context = new EconomyDbContext(options);
+        await using var context = new LedgerDbContext(options);
         await context.Database.EnsureCreatedAsync();
         context.TransactionOutputs.Add(new LedgerTransactionOutputRecord
         {
@@ -39,11 +39,11 @@ public sealed class LedgerPersistenceConstraintTests
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseSqlite(connection)
             .Options;
 
-        await using var context = new EconomyDbContext(options);
+        await using var context = new LedgerDbContext(options);
         await context.Database.EnsureCreatedAsync();
         context.UnspentOutputs.Add(new UnspentOutputRecord
         {

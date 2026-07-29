@@ -1,20 +1,20 @@
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.Simulator;
-using CanDoItAll.Economy.Simulator.Components.Components;
-using CanDoItAll.Economy.Simulator.Components.Models;
-using CanDoItAll.Economy.Simulator.Components.Samples;
+using CanDoItAll.Ledger.Simulator;
+using CanDoItAll.Ledger.Simulator.Components.Components;
+using CanDoItAll.Ledger.Simulator.Components.Models;
+using CanDoItAll.Ledger.Simulator.Components.Samples;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class SimulationProjectTransferComponentTests : BunitContext
 {
     private readonly SimulationProjectImportExportService importExport = new(
-        new EconomySimulatorJsonSerializer(),
+        new LedgerSimulatorJsonSerializer(),
         new SimulationProjectValidationService());
 
     public SimulationProjectTransferComponentTests()
@@ -26,7 +26,7 @@ public sealed class SimulationProjectTransferComponentTests : BunitContext
     [Fact]
     public void ExportManifest_AlwaysRepresentsTheCurrentlySelectedProject()
     {
-        SimulationProjectManagementViewModel management = EconomySimulatorSampleData.CreateProjectManagement();
+        SimulationProjectManagementViewModel management = LedgerSimulatorSampleData.CreateProjectManagement();
         SimulationProjectState staleProject = management.ProjectStates.Single(project => project.Summary.ProjectId == "project-alpha");
         SimulationProjectState selectedProject = management.ProjectStates.Single(project => project.Summary.ProjectId == "project-beta");
         SimulationProjectExportManifest staleManifest = importExport.CreateManifest(
@@ -89,7 +89,7 @@ public sealed class SimulationProjectTransferComponentTests : BunitContext
     [Fact]
     public void InvalidPastedJson_BlocksAcceptAndReportsTheValidationFailure()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         SimulationProjectExportManifest manifest = importExport.CreateManifest(project, project.Summary.UpdatedAtUtc);
         SimulationProjectImportPreview preview = importExport.PreviewImport(importExport.SerializeManifest(manifest));
         SimulationProjectState? importedProject = null;
@@ -113,7 +113,7 @@ public sealed class SimulationProjectTransferComponentTests : BunitContext
     [Fact]
     public async Task ValidPastedJson_EnablesAcceptAndEmitsTheImportedProject()
     {
-        SimulationProjectState project = EconomySimulatorSampleData.CreateProjectState();
+        SimulationProjectState project = LedgerSimulatorSampleData.CreateProjectState();
         SimulationProjectExportManifest manifest = importExport.CreateManifest(project, project.Summary.UpdatedAtUtc);
         SimulationProjectImportPreview preview = importExport.PreviewImport(importExport.SerializeManifest(manifest));
         SimulationProjectState? importedProject = null;

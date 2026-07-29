@@ -1,12 +1,12 @@
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Persistence.EFCore;
-using CanDoItAll.Economy.Storage.InMemory;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Persistence.EFCore;
+using CanDoItAll.Ledger.Storage.InMemory;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class LedgerCriticalInvariantTests
 {
@@ -302,7 +302,7 @@ public sealed class LedgerCriticalInvariantTests
     public async Task LedgerExecutor_RejectsDuplicateBusinessObjectCreateAgainstCurrentProjection_EfCore()
     {
         ITransactionHasher hasher = CreateHasher();
-        var options = new DbContextOptionsBuilder<EconomyDbContext>()
+        var options = new DbContextOptionsBuilder<LedgerDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options;
         var factory = new TestDbContextFactory(options);
@@ -454,12 +454,12 @@ public sealed class LedgerCriticalInvariantTests
             => payload.Length > 0 && signature.Length > 0 && publicKeyMaterial.Length > 0;
     }
 
-    private sealed class TestDbContextFactory(DbContextOptions<EconomyDbContext> options) : IDbContextFactory<EconomyDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<LedgerDbContext> options) : IDbContextFactory<LedgerDbContext>
     {
-        public EconomyDbContext CreateDbContext()
+        public LedgerDbContext CreateDbContext()
             => new(options);
 
-        public ValueTask<EconomyDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        public ValueTask<LedgerDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
             => ValueTask.FromResult(CreateDbContext());
     }
 }

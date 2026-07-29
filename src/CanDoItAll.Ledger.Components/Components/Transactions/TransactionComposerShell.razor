@@ -1,0 +1,397 @@
+@using System.Globalization
+@namespace CanDoItAll.Ledger.Components
+
+<TransactionComposerFrame Dense="@Dense" Title="@ComposerTitle" Description="@ComposerDescription">
+    <Stack GapScale="LayoutGap.Small"
+           AlignItems="AlignItems.Stretch"
+           Class="w-full">
+        @if (selectingMode)
+        {
+            <TransactionFlowChooser SelectedMode="SelectedMode"
+                                    SelectedModeChanged="SelectModeAsync" />
+        }
+        else
+        {
+            <Toolbar Class="gap-2! rounded-xl! p-2! shadow-none!"
+                     data-testid="transaction-config-header">
+                <ToolbarRow Class="gap-2!">
+                    <Cluster Gap="LayoutGap.Small"
+                             Wrap="FlexWrap.Wrap"
+                             Class="min-w-0">
+                        <Icon Name="@SelectedDefinition.Icon" />
+                        <TextBlock TextStyle="TextStyle.Subtitle2"
+                                   Value="@SelectedDefinition.Label" />
+                        <Pill Text="@($"Selected {FamilyLabel} transaction")"
+                              Tone="PillTone.Info" />
+                        <TextBlock TextStyle="TextStyle.Muted"
+                                   Value="@SelectedDefinition.Description"
+                                   Class="min-w-0 flex-1 truncate"
+                                   title="@SelectedDefinition.Description" />
+                    </Cluster>
+
+                    <ToolbarActions Class="gap-1.5!">
+                        <Button Text="Change transaction type"
+                                Icon="swap_horiz"
+                                Size="ButtonSize.Small"
+                                ButtonStyle="ButtonStyle.Secondary"
+                                Variant="Variant.Outlined"
+                                Click="ChooseAnotherMode"
+                                data-testid="transaction-change-mode" />
+                    </ToolbarActions>
+                </ToolbarRow>
+            </Toolbar>
+
+            <Grid ColumnTemplateLg="minmax(0, 1fr) minmax(16rem, 19rem)"
+                  Gap="LayoutGap.Small"
+                  AlignItems="AlignItems.Start"
+                  data-testid="transaction-workbench">
+                <main class="min-w-0 w-full max-w-full overflow-hidden">
+                @switch (SelectedMode)
+                {
+                    case BusinessObjectTransactionMode.Create:
+                        <BusinessObjectCreateTransactionForm Draft="ActiveDraft"
+                                                             DraftChanged="UpdateDraftAsync"
+                                                             TokenOptions="TokenOptions"
+                                                             Bookmarks="Bookmarks"
+                                                             AccountScope="@AccountScope"
+                                                             Balance="Balance"
+                                                             ReviewReadyChanged="SetReviewReady" />
+                        break;
+
+                    case BusinessObjectTransactionMode.TransferObject:
+                    case BusinessObjectTransactionMode.UpdateObject:
+                    case BusinessObjectTransactionMode.CloseObject:
+                    case BusinessObjectTransactionMode.CloneObject:
+                    case BusinessObjectTransactionMode.MergeObjects:
+                    case BusinessObjectTransactionMode.SplitBusinessObjectPayment:
+                        <BusinessObjectOperationWizard Mode="SelectedMode"
+                                                       Draft="ActiveDraft"
+                                                       DraftChanged="UpdateDraftAsync"
+                                                       BusinessObjects="BusinessObjects"
+                                                       LookupAsync="BusinessObjectLookupAsync"
+                                                       Bookmarks="Bookmarks"
+                                                       AccountScope="@AccountScope"
+                                                       Balance="Balance"
+                                                       ReviewReadyChanged="SetReviewReady" />
+                        break;
+
+                    case BusinessObjectTransactionMode.MainPayment:
+                        <TransactionDetailsReviewWizard Mode="SelectedMode"
+                                                        Draft="ActiveDraft"
+                                                        Validation="Validation"
+                                                        ReviewReadyChanged="SetReviewReady">
+                            <TransactionSendForm Draft="ActiveDraft"
+                                                 DraftChanged="UpdateDraftAsync"
+                                                 Bookmarks="Bookmarks"
+                                                 AccountScope="@AccountScope"
+                                                 Balance="Balance" />
+                        </TransactionDetailsReviewWizard>
+                        break;
+
+                    case BusinessObjectTransactionMode.UtxoMerge:
+                        <TransactionDetailsReviewWizard Mode="SelectedMode"
+                                                        Draft="ActiveDraft"
+                                                        Validation="Validation"
+                                                        ReviewReadyChanged="SetReviewReady">
+                            <TransactionUtxoMergeForm Draft="ActiveDraft"
+                                                      DraftChanged="UpdateDraftAsync"
+                                                      SpendableOutputs="SpendableOutputs"
+                                                      Bookmarks="Bookmarks"
+                                                      AccountScope="@AccountScope" />
+                        </TransactionDetailsReviewWizard>
+                        break;
+
+                    case BusinessObjectTransactionMode.UtxoSplit:
+                        <TransactionDetailsReviewWizard Mode="SelectedMode"
+                                                        Draft="ActiveDraft"
+                                                        Validation="Validation"
+                                                        ReviewReadyChanged="SetReviewReady">
+                            <TransactionUtxoSplitForm Draft="ActiveDraft"
+                                                      DraftChanged="UpdateDraftAsync"
+                                                      SpendableOutputs="SpendableOutputs"
+                                                      Bookmarks="Bookmarks"
+                                                      AccountScope="@AccountScope" />
+                        </TransactionDetailsReviewWizard>
+                        break;
+
+                    case BusinessObjectTransactionMode.TokenTransfer:
+                        <TransactionDetailsReviewWizard Mode="SelectedMode"
+                                                        Draft="ActiveDraft"
+                                                        Validation="Validation"
+                                                        ReviewReadyChanged="SetReviewReady">
+                            <TransactionTokenTransferForm Draft="ActiveDraft"
+                                                          DraftChanged="UpdateDraftAsync"
+                                                          Options="TokenOptions"
+                                                          Bookmarks="Bookmarks"
+                                                          AccountScope="@AccountScope"
+                                                          Balance="Balance" />
+                        </TransactionDetailsReviewWizard>
+                        break;
+
+                    case BusinessObjectTransactionMode.CreateRuleToken:
+                        <EmptyState Eyebrow="Token authority"
+                                    Title="Continue in the guided token creator"
+                                    Description="Configure authority, rules, supply, and review in the specialized token workflow.">
+                            <Actions>
+                                <Button Text="Open Create token"
+                                        Icon="open_in_new"
+                                        Click="CreateTokenRequested"
+                                        data-testid="transaction-open-token-creator" />
+                            </Actions>
+                        </EmptyState>
+                        break;
+                }
+                </main>
+
+                <TransactionContextRail ModeLabel="@ModeLabel"
+                                        Receiver="@PreviewReceiver"
+                                        Amount="@PreviewAmount"
+                                        Validation="Validation"
+                                        Delegated="@(SelectedDefinition.Disposition == TransactionFlowDisposition.Delegated)"
+                                        ReviewRequired="RequiresReview"
+                                        SubmissionEnabled="CanSubmit"
+                                        SubmitRequested="SubmitAsync"
+                                        AssembleRequested="AssembleRequested"
+                                        BroadcastRequested="BroadcastRequested" />
+            </Grid>
+        }
+    </Stack>
+</TransactionComposerFrame>
+
+@code {
+    private BusinessObjectTransactionDraft? localDraft;
+    private BusinessObjectTransactionDraft? observedDraft;
+    private BusinessObjectTransactionDraft? modeResetDraft;
+    private BusinessObjectTransactionDraft? lastEmittedDraft;
+    private bool selectingMode = true;
+    private bool reviewReady;
+
+    [Parameter, EditorRequired]
+    public BusinessObjectTransactionDraft Draft { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> DraftChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<BusinessObjectTransactionDraft> SubmitRequested { get; set; }
+
+    [Parameter]
+    public EventCallback AssembleRequested { get; set; }
+
+    [Parameter]
+    public EventCallback BroadcastRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CreateTokenRequested { get; set; }
+
+    [Parameter]
+    public bool Dense { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<LedgerTokenOption> TokenOptions { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<LedgerAddressBookmark> Bookmarks { get; set; } = [];
+
+    [Parameter]
+    public string AccountScope { get; set; } = "transaction-composer";
+
+    [Parameter]
+    public IReadOnlyList<LedgerSpendableOutput> SpendableOutputs { get; set; } = [];
+
+    [Parameter]
+    public LedgerAccountBalance? Balance { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<IBusinessObjectView> BusinessObjects { get; set; } = [];
+
+    [Parameter]
+    public Func<BusinessObjectLookupRequest, Task<IReadOnlyList<IBusinessObjectView>>>? BusinessObjectLookupAsync { get; set; }
+
+    private BusinessObjectTransactionDraft ActiveDraft => localDraft ?? Draft;
+
+    private string? ComposerTitle => Dense ? null : "Transaction composer";
+
+    private string? ComposerDescription
+        => Dense ? null : "Compose and submit the ledger operations covered by the SDK account client";
+
+    private BusinessObjectTransactionMode SelectedMode => ActiveDraft.SelectedMode;
+
+    private TransactionFlowDefinition SelectedDefinition => TransactionFlowCatalog.Get(SelectedMode);
+
+    private string FamilyLabel => SelectedDefinition.Family switch
+    {
+        TransactionFlowFamily.Payment => "Payment",
+        TransactionFlowFamily.Token => "Token",
+        TransactionFlowFamily.Utxo => "UTXO",
+        _ => "Business object"
+    };
+
+    private string ModeLabel => TransactionFlowCatalog.Get(SelectedMode).Label;
+
+    private bool RequiresReview
+        => SelectedDefinition.Disposition == TransactionFlowDisposition.Direct;
+
+    private TransactionFlowValidation Validation
+        => TransactionDraftValidator.Validate(
+            ActiveDraft with { SelectedMode = SelectedMode },
+            new TransactionDraftValidationContext(Balance, SpendableOutputs, BusinessObjects));
+
+    private bool CanSubmit
+        => SelectedDefinition.Disposition != TransactionFlowDisposition.Delegated
+           && Validation.IsValid
+           && (!RequiresReview || reviewReady);
+
+    private string PreviewReceiver
+        => SelectedMode switch
+        {
+            BusinessObjectTransactionMode.Create => ActiveDraft.OwnerAddress.Value,
+            BusinessObjectTransactionMode.MainPayment => ActiveDraft.PaymentReceiverAddress.Value,
+            BusinessObjectTransactionMode.TokenTransfer => ActiveDraft.PaymentReceiverAddress.Value,
+            BusinessObjectTransactionMode.UtxoMerge => string.IsNullOrWhiteSpace(ActiveDraft.PaymentReceiverAddress.Value) ? ActiveDraft.OwnerAddress.Value : ActiveDraft.PaymentReceiverAddress.Value,
+            BusinessObjectTransactionMode.UtxoSplit => $"{ActiveDraft.UtxoSplitOutputsOrEmpty.Count} output(s)",
+            BusinessObjectTransactionMode.SplitBusinessObjectPayment => $"{ActiveDraft.PaymentReceiverAddress.Value}, {ActiveDraft.ReceiverAddress.Value}",
+            _ => ActiveDraft.ReceiverAddress.Value
+        };
+
+    private string PreviewAmount
+        => SelectedMode switch
+        {
+            BusinessObjectTransactionMode.MainPayment => ActiveDraft.PaymentAmount.ToString(),
+            BusinessObjectTransactionMode.TokenTransfer => TokenTransferAmountSummary,
+            BusinessObjectTransactionMode.UtxoMerge => SelectedUtxoTotal.ToString(CultureInfo.InvariantCulture),
+            BusinessObjectTransactionMode.UtxoSplit => ActiveDraft.UtxoSplitOutputsOrEmpty.Sum(output => output.Amount.Value).ToString(CultureInfo.InvariantCulture),
+            BusinessObjectTransactionMode.SplitBusinessObjectPayment => $"{ActiveDraft.PaymentAmount} + {ActiveDraft.SecondaryPaymentAmount?.ToString() ?? "0"}",
+            _ => ActiveDraft.MainAmount.ToString()
+        };
+
+    private string TokenTransferAmountSummary
+    {
+        get
+        {
+            string token = $"{ActiveDraft.TokenAmount?.ToString() ?? "0"} {ActiveDraft.TokenId?.Value ?? "token"}";
+            return ActiveDraft.MainAmount.Value > 0m
+                ? $"{token} + {ActiveDraft.MainAmount} main"
+                : token;
+        }
+    }
+
+    private decimal SelectedUtxoTotal
+        => SpendableOutputs
+            .Where(output => ActiveDraft.SelectedUtxosOrEmpty.Contains(output.OutPoint))
+            .Sum(output => output.MainAmount.Value);
+
+    protected override void OnParametersSet()
+    {
+        if (localDraft is null || !EqualityComparer<BusinessObjectTransactionDraft>.Default.Equals(observedDraft, Draft))
+        {
+            bool isChildEcho = lastEmittedDraft is not null
+                               && EqualityComparer<BusinessObjectTransactionDraft>.Default.Equals(lastEmittedDraft, Draft);
+            if (isChildEcho)
+            {
+                lastEmittedDraft = null;
+            }
+            else
+            {
+                modeResetDraft = Draft;
+                lastEmittedDraft = null;
+                reviewReady = false;
+                selectingMode = true;
+            }
+
+            localDraft = Draft;
+            observedDraft = Draft;
+        }
+    }
+
+    private async Task SelectModeAsync(BusinessObjectTransactionMode mode)
+    {
+        BusinessObjectTransactionDraft nextDraft = ActiveDraft with { SelectedMode = mode };
+        if (ActiveDraft.SelectedMode != mode)
+        {
+            BusinessObjectTransactionDraft resetDraft = modeResetDraft ?? ActiveDraft;
+            bool keepsTokenDefaults = mode is BusinessObjectTransactionMode.Create
+                or BusinessObjectTransactionMode.TokenTransfer;
+
+            nextDraft = resetDraft with
+            {
+                SelectedMode = mode,
+                SourceObjectId = null,
+                SecondObjectId = null,
+                ExternalRef = mode == BusinessObjectTransactionMode.Create
+                    ? resetDraft.ExternalRef
+                    : string.Empty,
+                TokenId = keepsTokenDefaults ? resetDraft.TokenId : null,
+                TokenAmount = keepsTokenDefaults ? resetDraft.TokenAmount : null,
+                SecondaryPaymentAmount = null,
+                SelectedUtxos = null,
+                UtxoSplitOutputs = null
+            };
+        }
+
+        nextDraft = ApplyModeDefaults(nextDraft, mode);
+
+        if (mode == BusinessObjectTransactionMode.UtxoMerge)
+        {
+            nextDraft = nextDraft with { PaymentReceiverAddress = nextDraft.OwnerAddress };
+        }
+
+        await UpdateDraftAsync(nextDraft);
+        reviewReady = false;
+        selectingMode = false;
+    }
+
+    private void ChooseAnotherMode()
+    {
+        reviewReady = false;
+        selectingMode = true;
+    }
+
+    private Task SubmitAsync()
+        => CanSubmit
+            ? SubmitRequested.InvokeAsync(ActiveDraft with { SelectedMode = SelectedMode })
+            : Task.CompletedTask;
+
+    private void SetReviewReady(bool ready) => reviewReady = ready;
+
+    private async Task UpdateDraftAsync(BusinessObjectTransactionDraft nextDraft)
+    {
+        lastEmittedDraft = nextDraft;
+        localDraft = nextDraft;
+        await DraftChanged.InvokeAsync(nextDraft);
+    }
+
+    private BusinessObjectTransactionDraft ApplyModeDefaults(
+        BusinessObjectTransactionDraft draft,
+        BusinessObjectTransactionMode mode)
+    {
+        if (mode != BusinessObjectTransactionMode.TokenTransfer)
+        {
+            return draft;
+        }
+
+        IReadOnlyList<LedgerTokenOption> spendableOptions = TokenOptions
+            .Where(option => !option.IsMain && option.TokenId is not null && option.AvailableAmount.Value > 0m)
+            .ToArray();
+        if (spendableOptions.Count == 0)
+        {
+            return draft;
+        }
+
+        LedgerTokenOption selected = spendableOptions.FirstOrDefault(option => option.TokenId == draft.TokenId)
+                                      ?? spendableOptions[0];
+
+        Amount normalizedAmount = draft.TokenAmount is { } requested
+                                  && requested.Value > 0m
+                                  && requested.Value <= selected.AvailableAmount.Value
+            ? requested
+            : Amount.FromDecimal(Math.Min(1m, selected.AvailableAmount.Value));
+
+        return draft with
+        {
+            TokenId = selected.TokenId,
+            TokenAmount = normalizedAmount
+        };
+    }
+
+}

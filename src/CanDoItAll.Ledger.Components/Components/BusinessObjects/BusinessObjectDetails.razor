@@ -1,0 +1,21 @@
+@namespace CanDoItAll.Ledger.Components
+
+<SectionCard Title="Business object detail" Description="@DetailDescription">
+    <BusinessObjectRendererHost Object="Object"
+                                Mode="BusinessObjectRenderMode.Detail"
+                                ViewedAtUtc="ViewedAtUtc" />
+</SectionCard>
+
+@code {
+    [Parameter]
+    public IBusinessObjectView? Object { get; set; }
+
+    [Parameter]
+    public DateTimeOffset? ViewedAtUtc { get; set; }
+
+    private string DetailDescription
+        => Object is null
+            ? "Select a row to inspect ledger projection details"
+            : $"{Object.ObjectType} schema {Object.SchemaVersion}";
+
+}

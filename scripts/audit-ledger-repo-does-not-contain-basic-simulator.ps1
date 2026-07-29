@@ -109,7 +109,7 @@ function Get-ForbiddenBasicSimulatorRules {
         [pscustomobject]@{ Id = "basic-experimental-economics"; Pattern = "CanDoItAll\.Economy\.Simulation\.ExperimentalEconomics|Simulation\.ExperimentalEconomics|SmithExperimentalEconomics"; Message = "Ledger must not reference Economy experimental-economics or Smith driver projects." },
         [pscustomobject]@{ Id = "basic-memory-economy"; Pattern = "CanDoItAll\.Economy\.Simulation\.MemoryEconomy|Simulation\.MemoryEconomy"; Message = "Ledger must not reference Economy memory-economy simulator extensions." },
         [pscustomobject]@{ Id = "basic-simulation-sandbox"; Pattern = "CanDoItAll\.Economy\.SimulationSandbox|SimulationSandbox|EconomySimulationSandbox"; Message = "Ledger must not reference the Economy SimulationSandbox." },
-        [pscustomobject]@{ Id = "basic-simulator-host"; Pattern = "CanDoItAll\.Economy\.Simulator"; Message = "Ledger may reference this only inside the moved BO/project simulator compatibility landing zone." },
+        [pscustomobject]@{ Id = "basic-simulator-host"; Pattern = "CanDoItAll\.Economy\.Simulator"; Message = "Ledger must not reference the retired Economy simulator namespace." },
         [pscustomobject]@{ Id = "basic-scenario-packs"; Pattern = "ScenarioPacks"; Message = "Ledger must not contain or reference Economy scenario packs." }
     )
 }
@@ -144,22 +144,6 @@ function Test-IsBoundaryDocumentationPath {
         $normalized -eq "docs\migration\ledger-simulator-runtime-ownership-inventory.md"
 }
 
-function Test-IsLedgerBoSimulatorCompatibilityPath {
-    param([string]$RelativePath)
-
-    $normalized = $RelativePath.Replace("/", "\")
-    return $normalized.StartsWith("src\CanDoItAll.Ledger.Simulator\", [StringComparison]::OrdinalIgnoreCase) -or
-        $normalized.StartsWith("src\CanDoItAll.Ledger.Simulator.Components\", [StringComparison]::OrdinalIgnoreCase) -or
-        $normalized.StartsWith("src\CanDoItAll.Ledger.Simulator.Persistence.EFCore\", [StringComparison]::OrdinalIgnoreCase) -or
-        $normalized.StartsWith("examples\CanDoItAll.Ledger.Simulator.App\", [StringComparison]::OrdinalIgnoreCase) -or
-        $normalized -eq "tests\CanDoItAll.Ledger.Tests\AccountAppUiSourceContractTests.cs" -or
-        $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorTests.cs" -or
-        $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorComponentTests.cs" -or
-        $normalized -eq "tests\CanDoItAll.Ledger.Tests\EconomySimulatorRuleAutomationTests.cs" -or
-        $normalized -eq "tests\CanDoItAll.Ledger.Tests\SimulationApiEndpointTests.cs" -or
-        $normalized -eq "tests\CanDoItAll.Ledger.Tests\SimulationProjectManagementTests.cs"
-}
-
 function Assert-LegacyQuarantineMarker {
     $markerPath = Join-Path $repoRoot "docs/legacy-economy-ledger-docs/README.md"
     if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) {
@@ -185,7 +169,7 @@ function Find-ContentViolations {
 
     foreach ($rule in @(Get-ForbiddenBasicSimulatorRules)) {
         foreach ($match in [regex]::Matches($Content, $rule.Pattern, [System.Text.RegularExpressions.RegexOptions]::CultureInvariant)) {
-            if ($isLegacyQuarantine -or $isBoundaryDocumentation -or ($rule.Id -eq "basic-simulator-host" -and (Test-IsLedgerBoSimulatorCompatibilityPath $RelativePath))) {
+            if ($isLegacyQuarantine -or $isBoundaryDocumentation) {
                 continue
             }
 
@@ -250,9 +234,6 @@ function Assert-ProjectReferences {
         foreach ($reference in $references) {
             foreach ($rule in @(Get-ForbiddenBasicSimulatorRules)) {
                 if ($reference -match $rule.Pattern) {
-                    if ($rule.Id -eq "basic-simulator-host" -and (Test-IsLedgerBoSimulatorCompatibilityPath $relative)) {
-                        continue
-                    }
                     Add-Violation "forbidden-project-reference" $relative 1 "Project reference '$reference' violates: $($rule.Message)"
                 }
             }
@@ -278,7 +259,7 @@ function Assert-NoScenarioPackDirectories {
 }
 
 function Assert-NodeProjectNoSimulatorHost {
-    $nodeRoot = Join-Path $repoRoot "src/CanDoItAll.Economy.Node"
+    $nodeRoot = Join-Path $repoRoot "src/CanDoItAll.Ledger.Node"
     if (-not (Test-Path -LiteralPath $nodeRoot -PathType Container)) {
         return
     }
@@ -328,13 +309,16 @@ var simple = "SimpleAccounts";
     $observations.Add("Negative fixture triggered expected Ledger no-basic-simulator rules: $($requiredRules -join ', ').")
 }
 
-function Add-CompatibilityNamespaceObservation {
+function Add-NamespaceMigrationObservation {
     $matches = @(Get-ChildItem -LiteralPath $repoRoot -Recurse -File -Include *.cs,*.csproj |
         Where-Object { -not (Test-IsExcludedPath $_.FullName) } |
         Select-String -Pattern "CanDoItAll\.Economy\." -AllMatches -ErrorAction SilentlyContinue)
 
     if ($matches.Count -gt 0) {
-        $observations.Add("Compatibility namespace references remain in Ledger-owned code: $($matches.Count) match(es). They are governed by docs/architecture/namespace-compatibility.md and do not imply basic simulator ownership.")
+        $observations.Add("Old Economy namespace references remain in Ledger-owned code: $($matches.Count) match(es). The Ledger identity validator must reject these outside explicit boundary fixtures.")
+    }
+    else {
+        $observations.Add("Ledger-owned C# and project files contain no CanDoItAll.Economy namespace references.")
     }
 }
 
@@ -413,20 +397,12 @@ Add-AllowlistEntry `
     -EnforcementCost "Allowed only in documentation paths; source/tests/examples/tools stay strict." `
     -RetirementCondition "Retire only if boundary rules move to structured policy metadata with equivalent human-readable generated docs."
 
-Add-AllowlistEntry `
-    -Scope "CanDoItAll.Economy.* compatibility namespaces in Ledger-owned code" `
-    -Owner "Ledger namespace migration owner" `
-    -ExpectedBenefit "Avoid combining physical repository split with a broad public API rename." `
-    -MaintenanceCost "Namespace map, consumer migration guidance, and new-code naming checks." `
-    -EnforcementCost "Boundary audits must distinguish compatibility namespaces from basic simulator ownership." `
-    -RetirementCondition "Remove after package consumers are migrated and type-forwarding/rename plan is complete."
-
 Assert-LegacyQuarantineMarker
 Assert-SolutionBoundary
 Assert-ProjectReferences
 Assert-NoScenarioPackDirectories
 Assert-NodeProjectNoSimulatorHost
-Add-CompatibilityNamespaceObservation
+Add-NamespaceMigrationObservation
 
 foreach ($file in @(Get-CandidateFiles | Sort-Object FullName -Unique)) {
     $relative = Get-RepoRelativePath $file.FullName

@@ -1,0 +1,10 @@
+@page "/adapter-workspace"
+@inject DevelopmentLedgerWorkspaceAdapter Adapter
+
+<PageTitle>Account Workspace Adapter Demo</PageTitle>
+
+<PageScaffold MaxWidthClass="max-w-[1680px]">
+    <ChildContent>
+        <LedgerAccountWorkspaceAdapterHost Adapter="Adapter" />
+    </ChildContent>
+</PageScaffold>

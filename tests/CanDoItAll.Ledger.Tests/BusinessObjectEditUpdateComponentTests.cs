@@ -1,17 +1,17 @@
 using AngleSharp.Dom;
 using Bunit;
 using CanDoItAll.Components.BaseLib;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Components;
-using CanDoItAll.Economy.Components.Models;
-using CanDoItAll.Economy.Components.Samples;
-using CanDoItAll.Economy.Components.Services;
-using CanDoItAll.Economy.Core;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Components;
+using CanDoItAll.Ledger.Components.Models;
+using CanDoItAll.Ledger.Components.Samples;
+using CanDoItAll.Ledger.Components.Services;
+using CanDoItAll.Ledger.Core;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectEditUpdateComponentTests : BunitContext
 {
@@ -19,14 +19,14 @@ public sealed class BusinessObjectEditUpdateComponentTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddCanDoItAllBaseLib();
-        Services.AddEconomySsrAccountWorkspaceAdapters();
+        Services.AddLedgerSsrAccountWorkspaceAdapters();
     }
 
     [Fact]
     public async Task EditWizard_PrefillsSelectedBusinessObjectAndStagesUpdateDraft()
     {
         var stagedDrafts = new List<BusinessObjectTransactionDraft>();
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
         string originalName = DisplayName(businessObject);
@@ -77,7 +77,7 @@ public sealed class BusinessObjectEditUpdateComponentTests : BunitContext
     [Fact]
     public void DetailsActions_RenderEditActionWithoutOwnershipVerifierScanner()
     {
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
 
@@ -102,7 +102,7 @@ public sealed class BusinessObjectEditUpdateComponentTests : BunitContext
     public async Task DetailsActions_RecycleButtonEmitsCloseDraft()
     {
         var stagedDrafts = new List<BusinessObjectTransactionDraft>();
-        BusinessObjectWorkspaceModel workspace = EconomyComponentSampleData.CreateWorkspace();
+        BusinessObjectWorkspaceModel workspace = LedgerComponentSampleData.CreateWorkspace();
         IBusinessObjectView businessObject = workspace.BusinessObjects
             .First(item => item is IMediaBusinessObjectView);
 

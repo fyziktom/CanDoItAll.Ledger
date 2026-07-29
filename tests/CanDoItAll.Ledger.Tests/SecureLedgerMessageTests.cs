@@ -1,18 +1,18 @@
 using System.Security.Cryptography;
 using System.Text;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class SecureLedgerMessageTests
 {
     [Fact]
     public async Task Secure_message_encrypts_body_and_attachments_without_plaintext_ledger_state()
     {
-        IEconomyCryptoDriver driver = new DotNetEconomyCryptoDriver();
+        ILedgerCryptoDriver driver = new DotNetLedgerCryptoDriver();
         EcdsaP256KeyPair aliceKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         EcdsaP256KeyPair bobKey = await driver.CreateEcdsaP256KeyPairAsync(CancellationToken.None);
         var alice = new InMemoryAccountKeySource(SignatureAlgorithmId.EcdsaP256Sha256, "alice", aliceKey.PublicKeyMaterial, aliceKey.PrivateKeyMaterial);

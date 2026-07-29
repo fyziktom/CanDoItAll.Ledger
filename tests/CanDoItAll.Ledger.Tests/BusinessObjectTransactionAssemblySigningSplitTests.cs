@@ -3,15 +3,15 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CanDoItAll.Economy.BusinessObjects;
-using CanDoItAll.Economy.Core;
-using CanDoItAll.Economy.Cryptography;
-using CanDoItAll.Economy.Ledger;
-using CanDoItAll.Economy.Sdk;
-using CanDoItAll.Economy.Storage.InMemory;
+using CanDoItAll.Ledger.BusinessObjects;
+using CanDoItAll.Ledger.Core;
+using CanDoItAll.Ledger.Cryptography;
+using CanDoItAll.Ledger.Engine;
+using CanDoItAll.Ledger.Sdk;
+using CanDoItAll.Ledger.Storage.InMemory;
 using Xunit;
 
-namespace CanDoItAll.Economy.Tests;
+namespace CanDoItAll.Ledger.Tests;
 
 public sealed class BusinessObjectTransactionAssemblySigningSplitTests
 {
@@ -104,7 +104,7 @@ public sealed class BusinessObjectTransactionAssemblySigningSplitTests
         var handler = new CapturingHandler();
         handler.QueueJson(HttpStatusCode.OK, LedgerSubmitResult.Confirmed(signedTxId, 2));
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://node.example/") };
-        using var client = new EconomyNodeLedgerClient(httpClient);
+        using var client = new LedgerNodeLedgerClient(httpClient);
 
         LedgerSubmitResult result = await client.SubmitTransactionAsync(signed, CancellationToken.None);
 
@@ -150,7 +150,7 @@ public sealed class BusinessObjectTransactionAssemblySigningSplitTests
                 new LedgerExecutor(store, hasher, payloadBuilder, new TestAdminSigner(), timeProvider, registry),
                 hasher,
                 timeProvider);
-            var cryptoDriver = new DotNetEconomyCryptoDriver();
+            var cryptoDriver = new DotNetLedgerCryptoDriver();
             EcdsaP256KeyPair keyPair = await cryptoDriver.CreateEcdsaP256KeyPairAsync();
             IAccountKeySource keySource = new InMemoryAccountKeySource(
                 SignatureAlgorithmId.EcdsaP256Sha256,
