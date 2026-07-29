@@ -164,4 +164,4 @@ See the
 and [CanDoItAll Components packages](https://www.nuget.org/profiles/fyziktom).
 
 This package is part of the [CanDoItAll ecosystem](https://aicandoitall.com)
-and uses the repository's MIT-derived license with website-link requirement.
+and uses the repository's MIT License.

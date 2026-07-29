@@ -6,13 +6,18 @@ Builds, tests, and packs the public Ledger NuGet packages.
 Build configuration. The default is Release.
 
 .PARAMETER OutputDirectory
-Absolute or repository-relative package destination.
+Absolute or repository-relative package destination. When omitted, a
+versioned, timestamped run directory is created below artifacts/packages.
 
 .PARAMETER NoRestore
 Skips restore when the caller guarantees it has already completed.
 
 .PARAMETER Version
 Overrides the package version without editing committed project files.
+
+.PARAMETER CreateRunDirectory
+Treats an explicitly supplied OutputDirectory as a root and creates a
+versioned, timestamped child below it.
 
 .EXAMPLE
 .\tools\deployment\nugets\Build-NuGets.ps1 -Version '1.2.3'
@@ -26,7 +31,9 @@ param(
 
     [switch]$NoRestore,
 
-    [string]$Version = ''
+    [string]$Version = '',
+
+    [switch]$CreateRunDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -82,16 +89,42 @@ if ($simulatorPackages.Count -gt 0) {
 }
 
 $effectiveVersion = $Version.Trim()
+$versionWasOverridden = -not [string]::IsNullOrWhiteSpace($effectiveVersion)
+if (-not $versionWasOverridden) {
+    [xml]$directoryBuildProps = Get-Content -LiteralPath (
+        Join-Path $repositoryRoot 'Directory.Build.props'
+    ) -Raw
+    $versionNode = $directoryBuildProps.SelectSingleNode(
+        '/Project/PropertyGroup/CanDoItAllPackageVersion'
+    )
+    if ($null -eq $versionNode -or [string]::IsNullOrWhiteSpace($versionNode.InnerText)) {
+        throw 'Directory.Build.props must define CanDoItAllPackageVersion.'
+    }
+    $effectiveVersion = $versionNode.InnerText.Trim()
+}
 $msbuildProperties = @()
-if (-not [string]::IsNullOrWhiteSpace($effectiveVersion)) {
+if ($versionWasOverridden) {
     $msbuildProperties += "-p:Version=$effectiveVersion"
 }
 
 if (-not $OutputDirectory) {
-    $OutputDirectory = Join-Path $repositoryRoot 'artifacts\packages'
+    $outputRoot = Join-Path $repositoryRoot 'artifacts\packages'
+    $createRunDirectory = $true
 }
-elseif (-not [System.IO.Path]::IsPathRooted($OutputDirectory)) {
-    $OutputDirectory = Join-Path $repositoryRoot $OutputDirectory
+elseif ([System.IO.Path]::IsPathRooted($OutputDirectory)) {
+    $outputRoot = $OutputDirectory
+    $createRunDirectory = $CreateRunDirectory.IsPresent
+}
+else {
+    $outputRoot = Join-Path $repositoryRoot $OutputDirectory
+    $createRunDirectory = $CreateRunDirectory.IsPresent
+}
+if ($createRunDirectory) {
+    $runTimestamp = Get-Date -Format 'yyyyMMdd-HHmmssfff'
+    $OutputDirectory = Join-Path $outputRoot "${effectiveVersion}_$runTimestamp"
+}
+else {
+    $OutputDirectory = $outputRoot
 }
 
 $OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
@@ -101,9 +134,7 @@ $operation = if ($NoRestore) {
 else {
     'Restore, build, test, and pack the public Ledger NuGet package allowlist'
 }
-if (-not [string]::IsNullOrWhiteSpace($effectiveVersion)) {
-    $operation += " at version '$effectiveVersion'"
-}
+$operation += " at version '$effectiveVersion'"
 
 if (-not $PSCmdlet.ShouldProcess($OutputDirectory, $operation)) {
     [pscustomobject]@{

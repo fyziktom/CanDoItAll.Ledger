@@ -65,4 +65,4 @@ See the
 and [full source](https://github.com/fyziktom/CanDoItAll.Ledger).
 
 This package is part of the [CanDoItAll ecosystem](https://aicandoitall.com)
-and uses the repository's MIT-derived license with website-link requirement.
+and uses the repository's MIT License.

@@ -6,7 +6,7 @@
 [![Components version](https://img.shields.io/nuget/v/CanDoItAll.Ledger.Components.svg?logo=nuget&label=Components)](https://www.nuget.org/packages/CanDoItAll.Ledger.Components)
 [![Components downloads](https://img.shields.io/nuget/dt/CanDoItAll.Ledger.Components.svg?logo=nuget&label=Components%20downloads)](https://www.nuget.org/packages/CanDoItAll.Ledger.Components)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/download/dotnet/10.0)
-[![License](https://img.shields.io/badge/license-MIT--derived%20with%20website%20link-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 CanDoItAll.Ledger is the secure, auditable transaction and financial-state
 foundation of the CanDoItAll ecosystem.
@@ -180,11 +180,9 @@ the solution build and Ledger test suite before packing.
 
 ## License And Contributions
 
-This repository uses the
-[MIT-Derived License with CanDoItAll Website Link Requirement](LICENSE).
-Redistributions of the software or a substantial portion of it in source or
-binary form must include at least one link to
-[aicandoitall.com](https://aicandoitall.com).
+This repository uses the [MIT License](LICENSE). See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for external assets redistributed by
+the examples.
 
 Code contributions are limited to partners approved by the maintainer. See
 [CONTRIBUTING.md](CONTRIBUTING.md) and contact the `fyziktom` account on

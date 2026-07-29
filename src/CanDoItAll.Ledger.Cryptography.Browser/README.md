@@ -63,4 +63,4 @@ See the
 and [project documentation](https://github.com/fyziktom/CanDoItAll.Ledger/tree/main/docs).
 
 This package is part of the [CanDoItAll ecosystem](https://aicandoitall.com)
-and uses the repository's MIT-derived license with website-link requirement.
+and uses the repository's MIT License.
