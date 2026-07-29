@@ -1,5 +1,0 @@
-﻿Command: docker compose --profile seed run --rm demo-seeder
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-Start: 2026-07-02T11:41:28.0153509-04:00
-End: 2026-07-02T11:41:53.7965434-04:00
-ExitCode: 139

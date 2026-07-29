@@ -1,6 +1,0 @@
-Command: python bundles\2026-07-08-ledger-demo-parity-repairs\scripts\validate_bundle.py bundles\2026-07-08-ledger-demo-parity-repairs --stage completed --bundle-root bundles\2026-07-08-ledger-demo-parity-repairs --profile initiative
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-StartedUtc: 2026-07-08T18:52:47.8591854Z
-Bundle is valid for stage 'completed': C:\repositories\CanDoItAll.Ledger\bundles\2026-07-08-ledger-demo-parity-repairs
-ExitCode: 0
-FinishedUtc: 2026-07-08T18:52:49.4949653Z

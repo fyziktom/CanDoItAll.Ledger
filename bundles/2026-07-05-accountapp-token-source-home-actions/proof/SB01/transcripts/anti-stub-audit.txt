@@ -1,6 +1,0 @@
-﻿Command: PowerShell anti-stub audit for SB01 changed files
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-Start: 2026-07-05T09:09:24.3592634-04:00
-Invariant: INV-SB01-TOKEN-SOURCE
-No TODO, NotImplemented, fixture-specific, or stub markers found in SB01 changed files.
-ExitCode: 0

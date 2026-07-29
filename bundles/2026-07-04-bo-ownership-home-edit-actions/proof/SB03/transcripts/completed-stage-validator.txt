@@ -1,5 +1,0 @@
-﻿Command: python bundles/2026-07-04-bo-ownership-home-edit-actions/scripts/validate_bundle.py bundles/2026-07-04-bo-ownership-home-edit-actions --stage completed --profile feedback --repo-root .
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-StartTimeUtc: 2026-07-04T23:58:00.9600704Z
-Bundle is valid for stage 'completed': C:\repositories\CanDoItAll.Ledger\bundles\2026-07-04-bo-ownership-home-edit-actions
-ExitCode: 0

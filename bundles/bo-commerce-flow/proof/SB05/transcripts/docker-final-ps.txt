@@ -1,8 +1,0 @@
-Command: proof capture: docker-final-ps.txt
-﻿NAME                                                   IMAGE                                COMMAND                  SERVICE            CREATED          STATUS                  PORTS
-candoitall-ledger-accountapp-demo-accountapp-alice-1   candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-alice   34 minutes ago   Up 34 minutes           0.0.0.0:5081->80/tcp, [::]:5081->80/tcp
-candoitall-ledger-accountapp-demo-accountapp-bob-1     candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-bob     34 minutes ago   Up 34 minutes           0.0.0.0:5082->80/tcp, [::]:5082->80/tcp
-candoitall-ledger-accountapp-demo-accountapp-lab-1     candoitall-ledger-accountapp:dev     "/docker-entrypoint.…"   accountapp-lab     34 minutes ago   Up 34 minutes           0.0.0.0:5083->80/tcp, [::]:5083->80/tcp
-candoitall-ledger-accountapp-demo-economy-node-1       candoitall-ledger-economy-node:dev   "dotnet CanDoItAll.E…"   economy-node       7 hours ago      Up 7 hours              0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
-candoitall-ledger-accountapp-demo-postgres-1           postgres:16-alpine                   "docker-entrypoint.s…"   postgres           26 hours ago     Up 15 hours (healthy)   0.0.0.0:54329->5432/tcp, [::]:54329->5432/tcp
-ExitCode: 0

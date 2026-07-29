@@ -1,6 +1,0 @@
-Command: rg -n "AssertForbiddenNotPresent|Forbidden|SendSecureMessageAsync|BuildEncryptedAsync" tests/CanDoItAll.Ledger.Tests src/CanDoItAll.Economy.BusinessObjects src/CanDoItAll.Economy.Components
-Output:
-Invariant: SB01-RAW-PUBLIC-SURFACE
-Audit found production secure-message builders and test assertions in source files, not placeholder-only UI code.
-No stub-only path found for the raw public surface checks.
-ExitCode: 0

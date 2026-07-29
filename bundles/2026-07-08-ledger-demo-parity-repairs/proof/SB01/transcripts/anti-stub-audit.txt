@@ -1,9 +1,0 @@
-﻿Command: rg -n "TODO|NotImplemented|throw new NotImplementedException|fixture-specific" examples\CanDoItAll.Economy.ConsoleDemo tests\CanDoItAll.Ledger.Tests\ConsoleDemoParityTests.cs
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-StartedUtc: 2026-07-08T18:31:22.4167310Z
-ExitCode: 0
-RgExitCode: 1
-
-No production or test stub markers found in SB01 scope.
-
-

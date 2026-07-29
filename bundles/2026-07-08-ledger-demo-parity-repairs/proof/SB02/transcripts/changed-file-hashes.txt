@@ -1,9 +1,0 @@
-Command: changed-file SHA-256 capture for SB02
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-StartedUtc: 2026-07-08T18:48:05.8384012Z
-| File | Before SHA-256 | After SHA-256 |
-| --- | --- | --- |
-| `repo://src/CanDoItAll.Economy.Components/Services/EconomyDevelopmentWorkspaceSession.cs` | `17ae251f6db2f5f259a030f4bd932c321ea60de8419770063e82917e7e700cd4` | `f4066226e21b34d766972efd97b62c4bbd894d6e1c2f877f5462ce443022cbd6` |
-| `repo://tests/CanDoItAll.Ledger.Tests/SsrDemoParityTests.cs` | `new-file` | `24a53c53d6c30574d0f4315081a6fcdbf6283a507a3065985831d7bcbbabaef4` |
-FinishedUtc: 2026-07-08T18:48:06.2041450Z
-ExitCode: 0

@@ -1,9 +1,0 @@
-Invariant: SB01-HOME-ONLY
-Command: SHA256 before/after hashes for SB01 touched files
-WorkingDirectory: C:\repositories\CanDoItAll.Ledger
-StartTimeUtc: 2026-07-04T22:57:28.7605781Z
-ExitCode: 0
-before src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectLedgerDetailsDialogContent.razor ddcc056895609b3df1989258cbb6e196e2ff552cf48fb311aa97b1b910b70ebf
-after  src/CanDoItAll.Economy.Components/Components/BusinessObjects/BusinessObjectLedgerDetailsDialogContent.razor 9a0e223f83e939fd46b1802abf0b92bea5ed003344701709f6d599bd7e691cfc
-before tests/CanDoItAll.Ledger.Tests/BusinessObjectOwnershipPlacementComponentTests.cs absent
-after  tests/CanDoItAll.Ledger.Tests/BusinessObjectOwnershipPlacementComponentTests.cs 1448df7a8a7233a1d1994dd43e7388c8caff0d785443d794dbf67b4cf1409299

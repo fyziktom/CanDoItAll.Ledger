@@ -1,3 +1,0 @@
-Command: rg -n "TODO|NotImplemented|throw new NotImplementedException|fixture-specific|fake proof" changed SB01 files WorkingDirectory: C:\repositories\CanDoItAll.Ledger RunLabel: SB01 anti-stub audit InvariantIds: SB01-EVENT-TICKET-DOMAIN-CONTROLS SB01-MINT-AUTHOR-AUTOFILL
-Matches: none
-ExitCode: 0

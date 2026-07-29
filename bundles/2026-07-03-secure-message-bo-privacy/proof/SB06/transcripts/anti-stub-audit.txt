@@ -1,6 +1,0 @@
-Command: docker compose ps; API confirmed tx scan; Playwright screenshots captured from rebuilt AccountApp services
-Output:
-Invariant: SB06-DOCKER-WASM-E2E
-Audit used running Docker services and API-confirmed txids, not static mock data.
-No stub-only path found for Docker WASM validation.
-ExitCode: 0
