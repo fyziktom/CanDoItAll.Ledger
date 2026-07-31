@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.201 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.302 AS build
 WORKDIR /src/CanDoItAll.Ledger
 
 COPY . .
@@ -15,7 +15,7 @@ RUN dotnet publish "src/CanDoItAll.Ledger.Node/CanDoItAll.Ledger.Node.csproj" \
     --output /app/publish \
     /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.10 AS final
 WORKDIR /app
 
 ENV ASPNETCORE_URLS=http://+:8080 \
