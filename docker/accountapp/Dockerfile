@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.201 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.302 AS build
 WORKDIR /src/CanDoItAll.Economy
 ARG CDA_COMPONENTS_PACKAGE_VERSION=0.1.4
 

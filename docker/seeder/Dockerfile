@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.201 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.302 AS build
 WORKDIR /src/CanDoItAll.Economy
 ARG CDA_COMPONENTS_PACKAGE_VERSION=0.1.4
 
@@ -27,7 +27,7 @@ RUN dotnet publish "tools/CanDoItAll.Economy.DemoSeeder/CanDoItAll.Economy.DemoS
     /p:Version="$CDA_COMPONENTS_PACKAGE_VERSION" \
     /p:PackageVersion="$CDA_COMPONENTS_PACKAGE_VERSION"
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0 AS final
+FROM mcr.microsoft.com/dotnet/runtime:10.0.10 AS final
 WORKDIR /app
 
 ENV DOTNET_EnableDiagnostics=0
